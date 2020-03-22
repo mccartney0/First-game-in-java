@@ -4,12 +4,17 @@ import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.swing.JFrame;
+
+import com.traduvertgames.entities.Entity;
+import com.traduvertgames.entities.Player;
+import com.traduvertgames.graficos.Spritesheet;
 
 public class Game extends Canvas implements Runnable {
 
@@ -27,14 +32,24 @@ public class Game extends Canvas implements Runnable {
 	private BufferedImage image;
 
 
+	public List<Entity> entities;
+	public Spritesheet spritesheet;
 	public Game() throws IOException {
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
+		//Inicializando objetos;
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
+		entities = new ArrayList<Entity>();
+		spritesheet = new Spritesheet("/spritesheet.png");
+		
+		//Passando tamanho dele e posições
+		Player player = new Player(0,0,16,16,spritesheet.getSprite(32, 0, 16, 16));
+		// Adicionar o jogador na lista e ja aparece na tela
+		entities.add(player);
 	}
 
 	public void initFrame() {
-		frame = new JFrame("Firt Gamer");
+		frame = new JFrame("Zelda Clone RPG");
 		frame.add(this);
 		frame.setResizable(false);
 		frame.pack();
@@ -64,7 +79,11 @@ public class Game extends Canvas implements Runnable {
 	}
 
 	public void update() {
-
+		
+		for(int i = 0; i < entities.size();i++) {
+			Entity e = entities.get(i);
+			e.update();
+		}
 	}
 
 	public void render() { // Renderização funciona por ordem de código, primeira linhas, segunda, etc...
@@ -79,13 +98,10 @@ public class Game extends Canvas implements Runnable {
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 
 //		Renderizar jogo
-
-//		Graphics2D g2 = (Graphics2D) g;
-
-//		g2.setColor(new Color(0,0,0,120));  // Escurecendo RGBS
-//		g2.fillRect(0, 0, WIDTH, HEIGHT);
-		
-//		
+		for(int i = 0; i < entities.size();i++) {
+			Entity e = entities.get(i);
+			e.render(g);
+		}
 		g.dispose();
 
 		g = bs.getDrawGraphics();
