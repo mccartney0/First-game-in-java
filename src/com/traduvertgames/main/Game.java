@@ -17,6 +17,7 @@ import javax.swing.JFrame;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.graficos.Spritesheet;
+import com.traduvertgames.world.World;
 
 public class Game extends Canvas implements Runnable, KeyListener {
 
@@ -37,6 +38,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	public List<Entity> entities;
 	public static Spritesheet spritesheet;
 	
+	public static World world;
+	
 	private Player player;
 	
 	public Game() throws IOException {
@@ -44,10 +47,11 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
 		//Inicializando objetos;
+		
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
 		entities = new ArrayList<Entity>();
 		spritesheet = new Spritesheet("/spritesheet.png");
-		
+		world = new World("/map.png");
 		//Passando tamanho dele e posições
 		player = new Player(0,0,16,16,spritesheet.getSprite(32, 0, 16, 16));
 		// Adicionar o jogador na lista e ja aparece na tela
@@ -103,7 +107,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		g.setColor(new Color(0, 0, 0)); //Cor de fundo
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 
-//		Renderizar jogo
+		//		Renderizar jogo		//
+		world.render(g);
 		for(int i = 0; i < entities.size();i++) {
 			Entity e = entities.get(i);
 			e.render(g);
