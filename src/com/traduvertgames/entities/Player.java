@@ -48,22 +48,22 @@ public class Player extends Entity {
 
 	public void update() {
 		moved = false;
-		if (right) {
+		if (right && World.isFree((int)(x+speed),this.getY())) {
 			moved = true;
 			dir = right_dir;
 			// Mover a câmera - Colocar a camera para se mover com o jogador EX:
 			// Camera.x+=speed;
 			x += speed;
-		} else if (left) {
+		} else if (left && World.isFree((int)(x-speed),this.getY())) {
 			moved = true;
 			dir = left_dir;
 			x -= speed;
 		}
-		if (up) {
+		if (up && World.isFree(this.getX(),(int)(y-speed))) {
 			moved = true;
 //			dir = up_dir;
 			y -= speed;
-		} else if (down) {
+		} else if (down && World.isFree(this.getX(),(int)(y+speed))) {
 //			dir = down_dir;
 			moved = true;
 			y += speed;
@@ -84,7 +84,10 @@ public class Player extends Entity {
 			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 		}
 	}
-
+//public boolean isCollinding() {
+//	
+//}
+	
 	public void render(Graphics g) {
 		if (dir == right_dir) {
 			g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);

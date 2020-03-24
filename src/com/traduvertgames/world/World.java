@@ -11,8 +11,9 @@ import com.traduvertgames.main.Game;
 
 public class World {
 
-	private Tile[] tiles;
+	public static Tile[] tiles;
 	public static int WIDTH, HEIGHT;
+	public static final int TILE_SIZE = 16;
 
 	public World(String path) {
 		try {
@@ -58,6 +59,25 @@ public class World {
 		}
 	}
 
+	public static boolean isFree(int xNext,int yNext) {
+		int x1 = xNext / TILE_SIZE;
+		int y1 = yNext / TILE_SIZE;
+		
+		int x2 = (xNext+TILE_SIZE-1) / TILE_SIZE;
+		int y2 = yNext / TILE_SIZE;
+		
+		int x3 = xNext / TILE_SIZE;
+		int y3 = (yNext+TILE_SIZE-1) / TILE_SIZE;
+		
+		int x4 = (xNext+TILE_SIZE-1) / TILE_SIZE;
+		int y4 = (yNext+TILE_SIZE-1) / TILE_SIZE;
+		
+		return !((tiles[x1+(y1*World.WIDTH)] instanceof WallTile) ||
+				(tiles[x2+(y2*World.WIDTH)] instanceof WallTile) || 
+				(tiles[x3+(y3*World.WIDTH)] instanceof WallTile) || 
+				(tiles[x4+(y4*World.WIDTH)] instanceof WallTile));
+	}
+	
 	public void render(Graphics g) {
 		
 		//Otimizando e renderizando o mapa apenas para onde a Câmera pega
