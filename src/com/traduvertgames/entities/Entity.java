@@ -4,6 +4,7 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 import com.traduvertgames.main.Game;
+import com.traduvertgames.world.Camera;
 
 public class Entity {
 
@@ -57,7 +58,7 @@ public class Entity {
 	}
 	
 	public void render(Graphics g) {
-		g.drawImage(sprite, this.getX(), this.getY(),  null);
+		g.drawImage(sprite, this.getX() - Camera.x, this.getY() - Camera.y,  null);
 	}
 	
 	

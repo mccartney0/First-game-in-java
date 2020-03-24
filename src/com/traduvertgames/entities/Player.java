@@ -4,6 +4,7 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 
 import com.traduvertgames.main.Game;
+import com.traduvertgames.world.Camera;
 
 public class Player extends Entity {
 
@@ -49,6 +50,7 @@ public class Player extends Entity {
 		if (right) {
 			moved = true;
 			dir = right_dir;
+			//Mover a câmera - Colocar a camera para se mover com o jogador EX: Camera.x+=speed;
 			x += speed;
 		} else if (left) {
 			moved = true;
@@ -74,14 +76,17 @@ public class Player extends Entity {
 					index = 0;
 				}
 			}
+			//Adicionando a câmera com o Jogador sempre no meio da Tela
+			Camera.x = this.getX() - (Game.WIDTH/2);
+			Camera.y = this.getY() - (Game.HEIGHT/2);
 		}
 	}
 
 	public void render(Graphics g) {
 		if (dir == right_dir) {
-			g.drawImage(rightPlayer[index], this.getX(), this.getY(), null);
+			g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
 		} else if (dir == left_dir) {
-			g.drawImage(leftPlayer[index], this.getX(), this.getY(), null);
+			g.drawImage(leftPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
 		}
 //		if (dir == up_dir) {
 //			g.drawImage(upPlayer[index], this.getX(), this.getY(), null);
