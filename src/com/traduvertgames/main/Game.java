@@ -11,9 +11,11 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import javax.swing.JFrame;
 
+import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.graficos.Spritesheet;
@@ -35,13 +37,17 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	private BufferedImage image;
 
 	public static List<Entity> entities;
+	public static List<Enemy> enemies;
 	public static Spritesheet spritesheet;
 
 	public static World world;
 
 	public static Player player;
+	
+	public static Random rand;
 
 	public Game() throws IOException {
+		rand = new Random();
 		addKeyListener(this);
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
@@ -49,6 +55,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
 		entities = new ArrayList<Entity>();
+		enemies = new ArrayList<Enemy>();
 		spritesheet = new Spritesheet("/spritesheet.png");
 		// Passando tamanho dele e posições
 		player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
@@ -59,7 +66,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	}
 
 	public void initFrame() {
-		frame = new JFrame("Zelda Clone RPG");
+		frame = new JFrame("Game 2 RPG");
 		frame.add(this);
 		frame.setResizable(false);
 		frame.pack();
