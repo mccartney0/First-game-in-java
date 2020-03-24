@@ -38,16 +38,16 @@ public class World {
 						Game.player.setY(yy * 16);
 					} else if (pixelAtual == 0xFFFF0000) {
 						// Enemy
-						Game.entities.add(new Enemy(xx*16,yy*16,16,16,Entity.ENEMY_EN));
+						Game.entities.add(new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN));
 					} else if (pixelAtual == 0xFFFF6A00) {
 						// Weapon
-						Game.entities.add(new Weapon(xx*16,yy*16,16,16,Entity.WEAPON_EN));
+						Game.entities.add(new Weapon(xx * 16, yy * 16, 16, 16, Entity.WEAPON_EN));
 					} else if (pixelAtual == 0xFF4CFF00) {
 						// Life Pack
-						Game.entities.add(new LifePack(xx*16,yy*16,16,16,Entity.LIFEPACK_EN));
+						Game.entities.add(new LifePack(xx * 16, yy * 16, 16, 16, Entity.LIFEPACK_EN));
 					} else if (pixelAtual == 0xFFFFD800) {
 						// Bullet
-						Game.entities.add(new Bullet(xx*16,yy*16,16,16,Entity.BULLET_EN));
+						Game.entities.add(new Bullet(xx * 16, yy * 16, 16, 16, Entity.BULLET_EN));
 					}
 
 					// Floor
@@ -59,8 +59,17 @@ public class World {
 	}
 
 	public void render(Graphics g) {
-		for (int xx = 0; xx < WIDTH; xx++) {
-			for (int yy = 0; yy < HEIGHT; yy++) {
+		
+		//Otimizando e renderizando o mapa apenas para onde a Câmera pega
+		int xstart = Camera.x / 16;
+		int ystart = Camera.y / 16;
+
+		int xfinal = xstart + (Game.WIDTH / 16) ;
+		int yfinal = ystart + (Game.HEIGHT / 16) ;
+		for (int xx = xstart; xx <= xfinal; xx++) {
+			for (int yy = ystart; yy <= yfinal; yy++) {
+				if(xx<0 || yy < 0 || xx >= WIDTH || yy>= HEIGHT)
+					continue;
 				Tile tile = tiles[xx + (yy * WIDTH)];
 				tile.render(g);
 			}
