@@ -34,28 +34,28 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
 	private BufferedImage image;
 
-
-	public List<Entity> entities;
+	public static List<Entity> entities;
 	public static Spritesheet spritesheet;
-	
+
 	public static World world;
-	
-	private Player player;
-	
+
+	public static Player player;
+
 	public Game() throws IOException {
 		addKeyListener(this);
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
-		//Inicializando objetos;
-		
+		// Inicializando objetos;
+
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
 		entities = new ArrayList<Entity>();
 		spritesheet = new Spritesheet("/spritesheet.png");
-		world = new World("/map.png");
-		//Passando tamanho dele e posições
-		player = new Player(0,0,16,16,spritesheet.getSprite(32, 0, 16, 16));
+		// Passando tamanho dele e posições
+		player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
 		// Adicionar o jogador na lista e ja aparece na tela
 		entities.add(player);
+		world = new World("/map.png");
+
 	}
 
 	public void initFrame() {
@@ -89,8 +89,8 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	}
 
 	public void update() {
-		
-		for(int i = 0; i < entities.size();i++) {
+
+		for (int i = 0; i < entities.size(); i++) {
 			Entity e = entities.get(i);
 			e.update();
 		}
@@ -104,19 +104,19 @@ public class Game extends Canvas implements Runnable, KeyListener {
 			return;
 		}
 		Graphics g = image.getGraphics();
-		g.setColor(new Color(0, 0, 0)); //Cor de fundo
+		g.setColor(new Color(0, 0, 0)); // Cor de fundo
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 
-		//		Renderizar jogo		//
+		// Renderizar jogo //
 		world.render(g);
-		for(int i = 0; i < entities.size();i++) {
+		for (int i = 0; i < entities.size(); i++) {
 			Entity e = entities.get(i);
 			e.render(g);
 		}
 		g.dispose();
 
 		g = bs.getDrawGraphics();
-		g.drawImage(image, 0, 0, WIDTH*SCALE, HEIGHT*SCALE, null);
+		g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
 		bs.show();
 	}
 
@@ -157,41 +157,41 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	@Override
 	public void keyTyped(KeyEvent e) {
 		// TODO Auto-generated method stub
-		
+
 	}
 
 	@Override
 	public void keyPressed(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
-			//execute tal ação!
+		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
+			// execute tal ação!
 			player.right = true;
-		}else if(e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
+		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			player.left = true;
 		}
-		
-		if(e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+
+		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
 			player.up = true;
-		}else if(e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
 			player.down = true;
 		}
-		
+
 	}
 
 	@Override
 	public void keyReleased(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
-			//execute tal ação!
+		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
+			// execute tal ação!
 			player.right = false;
-		}else if(e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
+		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			player.left = false;
 		}
-		
-		if(e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+
+		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
 			player.up = false;
-		}else if(e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
 			player.down = false;
 		}
-		
+
 	}
 
 }

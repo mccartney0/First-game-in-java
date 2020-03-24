@@ -39,7 +39,9 @@ public class Player extends Entity {
 //		for (int i = 1; i < 4; i++) {
 //			downPlayer[i] = Game.spritesheet.getSprite(64 + (i * 16), 32, 16, 16);
 //		}
-
+//		for (int i = 1; i < 4; i=1) {
+//			downPlayer[i] = Game.spritesheet.getSprite(8*16, 16, 16, 16);
+//		}
 	}
 
 	public void update() {
@@ -83,7 +85,7 @@ public class Player extends Entity {
 		}
 //		if (dir == up_dir) {
 //			g.drawImage(upPlayer[index], this.getX(), this.getY(), null);
-//		} else if (dir == down_dir) {
+//		 if (dir == down_dir) {
 //			g.drawImage(downPlayer[index], this.getX(), this.getY(), null);
 //		}
 	}
