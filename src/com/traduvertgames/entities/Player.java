@@ -84,15 +84,30 @@ public class Player extends Entity {
 					index = 0;
 				}
 			}
+			
+			this.checkCollisionLifePack();
+			
 			// Adicionando a câmera com o Jogador sempre no meio da Tela
 			// Renderizando o mapa com método Clamp da Camera
 			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 		}
 	}
-//public boolean isCollinding() {
-//	
-//}
+	
+	public void checkCollisionLifePack(){
+		for(int i = 0; i < Game.entities.size(); i++){
+			Entity atual = Game.entities.get(i);
+			if(atual instanceof LifePack) {
+				if(Entity.isColliding(this, atual)) {
+					life+=10;
+					Game.entities.remove(atual);
+					if(life >= 100)
+						life = 100;
+					
+				}
+			}
+		}
+	}
 
 	public void render(Graphics g) {
 		if (dir == right_dir) {

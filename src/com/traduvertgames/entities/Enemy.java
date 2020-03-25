@@ -4,6 +4,7 @@ package com.traduvertgames.entities;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 
 import javax.sound.midi.Soundbank;
 
@@ -54,7 +55,7 @@ public class Enemy extends Entity {
 			}
 			if(Game.player.life <= 0) {
 				System.out.println("Game Over!");
-				System.exit(1);
+//					System.exit(1);
 			}
 		}
 			frames++;
