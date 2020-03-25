@@ -14,6 +14,7 @@ public class Player extends Entity {
 	public int dir = right_dir;
 	public double speed = 1.5;
 	public static double life = 100,maxLife=100;
+	public static double mana = 0,maxMana=500;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 3;
 	private boolean moved = false;
@@ -86,6 +87,7 @@ public class Player extends Entity {
 			}
 			
 			this.checkCollisionLifePack();
+			this.checkCollisionAmmo();
 			
 			// Adicionando a câmera com o Jogador sempre no meio da Tela
 			// Renderizando o mapa com método Clamp da Camera
@@ -99,16 +101,28 @@ public class Player extends Entity {
 			Entity atual = Game.entities.get(i);
 			if(atual instanceof LifePack) {
 				if(Entity.isColliding(this, atual)) {
-					life+=10;
-					Game.entities.remove(atual);
+					life+=20;
 					if(life >= 100)
 						life = 100;
-					
+					Game.entities.remove(atual);
 				}
 			}
 		}
 	}
 
+	public void checkCollisionAmmo(){
+		for(int i = 0; i < Game.entities.size(); i++){
+			Entity atual = Game.entities.get(i);
+			if(atual instanceof Bullet) {
+				if(Entity.isColliding(this, atual)) {
+					mana+=100;
+					if(mana >= 500)
+						mana = 500;
+					Game.entities.remove(atual);
+				}
+			}
+		}
+	}
 	public void render(Graphics g) {
 		if (dir == right_dir) {
 			g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);

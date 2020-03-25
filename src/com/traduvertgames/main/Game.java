@@ -3,6 +3,7 @@ package com.traduvertgames.main;
 import java.awt.Canvas;
 import java.awt.Color;
 import java.awt.Dimension;
+import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
@@ -128,6 +129,10 @@ public class Game extends Canvas implements Runnable, KeyListener {
 
 		g = bs.getDrawGraphics();
 		g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
+//		Renderizar a String
+//		g.setFont(new Font("arial",Font.BOLD,20));
+//		g.setColor(Color.white);
+//		g.drawString("Munição: " + player.mana,570, 30);
 		bs.show();
 	}
 
