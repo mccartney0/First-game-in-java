@@ -1,6 +1,5 @@
 package com.traduvertgames.entities;
 
-
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
@@ -22,84 +21,85 @@ public class Enemy extends Entity {
 	public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, null);
 		sprites = new BufferedImage[2];
-		sprites[0] = Game.spritesheet.getSprite(112,16,16,16);
-		sprites[1] = Game.spritesheet.getSprite(112+16,16,16,16);
+		sprites[0] = Game.spritesheet.getSprite(112, 16, 16, 16);
+		sprites[1] = Game.spritesheet.getSprite(112 + 16, 16, 16, 16);
 	}
 
 	public void update() {
-		
+
 		// Se estiver colidindo, o inimigo irá parar
-		if(this.isCollidingWithPlayer() == false) {
-		
+		if (this.isCollidingWithPlayer() == false) {
+
 //		if (Game.rand.nextInt(100) < 50) { // Fazendo os NPCs não se colidirem 1#
-		// IA dos mobs seguindo o jogador
-		if ((int) x < Game.player.getX() && World.isFree((int) (x + speed), this.getY()) 
-				&& !isColliding((int) (x + speed), this.getY())) {
-			x += speed;
-		} else if ((int) x > Game.player.getX() && World.isFree((int) (x - speed), this.getY())
-				&& !isColliding((int) (x - speed), this.getY())) {
-			x -= speed;
-		}
-		if ((int) y < Game.player.getY() && World.isFree(this.getX(), (int) (y + speed))
-				&& !isColliding(this.getX(), (int) (y + speed))) {
-			y += speed;
-		} else if ((int) y > Game.player.getY() && World.isFree(this.getX(), (int) (y - speed))
-				&& !isColliding(this.getX(), (int) (y - speed))) {
-			y -= speed;
+			// IA dos mobs seguindo o jogador
+			if ((int) x < Game.player.getX() && World.isFree((int) (x + speed), this.getY())
+					&& !isColliding((int) (x + speed), this.getY())) {
+				x += speed;
+			} else if ((int) x > Game.player.getX() && World.isFree((int) (x - speed), this.getY())
+					&& !isColliding((int) (x - speed), this.getY())) {
+				x -= speed;
 			}
-		}else {
-			
-			if(Game.rand.nextInt(100)<10) {
-			Game.player.life-=Game.rand.nextInt(3);
-			System.out.println("Vida: " + Game.player.life);
+			if ((int) y < Game.player.getY() && World.isFree(this.getX(), (int) (y + speed))
+					&& !isColliding(this.getX(), (int) (y + speed))) {
+				y += speed;
+			} else if ((int) y > Game.player.getY() && World.isFree(this.getX(), (int) (y - speed))
+					&& !isColliding(this.getX(), (int) (y - speed))) {
+				y -= speed;
 			}
-			if(Game.player.life <= 0) {
+		} else {
+
+// Está colidindo
+			if (Game.rand.nextInt(100) < 10) {
+				Game.player.life -= Game.rand.nextInt(3);
+				Game.player.damage = true;
+			}
+			if (Game.player.life <= 0) {
 				System.out.println("Game Over!");
 //					System.exit(1);
 			}
 		}
-			frames++;
-			if (frames == maxFrames) {
-				frames = 0;
-				index++;
-				if (index > maxIndex) {
-					index = 0;
-				}
+		frames++;
+		if (frames == maxFrames) {
+			frames = 0;
+			index++;
+			if (index > maxIndex) {
+				index = 0;
 			}
+		}
 	}
 
 	public boolean isCollidingWithPlayer() {
-		Rectangle enemyCurrent = new Rectangle(this.getX(), this.getY(),World.TILE_SIZE,World.TILE_SIZE);
-		Rectangle player = new Rectangle(Game.player.getX(),Game.player.getY(), 16,16);
-		
+		Rectangle enemyCurrent = new Rectangle(this.getX(), this.getY(), World.TILE_SIZE, World.TILE_SIZE);
+		Rectangle player = new Rectangle(Game.player.getX(), Game.player.getY(), 16, 16);
+
 		return enemyCurrent.intersects(player);
 	}
-	
+
 	// Fazer nenhum NPC colidir com o outro
 	public boolean isColliding(int xNext, int yNext) {
-		Rectangle enemyCurrent = new Rectangle(xNext, yNext,World.TILE_SIZE,World.TILE_SIZE);
+		Rectangle enemyCurrent = new Rectangle(xNext, yNext, World.TILE_SIZE, World.TILE_SIZE);
 		for (int i = 0; i < Game.enemies.size(); i++) {
 			Enemy e = Game.enemies.get(i);
 			if (e == this)
 				continue;
-			Rectangle targetEnemy = new Rectangle(e.getX(),e.getY(),World.TILE_SIZE,World.TILE_SIZE);
-			if(enemyCurrent.intersects(targetEnemy)) {
+			Rectangle targetEnemy = new Rectangle(e.getX(), e.getY(), World.TILE_SIZE, World.TILE_SIZE);
+			if (enemyCurrent.intersects(targetEnemy)) {
 				return true;
 			}
 		}
-		
+
 		return false;
 	}
-	
-	//Trocar a máscara quadrada para nao colidir
+
+	// Trocar a máscara quadrada para nao colidir
 //	public void render (Graphics g) {
 //		super.render(g);
 //		g.setColor(Color.blue);
 //		g.fillRect(this.getX()+maskx-Camera.x,this.getY()+ masky-Camera.y,maskw,masky);
 //	}
-	
+
 	public void render(Graphics g) {
 		// * Sempre que renderizar, tem que por a posição da Camera
-		g.drawImage(sprites[index], this.getX()-Camera.x, this.getY()-Camera.y,null);
+		g.drawImage(sprites[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
 	}
 }

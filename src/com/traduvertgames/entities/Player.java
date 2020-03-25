@@ -2,7 +2,9 @@ package com.traduvertgames.entities;
 
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 
+import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.Camera;
 import com.traduvertgames.world.World;
@@ -13,8 +15,11 @@ public class Player extends Entity {
 	public int right_dir = 0, left_dir = 1, up_dir = 2, down_dir = 3;
 	public int dir = right_dir;
 	public double speed = 1.5;
-	public static double life = 100,maxLife=100;
-	public static double mana = 0,maxMana=500;
+	public static double life = 100, maxLife = 100;
+	public static double mana = 0, maxMana = 500;
+	public boolean damage = false;
+//Animando o dano
+	private int damageFrames = 0;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 3;
 	private boolean moved = false;
@@ -23,6 +28,8 @@ public class Player extends Entity {
 	private BufferedImage[] upPlayer;
 	private BufferedImage[] downPlayer;
 
+	private BufferedImage playerDamage;
+
 	public Player(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, sprite);
 
@@ -30,6 +37,7 @@ public class Player extends Entity {
 		leftPlayer = new BufferedImage[4];
 		upPlayer = new BufferedImage[4];
 		downPlayer = new BufferedImage[4];
+		playerDamage = Game.spritesheet.getSprite(0, 16, 16, 16);
 
 		for (int i = 0; i < 4; i++) {
 			rightPlayer[i] = Game.spritesheet.getSprite(32 + (i * 16), 0, 16, 16);
@@ -85,24 +93,44 @@ public class Player extends Entity {
 					index = 0;
 				}
 			}
-			
+
 			this.checkCollisionLifePack();
 			this.checkCollisionAmmo();
 			
+			if(damage) {
+				this.damageFrames++;
+				if(this.damageFrames == 8) {//8 milsegundo
+					this.damageFrames =0;
+					damage = false;
+				}
+			}
+			
+			if(life<=0) {
+				Game.entities = new ArrayList<Entity>();
+				Game.enemies = new ArrayList<Enemy>();
+				Game.spritesheet = new Spritesheet("/spritesheet.png");
+				// Passando tamanho dele e posições
+				Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
+				// Adicionar o jogador na lista e ja aparece na tela
+				Game.entities.add(Game.player);
+				Game.world = new World("/map.png");
+				return;
+			}
+
 			// Adicionando a câmera com o Jogador sempre no meio da Tela
 			// Renderizando o mapa com método Clamp da Camera
 			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 		}
 	}
-	
-	public void checkCollisionLifePack(){
-		for(int i = 0; i < Game.entities.size(); i++){
+
+	public void checkCollisionLifePack() {
+		for (int i = 0; i < Game.entities.size(); i++) {
 			Entity atual = Game.entities.get(i);
-			if(atual instanceof LifePack) {
-				if(Entity.isColliding(this, atual)) {
-					life+=20;
-					if(life >= 100)
+			if (atual instanceof LifePack) {
+				if (Entity.isColliding(this, atual)) {
+					life += 20;
+					if (life >= 100)
 						life = 100;
 					Game.entities.remove(atual);
 				}
@@ -110,31 +138,35 @@ public class Player extends Entity {
 		}
 	}
 
-	public void checkCollisionAmmo(){
-		for(int i = 0; i < Game.entities.size(); i++){
+	public void checkCollisionAmmo() {
+		for (int i = 0; i < Game.entities.size(); i++) {
 			Entity atual = Game.entities.get(i);
-			if(atual instanceof Bullet) {
-				if(Entity.isColliding(this, atual)) {
-					mana+=100;
-					if(mana >= 500)
+			if (atual instanceof Bullet) {
+				if (Entity.isColliding(this, atual)) {
+					mana += 100;
+					if (mana >= 500)
 						mana = 500;
 					Game.entities.remove(atual);
 				}
 			}
 		}
 	}
-	public void render(Graphics g) {
-		if (dir == right_dir) {
-			g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-		} else if (dir == left_dir) {
-			g.drawImage(leftPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-		}
-		if (dir == up_dir) {
-			g.drawImage(upPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-		}
-		if (dir == down_dir) {
-			g.drawImage(downPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
 
+	public void render(Graphics g) {
+		if (!damage) {
+			if (dir == right_dir) {
+				g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+			} else if (dir == left_dir) {
+				g.drawImage(leftPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+			}
+			if (dir == up_dir) {
+				g.drawImage(upPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+			}
+			if (dir == down_dir) {
+				g.drawImage(downPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+			}
+		} else {
+			g.drawImage(playerDamage, this.getX() - Camera.x, this.getY() - Camera.y, null);
 		}
 	}
 }
