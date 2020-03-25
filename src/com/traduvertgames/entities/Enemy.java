@@ -21,6 +21,7 @@ public class Enemy extends Entity {
 private int life = 10;
 	
 	private boolean isDamaged = false;
+	private int damageFrames = 10, damageCurrent=0;
 //	private int maskx=8,masky=8,maskw=10,maskh=10;
 
 	public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
@@ -77,6 +78,15 @@ private int life = 10;
 			destroySelf();
 			return;
 		}
+		
+		//This ou sem o This não faz diferença
+		if(isDamaged) {
+			this.damageCurrent++;
+			if(this.damageCurrent==this.damageFrames) {
+				this.damageCurrent = 0;
+				this.isDamaged = false;
+			}
+		}
 	}
 
 	public void destroySelf() {
@@ -120,6 +130,7 @@ private int life = 10;
 	}
 
 	// Trocar a máscara quadrada para nao colidir
+//	Testar mascara de colisão
 //	public void render (Graphics g) {
 //		super.render(g);
 //		g.setColor(Color.blue);
@@ -127,7 +138,11 @@ private int life = 10;
 //	}
 
 	public void render(Graphics g) {
+		if(!isDamaged) {
 		// * Sempre que renderizar, tem que por a posição da Camera
 		g.drawImage(sprites[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-	}
+		}else {
+			g.drawImage(Entity.ENEMY_FEEDBACK, this.getX() - Camera.x, this.getY() - Camera.y, null);
+		}
+		}
 }
