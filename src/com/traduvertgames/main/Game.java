@@ -133,7 +133,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		g.setFont(new Font("arial",Font.BOLD,20));
 		g.setColor(Color.white);
 		g.drawString("Vida: ",30, 32);
-		g.drawString((int)Player.life+ "/"+(int)Player.maxLife,158, 32);
+		g.drawString((int)Game.player.life+ "/"+(int)Game.player.maxLife,158, 32);
 		g.drawString("Mana: ",413, 32);
 		g.drawString((int)Player.mana+ "/"+(int)Player.maxMana,560, 32);
 //		

@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.Graphics;
 
 import com.traduvertgames.entities.Player;
+import com.traduvertgames.main.Game;
 
 public class UI {
 
@@ -13,7 +14,7 @@ public class UI {
 		g.setColor(Color.red);
 		g.fillRect(30, 4, 70, 8);
 		g.setColor(Color.green);
-		g.fillRect(30, 4, (int)((Player.life / Player.maxLife) * 70), 8);
+		g.fillRect(30, 4, (int)((Game.player.life / Game.player.maxLife) * 70), 8);
 		
 		
 		// UI Bullet
