@@ -7,6 +7,7 @@ import java.io.IOException;
 
 import javax.sound.midi.Soundbank;
 
+import com.traduvertgames.entities.Entity;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.Camera;
 import com.traduvertgames.world.World;
@@ -16,6 +17,10 @@ public class Enemy extends Entity {
 	private double speed = 0.5;
 	private int frames = 0, maxFrames = 20, index = 0, maxIndex = 1;
 	private BufferedImage[] sprites;
+	
+private int life = 10;
+	
+	private boolean isDamaged = false;
 //	private int maskx=8,masky=8,maskw=10,maskh=10;
 
 	public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
@@ -66,8 +71,31 @@ public class Enemy extends Entity {
 				index = 0;
 			}
 		}
+		collidingBullet();
+		
+		if(life <= 0) {
+			destroySelf();
+			return;
+		}
 	}
 
+	public void destroySelf() {
+		Game.enemies.remove(this);
+		Game.entities.remove(this);
+	}
+	public void collidingBullet() {
+		for(int i = 0; i < Game.bullets.size(); i++) {
+			Entity e = Game.bullets.get(i);
+				if(Entity.isColliding(this,e)) {
+					isDamaged = true;
+					life--;
+					Game.bullets.remove(i);
+					return;
+				}
+		}
+		
+		
+	}
 	public boolean isCollidingWithPlayer() {
 		Rectangle enemyCurrent = new Rectangle(this.getX(), this.getY(), World.TILE_SIZE, World.TILE_SIZE);
 		Rectangle player = new Rectangle(Game.player.getX(), Game.player.getY(), 16, 16);
