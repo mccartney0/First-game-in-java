@@ -5,6 +5,8 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
+import javax.sound.midi.Soundbank;
+
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.Camera;
 import com.traduvertgames.world.World;
@@ -24,6 +26,10 @@ public class Enemy extends Entity {
 	}
 
 	public void update() {
+		
+		// Se estiver colidindo, o inimigo irá parar
+		if(this.isCollidingWithPlayer() == false) {
+		
 //		if (Game.rand.nextInt(100) < 50) { // Fazendo os NPCs não se colidirem 1#
 		// IA dos mobs seguindo o jogador
 		if ((int) x < Game.player.getX() && World.isFree((int) (x + speed), this.getY()) 
@@ -39,7 +45,16 @@ public class Enemy extends Entity {
 		} else if ((int) y > Game.player.getY() && World.isFree(this.getX(), (int) (y - speed))
 				&& !isColliding(this.getX(), (int) (y - speed))) {
 			y -= speed;
-//			}
+			}
+		}else {
+			
+			if(Game.rand.nextInt(100)<10) {
+			Game.player.life-=Game.rand.nextInt(3);
+			System.out.println("Vida: " + Game.player.life);
+			}
+			if(Game.player.life <= 0) {
+				System.out.println("Game Over!");;
+			}
 		}
 			frames++;
 			if (frames == maxFrames) {
@@ -51,6 +66,13 @@ public class Enemy extends Entity {
 			}
 	}
 
+	public boolean isCollidingWithPlayer() {
+		Rectangle enemyCurrent = new Rectangle(this.getX(), this.getY(),World.TILE_SIZE,World.TILE_SIZE);
+		Rectangle player = new Rectangle(Game.player.getX(),Game.player.getY(), 16,16);
+		
+		return enemyCurrent.intersects(player);
+	}
+	
 	// Fazer nenhum NPC colidir com o outro
 	public boolean isColliding(int xNext, int yNext) {
 		Rectangle enemyCurrent = new Rectangle(xNext, yNext,World.TILE_SIZE,World.TILE_SIZE);

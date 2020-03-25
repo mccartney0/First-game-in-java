@@ -13,6 +13,7 @@ public class Player extends Entity {
 	public int right_dir = 0, left_dir = 1, up_dir = 2, down_dir = 3;
 	public int dir = right_dir;
 	public double speed = 1.5;
+	public int life = 100;
 
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 3;
 	private boolean moved = false;
@@ -41,35 +42,35 @@ public class Player extends Entity {
 //		for (int i = 1; i < 4; i++) {
 //			downPlayer[i] = Game.spritesheet.getSprite(64 + (i * 16), 32, 16, 16);
 //		}
-		upPlayer[0] = Game.spritesheet.getSprite(32,32,16,16);
-		upPlayer[1] = Game.spritesheet.getSprite(32+16,32,16,16);
-		upPlayer[2] = Game.spritesheet.getSprite(32,32,16,16);
-		upPlayer[3] = Game.spritesheet.getSprite(32+16,32,16,16);
-		
-		downPlayer[0] = Game.spritesheet.getSprite(64,32,16,16);
-		downPlayer[1] = Game.spritesheet.getSprite(64+16,32,16,16);
-		downPlayer[2] = Game.spritesheet.getSprite(64,32,16,16);
-		downPlayer[3] = Game.spritesheet.getSprite(64+16,32,16,16);
+		upPlayer[0] = Game.spritesheet.getSprite(32, 32, 16, 16);
+		upPlayer[1] = Game.spritesheet.getSprite(32 + 16, 32, 16, 16);
+		upPlayer[2] = Game.spritesheet.getSprite(32, 32, 16, 16);
+		upPlayer[3] = Game.spritesheet.getSprite(32 + 16, 32, 16, 16);
+
+		downPlayer[0] = Game.spritesheet.getSprite(64, 32, 16, 16);
+		downPlayer[1] = Game.spritesheet.getSprite(64 + 16, 32, 16, 16);
+		downPlayer[2] = Game.spritesheet.getSprite(64, 32, 16, 16);
+		downPlayer[3] = Game.spritesheet.getSprite(64 + 16, 32, 16, 16);
 	}
 
 	public void update() {
 		moved = false;
-		if (right && World.isFree((int)(x+speed),this.getY())) {
+		if (right && World.isFree((int) (x + speed), this.getY())) {
 			moved = true;
 			dir = right_dir;
 			// Mover a câmera - Colocar a camera para se mover com o jogador EX:
 			// Camera.x+=speed;
 			x += speed;
-		} else if (left && World.isFree((int)(x-speed),this.getY())) {
+		} else if (left && World.isFree((int) (x - speed), this.getY())) {
 			moved = true;
 			dir = left_dir;
 			x -= speed;
 		}
-		if (up && World.isFree(this.getX(),(int)(y-speed))) {
+		if (up && World.isFree(this.getX(), (int) (y - speed))) {
 			moved = true;
 			dir = up_dir;
 			y -= speed;
-		} else if (down && World.isFree(this.getX(),(int)(y+speed))) {
+		} else if (down && World.isFree(this.getX(), (int) (y + speed))) {
 			dir = down_dir;
 			moved = true;
 			y += speed;
@@ -92,7 +93,7 @@ public class Player extends Entity {
 //public boolean isCollinding() {
 //	
 //}
-	
+
 	public void render(Graphics g) {
 		if (dir == right_dir) {
 			g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
@@ -100,11 +101,11 @@ public class Player extends Entity {
 			g.drawImage(leftPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
 		}
 		if (dir == up_dir) {
-			g.drawImage(upPlayer[index], this.getX()-Camera.x, this.getY()-Camera.y,null);
+			g.drawImage(upPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
 		}
-		 if (dir == down_dir) {
-			g.drawImage(downPlayer[index], this.getX()-Camera.x, this.getY()-Camera.y,null);
-			 
+		if (dir == down_dir) {
+			g.drawImage(downPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+
 		}
 	}
 }
