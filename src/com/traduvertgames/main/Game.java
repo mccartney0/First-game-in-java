@@ -19,6 +19,7 @@ import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.graficos.Spritesheet;
+import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
 
 public class Game extends Canvas implements Runnable, KeyListener {
@@ -43,8 +44,10 @@ public class Game extends Canvas implements Runnable, KeyListener {
 	public static World world;
 
 	public static Player player;
-	
+
 	public static Random rand;
+
+	public UI ui;
 
 	public Game() throws IOException {
 		rand = new Random();
@@ -52,7 +55,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
 		// Inicializando objetos;
-
+		ui = new UI();
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
 		entities = new ArrayList<Entity>();
 		enemies = new ArrayList<Enemy>();
@@ -120,6 +123,7 @@ public class Game extends Canvas implements Runnable, KeyListener {
 			Entity e = entities.get(i);
 			e.render(g);
 		}
+		ui.render(g);
 		g.dispose();
 
 		g = bs.getDrawGraphics();

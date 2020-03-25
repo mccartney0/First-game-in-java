@@ -53,7 +53,8 @@ public class Enemy extends Entity {
 			System.out.println("Vida: " + Game.player.life);
 			}
 			if(Game.player.life <= 0) {
-				System.out.println("Game Over!");;
+				System.out.println("Game Over!");
+				System.exit(1);
 			}
 		}
 			frames++;
