@@ -112,73 +112,73 @@ public class Player extends Entity {
 				}
 			}
 
-			if (shoot) {
-				shoot = false;
-				if (hasGun && mana > 0) {
-					// Criar bala e atirar
-					mana--;
-					shoot = false;
-					int dx = 0;
-					int px = 0;
-					int py = 8;
-					if (dir == right_dir) {
-						px = 1;
-						dx = 3;
-
-					} else {
-						px = -1;
-						dx = -3;
-					}
-
-					BulletShoot bullet = new BulletShoot(this.getY() + px, this.getX() + py, 3, 3, null, dx, 0);
-					Game.bullets.add(bullet);
-				}
-			}
-
-			if (mouseShoot) {
-
-				mouseShoot = false;
-
-				if (hasGun && mana > 0) {
-					mana--;
-					// Criar bala e atirar!
-
-					int px = 0, py = 8;
-					double angle = 0;
-					if (dir == right_dir) {
-						px = 8;
-						angle = Math.atan2(my - (this.getY() + py - Camera.y), mx - (this.getX() + px - Camera.x));
-					} else {
-						px = 8;
-						angle = Math.atan2(my - (this.getY() + py - Camera.y), mx - (this.getX() + px - Camera.x));
-					}
-
-					double dx = Math.cos(angle);
-					double dy = Math.sin(angle);
-
-					BulletShoot bullet = new BulletShoot(this.getX() + px, this.getY() + py, 3, 3, null, dx, dy);
-					Game.bullets.add(bullet);
-				}
-			}
-
-			if (life <= 0) {
-				Game.entities.clear();
-				Game.enemies.clear();
-				Game.entities = new ArrayList<Entity>();
-				Game.enemies = new ArrayList<Enemy>();
-				Game.spritesheet = new Spritesheet("/spritesheet.png");
-				// Passando tamanho dele e posições
-				Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
-				// Adicionar o jogador na lista e ja aparece na tela
-				Game.entities.add(Game.player);
-				Game.world = new World("/map.png");
-				return;
-			}
 
 			// Adicionando a câmera com o Jogador sempre no meio da Tela
 			// Renderizando o mapa com método Clamp da Camera
 			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
+		}
+		
+		if (life <= 0) {
+			Game.entities.clear();
+			Game.enemies.clear();
+			Game.entities = new ArrayList<Entity>();
+			Game.enemies = new ArrayList<Enemy>();
+			Game.spritesheet = new Spritesheet("/spritesheet.png");
+			// Passando tamanho dele e posições
+			Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
+			// Adicionar o jogador na lista e ja aparece na tela
+			Game.entities.add(Game.player);
+			Game.world = new World("/map.png");
+			return;
+		}
+
+		if (shoot) {
+			shoot = false;
+			if (hasGun && mana > 0) {
+				// Criar bala e atirar
+				mana--;
+				shoot = false;
+				int dx = 0;
+				int px = 0;
+				int py = 8;
+				if (dir == right_dir) {
+					px = 1;
+					dx = 3;
+
+				} else {
+					px = -1;
+					dx = -3;
+				}
+
+				BulletShoot bullet = new BulletShoot(this.getY() + px, this.getX() + py, 3, 3, null, dx, 0);
+				Game.bullets.add(bullet);
+			}
+		}
+
+		if (mouseShoot) {
+
+			mouseShoot = false;
+
+			if (hasGun && mana > 0) {
+				mana--;
+				// Criar bala e atirar!
+				int px = 0, py = 8;
+				double angle = 0;
+				if (dir == right_dir) {
+					px = 8;
+					angle = Math.atan2(my - (this.getY() + py - Camera.y), mx - (this.getX() + px - Camera.x));
+				} else {
+					px = 8;
+					angle = Math.atan2(my - (this.getY() + py - Camera.y), mx - (this.getX() + px - Camera.x));
+				}
+
+				double dx = Math.cos(angle);
+				double dy = Math.sin(angle);
+
+				BulletShoot bullet = new BulletShoot(this.getX() + px, this.getY() + py, 3, 3, null, dx, dy);
+				Game.bullets.add(bullet);
+			}
 		}
 	}
 
