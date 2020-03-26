@@ -18,6 +18,7 @@ import java.util.Random;
 
 import javax.swing.JFrame;
 
+import com.traduvertgames.entities.Bullet;
 import com.traduvertgames.entities.BulletShoot;
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Entity;
@@ -44,6 +45,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public static List<Entity> entities;
 	public static List<Enemy> enemies;
+	public static List<Bullet> bullet;
 	public static List<BulletShoot> bullets;
 	public static Spritesheet spritesheet;
 
@@ -66,6 +68,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
 		entities = new ArrayList<Entity>();
 		enemies = new ArrayList<Enemy>();
+		bullet = new ArrayList<Bullet>();
 		bullets = new ArrayList<BulletShoot>();
 		spritesheet = new Spritesheet("/spritesheet.png");
 		// Passando tamanho dele e posições
@@ -117,6 +120,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		for (int i = 0; i < bullets.size(); i++) {
 			bullets.get(i).update();
 		}
+		for (int i = 0; i < bullet.size(); i++) {
+			bullet.get(i).update();
+		}
 	}
 
 	public void render() { // Renderização funciona por ordem de código, primeira linhas, segunda, etc...
@@ -138,6 +144,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 		for (int i = 0; i < bullets.size(); i++) {
 			bullets.get(i).render(g);
+		}
+		for (int i = 0; i < bullet.size(); i++) {
+			bullet.get(i).render(g);
 		}
 		ui.render(g);
 		g.dispose();

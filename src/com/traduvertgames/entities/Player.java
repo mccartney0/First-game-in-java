@@ -27,7 +27,7 @@ public class Player extends Entity {
 
 	public boolean shoot = false, mouseShoot = false;
 	public int mx, my;
-
+	private int shootPerSecond = 1, time = 3;
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 3;
 	private boolean moved = false;
 	private BufferedImage[] rightPlayer;
@@ -106,19 +106,18 @@ public class Player extends Entity {
 
 			if (damage) {
 				this.damageFrames++;
-				if (this.damageFrames == 8) {// 8 milsegundo
+				if (this.damageFrames == 8) {// 8 milsegundo para a tile de dano ficar no personagem
 					this.damageFrames = 0;
 					damage = false;
 				}
 			}
-
 
 			// Adicionando a câmera com o Jogador sempre no meio da Tela
 			// Renderizando o mapa com método Clamp da Camera
 			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 		}
-		
+
 		if (life <= 0) {
 			Game.entities.clear();
 			Game.enemies.clear();
@@ -139,26 +138,31 @@ public class Player extends Entity {
 				// Criar bala e atirar
 				mana--;
 				shoot = false;
-				int dx = 0;
-				int px = 0;
-				int py = 8;
+				int da = 0;
+				int pd = 0;
+				int pz = 8;
 				if (dir == right_dir) {
-					px = 1;
-					dx = 3;
+					pd = 1;//x
+					da = 3;
 
 				} else {
-					px = -1;
-					dx = -3;
+					pd = -1;//y
+					da = -3;
 				}
 
-				BulletShoot bullet = new BulletShoot(this.getY() + px, this.getX() + py, 3, 3, null, dx, 0);
+				BulletShoot bullet = new BulletShoot(this.getX() + pd, this.getY() + pz, 3, 3, null, da, 0);
 				Game.bullets.add(bullet);
 			}
 		}
 
 		if (mouseShoot) {
 
-			mouseShoot = false;
+			shootPerSecond++;
+			System.out.println(shootPerSecond); //3
+			if (shootPerSecond == time) {
+				shootPerSecond = 0;
+				mouseShoot = false;
+			}
 
 			if (hasGun && mana > 0) {
 				mana--;
