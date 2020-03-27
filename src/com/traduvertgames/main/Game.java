@@ -204,13 +204,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 		g = bs.getDrawGraphics();
 		g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
-//Renderizar a String
+//Renderizar a String - Full HD
 		g.setFont(new Font("arial", Font.BOLD, 20));
 		g.setColor(Color.white);
 		g.drawString("Vida: ", 30, 32);
 		g.drawString((int) Game.player.life + "/" + (int) Game.player.maxLife, 158, 32);
 		g.drawString("Mana: ", 413, 32);
 		g.drawString((int) Player.mana + "/" + (int) Player.maxMana, 560, 32);
+		g.drawString("Arma: ", 22, 465);
+		g.drawString((int) Player.weapon + "/" + (int) Player.maxWeapon, 165, 467);
 //		
 		if (gameState == "GAMEOVER") {
 			Graphics2D g2 = (Graphics2D) g;

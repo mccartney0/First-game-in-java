@@ -19,11 +19,12 @@ public class Player extends Entity {
 	public double speed = 1.5;
 	public double life = 100, maxLife = 100;
 	public static double mana = 0, maxMana = 500;
+	public static double weapon = 0, maxWeapon = 250;
 	public boolean damage = false;
 //Animando o dano
 	private int damageFrames = 0;
 
-	private boolean hasGun = false;
+//	private boolean hasGun = false;
 
 	public boolean shoot = false, mouseShoot = false;
 	public int mx, my;
@@ -117,30 +118,30 @@ public class Player extends Entity {
 //			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 //			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 		}
-		
-		
 
 		if (life <= 0) {
-			//Game Over
+			// Game Over
 			life = 0;
+			weapon =0;
 			Game.gameState = "GAMEOVER";
 		}
-
+//Shoot com teclado
 		if (shoot) {
 			shoot = false;
-			if (hasGun && mana > 0) {
+			if (weapon > 0 && mana > 0) {
 				// Criar bala e atirar
+				weapon -= 0.2;
 				mana--;
 				shoot = false;
 				int da = 0;
 				int pd = 0;
 				int pz = 8;
 				if (dir == right_dir) {
-					pd = 1;//x
+					pd = 1;// x
 					da = 3;
 
 				} else {
-					pd = -1;//y
+					pd = -1;// y
 					da = -3;
 				}
 
@@ -151,13 +152,14 @@ public class Player extends Entity {
 
 		if (mouseShoot) {
 
-			shootPerSecond++;   // 2 tiros por segundo
+			shootPerSecond++; // 2 tiros por segundo
 			if (shootPerSecond == time) {
 				shootPerSecond = 0;
 				mouseShoot = false;
 			}
 
-			if (hasGun && mana > 0) {
+			if (weapon > 0 && mana > 0) {
+				weapon -= 0.3;
 				mana--;
 				// Criar bala e atirar!
 				int px = 0, py = 8;
@@ -176,24 +178,34 @@ public class Player extends Entity {
 				BulletShoot bullet = new BulletShoot(this.getX() + px, this.getY() + py, 3, 3, null, dx, dy);
 				Game.bullets.add(bullet);
 			}
-		}
+			
+		}System.out.println(weapon);
 		updateCamera();
 	}
-	
+
 // Adicionando a câmera com o Jogador sempre no meio da Tela
 // Renderizando o mapa com método Clamp da Camera
 	public void updateCamera() {
 		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 	}
-	
+
 	public void checkCollisionGun() {
 		for (int i = 0; i < Game.entities.size(); i++) {
 			Entity atual = Game.entities.get(i);
 			if (atual instanceof Weapon) {
 				if (Entity.isColliding(this, atual)) {
-					hasGun = true;
 					// Pegou a arma
+					if(weapon < 0) {
+						weapon = 0;
+					}
+					if(weapon == 0) {
+						weapon = 250;
+					}
+					weapon += 30;
+					if(weapon >= maxWeapon)
+						weapon = maxWeapon;
+					// remove a arma
 					Game.entities.remove(atual);
 				}
 			}
@@ -220,7 +232,7 @@ public class Player extends Entity {
 			if (atual instanceof Bullet) {
 				if (Entity.isColliding(this, atual)) {
 					mana += 100;
-					if(mana >= 500) {
+					if (mana >= 500) {
 						mana = 500;
 					}
 					Game.entities.remove(atual);
@@ -233,13 +245,13 @@ public class Player extends Entity {
 		if (!damage) {
 			if (dir == right_dir) {
 				g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-				if (hasGun) {
+				if (weapon >= 1) {
 					// Desenhar arma para direita
 					g.drawImage(Entity.GUN_RIGHT, this.getX() + 6 - Camera.x, this.getY() - Camera.y, null);
 				}
 			} else if (dir == left_dir) {
 				g.drawImage(leftPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
-				if (hasGun) {
+				if (weapon >= 1) {
 					// Desenhar arma para esquerda
 					g.drawImage(Entity.GUN_LEFT, this.getX() - 6 - Camera.x, this.getY() - Camera.y, null);
 				}
@@ -252,7 +264,7 @@ public class Player extends Entity {
 			}
 		} else {
 			g.drawImage(playerDamage, this.getX() - Camera.x, this.getY() - Camera.y, null);
-			if (hasGun) {
+			if (weapon >= 1) {
 				if (dir == left_dir) {
 					g.drawImage(gunRight, this.getX() - 6 - Camera.x, this.getY() - Camera.y, null);
 				} else {
