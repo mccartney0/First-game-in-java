@@ -5,6 +5,7 @@ import java.awt.Color;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -41,6 +42,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static final int HEIGHT = 160;
 	private final int SCALE = 3;
 
+	private int CUR_LEVEL = 1, MAX_LEVEL =3;
 	private BufferedImage image;
 
 	public static List<Entity> entities;
@@ -56,6 +58,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static Random rand;
 
 	public UI ui;
+	
+	public static String gameState = "GAMEOVER";
 
 	public Game() throws IOException {
 		rand = new Random();
@@ -63,7 +67,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		addMouseListener(this);
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
-		// Inicializando objetos;
+// Inicializando objetos;
 		ui = new UI();
 		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
 		entities = new ArrayList<Entity>();
@@ -71,11 +75,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		bullet = new ArrayList<Bullet>();
 		bullets = new ArrayList<BulletShoot>();
 		spritesheet = new Spritesheet("/spritesheet.png");
-		// Passando tamanho dele e posições
+// Passando tamanho dele e posições
 		player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
-		// Adicionar o jogador na lista e ja aparece na tela
+// Adicionar o jogador na lista e ja aparece na tela
 		entities.add(player);
-		world = new World("/map.png");
+		world = new World("/level1.png");
 
 	}
 
@@ -112,6 +116,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 //Primeiro atualiza, depois renderiza
 	public void update() {
 
+		if(gameState == "NORMAL") {
 		for (int i = 0; i < entities.size(); i++) {
 			Entity e = entities.get(i);
 			e.update();
@@ -122,6 +127,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 		for (int i = 0; i < bullet.size(); i++) {
 			bullet.get(i).update();
+		}
+		
+		if(enemies.size() == 0) {
+//Avançar para o próximo nível
+			CUR_LEVEL++;
+			if(CUR_LEVEL > MAX_LEVEL) {
+				CUR_LEVEL =1;
+			}
+			
+			String newWorld = "level"+CUR_LEVEL+".png";
+			System.out.println(newWorld);
+			World.restartGame(newWorld);
+		}
 		}
 	}
 
@@ -161,6 +179,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		g.drawString("Mana: ", 413, 32);
 		g.drawString((int) Player.mana + "/" + (int) Player.maxMana, 560, 32);
 //		
+		if(gameState == "GAMEOVER") {
+			Graphics2D g2 = (Graphics2D) g;
+			g2.setColor(new Color(0,0,0,100));
+			g2.fillRect(0, 0, WIDTH*SCALE, HEIGHT*SCALE);
+			g.setFont(new Font("arial", Font.BOLD, 36));
+			g.setColor(Color.white);
+			g.drawString("Game Over", 290, 234);
+			g.setFont(new Font("arial", Font.BOLD, 32));
+			g.drawString(">Pressione Enter para reiniciar<", 130, 284);
+		}
 		bs.show();
 	}
 

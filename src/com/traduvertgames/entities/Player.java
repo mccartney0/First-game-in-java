@@ -27,7 +27,7 @@ public class Player extends Entity {
 
 	public boolean shoot = false, mouseShoot = false;
 	public int mx, my;
-	private int shootPerSecond = 1, time = 3;
+	private int shootPerSecond = 1, time = 2;
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 3;
 	private boolean moved = false;
 	private BufferedImage[] rightPlayer;
@@ -119,17 +119,8 @@ public class Player extends Entity {
 		}
 
 		if (life <= 0) {
-			Game.entities.clear();
-			Game.enemies.clear();
-			Game.entities = new ArrayList<Entity>();
-			Game.enemies = new ArrayList<Enemy>();
-			Game.spritesheet = new Spritesheet("/spritesheet.png");
-			// Passando tamanho dele e posições
-			Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
-			// Adicionar o jogador na lista e ja aparece na tela
-			Game.entities.add(Game.player);
-			Game.world = new World("/map.png");
-			return;
+			//Game Over
+			Game.gameState = "GAMEOVER";
 		}
 
 		if (shoot) {
@@ -157,8 +148,7 @@ public class Player extends Entity {
 
 		if (mouseShoot) {
 
-			shootPerSecond++;
-			System.out.println(shootPerSecond); //3
+			shootPerSecond++;   // 2 tiros por segundo
 			if (shootPerSecond == time) {
 				shootPerSecond = 0;
 				mouseShoot = false;
@@ -219,6 +209,9 @@ public class Player extends Entity {
 			if (atual instanceof Bullet) {
 				if (Entity.isColliding(this, atual)) {
 					mana += 100;
+					if(mana >= 500) {
+						mana = 500;
+					}
 					Game.entities.remove(atual);
 				}
 			}

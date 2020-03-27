@@ -18,7 +18,7 @@ public class Enemy extends Entity {
 	private int frames = 0, maxFrames = 20, index = 0, maxIndex = 1;
 	private BufferedImage[] sprites;
 	
-private int life = 10;
+private int life = 20;
 	
 	private boolean isDamaged = false;
 	private int damageFrames = 10, damageCurrent=0;
@@ -93,6 +93,8 @@ private int life = 10;
 		Game.enemies.remove(this);
 		Game.entities.remove(this);
 	}
+	
+	//Tirando dano com tiro
 	public void collidingBullet() {
 		for(int i = 0; i < Game.bullets.size(); i++) {
 			Entity e = Game.bullets.get(i);
