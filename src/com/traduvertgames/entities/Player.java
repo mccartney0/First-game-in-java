@@ -114,9 +114,11 @@ public class Player extends Entity {
 
 			// Adicionando a câmera com o Jogador sempre no meio da Tela
 			// Renderizando o mapa com método Clamp da Camera
-			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
-			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
+//			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
+//			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 		}
+		
+		
 
 		if (life <= 0) {
 			//Game Over
@@ -175,8 +177,16 @@ public class Player extends Entity {
 				Game.bullets.add(bullet);
 			}
 		}
+		updateCamera();
 	}
-
+	
+// Adicionando a câmera com o Jogador sempre no meio da Tela
+// Renderizando o mapa com método Clamp da Camera
+	public void updateCamera() {
+		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
+		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
+	}
+	
 	public void checkCollisionGun() {
 		for (int i = 0; i < Game.entities.size(); i++) {
 			Entity atual = Game.entities.get(i);
