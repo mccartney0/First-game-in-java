@@ -59,8 +59,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public UI ui;
 	
-	public static String gameState = "GAMEOVER";
-
+	public static String gameState = "NORMAL";
+	private boolean showMessageGameOver = true;
+	private int framesGameOver =0;
+	private boolean restartGame = false;
+	
 	public Game() throws IOException {
 		rand = new Random();
 		addKeyListener(this);
@@ -113,10 +116,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		game.start();
 	}
 
+	//Toda a lógica fica no update ou tick
 //Primeiro atualiza, depois renderiza
 	public void update() {
 
 		if(gameState == "NORMAL") {
+			this.restartGame = false; // Prevenção
 		for (int i = 0; i < entities.size(); i++) {
 			Entity e = entities.get(i);
 			e.update();
@@ -137,9 +142,30 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 			
 			String newWorld = "level"+CUR_LEVEL+".png";
-			System.out.println(newWorld);
+			//System.out.println(newWorld);
 			World.restartGame(newWorld);
 		}
+		}else if(gameState == "GAMEOVER") {
+//Forma de Fazer animação - Game over
+			this.framesGameOver++;
+			if(this.framesGameOver==30) {
+				this.framesGameOver = 0;
+				if(this.showMessageGameOver) 
+					this.showMessageGameOver = false;
+					else 
+						this.showMessageGameOver = true;
+			}
+			
+			//
+			if(restartGame) {
+				this.restartGame = false;
+				this.gameState = "NORMAL";
+				CUR_LEVEL=1;
+				player.mana = 0;
+				String newWorld = "level"+CUR_LEVEL+".png";
+				//System.out.println(newWorld);
+				World.restartGame(newWorld);
+			}
 		}
 	}
 
@@ -187,7 +213,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			g.setColor(Color.white);
 			g.drawString("Game Over", 290, 234);
 			g.setFont(new Font("arial", Font.BOLD, 32));
-			g.drawString(">Pressione Enter para reiniciar<", 130, 284);
+			if(showMessageGameOver) {
+				g.drawString(">Pressione Enter para reiniciar<", 130, 284);
+			}
 		}
 		bs.show();
 	}
@@ -232,6 +260,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	}
 
 	@Override
+	// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
 	public void keyPressed(KeyEvent e) {
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 			// execute tal ação!
@@ -248,6 +277,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 		if (e.getKeyCode() == KeyEvent.VK_X) {
 			player.shoot = true;
+		}
+		
+		if(e.getKeyCode() == KeyEvent.VK_ENTER) {
+			this.restartGame = true;
 		}
 	}
 
