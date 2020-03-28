@@ -179,7 +179,7 @@ public class Player extends Entity {
 				Game.bullets.add(bullet);
 			}
 			
-		}System.out.println(weapon);
+		}
 		updateCamera();
 	}
 

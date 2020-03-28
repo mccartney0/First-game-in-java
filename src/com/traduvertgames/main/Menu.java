@@ -32,6 +32,8 @@ public class Menu {
 				currentOption = 0;
 		}
 		if (enter) {
+			//Inserindo música
+			Sound.music.loop();
 			enter = false;
 			if (options[currentOption] == "novo jogo" || options[currentOption] == "continuar") {
 				Game.gameState = "NORMAL";

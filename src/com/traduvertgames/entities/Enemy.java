@@ -9,6 +9,7 @@ import javax.sound.midi.Soundbank;
 
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.main.Game;
+import com.traduvertgames.main.Sound;
 import com.traduvertgames.world.Camera;
 import com.traduvertgames.world.World;
 
@@ -55,6 +56,7 @@ private int life = 20;
 		} else {
 
 // Está colidindo
+// Retirando vira do jogador
 			if (Game.rand.nextInt(100) < 10) {
 				Game.player.life -= Game.rand.nextInt(3);
 				Game.player.damage = true;
