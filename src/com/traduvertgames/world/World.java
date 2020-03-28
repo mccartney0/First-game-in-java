@@ -16,7 +16,7 @@ public class World {
 	public static Tile[] tiles;
 	public static int WIDTH, HEIGHT;
 	public static final int TILE_SIZE = 16;
-
+	
 	public World(String path) {
 		try {
 			BufferedImage map = ImageIO.read(getClass().getResource(path));
@@ -79,10 +79,16 @@ public class World {
 		int x4 = (xNext+TILE_SIZE-1) / TILE_SIZE;
 		int y4 = (yNext+TILE_SIZE-1) / TILE_SIZE;
 		
-		return !((tiles[x1+(y1*World.WIDTH)] instanceof WallTile) ||
+		if( !((tiles[x1+(y1*World.WIDTH)] instanceof WallTile) ||
 				(tiles[x2+(y2*World.WIDTH)] instanceof WallTile) || 
 				(tiles[x3+(y3*World.WIDTH)] instanceof WallTile) || 
-				(tiles[x4+(y4*World.WIDTH)] instanceof WallTile));
+				(tiles[x4+(y4*World.WIDTH)] instanceof WallTile))) {
+			return true;
+		}
+		if(Player.z>0) {
+			return true;
+		}
+		return false;
 	}
 	
 	public static void restartGame(String level) {

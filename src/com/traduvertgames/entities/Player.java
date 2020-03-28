@@ -2,6 +2,7 @@ package com.traduvertgames.entities;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
@@ -33,7 +34,7 @@ public class Player extends Entity {
 	public boolean jump = false;
 	public boolean isJumping = false;
 
-	public int z = 0;
+	public static int z = 0;
 
 	public int jumpFrames = 50, jumpCur = 0;
 	
@@ -230,7 +231,7 @@ public class Player extends Entity {
 		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 	}
-
+	
 	public void checkCollisionGun() {
 		for (int i = 0; i < Game.entities.size(); i++) {
 			Entity atual = Game.entities.get(i);
