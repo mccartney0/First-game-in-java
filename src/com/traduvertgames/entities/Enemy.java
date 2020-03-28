@@ -3,13 +3,9 @@ package com.traduvertgames.entities;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-
-import javax.sound.midi.Soundbank;
 
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.main.Game;
-import com.traduvertgames.main.Sound;
 import com.traduvertgames.world.Camera;
 import com.traduvertgames.world.World;
 

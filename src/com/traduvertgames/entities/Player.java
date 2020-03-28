@@ -1,5 +1,6 @@
 package com.traduvertgames.entities;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
@@ -28,6 +29,17 @@ public class Player extends Entity {
 
 	public boolean shoot = false, mouseShoot = false;
 	public int mx, my;
+
+	public boolean jump = false;
+	public boolean isJumping = false;
+
+	public int z = 0;
+
+	public int jumpFrames = 50, jumpCur = 0;
+	
+	public boolean jumpUp = false, jumpDown = false;
+	public int jumpSpd = 2;
+
 	private int shootPerSecond = 1, time = 2;
 	private int frames = 0, maxFrames = 7, index = 0, maxIndex = 3;
 	private boolean moved = false;
@@ -69,6 +81,35 @@ public class Player extends Entity {
 	}
 
 	public void update() {
+//Fake jump 2D
+		if (jump) {
+			if (isJumping == false) {
+				jump = false;
+				isJumping = true;
+				jumpUp = true;
+			}
+		}
+
+		if (isJumping == true) {
+			
+				if(jumpUp) {
+				jumpCur+=jumpSpd;
+				}else if(jumpDown) {
+					jumpCur-=jumpSpd;
+					if(jumpCur<=0) {
+						isJumping = false;
+						jumpDown = false;
+						jumpUp = false;
+					}
+				}
+				z = jumpCur;
+				if (jumpCur >= jumpFrames) {
+					jumpUp = false;
+					jumpDown = true;
+				
+			}
+		}
+//Fake jump 2D end
 		moved = false;
 		if (right && World.isFree((int) (x + speed), this.getY())) {
 			moved = true;
@@ -122,7 +163,7 @@ public class Player extends Entity {
 		if (life <= 0) {
 			// Game Over
 			life = 0;
-			weapon =0;
+			weapon = 0;
 			Game.gameState = "GAMEOVER";
 		}
 //Shoot com teclado
@@ -178,7 +219,7 @@ public class Player extends Entity {
 				BulletShoot bullet = new BulletShoot(this.getX() + px, this.getY() + py, 3, 3, null, dx, dy);
 				Game.bullets.add(bullet);
 			}
-			
+
 		}
 		updateCamera();
 	}
@@ -196,14 +237,14 @@ public class Player extends Entity {
 			if (atual instanceof Weapon) {
 				if (Entity.isColliding(this, atual)) {
 					// Pegou a arma
-					if(weapon < 0) {
+					if (weapon < 0) {
 						weapon = 0;
 					}
-					if(weapon == 0) {
+					if (weapon == 0) {
 						weapon = 250;
 					}
 					weapon += 30;
-					if(weapon >= maxWeapon)
+					if (weapon >= maxWeapon)
 						weapon = maxWeapon;
 					// remove a arma
 					Game.entities.remove(atual);
@@ -244,33 +285,37 @@ public class Player extends Entity {
 	public void render(Graphics g) {
 		if (!damage) {
 			if (dir == right_dir) {
-				g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+				g.drawImage(rightPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y - z, null);
 				if (weapon >= 1) {
 					// Desenhar arma para direita
-					g.drawImage(Entity.GUN_RIGHT, this.getX() + 6 - Camera.x, this.getY() - Camera.y, null);
+					g.drawImage(Entity.GUN_RIGHT, this.getX() + 6 - Camera.x, this.getY() - Camera.y - z, null);
 				}
 			} else if (dir == left_dir) {
-				g.drawImage(leftPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+				g.drawImage(leftPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y - z, null);
 				if (weapon >= 1) {
 					// Desenhar arma para esquerda
-					g.drawImage(Entity.GUN_LEFT, this.getX() - 6 - Camera.x, this.getY() - Camera.y, null);
+					g.drawImage(Entity.GUN_LEFT, this.getX() - 6 - Camera.x, this.getY() - Camera.y - z, null);
 				}
 			}
 			if (dir == up_dir) {
-				g.drawImage(upPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+				g.drawImage(upPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y - z, null);
 			}
 			if (dir == down_dir) {
-				g.drawImage(downPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y, null);
+				g.drawImage(downPlayer[index], this.getX() - Camera.x, this.getY() - Camera.y - z, null);
 			}
 		} else {
-			g.drawImage(playerDamage, this.getX() - Camera.x, this.getY() - Camera.y, null);
+			g.drawImage(playerDamage, this.getX() - Camera.x, this.getY() - Camera.y - z, null);
 			if (weapon >= 1) {
 				if (dir == left_dir) {
-					g.drawImage(gunRight, this.getX() - 6 - Camera.x, this.getY() - Camera.y, null);
+					g.drawImage(gunRight, this.getX() - 6 - Camera.x, this.getY() - Camera.y - z, null);
 				} else {
-					g.drawImage(gunLeft, this.getX() + 6 - Camera.x, this.getY() - Camera.y, null);
+					g.drawImage(gunLeft, this.getX() + 6 - Camera.x, this.getY() - Camera.y - z, null);
 				}
 			}
+		}
+		if(isJumping) {
+			g.setColor(Color.black);
+			g.fillOval(this.getX() - Camera.x + 8, this.getY() - Camera.y + 16, 6,6);
 		}
 	}
 }

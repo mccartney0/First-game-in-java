@@ -23,6 +23,7 @@ public class Entity {
 	protected double y;
 	protected int width;
 	protected int height;
+	protected int z;
 	
 private BufferedImage sprite;
 	
@@ -80,8 +81,10 @@ private BufferedImage sprite;
 	public static boolean isColliding(Entity e1,Entity e2){
 		Rectangle e1Mask = new Rectangle(e1.getX() + e1.maskx,e1.getY()+e1.masky,e1.mwidth,e1.mheight);
 		Rectangle e2Mask = new Rectangle(e2.getX() + e2.maskx,e2.getY()+e2.masky,e2.mwidth,e2.mheight);
-		
-		return e1Mask.intersects(e2Mask);
+		if(e1Mask.intersects(e2Mask) && e1.z == e2.z) {
+			return true;
+		}
+		return false;
 	}
 	
 	public void render(Graphics g) {

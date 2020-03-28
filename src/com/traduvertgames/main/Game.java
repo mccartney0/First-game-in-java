@@ -123,7 +123,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	// Toda a lógica fica no update ou tick
 //Primeiro atualiza, depois renderiza
 	public void update() {
-
+		
 		if (gameState == "NORMAL") {
 			this.restartGame = false; // Prevenção
 			for (int i = 0; i < entities.size(); i++) {
@@ -275,6 +275,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	@Override
 	// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
 	public void keyPressed(KeyEvent e) {
+		
+		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+			player.jump = true;
+		}
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 			// execute tal ação!
 			player.right = true;

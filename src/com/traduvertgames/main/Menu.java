@@ -33,7 +33,7 @@ public class Menu {
 		}
 		if (enter) {
 			//Inserindo música
-			Sound.music.loop();
+//			Sound.music.loop();
 			enter = false;
 			if (options[currentOption] == "novo jogo" || options[currentOption] == "continuar") {
 				Game.gameState = "NORMAL";
