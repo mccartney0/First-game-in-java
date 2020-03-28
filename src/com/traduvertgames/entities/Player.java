@@ -110,24 +110,24 @@ public class Player extends Entity {
 				
 			}
 		}
-//Fake jump 2D end
+// Fim Fake jump 2D 
 		moved = false;
-		if (right && World.isFree((int) (x + speed), this.getY())) {
+		if (right && World.isFree((int) (x + speed), this.getY(), z)) {
 			moved = true;
 			dir = right_dir;
 			// Mover a câmera - Colocar a camera para se mover com o jogador EX:
 			// Camera.x+=speed;
 			x += speed;
-		} else if (left && World.isFree((int) (x - speed), this.getY())) {
+		} else if (left && World.isFree((int) (x - speed), this.getY(),z)) {
 			moved = true;
 			dir = left_dir;
 			x -= speed;
 		}
-		if (up && World.isFree(this.getX(), (int) (y - speed))) {
+		if (up && World.isFree(this.getX(), (int) (y - speed),z )) {
 			moved = true;
 			dir = up_dir;
 			y -= speed;
-		} else if (down && World.isFree(this.getX(), (int) (y + speed))) {
+		} else if (down && World.isFree(this.getX(), (int) (y + speed),z)) {
 
 			moved = true;
 			dir = down_dir;

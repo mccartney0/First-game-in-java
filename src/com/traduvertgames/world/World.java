@@ -66,7 +66,7 @@ public class World {
 		}
 	}
 
-	public static boolean isFree(int xNext,int yNext) {
+	public static boolean isFree(int xNext,int yNext, int zplayer) {
 		int x1 = xNext / TILE_SIZE;
 		int y1 = yNext / TILE_SIZE;
 		
@@ -85,7 +85,7 @@ public class World {
 				(tiles[x4+(y4*World.WIDTH)] instanceof WallTile))) {
 			return true;
 		}
-		if(Player.z>0) {
+		if(zplayer>0) {
 			return true;
 		}
 		return false;
