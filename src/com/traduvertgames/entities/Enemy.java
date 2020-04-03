@@ -15,6 +15,7 @@ public class Enemy extends Entity {
 	private int frames = 0, maxFrames = 20, index = 0, maxIndex = 1;
 	private BufferedImage[] sprites;
 	
+	
 private int life = 20;
 	
 	private boolean isDamaged = false;
