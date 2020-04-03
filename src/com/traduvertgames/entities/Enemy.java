@@ -14,9 +14,10 @@ public class Enemy extends Entity {
 	private double speed = 0.5;
 	private int frames = 0, maxFrames = 20, index = 0, maxIndex = 1;
 	private BufferedImage[] sprites;
+	public static int enemies = 0;
 	
 	
-private int life = 20;
+private int life = 2;
 	
 	private boolean isDamaged = false;
 	private int damageFrames = 10, damageCurrent=0;
@@ -75,6 +76,7 @@ private int life = 20;
 		
 		if(life <= 0) {
 			destroySelf();
+			enemies+=1;
 			return;
 		}
 		

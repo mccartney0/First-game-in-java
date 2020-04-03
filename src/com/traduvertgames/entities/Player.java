@@ -19,7 +19,7 @@ public class Player extends Entity {
 	public int right_dir = 0, left_dir = 1, up_dir = 2, down_dir = 3;
 	public int dir = right_dir;
 	public double speed = 1.5;
-	public double life = 100, maxLife = 100;
+	public static double life = 100, maxLife = 100;
 	public static double mana = 0, maxMana = 500;
 	public static double weapon = 0, maxWeapon = 250;
 	public boolean damage = false;
@@ -242,7 +242,7 @@ public class Player extends Entity {
 						weapon = 0;
 					}
 					if (weapon == 0) {
-						weapon = 250;
+						weapon = maxWeapon;
 					}
 					weapon += 30;
 					if (weapon >= maxWeapon)
@@ -259,9 +259,9 @@ public class Player extends Entity {
 			Entity atual = Game.entities.get(i);
 			if (atual instanceof LifePack) {
 				if (Entity.isColliding(this, atual)) {
-					life += 20;
-					if (life >= 100)
-						life = 100;
+					life += 40;
+					if (life >= maxLife)
+						life = maxLife;
 					Game.entities.remove(atual);
 				}
 			}
@@ -274,8 +274,8 @@ public class Player extends Entity {
 			if (atual instanceof Bullet) {
 				if (Entity.isColliding(this, atual)) {
 					mana += 100;
-					if (mana >= 500) {
-						mana = 500;
+					if (mana >= maxMana) {
+						mana = maxMana;
 					}
 					Game.entities.remove(atual);
 				}

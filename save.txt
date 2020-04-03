@@ -1,0 +1,4 @@
+level:;
+vida:C=
+mana:B@
+inimigosMortos:@

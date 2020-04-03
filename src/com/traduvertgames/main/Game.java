@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.Random;
 
 import javax.swing.JFrame;
+import javax.swing.JOptionPane;
 
 import com.traduvertgames.entities.Bullet;
 import com.traduvertgames.entities.BulletShoot;
@@ -130,11 +131,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 // Salvar o Level 			
 			if(this.saveGame) {
 				this.saveGame = false;
-				String[] opt1 = {"level","vida"};
-				int[] opt2 = {this.CUR_LEVEL,(int) player.life};
+				String[] opt1 = {"level","vida","mana","inimigosMortos"};
+				int[] opt2 = {this.CUR_LEVEL,(int) player.life,(int) player.mana, Enemy.enemies};
 				Menu.saveGame(opt1,opt2,10);
 				System.out.println("Jogo salvo!");
 			}
+			
 			this.restartGame = false; // Prevenção
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
@@ -154,7 +156,20 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				if (CUR_LEVEL > MAX_LEVEL) {
 					CUR_LEVEL = 1;
 				}
-
+				
+				if(CUR_LEVEL == 3) {
+					player.maxMana = 5000;
+					player.maxLife = 3000;
+					player.maxWeapon = 5000;
+				}else {
+					player.maxMana = 500;
+					player.maxLife = 100;
+					player.maxWeapon = 250;
+					player.mana = 500;
+					player.life = 100;
+					player.weapon = 250;
+				}
+				
 				String newWorld = "level" + CUR_LEVEL + ".png";
 				// System.out.println(newWorld);
 				World.restartGame(newWorld);
@@ -219,6 +234,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		g.setColor(Color.white);
 		g.drawString("Vida: ", 30, 32);
 		g.drawString((int) Game.player.life + "/" + (int) Game.player.maxLife, 158, 32);
+		g.drawString("Inimigos: ", 30, 62);
+		g.drawString(Game.enemies.size() +"", 118, 63);
+		g.drawString("Inimigos mortos: ", 413, 62);
+		g.drawString(Enemy.enemies +"", 590, 63);
 		g.drawString("Mana: ", 413, 32);
 		g.drawString((int) Player.mana + "/" + (int) Player.maxMana, 560, 32);
 		g.drawString("Arma: ", 22, 465);
@@ -325,6 +344,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			gameState = "MENU";
 			menu.pause = true;
 		}
+		if (e.getKeyCode() == KeyEvent.VK_T) {
+			if(gameState == "NORMAL") {
+				this.saveGame = true;
+			}
+		}
 	}
 
 	@Override
@@ -342,11 +366,6 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			player.down = false;
 		}
 		
-		if (e.getKeyCode() == KeyEvent.VK_T) {
-			if(gameState == "NORMAL") {
-				this.saveGame = true;
-			}
-		}
 	}
 
 	@Override

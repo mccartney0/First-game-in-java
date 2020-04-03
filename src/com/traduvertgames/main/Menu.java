@@ -14,6 +14,7 @@ import java.io.IOException;
 
 import javax.swing.JOptionPane;
 
+import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.World;
 
@@ -99,6 +100,14 @@ public class Menu {
 
 				case "vida":
 					Game.player.life = Integer.parseInt(spl2[1]);
+					break;
+					
+				case "mana":
+					Game.player.mana = Integer.parseInt(spl2[1]);
+					break;
+				
+				case "inimigosMortos":
+					Enemy.enemies = Integer.parseInt(spl2[1]);
 					break;
 			}
 		}
