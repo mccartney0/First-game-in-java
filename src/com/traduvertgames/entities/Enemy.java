@@ -32,6 +32,8 @@ private int life = 2;
 
 	public void update() {
 
+//		If para verificar a distancia entre inimigo e jogador e seguir
+//		if(this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 40) {
 		// Se estiver colidindo, o inimigo irá parar
 		if (this.isCollidingWithPlayer() == false) {
 
@@ -64,6 +66,12 @@ private int life = 2;
 //					System.exit(1);
 			}
 		}
+		
+		
+//}else {
+//			
+//		}
+		
 		frames++;
 		if (frames == maxFrames) {
 			frames = 0;
@@ -88,6 +96,7 @@ private int life = 2;
 				this.isDamaged = false;
 			}
 		}
+		
 	}
 
 	public void destroySelf() {

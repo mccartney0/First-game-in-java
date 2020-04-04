@@ -25,6 +25,7 @@ public class BulletShoot extends Entity {
 		x += dx * spd;
 		y += dy * spd;
 		curLife++;
+		//Remover a bala em 3 segundos dps de disparada
 		if (curLife == life) {
 			// Sempre damos um return quando removemos o próprio objeto
 			Game.bullets.remove(this);
