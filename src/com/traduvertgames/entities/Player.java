@@ -7,6 +7,7 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
 import com.traduvertgames.entities.Entity;
+import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.BulletShoot;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.main.Game;
@@ -231,6 +232,20 @@ public class Player extends Entity {
 		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 	}
+	
+	// Método para fazer o Player não passar por cima do inimigo, a continuação dele está na classe Enemys no follow path.
+    public boolean isColiddingEnemys(int xnext, int ynext)
+    {
+        Rectangle player = new Rectangle(xnext+this.maskx+2, ynext+this.masky+2, this.mwidth-4, this.mheight-4);
+        for(int i = 0; i < Game.enemies.size(); i++){
+            Enemy e = Game.enemies.get(i);
+            Rectangle enemyCurrent = new Rectangle(e.getX()+e.maskx, e.getY()+e.masky, e.mwidth, e.mheight);
+            if(enemyCurrent.intersects(player)){
+                return true;
+            }
+        }
+        return false;
+    }
 	
 	public void checkCollisionGun() {
 		for (int i = 0; i < Game.entities.size(); i++) {

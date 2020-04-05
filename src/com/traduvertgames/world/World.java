@@ -85,9 +85,11 @@ public class World {
 				(tiles[x4+(y4*World.WIDTH)] instanceof WallTile))) {
 			return true;
 		}
-		if(zplayer>0) {
-			return true;
-		}
+		
+//		Posibilita pular pelas paredes
+//		if(zplayer>0) {
+//			return true;
+//		}
 		return false;
 	}
 	

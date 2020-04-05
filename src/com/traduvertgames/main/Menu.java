@@ -12,9 +12,9 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
-import javax.swing.JOptionPane;
 
 import com.traduvertgames.entities.Enemy;
+import com.traduvertgames.entities.Player;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.World;
 
@@ -99,11 +99,11 @@ public class Menu {
 					break;
 
 				case "vida":
-					Game.player.life = Integer.parseInt(spl2[1]);
+					Player.life = Integer.parseInt(spl2[1]);
 					break;
 					
 				case "mana":
-					Game.player.mana = Integer.parseInt(spl2[1]);
+					Player.mana = Integer.parseInt(spl2[1]);
 					break;
 				
 				case "inimigosMortos":

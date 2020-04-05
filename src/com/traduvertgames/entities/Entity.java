@@ -4,9 +4,14 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.Comparator;
+import java.util.List;
 
+import com.traduvertgames.entities.Entity;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.Camera;
+import com.traduvertgames.world.Node;
+import com.traduvertgames.world.Vector2i;
 import com.traduvertgames.world.World;
 
 public class Entity {
@@ -24,6 +29,9 @@ public class Entity {
 	protected int width;
 	protected int height;
 	protected int z;
+	public int depth;
+
+	protected List<Node> path;
 
 	private BufferedImage sprite;
 
@@ -49,6 +57,21 @@ public class Entity {
 		this.mheight = mheight;
 	}
 
+	public static Comparator<Entity> nodeSorter = new Comparator<Entity>(){
+
+		@Override
+		public int compare(Entity n0, Entity n1)
+		{
+			if(n1.depth < n0.depth)
+				return + 1;
+
+			if(n1.depth > n0.depth)
+				return - 1;
+
+			return 0;
+		}
+	};
+	
 	public void setX(int newX) {
 		this.x = newX;
 	}
@@ -73,21 +96,88 @@ public class Entity {
 		return height;
 	}
 
-	public void update() {}
+	public void update() {
+	}
 
-	//Calculando a distancia entre dois pontos do ponto 1 para o ponto 2 e perseguir 2D
-//	public double calculateDistance(int x1, int y1, int x2, int y2) {
-//		return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
-//	}
+	// Calculando a distancia entre dois pontos do ponto 1 para o ponto 2 e
+	// perseguir 2D
+	public double calculateDistance(int x1, int y1, int x2, int y2) {
+		return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
+	}
 
+//	 Seguindo inimigo precis鉶
+	public void followPath(List<Node> path)
+//	public void followPath(List<Node> path, int speed) // met贸do para utilizar speed do enemy
+	{
+		if(path != null)
+		{
+			if(path.size() > 0)
+			{
+				Vector2i target = path.get(path.size() - 1).tile;
+//				xPrev = x;
+//				yPrev = y;
+
+				if(x < target.x * 16)
+				{
+					x++;
+
+					// met贸do para utilizar speed do enemy
+//					x += speed;
+//					if(target.x * 16 < this.x)
+//					{
+//						this.x = target.x * 16;
+//					}
+				}
+				else if(x > target.x * 16)
+				{
+					x--;
+
+					// met贸do para utilizar speed do enemy
+//					x -= speed;
+//					if(target.x * 16 > this.x)
+//					{
+//						this.x = target.x * 16;
+//					}
+				}
+
+				if(y < target.y * 16)
+				{
+					y++;
+
+					// met贸do para utilizar speed do enemy
+//					y += speed;
+//					if(target.y * 16 < this.y)
+//					{
+//						this.y = target.y * 16;
+//					}
+				}
+				else if(y > target.y * 16)
+				{
+					y--;
+
+					// met贸do para utilizar speed do enemy
+//					y -= speed;
+//					if(target.y * 16 > this.y)
+//					{
+//						this.y = target.y * 16;
+//					}
+				}
+
+				if((x == target.x * 16) && (y == target.y * 16))
+				{
+					path.remove(path.size() - 1);
+				}
+			}
+		}
+	}
+
+	
+			
 	// Colidindo com os itens "Pegando os itens"
 	public static boolean isColliding(Entity e1, Entity e2) {
 		Rectangle e1Mask = new Rectangle(e1.getX() + e1.maskx, e1.getY() + e1.masky, e1.mwidth, e1.mheight);
 		Rectangle e2Mask = new Rectangle(e2.getX() + e2.maskx, e2.getY() + e2.masky, e2.mwidth, e2.mheight);
-		if (e1Mask.intersects(e2Mask) && e1.z == e2.z) {
-			return true;
-		}
-		return false;
+		return e1Mask.intersects(e2Mask);
 	}
 
 	public void render(Graphics g) {
