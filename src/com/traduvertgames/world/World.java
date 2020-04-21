@@ -57,7 +57,6 @@ public class World {
 						// Bullet
 						Game.entities.add(new Bullet(xx * 16, yy * 16, 16, 16, Entity.BULLET_EN));
 					}
-
 					// Floor
 				}
 			}

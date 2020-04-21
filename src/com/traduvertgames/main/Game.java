@@ -39,9 +39,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private boolean isRunning = true;
 	public static final int WIDTH = 240;
 	public static final int HEIGHT = 160;
-	public static final int SCALE = 3;
+	public static final int SCALE = 4;
 
-	private int CUR_LEVEL = 1, MAX_LEVEL = 3;
+	private int CUR_LEVEL = 1, MAX_LEVEL = 4;
 	private BufferedImage image;
 
 	public static List<Entity> entities;
@@ -132,14 +132,17 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				if(levelPlus >= 1) {
 					String[] opt1 = {"level","vida","mana","inimigosMortos","levelPlus"};
 					int[] opt2 = {this.CUR_LEVEL,(int) Player.life,(int) Player.mana, Enemy.enemies, levelPlus};
-					Menu.saveGame(opt1,opt2,10);
+					Menu.saveGame(opt1,opt2,20);
 					System.out.println("Jogo salvo com plus level");
+//					CUR_LEVEL = opt2[0];
+//					Tenho que preparar para subir o CUR LEVEL junto com o load game
 				}else {
 				
 					String[] opt1 = {"level","vida","mana","inimigosMortos"};
 					int[] opt2 = {this.CUR_LEVEL,(int) Player.life,(int) Player.mana, Enemy.enemies};
-					Menu.saveGame(opt1,opt2,10);
+					Menu.saveGame(opt1,opt2,20);
 					System.out.println("Jogo salvo!");
+//					CUR_LEVEL = opt2[0];
 				}
 			}
 			
@@ -168,9 +171,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				}
 				
 				if(CUR_LEVEL == MAX_LEVEL) {
-					Player.maxMana = 5000;
-					Player.maxLife = 3000;
-					Player.maxWeapon = 5000;
+					Player.maxMana = 1500;
+					Player.maxLife = 1000;
+					Player.life = 500;
+					Player.maxWeapon = 1000;
 				}else if(levelPlus >= 1 ){
 					Player.maxMana = 500;
 					Player.maxLife = 100;
@@ -253,8 +257,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		g.drawString(Enemy.enemies +"", 590, 63);
 		g.drawString("Mana: ", 413, 32);
 		g.drawString((int) Player.mana + "/" + (int) Player.maxMana, 560, 32);
+		if(Player.weapon >0) {
 		g.drawString("Arma: ", 22, 465);
 		g.drawString((int) Player.weapon + "/" + (int) Player.maxWeapon, 165, 467);
+		}
 //		
 		if (gameState == "GAMEOVER") {
 			Graphics2D g2 = (Graphics2D) g;
@@ -392,8 +398,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	@Override
 	public void mousePressed(MouseEvent e) {
 		player.mouseShoot = true;
-		player.mx = (e.getX() / 3);
-		player.my = (e.getY() / 3);
+		player.mx = (e.getX() / SCALE);
+		player.my = (e.getY() / SCALE);
 		
 		
 			this.restartGame = true;

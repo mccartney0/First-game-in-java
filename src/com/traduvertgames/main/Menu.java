@@ -67,7 +67,7 @@ public class Menu {
 			}else if(options[currentOption] == "carregar jogo") {
 				file = new File("save.txt");
 				if(file.exists()) {
-					String saver = loadGame(10);
+					String saver = loadGame(20);
 					try {
 						applySave(saver);
 					} catch (IOException e) {
@@ -89,7 +89,7 @@ public class Menu {
 		for(int i = 0; i < spl.length; i++)
 		{
 			String[] spl2 = spl[i].split(":");
-// Criando os cases para inserir novos dados no SAVE
+			// Criando os cases para inserir novos dados no SAVE
 			switch (spl2[0])
 			{
 				case "level":
@@ -113,22 +113,29 @@ public class Menu {
 		}
 	}
 	
-	public static String loadGame(int encode) {
+	public static String loadGame(int encode)
+	{
 		String line = "";
 		File file = new File("save.txt");
 
-		if (file.exists()) {
-			try {
+		if(file.exists())
+		{
+			try
+			{
 				String singleLine = null;
 				BufferedReader reader = new BufferedReader(new FileReader("save.txt"));
 
-				try {
-					while ((singleLine = reader.readLine()) != null) {
+				try
+				{
+					while((singleLine = reader.readLine()) != null)
+					{
 						String[] trans = singleLine.split(":");
 						char[] val = trans[1].toCharArray();
+						System.out.println(val);
 						trans[1] = "";
 
-						for (int i = 0; i < val.length; i++) {
+						for(int i = 0; i < val.length; i++)
+						{
 							val[i] -= encode;
 							trans[1] += val[i];
 						}
@@ -138,10 +145,10 @@ public class Menu {
 						line += trans[1];
 						line += "/";
 					}
-				} catch (IOException e) {
 				}
-			} catch (FileNotFoundException e) {
+				catch (IOException ignored) {}
 			}
+			catch (FileNotFoundException ignored) {}
 
 		}
 

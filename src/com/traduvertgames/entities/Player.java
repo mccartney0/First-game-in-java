@@ -26,7 +26,9 @@ public class Player extends Entity {
 	public boolean damage = false;
 //Animando o dano
 	private int damageFrames = 0;
-
+	int manaFrames = 0;
+	boolean manaContinue = false;
+	int manaSeconds = 0;
 //	private boolean hasGun = false;
 
 	public boolean shoot = false, mouseShoot = false;
@@ -38,7 +40,7 @@ public class Player extends Entity {
 	public static int z = 0;
 
 	public int jumpFrames = 50, jumpCur = 0;
-	
+
 	public boolean jumpUp = false, jumpDown = false;
 	public int jumpSpd = 2;
 
@@ -93,22 +95,22 @@ public class Player extends Entity {
 		}
 
 		if (isJumping == true) {
-			
-				if(jumpUp) {
-				jumpCur+=jumpSpd;
-				}else if(jumpDown) {
-					jumpCur-=jumpSpd;
-					if(jumpCur<=0) {
-						isJumping = false;
-						jumpDown = false;
-						jumpUp = false;
-					}
-				}
-				z = jumpCur;
-				if (jumpCur >= jumpFrames) {
+
+			if (jumpUp) {
+				jumpCur += jumpSpd;
+			} else if (jumpDown) {
+				jumpCur -= jumpSpd;
+				if (jumpCur <= 0) {
+					isJumping = false;
+					jumpDown = false;
 					jumpUp = false;
-					jumpDown = true;
-				
+				}
+			}
+			z = jumpCur;
+			if (jumpCur >= jumpFrames) {
+				jumpUp = false;
+				jumpDown = true;
+
 			}
 		}
 // Fim Fake jump 2D 
@@ -119,16 +121,16 @@ public class Player extends Entity {
 			// Mover a c�mera - Colocar a camera para se mover com o jogador EX:
 			// Camera.x+=speed;
 			x += speed;
-		} else if (left && World.isFree((int) (x - speed), this.getY(),z)) {
+		} else if (left && World.isFree((int) (x - speed), this.getY(), z)) {
 			moved = true;
 			dir = left_dir;
 			x -= speed;
 		}
-		if (up && World.isFree(this.getX(), (int) (y - speed),z )) {
+		if (up && World.isFree(this.getX(), (int) (y - speed), z)) {
 			moved = true;
 			dir = up_dir;
 			y -= speed;
-		} else if (down && World.isFree(this.getX(), (int) (y + speed),z)) {
+		} else if (down && World.isFree(this.getX(), (int) (y + speed), z)) {
 
 			moved = true;
 			dir = down_dir;
@@ -144,10 +146,6 @@ public class Player extends Entity {
 				}
 			}
 
-			this.checkCollisionLifePack();
-			this.checkCollisionAmmo();
-			this.checkCollisionGun();
-
 			if (damage) {
 				this.damageFrames++;
 				if (this.damageFrames == 8) {// 8 milsegundo para a tile de dano ficar no personagem
@@ -160,6 +158,27 @@ public class Player extends Entity {
 			// Renderizando o mapa com m�todo Clamp da Camera
 //			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 //			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
+		}
+		this.checkCollisionLifePack();
+
+		this.checkCollisionAmmo();
+
+		this.checkCollisionGun();
+
+		// Recuperando mana continuamente
+		if (manaContinue == true) {
+			this.manaFrames++;
+
+			if (this.manaFrames == 80 && Player.mana < maxMana) {// 8 milsegundo para a tile de dano ficar no personagem
+				mana += 8;
+				manaSeconds++;
+				this.manaFrames = 0;
+			}
+			if (manaSeconds == 5) {
+				manaContinue = false;
+				manaSeconds = 0;
+			}
+
 		}
 
 		if (life <= 0) {
@@ -201,6 +220,7 @@ public class Player extends Entity {
 				mouseShoot = false;
 			}
 
+			// Poder atirar
 			if (weapon > 0 && mana > 0) {
 				weapon -= 0.3;
 				mana--;
@@ -230,23 +250,24 @@ public class Player extends Entity {
 // Renderizando o mapa com m�todo Clamp da Camera
 	public void updateCamera() {
 		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
-		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
+		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.HEIGHT * 16 - Game.HEIGHT);
 	}
-	
-	// Método para fazer o Player não passar por cima do inimigo, a continuação dele está na classe Enemys no follow path.
-    public boolean isColiddingEnemys(int xnext, int ynext)
-    {
-        Rectangle player = new Rectangle(xnext+this.maskx+2, ynext+this.masky+2, this.mwidth-4, this.mheight-4);
-        for(int i = 0; i < Game.enemies.size(); i++){
-            Enemy e = Game.enemies.get(i);
-            Rectangle enemyCurrent = new Rectangle(e.getX()+e.maskx, e.getY()+e.masky, e.mwidth, e.mheight);
-            if(enemyCurrent.intersects(player)){
-                return true;
-            }
-        }
-        return false;
-    }
-	
+
+	// Método para fazer o Player não passar por cima do inimigo, a continuação
+	// dele está na classe Enemys no follow path.
+	public boolean isColiddingEnemys(int xnext, int ynext) {
+		Rectangle player = new Rectangle(xnext + this.maskx + 2, ynext + this.masky + 2, this.mwidth - 4,
+				this.mheight - 4);
+		for (int i = 0; i < Game.enemies.size(); i++) {
+			Enemy e = Game.enemies.get(i);
+			Rectangle enemyCurrent = new Rectangle(e.getX() + e.maskx, e.getY() + e.masky, e.mwidth, e.mheight);
+			if (enemyCurrent.intersects(player)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	public void checkCollisionGun() {
 		for (int i = 0; i < Game.entities.size(); i++) {
 			Entity atual = Game.entities.get(i);
@@ -288,7 +309,8 @@ public class Player extends Entity {
 			Entity atual = Game.entities.get(i);
 			if (atual instanceof Bullet) {
 				if (Entity.isColliding(this, atual)) {
-					mana += 100;
+					manaContinue = true;
+					mana += 50;
 					if (mana >= maxMana) {
 						mana = maxMana;
 					}
@@ -329,9 +351,9 @@ public class Player extends Entity {
 				}
 			}
 		}
-		if(isJumping) {
+		if (isJumping) {
 			g.setColor(Color.black);
-			g.fillOval(this.getX() - Camera.x + 8, this.getY() - Camera.y + 16, 6,6);
+			g.fillOval(this.getX() - Camera.x + 8, this.getY() - Camera.y + 16, 6, 6);
 		}
 	}
 }

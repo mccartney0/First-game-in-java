@@ -34,7 +34,7 @@ public class BulletShoot extends Entity {
 	}
 
 	public void render(Graphics g) {
-		g.setColor(Color.YELLOW);
+		g.setColor(Color.pink);
 		g.fillOval(this.getX() - Camera.x, this.getY() - Camera.y, width, height);
 	}
 

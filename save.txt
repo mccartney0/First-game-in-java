@@ -1,5 +1,0 @@
-level:<
-vida:;::
-mana:>CC
-inimigosMortos:=<
-levelPlus:;

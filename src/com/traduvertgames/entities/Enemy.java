@@ -20,13 +20,13 @@ public class Enemy extends Entity {
 	private int frames = 0, maxFrames = 20, index = 0, maxIndex = 1;
 	private BufferedImage[] sprites;
 	public static int enemies = 0;
-	
-	
-private int life = 2;
-	
+
+	private int life = 2;
+
 	private boolean isDamaged = false;
-	private int damageFrames = 10, damageCurrent=0;
+	private int damageFrames = 10, damageCurrent = 0;
 //	private int maskx=8,masky=8,maskw=10,maskh=10;
+	public static boolean addEnemy;
 
 	public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
 		super(x, y, width, height, null);
@@ -79,51 +79,73 @@ private int life = 2;
 ////					System.exit(1);
 //			}
 //		}
-		
-		
+
 //}else {
 //			
 //		}
-		
-		
-		// Fazer perseguir o jogador
-		
-		if(this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 80) {
-		// Algortimo A* aplicando ele
-				if(!isCollidingWithPlayer())
-				{
-					if (path == null || path.size() == 0)
-					{
-						Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
-						Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
-						path = AStar.findPath(Game.world, start, end);
-					}
-				}
-				else
-				{
-					if (Game.rand.nextInt(100) < 10)
-					{
-//						Sound.hurtEffect.play();
-						Game.player.life -= Game.rand.nextInt(3);
-						Game.player.damage = true;
-					}
-				}
 
-				// VerificaÃ§Ã£o para o mÃ©todo de isCollidingEnemys.
-				if(!isCollidingWithPlayer()) {
-					if (new Random().nextInt(100) < 60)
-						followPath(path);
-//				  	followPath(path , speed); // metÃ³do para utilizar speed do enemy
+		// Fazer perseguir o jogador
+		if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 1000000
+				&& Game.enemies.size() <= 10) {
+			speed = 0.02;
+			if (!isCollidingWithPlayer()) {
+				if (path == null || path.size() == 0) {
+					Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
+					Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
+					path = AStar.findPath(Game.world, start, end);
 				}
-		
-		if (new Random().nextInt(100) < 5) {
-		Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
-		Vector2i end = new Vector2i((int) (Game.player.x / 16) , (int) (Game.player.y / 16));
-		path = AStar.findPath(Game.world, start, end);
-	}
+			} else {
+				if (Game.rand.nextInt(100) < 10) {
+//					Sound.hurtEffect.play();
+					Game.player.life -= Game.rand.nextInt(3);
+					Game.player.damage = true;
+				}
+			}
+			// VerificaÃ§Ã£o para o mÃ©todo de isCollidingEnemys.
+			if (!isCollidingWithPlayer()) {
+				if (new Random().nextInt(100) < 60)
+					followPath(path);
+//			  	followPath(path , speed); // metÃ³do para utilizar speed do enemy
+			}
+
+			if (new Random().nextInt(100) < 5) {
+				Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
+				Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
+				path = AStar.findPath(Game.world, start, end);
+			}
 		}
-		
-		//Utilizando    A*    AStar
+
+		if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 80) {
+			// Algortimo A* aplicando ele
+			if (!isCollidingWithPlayer()) {
+				if (path == null || path.size() == 0) {
+					Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
+					Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
+					path = AStar.findPath(Game.world, start, end);
+				}
+			} else {
+				if (Game.rand.nextInt(100) < 10) {
+//						Sound.hurtEffect.play();
+					Game.player.life -= Game.rand.nextInt(3);
+					Game.player.damage = true;
+				}
+			}
+
+			// VerificaÃ§Ã£o para o mÃ©todo de isCollidingEnemys.
+			if (!isCollidingWithPlayer()) {
+				if (new Random().nextInt(100) < 60)
+					followPath(path);
+//				  	followPath(path , speed); // metÃ³do para utilizar speed do enemy
+			}
+
+			if (new Random().nextInt(100) < 5) {
+				Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
+				Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
+				path = AStar.findPath(Game.world, start, end);
+			}
+		}
+
+		// Utilizando A* AStar
 //		if(path == null || path.size()==0) {
 //			
 //			//Iniciam
@@ -136,7 +158,7 @@ private int life = 2;
 //			path = AStar.findPath(Game.world, start, end);
 //		}
 //		followPath(path);
-		
+
 		frames++;
 		if (frames == maxFrames) {
 			frames = 0;
@@ -146,46 +168,56 @@ private int life = 2;
 			}
 		}
 		collidingBullet();
-		
-		if(life <= 0) {
+		if (life <= 0) {
 			destroySelf();
-			enemies+=1;
+			enemies += 1;
+			
+			if (Game.enemies.size() == 0) {
+
+				addEnemy = true;
+				
+			}
 			return;
 		}
-		
-		//This ou sem o This não faz diferença
-		if(isDamaged) {
+
+		if (Enemy.addEnemy) {
+			Enemy en = new Enemy(1 * 16, 1 * 16, 16, 16, Entity.ENEMY_EN);
+			Game.entities.add(en);
+			Game.enemies.add(en);
+			Enemy.addEnemy = false;
+		}
+		// This ou sem o This não faz diferença
+		if (isDamaged) {
 			this.damageCurrent++;
-			if(this.damageCurrent==this.damageFrames) {
+			if (this.damageCurrent == this.damageFrames) {
 				this.damageCurrent = 0;
 				this.isDamaged = false;
 			}
 		}
-		
+
 	}
 
 	public void destroySelf() {
 		Game.enemies.remove(this);
 		Game.entities.remove(this);
 	}
-	
-	//Tirando dano com tiro
+
+	// Tirando dano com tiro
 	public void collidingBullet() {
-		for(int i = 0; i < Game.bullets.size(); i++) {
+		for (int i = 0; i < Game.bullets.size(); i++) {
 			Entity e = Game.bullets.get(i);
-				if(Entity.isColliding(this,e)) {
-					isDamaged = true;
-					life--;
-					Game.bullets.remove(i);
-					return;
-				}
+			if (Entity.isColliding(this, e)) {
+				isDamaged = true;
+				life--;
+				Game.bullets.remove(i);
+				return;
+			}
 		}
-		
-		
+
 	}
-	
+
 	// Fazer nenhum NPC colidir com o outro
-//			public boolean isCollidins(int xNext, int yNext) {
+//			public boolean isColliding(int xNext, int yNext) {
 //				Rectangle enemyCurrent = new Rectangle(xNext+ maskx, yNext + masky,mwidth,mheight);
 //				for (int i = 0; i < Game.enemies.size(); i++) {
 //					Enemy e = Game.enemies.get(i);
@@ -199,15 +231,13 @@ private int life = 2;
 //
 //				return false;
 //			}
-	
+
 	public boolean isCollidingWithPlayer() {
-		Rectangle enemyCurrent = new Rectangle(this.getX() + maskx, this.getY() + masky, mwidth,mheight);
+		Rectangle enemyCurrent = new Rectangle(this.getX() + maskx, this.getY() + masky, mwidth, mheight);
 		Rectangle player = new Rectangle(Game.player.getX(), Game.player.getY(), 16, 16);
 
 		return enemyCurrent.intersects(player);
 	}
-
-	
 
 	// Trocar a máscara quadrada para nao colidir
 //	Testar mascara de colisão
@@ -218,11 +248,11 @@ private int life = 2;
 //	}
 
 	public void render(Graphics g) {
-		if(!isDamaged) {
-		// * Sempre que renderizar, tem que por a posição da Camera
-		g.drawImage(sprites[index], this.getX()+4 - Camera.x, this.getY() +4- Camera.y, null);
-		}else {
-			g.drawImage(Entity.ENEMY_FEEDBACK, this.getX() - Camera.x, this.getY() - Camera.y, null);
+		if (!isDamaged) {
+			// * Sempre que renderizar, tem que por a posição da Camera
+			g.drawImage(sprites[index], this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
+		} else {
+			g.drawImage(Entity.ENEMY_FEEDBACK, this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
 		}
-		}
+	}
 }
