@@ -85,7 +85,7 @@ public class Enemy extends Entity {
 //		}
 
 		// Fazer perseguir o jogador
-		if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 1000000
+		if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 1000000 // = distancia em pixels
 				&& Game.enemies.size() <= 10) {
 			speed = 0.02;
 			if (!isCollidingWithPlayer()) {
@@ -113,7 +113,7 @@ public class Enemy extends Entity {
 				Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
 				path = AStar.findPath(Game.world, start, end);
 			}
-		}
+		}else {
 
 		if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 80) {
 			// Algortimo A* aplicando ele
@@ -144,7 +144,7 @@ public class Enemy extends Entity {
 				path = AStar.findPath(Game.world, start, end);
 			}
 		}
-
+		}
 		// Utilizando A* AStar
 //		if(path == null || path.size()==0) {
 //			
