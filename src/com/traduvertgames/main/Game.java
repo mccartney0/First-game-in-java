@@ -203,10 +203,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			if (restartGame) {
 				this.restartGame = false;
 				Game.gameState = "NORMAL";
-				CUR_LEVEL = 1;
+//				CUR_LEVEL = 1;
 				Player.life = 100;
 				Player.mana = 0;
-				String newWorld = "level" + CUR_LEVEL + ".png";
+				String newWorld = "level" + Menu.spl2[1] + ".png";
 				// System.out.println(newWorld);
 				World.restartGame(newWorld);
 			} 

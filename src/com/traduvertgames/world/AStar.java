@@ -67,39 +67,47 @@ public class AStar {
 				int xi = (i % 3) - 1;
 				int yi = (i / 3) - 1;
 				// Verifica se o tile existe, se livre vai pra openList
-				Tile tile = World.tiles[x + xi + ((y + yi) * World.WIDTH)];
-				if (tile == null)
-					continue;
-				if (tile instanceof WallTile)
-					continue;
+				try {
+					Tile tile = World.tiles[x + xi + ((y + yi) * World.WIDTH)];
+					if (tile == null)
+						continue;
+					if (tile instanceof WallTile)
+						continue;
+					
+					// Posibilita o inimigo[NPC] andar em todas direções
+					if (i == 0) {
 
-				// Posibilita o inimigo[NPC] andar em todas direções
-				if (i == 0) {
-
-					Tile test = World.tiles[x + xi + 1 + ((y + yi) * World.WIDTH)];
-					Tile test2 = World.tiles[x + xi + ((y + yi + 1) * World.WIDTH)];
-					if (test instanceof WallTile || test2 instanceof WallTile) {
-						continue;
+						Tile test = World.tiles[x + xi + 1 + ((y + yi) * World.WIDTH)];
+						Tile test2 = World.tiles[x + xi + ((y + yi + 1) * World.WIDTH)];
+						if (test instanceof WallTile || test2 instanceof WallTile) {
+							continue;
+						}
+					} else if (i == 2) {
+						Tile test = World.tiles[x + xi - 1 + ((y + yi) * World.WIDTH)];
+						Tile test2 = World.tiles[x + xi + ((y + yi + 1) * World.WIDTH)];
+						if (test instanceof WallTile || test2 instanceof WallTile) {
+							continue;
+						}
+					} else if (i == 6) {
+						Tile test = World.tiles[x + xi + ((y + yi - 1) * World.WIDTH)];
+						Tile test2 = World.tiles[x + xi + 1 + ((y + yi) * World.WIDTH)];
+						if (test instanceof WallTile || test2 instanceof WallTile) {
+							continue;
+						}
+					} else if (i == 8) {
+						Tile test = World.tiles[x + xi + ((y + yi - 1) * World.WIDTH)];
+						Tile test2 = World.tiles[x + xi - 1 + ((y + yi) * World.WIDTH)];
+						if (test instanceof WallTile || test2 instanceof WallTile) {
+							continue;
+						}
 					}
-				} else if (i == 2) {
-					Tile test = World.tiles[x + xi - 1 + ((y + yi) * World.WIDTH)];
-					Tile test2 = World.tiles[x + xi + ((y + yi + 1) * World.WIDTH)];
-					if (test instanceof WallTile || test2 instanceof WallTile) {
-						continue;
-					}
-				} else if (i == 6) {
-					Tile test = World.tiles[x + xi + ((y + yi - 1) * World.WIDTH)];
-					Tile test2 = World.tiles[x + xi + 1 + ((y + yi) * World.WIDTH)];
-					if (test instanceof WallTile || test2 instanceof WallTile) {
-						continue;
-					}
-				} else if (i == 8) {
-					Tile test = World.tiles[x + xi + ((y + yi - 1) * World.WIDTH)];
-					Tile test2 = World.tiles[x + xi - 1 + ((y + yi) * World.WIDTH)];
-					if (test instanceof WallTile || test2 instanceof WallTile) {
-						continue;
-					}
+				}catch(ArrayIndexOutOfBoundsException ex){
+//					ex.getMessage();
+//					ex.printStackTrace();
+//					System.out.println("Inimigo fora do mapa");
 				}
+				
+				
 
 				Vector2i a = new Vector2i(x + xi, y + yi);
 

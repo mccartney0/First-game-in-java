@@ -34,7 +34,7 @@ public class World {
 						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					} else if (pixelAtual == 0xFFFFFFFF) {
 						// Parede
-						tiles[xx + (yy * WIDTH)] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
+						tiles[xx + (yy * map.getWidth())] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
 					} else if (pixelAtual == 0xFF0026FF) {
 						// Player
 						Game.player.setX(xx * 16);
@@ -77,13 +77,17 @@ public class World {
 		
 		int x4 = (xNext+TILE_SIZE-1) / TILE_SIZE;
 		int y4 = (yNext+TILE_SIZE-1) / TILE_SIZE;
-		
-		if( !((tiles[x1+(y1*World.WIDTH)] instanceof WallTile) ||
-				(tiles[x2+(y2*World.WIDTH)] instanceof WallTile) || 
-				(tiles[x3+(y3*World.WIDTH)] instanceof WallTile) || 
-				(tiles[x4+(y4*World.WIDTH)] instanceof WallTile))) {
-			return true;
+		try {
+			if( !((tiles[x1+(y1*World.WIDTH)] instanceof WallTile) ||
+					(tiles[x2+(y2*World.WIDTH)] instanceof WallTile) || 
+					(tiles[x3+(y3*World.WIDTH)] instanceof WallTile) || 
+					(tiles[x4+(y4*World.WIDTH)] instanceof WallTile))) {
+				return true;
+			}
+		}catch(ArrayIndexOutOfBoundsException ex) {
+//			System.out.println("Saiu do mapa");
 		}
+		
 		
 //		Posibilita pular pelas paredes
 //		if(zplayer>0) {

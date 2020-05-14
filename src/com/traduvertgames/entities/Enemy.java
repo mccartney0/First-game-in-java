@@ -4,6 +4,7 @@ import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
+import java.util.List;
 import java.util.Random;
 
 import com.traduvertgames.main.Sound;
@@ -11,6 +12,7 @@ import com.traduvertgames.entities.Entity;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.AStar;
 import com.traduvertgames.world.Camera;
+import com.traduvertgames.world.Node;
 import com.traduvertgames.world.Vector2i;
 import com.traduvertgames.world.World;
 
@@ -85,16 +87,17 @@ public class Enemy extends Entity {
 //		}
 
 		// Fazer perseguir o jogador
-		if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 1000000 // = distancia em pixels
+		if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 1000000 //distancia
 				&& Game.enemies.size() <= 10) {
 			speed = 0.02;
 			if (!isCollidingWithPlayer()) {
 				if (path == null || path.size() == 0) {
 					Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
 					Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
+					
 					path = AStar.findPath(Game.world, start, end);
 				}
-			} else {
+			} else {//Atacando o player
 				if (Game.rand.nextInt(100) < 10) {
 //					Sound.hurtEffect.play();
 					Game.player.life -= Game.rand.nextInt(3);
@@ -113,37 +116,39 @@ public class Enemy extends Entity {
 				Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
 				path = AStar.findPath(Game.world, start, end);
 			}
-		}else {
+		
+		} 
+			else {
 
-		if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 80) {
-			// Algortimo A* aplicando ele
-			if (!isCollidingWithPlayer()) {
-				if (path == null || path.size() == 0) {
+			if (this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 80) {
+				// Algortimo A* aplicando ele
+				if (!isCollidingWithPlayer()) {
+					if (path == null || path.size() == 0) {
+						Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
+						Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
+						path = AStar.findPath(Game.world, start, end);
+					}
+				} else {
+					if (Game.rand.nextInt(100) < 10) {
+//						Sound.hurtEffect.play();
+						Game.player.life -= Game.rand.nextInt(3);
+						Game.player.damage = true;
+					}
+				}
+
+				// Verificação para o método de isCollidingEnemys.
+				if (!isCollidingWithPlayer()) {
+					if (new Random().nextInt(100) < 60)
+						followPath(path);
+//				  	followPath(path , speed); // metódo para utilizar speed do enemy
+				}
+
+				if (new Random().nextInt(100) < 5) {
 					Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
 					Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
 					path = AStar.findPath(Game.world, start, end);
 				}
-			} else {
-				if (Game.rand.nextInt(100) < 10) {
-//						Sound.hurtEffect.play();
-					Game.player.life -= Game.rand.nextInt(3);
-					Game.player.damage = true;
-				}
 			}
-
-			// Verificação para o método de isCollidingEnemys.
-			if (!isCollidingWithPlayer()) {
-				if (new Random().nextInt(100) < 60)
-					followPath(path);
-//				  	followPath(path , speed); // metódo para utilizar speed do enemy
-			}
-
-			if (new Random().nextInt(100) < 5) {
-				Vector2i start = new Vector2i((int) (x / 16), (int) (y / 16));
-				Vector2i end = new Vector2i((int) (Game.player.x / 16), (int) (Game.player.y / 16));
-				path = AStar.findPath(Game.world, start, end);
-			}
-		}
 		}
 		// Utilizando A* AStar
 //		if(path == null || path.size()==0) {
@@ -171,11 +176,11 @@ public class Enemy extends Entity {
 		if (life <= 0) {
 			destroySelf();
 			enemies += 1;
-			
+
 			if (Game.enemies.size() == 0) {
 
 				addEnemy = true;
-				
+
 			}
 			return;
 		}

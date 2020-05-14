@@ -31,7 +31,7 @@ public class Menu {
 	
 	public static boolean saveExists = false;
 	public static boolean saveGame = false;
-			
+	public static String[] spl2;
 
 	public void update() {
 		File file = new File("save.txt");
@@ -88,7 +88,7 @@ public class Menu {
 
 		for(int i = 0; i < spl.length; i++)
 		{
-			String[] spl2 = spl[i].split(":");
+			spl2 = spl[i].split(":");
 			// Criando os cases para inserir novos dados no SAVE
 			switch (spl2[0])
 			{

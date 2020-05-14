@@ -1,0 +1,4 @@
+level:H
+vida:IDD
+mana:GFM
+inimigosMortos:EF
