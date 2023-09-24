@@ -12,6 +12,7 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 
+import javax.swing.JOptionPane;
 
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Player;
@@ -55,7 +56,7 @@ public class Menu {
 		}
 		if (enter) {
 			// Inserindo música
-//			Sound.music.loop();
+			Sound.music.loop();
 			enter = false;
 			if (options[currentOption] == "novo jogo" || options[currentOption] == "continuar") {
 				Game.gameState = "NORMAL";
@@ -71,13 +72,12 @@ public class Menu {
 					try {
 						applySave(saver);
 					} catch (IOException e) {
-						// TODO Auto-generated catch block
 						e.printStackTrace();
 					}
 				}
 				
 			} else if (options[currentOption] == "sair") {
-//				JOptionPane.showConfirmDialog(null, "Deseja realmente sair?", "Fechar o jogo", currentOption);
+				JOptionPane.showConfirmDialog(null, "Deseja realmente sair?", "Fechar o jogo", currentOption);
 				System.exit(1);
 			}
 		}
@@ -85,19 +85,13 @@ public class Menu {
 
 	public static void applySave(String str) throws IOException {
 		String[] spl = str.split("/");
-
+		System.out.println("STR: " + str);
 		for(int i = 0; i < spl.length; i++)
 		{
 			spl2 = spl[i].split(":");
 			// Criando os cases para inserir novos dados no SAVE
 			switch (spl2[0])
 			{
-				case "level":
-					World.restartGame("level" + spl2[1] + ".png");
-					Game.gameState = "NORMAL";
-					pause = false;
-					break;
-
 				case "vida":
 					Player.life = Integer.parseInt(spl2[1]);
 					break;
@@ -109,6 +103,14 @@ public class Menu {
 				case "inimigosMortos":
 					Enemy.enemies = Integer.parseInt(spl2[1]);
 					break;
+
+				case "level":
+					System.out.println("level salvo: " + spl2[1]);
+					World.restartGame("level" + spl2[1] + ".png");
+					Game.gameState = "NORMAL";
+					pause = false;
+					break;
+
 			}
 		}
 	}

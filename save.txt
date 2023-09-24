@@ -1,4 +1,4 @@
-level:H
-vida:IDD
-mana:GFM
-inimigosMortos:EF
+vida:KG
+mana:HFL
+inimigosMortos:EFL
+level:E

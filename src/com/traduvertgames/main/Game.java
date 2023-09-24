@@ -12,6 +12,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.image.BufferStrategy;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -130,19 +131,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			if(Game.saveGame) {
 				Game.saveGame = false;
 				if(levelPlus >= 1) {
-					String[] opt1 = {"level","vida","mana","inimigosMortos","levelPlus"};
-					int[] opt2 = {this.CUR_LEVEL,(int) Player.life,(int) Player.mana, Enemy.enemies, levelPlus};
+					String[] opt1 = {"vida","mana","inimigosMortos","levelPlus","level"};
+					int[] opt2 = {(int) Player.life,(int) Player.mana, Enemy.enemies, levelPlus, this.CUR_LEVEL,};
 					Menu.saveGame(opt1,opt2,20);
 					System.out.println("Jogo salvo com plus level");
-//					CUR_LEVEL = opt2[0];
-//					Tenho que preparar para subir o CUR LEVEL junto com o load game
 				}else {
 				
-					String[] opt1 = {"level","vida","mana","inimigosMortos"};
-					int[] opt2 = {this.CUR_LEVEL,(int) Player.life,(int) Player.mana, Enemy.enemies};
+					String[] opt1 = {"vida","mana","inimigosMortos","level"};
+					int[] opt2 = {(int) Player.life,(int) Player.mana, Enemy.enemies, this.CUR_LEVEL};
 					Menu.saveGame(opt1,opt2,20);
 					System.out.println("Jogo salvo!");
-//					CUR_LEVEL = opt2[0];
 				}
 			}
 			
@@ -185,7 +183,6 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				}
 				
 				String newWorld = "level" + CUR_LEVEL + ".png";
-				// System.out.println(newWorld);
 				World.restartGame(newWorld);
 			}
 		} else if (gameState == "GAMEOVER") {
@@ -199,16 +196,27 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 					this.showMessageGameOver = true;
 			}
 
-			//
 			if (restartGame) {
 				this.restartGame = false;
 				Game.gameState = "NORMAL";
-//				CUR_LEVEL = 1;
-				Player.life = 100;
-				Player.mana = 0;
-				String newWorld = "level" + Menu.spl2[1] + ".png";
-				// System.out.println(newWorld);
-				World.restartGame(newWorld);
+				String newWorld = "level1.png";
+				if (Menu.spl2 != null) {
+					System.out.println("spl2: " + Menu.spl2[0]);
+					newWorld = "level" + Menu.spl2[1] + ".png";					
+				}
+				System.out.println("new world: " + newWorld);
+
+				File file = new File("save.txt");
+				file = new File("save.txt");
+				if(file.exists()) {
+					String saver = Menu.loadGame(20);
+					try {
+						Menu.applySave(saver);
+					} catch (IOException e) {
+						e.printStackTrace();
+					}
+				}
+
 			} 
 		}else if (gameState == "MENU") {
 			//Menu
