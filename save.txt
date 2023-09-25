@@ -1,4 +1,0 @@
-vida:KG
-mana:HFL
-inimigosMortos:EFL
-level:E
