@@ -2,7 +2,6 @@ package com.traduvertgames.entities;
 
 import java.awt.Color;
 import java.awt.Graphics;
-import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.Comparator;
 import java.util.List;
@@ -105,9 +104,9 @@ public class Entity {
 		return Math.sqrt((x1 - x2) * (x1 - x2) + (y1 - y2) * (y1 - y2));
 	}
 
-//	 Seguindo inimigo precis�o
+//	 Seguindo inimigo precisão
 	public void followPath(List<Node> path)
-//	public void followPath(List<Node> path, int speed) // metódo para utilizar speed do enemy
+//	public void followPath(List<Node> path, int speed) // metÃ³do para utilizar speed do enemy
 	{
 		if(path != null)
 		{
@@ -121,7 +120,7 @@ public class Entity {
 				{
 					x++;
 
-					// metódo para utilizar speed do enemy
+					// metÃ³do para utilizar speed do enemy
 //					x += speed;
 //					if(target.x * 16 < this.x)
 //					{
@@ -132,7 +131,7 @@ public class Entity {
 				{
 					x--;
 
-					// metódo para utilizar speed do enemy
+					// metÃ³do para utilizar speed do enemy
 //					x -= speed;
 //					if(target.x * 16 > this.x)
 //					{
@@ -144,7 +143,7 @@ public class Entity {
 				{
 					y++;
 
-					// metódo para utilizar speed do enemy
+					// metÃ³do para utilizar speed do enemy
 //					y += speed;
 //					if(target.y * 16 < this.y)
 //					{
@@ -155,9 +154,13 @@ public class Entity {
 				{
 					y--;
 
-					// metódo para utilizar speed do enemy
-//					y -= speed;
-//					if(target.y * 16 > this.y)
+		int e1x = e1.getX() + e1.maskx;
+		int e1y = e1.getY() + e1.masky;
+		int e2x = e2.getX() + e2.maskx;
+		int e2y = e2.getY() + e2.masky;
+
+		return e1x < e2x + e2.mwidth && e1x + e1.mwidth > e2x && e1y < e2y + e2.mheight
+				&& e1y + e1.mheight > e2y;
 //					{
 //						this.y = target.y * 16;
 //					}
