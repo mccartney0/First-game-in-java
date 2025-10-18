@@ -16,6 +16,7 @@ import javax.swing.JOptionPane;
 
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Player;
+import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.World;
 
@@ -99,6 +100,8 @@ public class Menu {
                 }
 
                 Game game = Game.getInstance();
+                Integer fallbackWeaponEnergy = null;
+                boolean hasWeaponEnergyEntries = false;
                 String[] spl = str.split("/");
                 for (String entry : spl) {
                         if (entry == null || entry.isEmpty()) {
@@ -121,7 +124,14 @@ public class Menu {
                                         Player.mana = Integer.parseInt(value);
                                         break;
                                 case "arma":
-                                        Player.weapon = Integer.parseInt(value);
+                                        fallbackWeaponEnergy = Integer.parseInt(value);
+                                        Player.weapon = fallbackWeaponEnergy;
+                                        break;
+                                case "armaAtual":
+                                        Player.loadCurrentWeaponFromSave(Integer.parseInt(value));
+                                        break;
+                                case "armasDesbloqueadas":
+                                        Player.loadUnlockedWeaponsFromSave(Integer.parseInt(value));
                                         break;
                                 case "inimigosMortos":
                                         Enemy.enemies = Integer.parseInt(value);
@@ -154,8 +164,21 @@ public class Menu {
                                         Game.setBestComboThisRun(Integer.parseInt(value));
                                         break;
                                 default:
+                                        if (key.startsWith("energiaArma_")) {
+                                                String typeKey = key.substring("energiaArma_".length());
+                                                WeaponType type = WeaponType.fromSaveKey(typeKey);
+                                                if (type != null) {
+                                                        Player.loadWeaponEnergyFromSave(type, Integer.parseInt(value));
+                                                        hasWeaponEnergyEntries = true;
+                                                }
+                                        }
                                         break;
                         }
+                }
+
+                if (!hasWeaponEnergyEntries && fallbackWeaponEnergy != null) {
+                        WeaponType current = WeaponType.fromOrdinal(Player.getCurrentWeaponOrdinal());
+                        Player.loadWeaponEnergyFromSave(current, fallbackWeaponEnergy);
                 }
 
                 if (game != null) {

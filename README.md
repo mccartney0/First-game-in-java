@@ -25,12 +25,14 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 
 - **Movimentação:** `W`, `A`, `S`, `D` ou setas direcionais.
 - **Pulo:** `Espaço` ativa o salto 2D simulado do personagem.【F:src/com/traduvertgames/main/Game.java†L323-L363】【F:src/com/traduvertgames/entities/Player.java†L43-L118】
-- **Ataque:** `X` dispara projéteis enquanto houver munição e mana; o mouse também pode ser usado para mirar e atirar.【F:src/com/traduvertgames/main/Game.java†L343-L389】【F:src/com/traduvertgames/entities/Player.java†L119-L224】
+- **Ataque:** `X` dispara projéteis enquanto houver munição e mana; o mouse também pode ser usado para mirar e atirar.【F:src/com/traduvertgames/main/Game.java†L452-L516】【F:src/com/traduvertgames/entities/Player.java†L101-L242】
+- **Troca de arma:** `Q`/`E` alternam entre as armas desbloqueadas e as teclas `1` a `4` selecionam diretamente um arquétipo específico.【F:src/com/traduvertgames/main/Game.java†L452-L497】【F:src/com/traduvertgames/entities/Player.java†L484-L512】
 - **Menu:** `Enter` confirma opções, `Esc` retorna ao menu/pausa, `T` salva o progresso quando em jogo.【F:src/com/traduvertgames/main/Game.java†L339-L372】【F:src/com/traduvertgames/main/Menu.java†L42-L103】
 
 ## Itens e recursos
 
 - **Vida, mana e munição** – O jogador possui barras máximas configuradas dinamicamente; pacotes de vida (`LifePack`) e armas (`Weapon`) são coletados via colisão para restaurar recursos.【F:src/com/traduvertgames/entities/Player.java†L19-L118】【F:src/com/traduvertgames/entities/Entity.java†L109-L194】
+- **Arsenal modular** – Quatro armas com características próprias (Blaster, Rifle de Íons, Canhão Dispersor e Lança de Fusão) podem ser desbloqueadas, cada uma com custos de mana, dano e cadência diferenciados. A durabilidade de cada arma é persistida no save e pode ser reabastecida ao coletar novos itens.【F:src/com/traduvertgames/entities/WeaponType.java†L16-L161】【F:src/com/traduvertgames/entities/Player.java†L323-L512】【F:src/com/traduvertgames/main/Menu.java†L120-L185】
 - **Projéteis** – Há dois tipos de disparo (`Bullet` e `BulletShoot`) com atualizações e renderização independentes; os disparos energizados (`BulletShoot`) agora também são utilizados pelos inimigos para ataques à distância.【F:src/com/traduvertgames/entities/Bullet.java†L5-L12】【F:src/com/traduvertgames/entities/BulletShoot.java†L12-L52】
 - **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão, contabilizando eliminações para avançar de fase.【F:src/com/traduvertgames/entities/Enemy.java†L28-L370】
 
@@ -46,7 +48,7 @@ O jogo grava vida, mana, quantidade de munição (arma), inimigos derrotados, pr
 
 ## HUD, áudio e recursos
 
-- **HUD** – A classe `UI` desenha barras e textos com vida, mana, inimigos restantes, armas, placar e mensagens de `Game Over` diretamente sobre o canvas escalonado.【F:src/com/traduvertgames/main/Game.java†L227-L309】
+- **HUD** – A classe `UI` exibe barras compactas dentro do canvas e, após o escalonamento, projeta painéis translúcidos com status do piloto, placar da missão e arsenal desbloqueado, reduzindo a poluição visual do HUD antigo.【F:src/com/traduvertgames/main/Game.java†L348-L399】【F:src/com/traduvertgames/graficos/UI.java†L17-L157】
 - **Áudio** – `Sound.java` encapsula efeitos de som e música ambiente utilizados ao interagir com o menu ou sofrer dano.【F:src/com/traduvertgames/main/Sound.java†L1-L120】
 - **Mundo** – A classe `World` carrega os tiles dos arquivos `level*.png`, gerando colisões, entidades e caminhos de A* a partir dos dados de pixels.【F:src/com/traduvertgames/world/World.java†L20-L145】
 
