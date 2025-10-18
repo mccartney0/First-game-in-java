@@ -15,13 +15,13 @@ Este documento detalha o fluxo das principais rotas de execução do jogo, descr
 
 ## 3. Progressão de níveis
 
-- A cada atualização, quando `Game.enemies` fica vazio, `World.restartGame` é chamado para carregar o próximo mapa (`levelN.png`). Após concluir os quatro níveis padrão, `levelPlus` aumenta e atributos máximos do jogador são elevados para rodadas sucessivas.【F:src/com/traduvertgames/main/Game.java†L115-L154】
-- O arquivo do mundo define a distribuição de tiles, inimigos e itens; `World.java` traduz pixels do PNG em instâncias de `Tile`, `Enemy`, `LifePack`, `Weapon` e projéteis iniciais.【F:src/com/traduvertgames/world/World.java†L35-L210】
+- A cada atualização, quando `Game.enemies` fica vazio, `World.restartGame` é chamado para carregar o próximo mapa (`levelN.png`). Após concluir os quatro níveis padrão, `levelPlus` aumenta e atributos máximos do jogador são elevados para rodadas sucessivas.【F:src/com/traduvertgames/main/Game.java†L160-L187】
+- O arquivo do mundo define a distribuição de tiles, inimigos e itens; `World.java` traduz pixels do PNG em instâncias de `Tile`, `Enemy`, `LifePack`, `Weapon` e projéteis iniciais.【F:src/com/traduvertgames/world/World.java†L20-L145】
 
 ## 4. Sistema de entidades e combate
 
 - `Player` cuida da movimentação com checagem de colisão (`World.isFree`), salto simulado, recolhimento de itens e gerenciamento de vida/mana/munição. O disparo pode ser acionado por teclado ou mouse, gerando instâncias de `BulletShoot` ou `Bullet` adicionadas às listas do jogo.【F:src/com/traduvertgames/entities/Player.java†L19-L224】
-- `Enemy` utiliza `AStar.findPath` para seguir o jogador, alternando entre perseguição e ataque corpo a corpo. Ao causar dano, sinaliza feedback visual (`damage`) e incrementa contadores globais para estatísticas de HUD.【F:src/com/traduvertgames/entities/Enemy.java†L13-L164】
+- `Enemy` alterna entre patrulhas locais, perseguição com recálculo dinâmico de caminhos e ataques à distância quando há linha de visão, além de ainda poder causar dano corpo a corpo e sinalizar feedback visual (`damage`).【F:src/com/traduvertgames/entities/Enemy.java†L28-L369】
 - Ambas as subclasses de projéteis atualizam posicionamento, detectam colisões com paredes e inimigos e removem-se do jogo quando saem da área válida.【F:src/com/traduvertgames/entities/Bullet.java†L5-L12】【F:src/com/traduvertgames/entities/BulletShoot.java†L10-L41】
 
 ## 5. Salvamento e carregamento
@@ -37,5 +37,5 @@ Este documento detalha o fluxo das principais rotas de execução do jogo, descr
 ## 7. Recursos e assets
 
 - Sprites e sons residem em `res/`, com `Spritesheet` responsável por cortar imagens para as animações do jogador, inimigos e itens.【F:src/com/traduvertgames/main/Game.java†L63-L114】【F:src/com/traduvertgames/graficos/Spritesheet.java†L7-L82】
-- Os mapas (`level1.png` a `level4.png`) definem a "rota" espacial de cada fase, orientando tanto a geração de tiles (`FloorTile`, `WallTile`) quanto os nós de navegação usados pela IA de A*.【F:src/com/traduvertgames/world/World.java†L35-L210】【F:src/com/traduvertgames/world/AStar.java†L9-L140】
+- Os mapas (`level1.png` a `level4.png`) definem a "rota" espacial de cada fase, orientando tanto a geração de tiles (`FloorTile`, `WallTile`) quanto os nós de navegação usados pela IA de A*.【F:src/com/traduvertgames/world/World.java†L20-L145】【F:src/com/traduvertgames/world/AStar.java†L9-L140】
 

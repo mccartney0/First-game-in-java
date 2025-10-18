@@ -207,7 +207,8 @@ public class Player extends Entity {
 					da = -3;
 				}
 
-				BulletShoot bullet = new BulletShoot(this.getX() + pd, this.getY() + pz, 3, 3, null, da, 0);
+                                BulletShoot bullet = new BulletShoot(this.getX() + pd, this.getY() + pz, 3, 3, null, da, 0,
+                                                false);
 				Game.bullets.add(bullet);
 			}
 		}
@@ -238,7 +239,8 @@ public class Player extends Entity {
 				double dx = Math.cos(angle);
 				double dy = Math.sin(angle);
 
-				BulletShoot bullet = new BulletShoot(this.getX() + px, this.getY() + py, 3, 3, null, dx, dy);
+                                BulletShoot bullet = new BulletShoot(this.getX() + px, this.getY() + py, 3, 3, null, dx, dy,
+                                                false);
 				Game.bullets.add(bullet);
 			}
 
