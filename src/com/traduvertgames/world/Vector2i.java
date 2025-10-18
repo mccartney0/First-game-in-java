@@ -1,6 +1,6 @@
 package com.traduvertgames.world;
 
-//Guardar posições no mundo
+//Guardar posiÃ§Ãµes no mundo
 public class Vector2i {
 
 	public int x,y;

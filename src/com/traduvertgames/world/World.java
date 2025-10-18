@@ -102,7 +102,7 @@ public class World {
 		Game.entities = new ArrayList<Entity>();
 		Game.enemies = new ArrayList<Enemy>();
 		Game.spritesheet = new Spritesheet("/spritesheet.png");
-		// Passando tamanho dele e posições
+		// Passando tamanho dele e posiÃ§Ãµes
 		Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
 		// Adicionar o jogador na lista e ja aparece na tela
 		Game.entities.add(Game.player);
@@ -111,7 +111,7 @@ public class World {
 	}
 	public void render(Graphics g) {
 		
-		//Otimizando e renderizando o mapa apenas para onde a Câmera pega
+		//Otimizando e renderizando o mapa apenas para onde a CÃ¢mera pega
 		int xstart = Camera.x / 16;
 		int ystart = Camera.y / 16;
 

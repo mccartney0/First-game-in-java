@@ -1,2 +1,4 @@
 # save game file
 save.txt
+.gradle/
+build/

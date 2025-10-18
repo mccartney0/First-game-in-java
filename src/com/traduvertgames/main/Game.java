@@ -83,7 +83,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		bullets = new ArrayList<BulletShoot>();
 
 		spritesheet = new Spritesheet("/spritesheet.png");
-// Passando tamanho dele e posições
+// Passando tamanho dele e posiÃ§Ãµes
 		player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
 // Adicionar o jogador na lista e ja aparece na tela
 		entities.add(player);
@@ -122,7 +122,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		game.start();
 	}
 
-	// Toda a lógica fica no update ou tick
+	// Toda a lÃ³gica fica no update ou tick
 //Primeiro atualiza, depois renderiza
 	public void update() {
 		
@@ -144,7 +144,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				}
 			}
 			
-			this.restartGame = false; // Prevenção
+			this.restartGame = false; // PrevenÃ§Ã£o
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
 				e.update();
@@ -158,7 +158,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 
 			if (enemies.size() == 0) {
-//Avançar para o próximo nível
+//AvanÃ§ar para o prÃ³ximo nÃ­vel
 				CUR_LEVEL++;
 				if(CUR_LEVEL == MAX_LEVEL) {
 					levelPlus+=1;
@@ -186,7 +186,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				World.restartGame(newWorld);
 			}
 		} else if (gameState == "GAMEOVER") {
-//Forma de Fazer animação - Game over
+//Forma de Fazer animaÃ§Ã£o - Game over
 			this.framesGameOver++;
 			if (this.framesGameOver == 30) {
 				this.framesGameOver = 0;
@@ -226,7 +226,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 	}
 
-	public void render() { // Renderização funciona por ordem de código, primeira linhas, segunda, etc...
+	public void render() { // RenderizaÃ§Ã£o funciona por ordem de cÃ³digo, primeira linhas, segunda, etc...
 
 		BufferStrategy bs = this.getBufferStrategy();
 		if (bs == null) {
@@ -330,14 +330,14 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	}
 
 	@Override
-	// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
+	// Aqui sÃ³ trocamos as variÃ¡veis. A lÃ³gica fica no UPDATE || Tick
 	public void keyPressed(KeyEvent e) {
 		
 		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
 			player.jump = true;
 		}
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
-			// execute tal ação!
+			// execute tal aÃ§Ã£o!
 			player.right = true;
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			player.left = true;
@@ -383,7 +383,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	@Override
 	public void keyReleased(KeyEvent e) {
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
-			// execute tal ação!
+			// execute tal aÃ§Ã£o!
 			player.right = false;
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			player.left = false;
