@@ -5,7 +5,6 @@ import java.awt.Graphics;
 import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.List;
-import java.util.Random;
 
 import com.traduvertgames.main.Sound;
 import com.traduvertgames.entities.Entity;
@@ -47,10 +46,10 @@ public class Enemy extends Entity {
 		mheight = 8;
 //		If para verificar a distancia entre inimigo e jogador e seguir
 //		if(this.calculateDistance(this.getX(), this.getY(), Game.player.getX(), Game.player.getY()) < 40) {
-		// Se estiver colidindo, o inimigo ir� parar
+		// Se estiver colidindo, o inimigo irá parar
 //		if (this.isCollidingWithPlayer() == false) {
 //
-////		if (Game.rand.nextInt(100) < 50) { // Fazendo os NPCs n�o se colidirem 1#
+////		if (Game.rand.nextInt(100) < 50) { // Fazendo os NPCs não se colidirem 1#
 //			
 //			// IA dos mobs seguindo o jogador
 //			if ((int) x < Game.player.getX() && World.isFree((int) (x + speed), this.getY(),z)
@@ -70,7 +69,7 @@ public class Enemy extends Entity {
 //		} 
 //		else {
 
-// Est� colidindo
+// Está colidindo
 // Retirando vira do jogador
 //			if (Game.rand.nextInt(100) < 10) {
 //				Game.player.life -= Game.rand.nextInt(3);
@@ -104,11 +103,11 @@ public class Enemy extends Entity {
 					Game.player.damage = true;
 				}
 			}
-			// Verificação para o método de isCollidingEnemys.
-			if (!isCollidingWithPlayer()) {
-				if (new Random().nextInt(100) < 60)
-					followPath(path);
-//			  	followPath(path , speed); // metódo para utilizar speed do enemy
+				if (Game.rand.nextInt(100) < 60)
+			if (Game.rand.nextInt(100) < 5) {
+					if (Game.rand.nextInt(100) < 60)
+				if (Game.rand.nextInt(100) < 5) {
+//			  	followPath(path , speed); // metÃ³do para utilizar speed do enemy
 			}
 
 			if (new Random().nextInt(100) < 5) {
@@ -136,11 +135,11 @@ public class Enemy extends Entity {
 					}
 				}
 
-				// Verificação para o método de isCollidingEnemys.
+				// VerificaÃ§Ã£o para o mÃ©todo de isCollidingEnemys.
 				if (!isCollidingWithPlayer()) {
 					if (new Random().nextInt(100) < 60)
 						followPath(path);
-//				  	followPath(path , speed); // metódo para utilizar speed do enemy
+//				  	followPath(path , speed); // metÃ³do para utilizar speed do enemy
 				}
 
 				if (new Random().nextInt(100) < 5) {
@@ -157,7 +156,7 @@ public class Enemy extends Entity {
 //			Vector2i start = new Vector2i((int) (x/16),(int)(y/16));
 //			
 //			//Terminam
-//			//Onde quer que o INIMIGO v� ?
+//			//Onde quer que o INIMIGO vá ?
 //			Vector2i end = new Vector2i((int) (Game.player.x/16),(int)(Game.player.y/16));
 //			
 //			path = AStar.findPath(Game.world, start, end);
@@ -191,7 +190,7 @@ public class Enemy extends Entity {
 			Game.enemies.add(en);
 			Enemy.addEnemy = false;
 		}
-		// This ou sem o This n�o faz diferen�a
+		// This ou sem o This não faz diferença
 		if (isDamaged) {
 			this.damageCurrent++;
 			if (this.damageCurrent == this.damageFrames) {
@@ -238,14 +237,16 @@ public class Enemy extends Entity {
 //			}
 
 	public boolean isCollidingWithPlayer() {
-		Rectangle enemyCurrent = new Rectangle(this.getX() + maskx, this.getY() + masky, mwidth, mheight);
-		Rectangle player = new Rectangle(Game.player.getX(), Game.player.getY(), 16, 16);
+		int enemyX = this.getX() + maskx;
+		int enemyY = this.getY() + masky;
+		int playerX = Game.player.getX();
+		int playerY = Game.player.getY();
 
-		return enemyCurrent.intersects(player);
+		return enemyX < playerX + 16 && enemyX + mwidth > playerX && enemyY < playerY + 16 && enemyY + mheight > playerY;
 	}
 
-	// Trocar a m�scara quadrada para nao colidir
-//	Testar mascara de colis�o
+	// Trocar a máscara quadrada para nao colidir
+//	Testar mascara de colisão
 //	public void render (Graphics g) {
 //		super.render(g);
 //		g.setColor(Color.blue);
@@ -254,7 +255,7 @@ public class Enemy extends Entity {
 
 	public void render(Graphics g) {
 		if (!isDamaged) {
-			// * Sempre que renderizar, tem que por a posi��o da Camera
+			// * Sempre que renderizar, tem que por a posição da Camera
 			g.drawImage(sprites[index], this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
 		} else {
 			g.drawImage(Entity.ENEMY_FEEDBACK, this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
