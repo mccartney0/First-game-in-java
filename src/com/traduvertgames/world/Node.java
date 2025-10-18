@@ -1,6 +1,6 @@
 package com.traduvertgames.world;
 
-//Classe node serve para comparar posições
+//Classe node serve para comparar posiÃ§Ãµes
 public class Node {
 
 	public Vector2i tile;

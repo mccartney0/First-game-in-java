@@ -2,6 +2,7 @@ package com.traduvertgames.entities;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 
@@ -117,7 +118,7 @@ public class Player extends Entity {
 		if (right && World.isFree((int) (x + speed), this.getY(), z)) {
 			moved = true;
 			dir = right_dir;
-			// Mover a câmera - Colocar a camera para se mover com o jogador EX:
+			// Mover a camera - Colocar a camera para se mover com o jogador EX:
 			// Camera.x+=speed;
 			x += speed;
 		} else if (left && World.isFree((int) (x - speed), this.getY(), z)) {
@@ -153,8 +154,8 @@ public class Player extends Entity {
 				}
 			}
 
-			// Adicionando a câmera com o Jogador sempre no meio da Tela
-			// Renderizando o mapa com método Clamp da Camera
+			// Adicionando a camera com o Jogador sempre no meio da Tela
+			// Renderizando o mapa com metodo Clamp da Camera
 //			Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 //			Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.WIDTH * 16 - Game.HEIGHT);
 		}
@@ -245,21 +246,13 @@ public class Player extends Entity {
 		updateCamera();
 	}
 
-		int playerX = xnext + this.maskx + 2;
-		int playerY = ynext + this.masky + 2;
-		int playerWidth = this.mwidth - 4;
-		int playerHeight = this.mheight - 4;
-
-			int enemyX = e.getX() + e.maskx;
-			int enemyY = e.getY() + e.masky;
-
-			if (playerX < enemyX + e.mwidth && playerX + playerWidth > enemyX && playerY < enemyY + e.mheight
-					&& playerY + playerHeight > enemyY) {
+	public void updateCamera() {
+		Camera.x = Camera.clamp(this.getX() - (Game.WIDTH / 2), 0, World.WIDTH * 16 - Game.WIDTH);
 		Camera.y = Camera.clamp(this.getY() - (Game.HEIGHT / 2), 0, World.HEIGHT * 16 - Game.HEIGHT);
 	}
 
-	// MÃ©todo para fazer o Player nÃ£o passar por cima do inimigo, a continuaÃ§Ã£o
-	// dele estÃ¡ na classe Enemys no follow path.
+	// Metodo para evitar que o jogador atravesse o inimigo.
+	// A continuidade desta logica esta na classe Enemy, no follow path.
 	public boolean isColiddingEnemys(int xnext, int ynext) {
 		Rectangle player = new Rectangle(xnext + this.maskx + 2, ynext + this.masky + 2, this.mwidth - 4,
 				this.mheight - 4);

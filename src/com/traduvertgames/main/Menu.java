@@ -55,7 +55,7 @@ public class Menu {
 				currentOption = 0;
 		}
 		if (enter) {
-			// Inserindo música
+			// Inserindo mÃºsica
 			Sound.music.loop();
 			enter = false;
 			if (options[currentOption] == "novo jogo" || options[currentOption] == "continuar") {

@@ -28,7 +28,7 @@ public class AStar {
 		return false;
 	}
 
-//	MÈtodo A* para encontrar o caminho
+//	M√©todo A* para encontrar o caminho
 	public static List<Node> findPath(World world, Vector2i start, Vector2i end) {
 		lastTime = System.currentTimeMillis();
 		List<Node> openList = new ArrayList<Node>();
@@ -60,10 +60,10 @@ public class AStar {
 
 			for (int i = 0; i < 9; i++) {
 				if (i == 4)
-					continue; // posiÁ„o 4 = do inimigo, n„o precisa verificar
+					continue; // posi√ß√£o 4 = do inimigo, n√£o precisa verificar
 				int x = current.tile.x;
 				int y = current.tile.y;
-				// calculo para fazer num looping sÛ e trabalhar com vetores
+				// calculo para fazer num looping s√≥ e trabalhar com vetores
 				int xi = (i % 3) - 1;
 				int yi = (i / 3) - 1;
 				// Verifica se o tile existe, se livre vai pra openList
@@ -74,7 +74,7 @@ public class AStar {
 					if (tile instanceof WallTile)
 						continue;
 					
-					// Posibilita o inimigo[NPC] andar em todas direÁıes
+					// Posibilita o inimigo[NPC] andar em todas dire√ß√µes
 					if (i == 0) {
 
 						Tile test = World.tiles[x + xi + 1 + ((y + yi) * World.WIDTH)];
@@ -117,8 +117,8 @@ public class AStar {
 
 				Node node = new Node(a, current, gCost, hCost);
 
-				// Verifico se esse node acima j· tem na closedList
-				// e se o gCost q calculei agora È >= current.gCost, se baterem, da o continuar
+				// Verifico se esse node acima j√° tem na closedList
+				// e se o gCost q calculei agora √© >= current.gCost, se baterem, da o continuar
 				// Tudo isso para deixar o caminho mais curto
 				if (vecInList(closedList, a) && gCost >= current.gCost)
 					continue;
@@ -136,7 +136,7 @@ public class AStar {
 		return null;
 	}
 
-	// Ver se Node(posiÁ„o q estou verificando ja est· na lista
+	// Ver se Node(posi√ß√£o q estou verificando ja est√° na lista
 	private static boolean vecInList(List<Node> list, Vector2i vector) {
 		for (int i = 0; i < list.size(); i++) {
 			if (list.get(i).tile.equals(vector)) {
