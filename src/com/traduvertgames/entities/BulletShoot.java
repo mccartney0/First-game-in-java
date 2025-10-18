@@ -40,6 +40,7 @@ public class BulletShoot extends Entity {
                         if (Entity.isColliding(this, Game.player)) {
                                 Game.player.life -= 2;
                                 Game.player.damage = true;
+                                Game.registerPlayerDamage();
                                 Game.bullets.remove(this);
                                 return;
                         }

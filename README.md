@@ -34,13 +34,19 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 - **Projéteis** – Há dois tipos de disparo (`Bullet` e `BulletShoot`) com atualizações e renderização independentes; os disparos energizados (`BulletShoot`) agora também são utilizados pelos inimigos para ataques à distância.【F:src/com/traduvertgames/entities/Bullet.java†L5-L12】【F:src/com/traduvertgames/entities/BulletShoot.java†L12-L52】
 - **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão, contabilizando eliminações para avançar de fase.【F:src/com/traduvertgames/entities/Enemy.java†L28-L370】
 
+## Pontuação e combos
+
+- **Pontuação dinâmica** – Cada inimigo derrotado concede pontos que escalam com o multiplicador de combo atual; a pontuação final e o recorde são exibidos tanto na HUD quanto na tela de game over.【F:src/com/traduvertgames/main/Game.java†L68-L152】【F:src/com/traduvertgames/main/Game.java†L227-L309】
+- **Combos temporizados** – O multiplicador de combo aumenta a cada abate consecutivo e expira após alguns segundos sem derrotas ou ao sofrer dano, reiniciando a contagem.【F:src/com/traduvertgames/main/Game.java†L125-L207】【F:src/com/traduvertgames/main/Game.java†L310-L360】【F:src/com/traduvertgames/entities/Enemy.java†L169-L220】【F:src/com/traduvertgames/entities/BulletShoot.java†L12-L52】
+- **Registro persistente** – O save game inclui a pontuação atual, recorde e os melhores combos para que o progresso da partida seja retomado exatamente de onde parou.【F:src/com/traduvertgames/main/Game.java†L146-L205】【F:src/com/traduvertgames/main/Menu.java†L63-L170】
+
 ## Sistema de salvamento
 
-O jogo grava vida, mana, quantidade de munição (arma), inimigos derrotados, progresso de `levelPlus` e fase atual em `save.txt`, aplicando uma codificação simples. A opção "carregar jogo" do menu lê esse arquivo, restaura atributos do jogador e recarrega o mapa correspondente. Ao morrer, pressionar `Enter` recarrega automaticamente o último save disponível; caso o arquivo não exista, um novo jogo é iniciado do nível 1 com todos os recursos resetados.【F:src/com/traduvertgames/main/Game.java†L63-L156】【F:src/com/traduvertgames/main/Game.java†L409-L637】【F:src/com/traduvertgames/main/Menu.java†L24-L162】
+O jogo grava vida, mana, quantidade de munição (arma), inimigos derrotados, progresso de `levelPlus`, fase atual, pontuação, recorde e os melhores combos em `save.txt`, aplicando uma codificação simples. A opção "carregar jogo" do menu lê esse arquivo, restaura atributos do jogador, atualiza o placar e recarrega o mapa correspondente. Ao morrer, pressionar `Enter` recarrega automaticamente o último save disponível; caso o arquivo não exista, um novo jogo é iniciado do nível 1 com todos os recursos resetados.【F:src/com/traduvertgames/main/Game.java†L63-L207】【F:src/com/traduvertgames/main/Game.java†L409-L637】【F:src/com/traduvertgames/main/Menu.java†L24-L170】
 
 ## HUD, áudio e recursos
 
-- **HUD** – A classe `UI` desenha barras e textos com vida, mana, inimigos restantes, armas e mensagens de `Game Over` diretamente sobre o canvas escalonado.【F:src/com/traduvertgames/main/Game.java†L229-L288】
+- **HUD** – A classe `UI` desenha barras e textos com vida, mana, inimigos restantes, armas, placar e mensagens de `Game Over` diretamente sobre o canvas escalonado.【F:src/com/traduvertgames/main/Game.java†L227-L309】
 - **Áudio** – `Sound.java` encapsula efeitos de som e música ambiente utilizados ao interagir com o menu ou sofrer dano.【F:src/com/traduvertgames/main/Sound.java†L1-L120】
 - **Mundo** – A classe `World` carrega os tiles dos arquivos `level*.png`, gerando colisões, entidades e caminhos de A* a partir dos dados de pixels.【F:src/com/traduvertgames/world/World.java†L20-L145】
 
