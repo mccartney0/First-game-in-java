@@ -25,6 +25,7 @@ import com.traduvertgames.entities.BulletShoot;
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.Player;
+import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
@@ -239,12 +240,44 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		
                 if (gameState == "NORMAL") {
 // Salvar o Level
-                        if(Game.saveGame) {
+                        if (Game.saveGame) {
                                 Game.saveGame = false;
-                                String[] opt1 = {"vida","mana","arma","inimigosMortos","levelPlus","level","pontuacao","recorde","melhorCombo","melhorComboSessao"};
-                                int[] opt2 = {(int) Player.life,(int) Player.mana,(int) Player.weapon, Enemy.enemies, levelPlus, this.CUR_LEVEL,
-                                                Game.getScore(), Game.getHighScore(), Game.getBestComboRecord(), Game.getBestComboThisRun()};
-                                Menu.saveGame(opt1,opt2,20);
+                                java.util.List<String> keys = new java.util.ArrayList<String>();
+                                java.util.List<Integer> values = new java.util.ArrayList<Integer>();
+                                keys.add("vida");
+                                values.add((int) Player.life);
+                                keys.add("mana");
+                                values.add((int) Player.mana);
+                                keys.add("arma");
+                                values.add((int) Player.weapon);
+                                keys.add("inimigosMortos");
+                                values.add(Enemy.enemies);
+                                keys.add("levelPlus");
+                                values.add(levelPlus);
+                                keys.add("level");
+                                values.add(this.CUR_LEVEL);
+                                keys.add("pontuacao");
+                                values.add(Game.getScore());
+                                keys.add("recorde");
+                                values.add(Game.getHighScore());
+                                keys.add("melhorCombo");
+                                values.add(Game.getBestComboRecord());
+                                keys.add("melhorComboSessao");
+                                values.add(Game.getBestComboThisRun());
+                                keys.add("armaAtual");
+                                values.add(Player.getCurrentWeaponOrdinal());
+                                keys.add("armasDesbloqueadas");
+                                values.add(Player.getWeaponUnlockMask());
+                                for (WeaponType type : WeaponType.values()) {
+                                        keys.add("energiaArma_" + type.name());
+                                        values.add((int) Math.round(Player.getStoredEnergyForType(type)));
+                                }
+                                String[] opt1 = keys.toArray(new String[0]);
+                                int[] opt2 = new int[values.size()];
+                                for (int i = 0; i < values.size(); i++) {
+                                        opt2[i] = values.get(i);
+                                }
+                                Menu.saveGame(opt1, opt2, 20);
                                 System.out.println("Jogo salvo!");
                         }
 
@@ -273,23 +306,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 					
 				}
 				
-				if(CUR_LEVEL == MAX_LEVEL) {
-					Player.maxMana = 1500;
-					Player.maxLife = 1000;
-					Player.life = 500;
-					Player.maxWeapon = 1000;
-				}else if(levelPlus >= 1 ){
-					Player.maxMana = 500;
-					Player.maxLife = 100;
-					Player.maxWeapon = 250;
-					Player.mana = 500;
-					Player.life = 100;
-					Player.weapon = 250;
-				}
-				
-				String newWorld = "level" + CUR_LEVEL + ".png";
-				World.restartGame(newWorld);
-			}
+                                applyProgressBonuses();
+
+                                String newWorld = "level" + CUR_LEVEL + ".png";
+                                World.restartGame(newWorld);
+                        }
 		} else if (gameState == "GAMEOVER") {
 //Forma de Fazer animação - Game over
 			this.framesGameOver++;
@@ -338,35 +359,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		ui.render(g);
 		g.dispose();
 
-		g = bs.getDrawGraphics();
-		g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
-//Renderizar a String - Full HD
-		g.setFont(new Font("arial", Font.BOLD, 20));
-		g.setColor(Color.white);
-                g.drawString("Vida: ", 30, 32);
-                g.drawString((int) Player.life + "/" + (int) Player.maxLife, 158, 32);
-                g.drawString("Inimigos: ", 30, 62);
-                g.drawString(Game.enemies.size() +"", 118, 63);
-                g.drawString("Inimigos mortos: ", 413, 62);
-                g.drawString(Enemy.enemies +"", 590, 63);
-                g.drawString("Mana: ", 413, 32);
-                g.drawString((int) Player.mana + "/" + (int) Player.maxMana, 560, 32);
-                g.drawString("Pontuação: ", 413, 92);
-                g.drawString(String.valueOf(Game.getScore()), 560, 92);
-                g.drawString("Recorde: ", 413, 122);
-                g.drawString(String.valueOf(Game.getHighScore()), 560, 122);
-                g.drawString("Melhor combo (recorde): x" + Game.getBestComboRecord(), 413, 152);
-                if(Player.weapon >0) {
-                g.drawString("Arma: ", 22, 465);
-                g.drawString((int) Player.weapon + "/" + (int) Player.maxWeapon, 165, 467);
-                }
-                if (Game.getComboMultiplier() > 1) {
-                        g.drawString("Combo x" + Game.getComboMultiplier(), 30, 92);
-                        g.drawString("Tempo combo: " + Game.getComboSecondsRemaining() + "s", 30, 122);
-                } else {
-                        g.drawString("Melhor combo (partida): x" + Game.getBestComboThisRun(), 30, 92);
-                }
-//
+                g = bs.getDrawGraphics();
+                g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
+                ui.renderOverlay((Graphics2D) g);
+
                 if (gameState == "GAMEOVER") {
                         Graphics2D g2 = (Graphics2D) g;
                         g2.setColor(new Color(0, 0, 0, 100));
@@ -469,14 +465,30 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 		}
 
-		if (e.getKeyCode() == KeyEvent.VK_X) {
-			player.shoot = true;
-		}
+                if (e.getKeyCode() == KeyEvent.VK_X) {
+                        player.shoot = true;
+                }
 
-		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-			this.restartGame = true;
-			if(gameState == "MENU") {
-				menu.enter = true;
+                if (e.getKeyCode() == KeyEvent.VK_Q) {
+                        player.cycleWeapon(false);
+                } else if (e.getKeyCode() == KeyEvent.VK_E) {
+                        player.cycleWeapon(true);
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_1 || e.getKeyCode() == KeyEvent.VK_NUMPAD1) {
+                        player.selectWeaponSlot(1);
+                } else if (e.getKeyCode() == KeyEvent.VK_2 || e.getKeyCode() == KeyEvent.VK_NUMPAD2) {
+                        player.selectWeaponSlot(2);
+                } else if (e.getKeyCode() == KeyEvent.VK_3 || e.getKeyCode() == KeyEvent.VK_NUMPAD3) {
+                        player.selectWeaponSlot(3);
+                } else if (e.getKeyCode() == KeyEvent.VK_4 || e.getKeyCode() == KeyEvent.VK_NUMPAD4) {
+                        player.selectWeaponSlot(4);
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                        this.restartGame = true;
+                        if(gameState == "MENU") {
+                                menu.enter = true;
 			}
 		}
 		
@@ -588,12 +600,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         }
 
         private void resetPlayerToDefaults() {
-                Player.maxLife = 100;
-                Player.life = Player.maxLife;
-                Player.maxMana = 500;
-                Player.mana = 0;
-                Player.maxWeapon = 250;
-                Player.weapon = 0;
+                Player.resetPersistentArsenal();
+                Player.resetBaseStats();
         }
 
         private void resetScoreState() {
@@ -607,17 +615,21 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 if (this.CUR_LEVEL == MAX_LEVEL) {
                         Player.maxMana = 1500;
                         Player.maxLife = 1000;
-                        Player.maxWeapon = 1000;
+                        Player.setWeaponCapacityMultiplier(4.0);
                 } else {
                         Player.maxMana = 500;
                         Player.maxLife = 100;
-                        Player.maxWeapon = 250;
+                        Player.setWeaponCapacityMultiplier(1.0);
                 }
 
                 if (this.levelPlus >= 1) {
                         Player.mana = Player.maxMana;
                         Player.life = Player.maxLife;
-                        Player.weapon = Player.maxWeapon;
+                        if (player != null) {
+                                player.refillCurrentWeapon();
+                        } else {
+                                Player.weapon = Player.maxWeapon;
+                        }
                 }
         }
 
@@ -639,6 +651,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 } else if (Player.weapon > Player.maxWeapon) {
                         Player.weapon = Player.maxWeapon;
                 }
+                if (player != null) {
+                        player.setCurrentWeaponEnergy(Player.weapon);
+                }
         }
 
         public void applyPostLoadAdjustments() {
@@ -647,6 +662,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 applyProgressBonuses();
                 clampPlayerResources();
                 normalizeScoreAfterLoad();
+                if (player != null) {
+                        player.syncFromPersistentState();
+                }
                 gameState = "NORMAL";
         }
 

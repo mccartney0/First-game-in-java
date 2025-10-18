@@ -18,7 +18,7 @@ public class Enemy extends Entity {
 	private BufferedImage[] sprites;
 	public static int enemies = 0;
 
-	private int life = 2;
+        private double life = 2;
 
 	private boolean isDamaged = false;
 	private int damageFrames = 10, damageCurrent = 0;
@@ -341,7 +341,8 @@ public class Enemy extends Entity {
                 double angle = Math.atan2(Game.player.getY() - this.getY(), Game.player.getX() - this.getX());
                 double dx = Math.cos(angle);
                 double dy = Math.sin(angle);
-                BulletShoot bullet = new BulletShoot(this.getX() + 8, this.getY() + 8, 4, 4, null, dx, dy, true);
+                BulletShoot bullet = new BulletShoot(this.getX() + 8, this.getY() + 8, 4, 4, null, dx, dy, 4.0, 2.0,
+                                true);
                 bullet.setMask(0, 0, 4, 4);
                 Game.bullets.add(bullet);
                 attackCooldown = MAX_ATTACK_COOLDOWN - Game.rand.nextInt(20);
@@ -365,8 +366,14 @@ public class Enemy extends Entity {
 
                         if (Entity.isColliding(this, e)) {
                                 isDamaged = true;
-                                life--;
+                                double takenDamage = 1.0;
+                                if (e instanceof BulletShoot) {
+                                        BulletShoot projectile = (BulletShoot) e;
+                                        takenDamage = projectile.getDamage();
+                                }
+                                life -= takenDamage;
                                 Game.bullets.remove(i);
+                                i--;
                                 return;
                         }
                 }

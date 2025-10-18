@@ -10,25 +10,28 @@ import com.traduvertgames.world.World;
 
 public class BulletShoot extends Entity {
 
-        private double dx;
-        private double dy;
-        private double spd = 4;
+        private final double dx;
+        private final double dy;
+        private final double speed;
 
         private int life = 30, curLife = 0;
 
         private final boolean fromEnemy;
+        private final double damage;
 
         public BulletShoot(int x, int y, int width, int height, BufferedImage sprite, double dx, double dy,
-                        boolean fromEnemy) {
+                        double speed, double damage, boolean fromEnemy) {
                 super(x, y, width, height, sprite);
                 this.dx = dx;
                 this.dy = dy;
+                this.speed = speed;
+                this.damage = damage;
                 this.fromEnemy = fromEnemy;
         }
 
         public void update() {
-                x += dx * spd;
-                y += dy * spd;
+                x += dx * speed;
+                y += dy * speed;
                 curLife++;
                 // Remover caso atinja uma parede ou saia do mapa
                 if (hitWall() || curLife >= life) {
@@ -38,7 +41,7 @@ public class BulletShoot extends Entity {
 
                 if (fromEnemy) {
                         if (Entity.isColliding(this, Game.player)) {
-                                Game.player.life -= 2;
+                                Game.player.life -= damage;
                                 Game.player.damage = true;
                                 Game.registerPlayerDamage();
                                 Game.bullets.remove(this);
@@ -48,7 +51,7 @@ public class BulletShoot extends Entity {
         }
 
         public void render(Graphics g) {
-                g.setColor(Color.pink);
+                g.setColor(fromEnemy ? Color.ORANGE : Color.pink);
                 g.fillOval(this.getX() - Camera.x, this.getY() - Camera.y, width, height);
         }
 
@@ -62,4 +65,7 @@ public class BulletShoot extends Entity {
                 return fromEnemy;
         }
 
+        public double getDamage() {
+                return damage;
+        }
 }
