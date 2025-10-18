@@ -53,22 +53,33 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static List<BulletShoot> bullets;
 	public static Spritesheet spritesheet;
 
-	public static World world;
+        public static World world;
 
-	public static Player player;
+        public static Player player;
 
-	public static Random rand;
+        public static Random rand;
 
-	public UI ui;
+        public UI ui;
 
-	public static String gameState = "MENU";
-	private boolean showMessageGameOver = true;
-	private int framesGameOver = 0;
-	private boolean restartGame = false;
+        public static String gameState = "MENU";
+        private boolean showMessageGameOver = true;
+        private int framesGameOver = 0;
+        private boolean restartGame = false;
 
-	public static boolean saveGame = false;
-	public int levelPlus = 0;
-	public Menu menu;
+        public static boolean saveGame = false;
+        public int levelPlus = 0;
+        public Menu menu;
+
+        private static final int BASE_SCORE_PER_KILL = 100;
+        private static final int MAX_COMBO_MULTIPLIER = 5;
+        private static final int COMBO_DURATION_FRAMES = 240;
+
+        private static int score = 0;
+        private static int highScore = 0;
+        private static int comboMultiplier = 1;
+        private static int comboTimer = 0;
+        private static int bestComboRecord = 1;
+        private static int bestComboThisRun = 1;
 
         public Game() throws IOException {
                 instance = this;
@@ -99,6 +110,53 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return instance;
         }
 
+        public static int getScore() {
+                return score;
+        }
+
+        public static void setScore(int value) {
+                score = Math.max(0, value);
+        }
+
+        public static int getHighScore() {
+                return highScore;
+        }
+
+        public static void setHighScore(int value) {
+                highScore = Math.max(0, value);
+        }
+
+        public static int getComboMultiplier() {
+                return comboMultiplier;
+        }
+
+        public static int getComboTimer() {
+                return comboTimer;
+        }
+
+        public static int getComboSecondsRemaining() {
+                if (comboTimer <= 0) {
+                        return 0;
+                }
+                return (int) Math.ceil(comboTimer / 60.0);
+        }
+
+        public static int getBestComboRecord() {
+                return bestComboRecord;
+        }
+
+        public static void setBestComboRecord(int value) {
+                bestComboRecord = Math.max(1, value);
+        }
+
+        public static int getBestComboThisRun() {
+                return bestComboThisRun;
+        }
+
+        public static void setBestComboThisRun(int value) {
+                bestComboThisRun = Math.max(1, value);
+        }
+
         public void setCurrentLevel(int level) {
                 if (level < 1)
                         level = 1;
@@ -121,11 +179,35 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return this.levelPlus;
         }
 
+        public static void registerEnemyKill() {
+                int points = BASE_SCORE_PER_KILL * comboMultiplier;
+                score += points;
+                if (score > highScore) {
+                        highScore = score;
+                }
+
+                bestComboThisRun = Math.max(bestComboThisRun, comboMultiplier);
+                bestComboRecord = Math.max(bestComboRecord, bestComboThisRun);
+
+                comboTimer = COMBO_DURATION_FRAMES;
+                if (comboMultiplier < MAX_COMBO_MULTIPLIER) {
+                        comboMultiplier++;
+                }
+        }
+
+        public static void registerPlayerDamage() {
+                if (comboMultiplier > 1) {
+                        bestComboRecord = Math.max(bestComboRecord, comboMultiplier);
+                }
+                comboMultiplier = 1;
+                comboTimer = 0;
+        }
+
         public void initFrame() {
-		frame = new JFrame("Game 2 RPG");
-		frame.add(this);
-		frame.setResizable(false);
-		frame.pack();
+                frame = new JFrame("Game 2 RPG");
+                frame.add(this);
+                frame.setResizable(false);
+                frame.pack();
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
@@ -155,21 +237,23 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 //Primeiro atualiza, depois renderiza
 	public void update() {
 		
-		if (gameState == "NORMAL") {
-// Salvar o Level 			
+                if (gameState == "NORMAL") {
+// Salvar o Level
                         if(Game.saveGame) {
                                 Game.saveGame = false;
-                                String[] opt1 = {"vida","mana","arma","inimigosMortos","levelPlus","level"};
-                                int[] opt2 = {(int) Player.life,(int) Player.mana,(int) Player.weapon, Enemy.enemies, levelPlus, this.CUR_LEVEL};
+                                String[] opt1 = {"vida","mana","arma","inimigosMortos","levelPlus","level","pontuacao","recorde","melhorCombo","melhorComboSessao"};
+                                int[] opt2 = {(int) Player.life,(int) Player.mana,(int) Player.weapon, Enemy.enemies, levelPlus, this.CUR_LEVEL,
+                                                Game.getScore(), Game.getHighScore(), Game.getBestComboRecord(), Game.getBestComboThisRun()};
                                 Menu.saveGame(opt1,opt2,20);
                                 System.out.println("Jogo salvo!");
                         }
-			
-			this.restartGame = false; // Prevenção
-			for (int i = 0; i < entities.size(); i++) {
-				Entity e = entities.get(i);
-				e.update();
-			}
+
+                        this.restartGame = false; // Prevenção
+                        updateComboTimer();
+                        for (int i = 0; i < entities.size(); i++) {
+                                Entity e = entities.get(i);
+                                e.update();
+                        }
 
 			for (int i = 0; i < bullets.size(); i++) {
 				bullets.get(i).update();
@@ -230,9 +314,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
         public void render() { // Renderização funciona por ordem de código, primeira linhas, segunda, etc...
 
-		BufferStrategy bs = this.getBufferStrategy();
-		if (bs == null) {
-			this.createBufferStrategy(3);
+                BufferStrategy bs = this.getBufferStrategy();
+                if (bs == null) {
+                        this.createBufferStrategy(3);
 			return;
 		}
 		Graphics g = image.getGraphics();
@@ -259,36 +343,62 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 //Renderizar a String - Full HD
 		g.setFont(new Font("arial", Font.BOLD, 20));
 		g.setColor(Color.white);
-		g.drawString("Vida: ", 30, 32);
-		g.drawString((int) Player.life + "/" + (int) Player.maxLife, 158, 32);
-		g.drawString("Inimigos: ", 30, 62);
-		g.drawString(Game.enemies.size() +"", 118, 63);
-		g.drawString("Inimigos mortos: ", 413, 62);
-		g.drawString(Enemy.enemies +"", 590, 63);
-		g.drawString("Mana: ", 413, 32);
-		g.drawString((int) Player.mana + "/" + (int) Player.maxMana, 560, 32);
-		if(Player.weapon >0) {
-		g.drawString("Arma: ", 22, 465);
-		g.drawString((int) Player.weapon + "/" + (int) Player.maxWeapon, 165, 467);
-		}
-//		
-		if (gameState == "GAMEOVER") {
-			Graphics2D g2 = (Graphics2D) g;
-			g2.setColor(new Color(0, 0, 0, 100));
-			g2.fillRect(0, 0, WIDTH * SCALE, HEIGHT * SCALE);
+                g.drawString("Vida: ", 30, 32);
+                g.drawString((int) Player.life + "/" + (int) Player.maxLife, 158, 32);
+                g.drawString("Inimigos: ", 30, 62);
+                g.drawString(Game.enemies.size() +"", 118, 63);
+                g.drawString("Inimigos mortos: ", 413, 62);
+                g.drawString(Enemy.enemies +"", 590, 63);
+                g.drawString("Mana: ", 413, 32);
+                g.drawString((int) Player.mana + "/" + (int) Player.maxMana, 560, 32);
+                g.drawString("Pontuação: ", 413, 92);
+                g.drawString(String.valueOf(Game.getScore()), 560, 92);
+                g.drawString("Recorde: ", 413, 122);
+                g.drawString(String.valueOf(Game.getHighScore()), 560, 122);
+                g.drawString("Melhor combo (recorde): x" + Game.getBestComboRecord(), 413, 152);
+                if(Player.weapon >0) {
+                g.drawString("Arma: ", 22, 465);
+                g.drawString((int) Player.weapon + "/" + (int) Player.maxWeapon, 165, 467);
+                }
+                if (Game.getComboMultiplier() > 1) {
+                        g.drawString("Combo x" + Game.getComboMultiplier(), 30, 92);
+                        g.drawString("Tempo combo: " + Game.getComboSecondsRemaining() + "s", 30, 122);
+                } else {
+                        g.drawString("Melhor combo (partida): x" + Game.getBestComboThisRun(), 30, 92);
+                }
+//
+                if (gameState == "GAMEOVER") {
+                        Graphics2D g2 = (Graphics2D) g;
+                        g2.setColor(new Color(0, 0, 0, 100));
+                        g2.fillRect(0, 0, WIDTH * SCALE, HEIGHT * SCALE);
 			g.setFont(new Font("arial", Font.BOLD, 36));
 			g.setColor(Color.white);
 			g.drawString("Game Over", 290, 234);
 			g.setFont(new Font("arial", Font.BOLD, 32));
 
-			if (showMessageGameOver) {
-				g.drawString(">Pressione Enter para reiniciar<", 130, 284);
-			}
+                        if (showMessageGameOver) {
+                                g.drawString(">Pressione Enter para reiniciar<", 130, 284);
+                        }
 
-		} else if (gameState == "MENU") {
-			menu.render(g);
-		}
-		bs.show();
+                        g.setFont(new Font("arial", Font.BOLD, 24));
+                        g.drawString("Pontuação final: " + Game.getScore(), 215, 334);
+                        g.drawString("Recorde: " + Game.getHighScore(), 215, 364);
+                        g.drawString("Melhor combo da partida: x" + Game.getBestComboThisRun(), 215, 394);
+
+                } else if (gameState == "MENU") {
+                        menu.render(g);
+                }
+                bs.show();
+        }
+
+        private void updateComboTimer() {
+                if (comboTimer > 0) {
+                        comboTimer--;
+                        if (comboTimer <= 0) {
+                                comboTimer = 0;
+                                comboMultiplier = 1;
+                        }
+                }
         }
 
         @Override
@@ -472,6 +582,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 Enemy.enemies = 0;
                 Menu.pause = false;
                 resetPlayerToDefaults();
+                resetScoreState();
                 World.restartGame("level1.png");
                 gameState = "NORMAL";
         }
@@ -483,6 +594,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 Player.mana = 0;
                 Player.maxWeapon = 250;
                 Player.weapon = 0;
+        }
+
+        private void resetScoreState() {
+                score = 0;
+                comboMultiplier = 1;
+                comboTimer = 0;
+                bestComboThisRun = 1;
         }
 
         private void applyProgressBonuses() {
@@ -528,11 +646,29 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 Menu.pause = false;
                 applyProgressBonuses();
                 clampPlayerResources();
+                normalizeScoreAfterLoad();
                 gameState = "NORMAL";
         }
 
         private void resetGameOverState() {
                 this.framesGameOver = 0;
                 this.showMessageGameOver = true;
+        }
+
+        private void normalizeScoreAfterLoad() {
+                if (score < 0) {
+                        score = 0;
+                }
+                if (highScore < score) {
+                        highScore = score;
+                }
+                if (bestComboThisRun < 1) {
+                        bestComboThisRun = 1;
+                }
+                if (bestComboRecord < bestComboThisRun) {
+                        bestComboRecord = bestComboThisRun;
+                }
+                comboMultiplier = 1;
+                comboTimer = 0;
         }
 }

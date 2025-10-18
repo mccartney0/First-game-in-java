@@ -141,6 +141,18 @@ public class Menu {
                                                 pause = false;
                                         }
                                         break;
+                                case "pontuacao":
+                                        Game.setScore(Integer.parseInt(value));
+                                        break;
+                                case "recorde":
+                                        Game.setHighScore(Integer.parseInt(value));
+                                        break;
+                                case "melhorCombo":
+                                        Game.setBestComboRecord(Integer.parseInt(value));
+                                        break;
+                                case "melhorComboSessao":
+                                        Game.setBestComboThisRun(Integer.parseInt(value));
+                                        break;
                                 default:
                                         break;
                         }

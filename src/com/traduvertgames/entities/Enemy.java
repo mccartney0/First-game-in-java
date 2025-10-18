@@ -180,6 +180,7 @@ public class Enemy extends Entity {
                         if (Game.rand.nextInt(100) < 20) {
                                 Game.player.life -= 2;
                                 Game.player.damage = true;
+                                Game.registerPlayerDamage();
                         }
                 }
         }
@@ -345,10 +346,11 @@ public class Enemy extends Entity {
                 Game.bullets.add(bullet);
                 attackCooldown = MAX_ATTACK_COOLDOWN - Game.rand.nextInt(20);
         }
-	public void destroySelf() {
-		Game.enemies.remove(this);
-		Game.entities.remove(this);
-	}
+        public void destroySelf() {
+                Game.registerEnemyKill();
+                Game.enemies.remove(this);
+                Game.entities.remove(this);
+        }
 
 	// Tirando dano com tiro
         public void collidingBullet() {
