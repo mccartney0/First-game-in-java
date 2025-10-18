@@ -96,24 +96,41 @@ public class World {
 		return false;
 	}
 	
-	public static void restartGame(String level) {
-		Game.entities.clear();
-		Game.enemies.clear();
-		Game.entities = new ArrayList<Entity>();
-		Game.enemies = new ArrayList<Enemy>();
-		Game.spritesheet = new Spritesheet("/spritesheet.png");
-		// Passando tamanho dele e posições
-		Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
-		// Adicionar o jogador na lista e ja aparece na tela
-		Game.entities.add(Game.player);
-		Game.world = new World("/"+level);
-		return;
-	}
-	public void render(Graphics g) {
-		
-		//Otimizando e renderizando o mapa apenas para onde a Câmera pega
-		int xstart = Camera.x / 16;
-		int ystart = Camera.y / 16;
+        public static void restartGame(String level) {
+                Game.entities.clear();
+                Game.enemies.clear();
+                Game.entities = new ArrayList<Entity>();
+                Game.enemies = new ArrayList<Enemy>();
+                Game.spritesheet = new Spritesheet("/spritesheet.png");
+                // Passando tamanho dele e posições
+                Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
+                // Adicionar o jogador na lista e ja aparece na tela
+                Game.entities.add(Game.player);
+                Game.world = new World("/"+level);
+                return;
+        }
+
+        public static boolean isValidTile(int tileX, int tileY) {
+                return tileX >= 0 && tileY >= 0 && tileX < WIDTH && tileY < HEIGHT;
+        }
+
+        public static boolean isWallTile(int tileX, int tileY) {
+                if (!isValidTile(tileX, tileY)) {
+                        return true;
+                }
+                return tiles[tileX + (tileY * WIDTH)] instanceof WallTile;
+        }
+
+        public static boolean isWallByPixel(int pixelX, int pixelY) {
+                int tileX = pixelX / TILE_SIZE;
+                int tileY = pixelY / TILE_SIZE;
+                return isWallTile(tileX, tileY);
+        }
+        public void render(Graphics g) {
+
+                //Otimizando e renderizando o mapa apenas para onde a Câmera pega
+                int xstart = Camera.x / 16;
+                int ystart = Camera.y / 16;
 
 		int xfinal = xstart + (Game.WIDTH / 16) ;
 		int yfinal = ystart + (Game.HEIGHT / 16) ;

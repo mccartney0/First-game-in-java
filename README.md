@@ -19,7 +19,7 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 
 - **Estados do jogo** – O jogo alterna entre os estados `MENU`, `NORMAL` e `GAMEOVER`. O menu principal permite iniciar ou carregar partidas, o estado normal controla o loop de jogo e, ao zerar a vida do jogador, o estado de game over exibe a tela de reinício.【F:src/com/traduvertgames/main/Game.java†L53-L154】【F:src/com/traduvertgames/main/Menu.java†L21-L103】
 - **Loop principal** – O método `run` mantém o jogo atualizado a 60 ticks por segundo, chamando `update()` para lógica e `render()` para desenhar o cenário, entidades, UI e mensagens contextuais.【F:src/com/traduvertgames/main/Game.java†L207-L312】
-- **Progressão de fases** – Ao eliminar todos os inimigos do nível atual, um novo mapa (`level1.png` a `level4.png`) é carregado e, após o último nível, o jogo aumenta os atributos máximos do jogador para partidas estendidas.【F:src/com/traduvertgames/main/Game.java†L115-L154】
+- **Progressão de fases** – Ao eliminar todos os inimigos do nível atual, um novo mapa (`level1.png` a `level4.png`) é carregado. Após o último nível, o jogo aumenta os atributos máximos do jogador para partidas estendidas.【F:src/com/traduvertgames/main/Game.java†L160-L187】
 
 ## Controles e interações
 
@@ -31,8 +31,8 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 ## Itens e recursos
 
 - **Vida, mana e munição** – O jogador possui barras máximas configuradas dinamicamente; pacotes de vida (`LifePack`) e armas (`Weapon`) são coletados via colisão para restaurar recursos.【F:src/com/traduvertgames/entities/Player.java†L19-L118】【F:src/com/traduvertgames/entities/Entity.java†L109-L194】
-- **Projéteis** – Há dois tipos de disparo (`Bullet` e `BulletShoot`) com atualizações e renderização independentes, mantendo o combate ativo na tela.【F:src/com/traduvertgames/entities/Bullet.java†L5-L12】【F:src/com/traduvertgames/entities/BulletShoot.java†L10-L41】
-- **Inimigos** – A IA usa A* para seguir o jogador, atacando quando em alcance e contabilizando eliminações para progressão de nível.【F:src/com/traduvertgames/entities/Enemy.java†L13-L164】
+- **Projéteis** – Há dois tipos de disparo (`Bullet` e `BulletShoot`) com atualizações e renderização independentes; os disparos energizados (`BulletShoot`) agora também são utilizados pelos inimigos para ataques à distância.【F:src/com/traduvertgames/entities/Bullet.java†L5-L12】【F:src/com/traduvertgames/entities/BulletShoot.java†L12-L52】
+- **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão, contabilizando eliminações para avançar de fase.【F:src/com/traduvertgames/entities/Enemy.java†L28-L370】
 
 ## Sistema de salvamento
 
@@ -42,7 +42,7 @@ O jogo grava dados como vida, mana, inimigos derrotados e fase atual em `save.tx
 
 - **HUD** – A classe `UI` desenha barras e textos com vida, mana, inimigos restantes, armas e mensagens de `Game Over` diretamente sobre o canvas escalonado.【F:src/com/traduvertgames/main/Game.java†L229-L288】
 - **Áudio** – `Sound.java` encapsula efeitos de som e música ambiente utilizados ao interagir com o menu ou sofrer dano.【F:src/com/traduvertgames/main/Sound.java†L1-L120】
-- **Mundo** – A classe `World` carrega os tiles dos arquivos `level*.png`, gerando colisões, entidades e caminhos de A* a partir dos dados de pixels.【F:src/com/traduvertgames/world/World.java†L35-L210】
+- **Mundo** – A classe `World` carrega os tiles dos arquivos `level*.png`, gerando colisões, entidades e caminhos de A* a partir dos dados de pixels.【F:src/com/traduvertgames/world/World.java†L20-L145】
 
 ## Requisitos
 
