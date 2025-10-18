@@ -32,19 +32,17 @@ public class Menu {
 	
 	public static boolean saveExists = false;
 	public static boolean saveGame = false;
-	public static String[] spl2;
+        public void update() {
+                File file = new File("save.txt");
+                if(file.exists()) {
+                        saveExists = true;
+                }else {
+                        saveExists = false;
+                }
 
-	public void update() {
-		File file = new File("save.txt");
-		if(file.exists()) {
-			saveExists = true;
-		}else {
-			saveExists = false;
-		}
-		
-		if (up) {
-			up = false;
-			currentOption--;
+                if (up) {
+                        up = false;
+                        currentOption--;
 			if (currentOption < 0)
 				currentOption = maxOption;
 		}
@@ -54,66 +52,104 @@ public class Menu {
 			if (currentOption > maxOption)
 				currentOption = 0;
 		}
-		if (enter) {
-			// Inserindo música
-			Sound.music.loop();
-			enter = false;
-			if (options[currentOption] == "novo jogo" || options[currentOption] == "continuar") {
-				Game.gameState = "NORMAL";
-				pause = false;
-				
-// Deletando o arquivo salvo se clicar em novo jogo novamente
-				file = new File("save.txt");
-				file.delete();
-			}else if(options[currentOption] == "carregar jogo") {
-				file = new File("save.txt");
-				if(file.exists()) {
-					String saver = loadGame(20);
-					try {
-						applySave(saver);
+                if (enter) {
+                        // Inserindo música
+                        Sound.music.loop();
+                        enter = false;
+                        String selected = options[currentOption];
+                        if ("novo jogo".equals(selected)) {
+                                if (pause) {
+                                        Game.gameState = "NORMAL";
+                                        pause = false;
+                                } else {
+                                        Game game = Game.getInstance();
+                                        if (game != null) {
+                                                game.startNewGame();
+                                        } else {
+                                                Game.gameState = "NORMAL";
+                                                pause = false;
+                                        }
+
+                                        file = new File("save.txt");
+                                        if (file.exists()) {
+                                                file.delete();
+                                        }
+                                }
+                        } else if("carregar jogo".equals(selected)) {
+                                file = new File("save.txt");
+                                if(file.exists()) {
+                                        String saver = loadGame(20);
+                                        try {
+                                                applySave(saver);
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
 				}
 				
-			} else if (options[currentOption] == "sair") {
-				JOptionPane.showConfirmDialog(null, "Deseja realmente sair?", "Fechar o jogo", currentOption);
-				System.exit(1);
-			}
-		}
-	}
+                        } else if ("sair".equals(selected)) {
+                                JOptionPane.showConfirmDialog(null, "Deseja realmente sair?", "Fechar o jogo", currentOption);
+                                System.exit(1);
+                        }
+                }
+        }
 
-	public static void applySave(String str) throws IOException {
-		String[] spl = str.split("/");
-		System.out.println("STR: " + str);
-		for(int i = 0; i < spl.length; i++)
-		{
-			spl2 = spl[i].split(":");
-			// Criando os cases para inserir novos dados no SAVE
-			switch (spl2[0])
-			{
-				case "vida":
-					Player.life = Integer.parseInt(spl2[1]);
-					break;
-					
-				case "mana":
-					Player.mana = Integer.parseInt(spl2[1]);
-					break;
-				
-				case "inimigosMortos":
-					Enemy.enemies = Integer.parseInt(spl2[1]);
-					break;
+        public static void applySave(String str) throws IOException {
+                if (str == null || str.isEmpty()) {
+                        return;
+                }
 
-				case "level":
-					System.out.println("level salvo: " + spl2[1]);
-					World.restartGame("level" + spl2[1] + ".png");
-					Game.gameState = "NORMAL";
-					pause = false;
-					break;
+                Game game = Game.getInstance();
+                String[] spl = str.split("/");
+                for (String entry : spl) {
+                        if (entry == null || entry.isEmpty()) {
+                                continue;
+                        }
 
-			}
-		}
-	}
+                        String[] pair = entry.split(":");
+                        if (pair.length != 2) {
+                                continue;
+                        }
+
+                        String key = pair[0];
+                        String value = pair[1];
+
+                        switch (key) {
+                                case "vida":
+                                        Player.life = Integer.parseInt(value);
+                                        break;
+                                case "mana":
+                                        Player.mana = Integer.parseInt(value);
+                                        break;
+                                case "arma":
+                                        Player.weapon = Integer.parseInt(value);
+                                        break;
+                                case "inimigosMortos":
+                                        Enemy.enemies = Integer.parseInt(value);
+                                        break;
+                                case "levelPlus":
+                                        if (game != null) {
+                                                game.setLevelPlus(Integer.parseInt(value));
+                                        }
+                                        break;
+                                case "level":
+                                        if (game != null) {
+                                                game.setCurrentLevel(Integer.parseInt(value));
+                                                World.restartGame("level" + game.getCurrentLevel() + ".png");
+                                        } else {
+                                                World.restartGame("level" + value + ".png");
+                                                Game.gameState = "NORMAL";
+                                                pause = false;
+                                        }
+                                        break;
+                                default:
+                                        break;
+                        }
+                }
+
+                if (game != null) {
+                        game.applyPostLoadAdjustments();
+                }
+        }
 	
 	public static String loadGame(int encode)
 	{

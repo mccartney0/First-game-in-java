@@ -36,7 +36,7 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 
 ## Sistema de salvamento
 
-O jogo grava dados como vida, mana, inimigos derrotados e fase atual em `save.txt`, aplicando uma codificação simples. A opção "carregar jogo" do menu lê esse arquivo e restaura o progresso, inclusive o mapa corrente.【F:src/com/traduvertgames/main/Game.java†L87-L154】【F:src/com/traduvertgames/main/Menu.java†L58-L158】
+O jogo grava vida, mana, quantidade de munição (arma), inimigos derrotados, progresso de `levelPlus` e fase atual em `save.txt`, aplicando uma codificação simples. A opção "carregar jogo" do menu lê esse arquivo, restaura atributos do jogador e recarrega o mapa correspondente. Ao morrer, pressionar `Enter` recarrega automaticamente o último save disponível; caso o arquivo não exista, um novo jogo é iniciado do nível 1 com todos os recursos resetados.【F:src/com/traduvertgames/main/Game.java†L63-L156】【F:src/com/traduvertgames/main/Game.java†L409-L637】【F:src/com/traduvertgames/main/Menu.java†L24-L162】
 
 ## HUD, áudio e recursos
 

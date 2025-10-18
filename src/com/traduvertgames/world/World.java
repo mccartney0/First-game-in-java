@@ -101,6 +101,8 @@ public class World {
                 Game.enemies.clear();
                 Game.entities = new ArrayList<Entity>();
                 Game.enemies = new ArrayList<Enemy>();
+                Game.bullet = new ArrayList<Bullet>();
+                Game.bullets = new ArrayList<BulletShoot>();
                 Game.spritesheet = new Spritesheet("/spritesheet.png");
                 // Passando tamanho dele e posições
                 Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
