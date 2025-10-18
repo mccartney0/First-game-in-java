@@ -42,6 +42,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static final int HEIGHT = 160;
 	public static final int SCALE = 3;
 
+        private static Game instance;
+
         private int CUR_LEVEL = 1, MAX_LEVEL = 4;
 	private BufferedImage image;
 
@@ -68,8 +70,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public int levelPlus = 0;
 	public Menu menu;
 
-	public Game() throws IOException {
-		rand = new Random();
+        public Game() throws IOException {
+                instance = this;
+                rand = new Random();
 		addKeyListener(this);
 		addMouseListener(this);
 		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
@@ -92,7 +95,33 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		menu = new Menu();
 	}
 
-	public void initFrame() {
+        public static Game getInstance() {
+                return instance;
+        }
+
+        public void setCurrentLevel(int level) {
+                if (level < 1)
+                        level = 1;
+                if (level > MAX_LEVEL)
+                        level = MAX_LEVEL;
+                this.CUR_LEVEL = level;
+        }
+
+        public int getCurrentLevel() {
+                return this.CUR_LEVEL;
+        }
+
+        public void setLevelPlus(int value) {
+                if (value < 0)
+                        value = 0;
+                this.levelPlus = value;
+        }
+
+        public int getLevelPlus() {
+                return this.levelPlus;
+        }
+
+        public void initFrame() {
 		frame = new JFrame("Game 2 RPG");
 		frame.add(this);
 		frame.setResizable(false);
@@ -128,21 +157,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		
 		if (gameState == "NORMAL") {
 // Salvar o Level 			
-			if(Game.saveGame) {
-				Game.saveGame = false;
-				if(levelPlus >= 1) {
-					String[] opt1 = {"vida","mana","inimigosMortos","levelPlus","level"};
-					int[] opt2 = {(int) Player.life,(int) Player.mana, Enemy.enemies, levelPlus, this.CUR_LEVEL,};
-					Menu.saveGame(opt1,opt2,20);
-					System.out.println("Jogo salvo com plus level");
-				}else {
-				
-					String[] opt1 = {"vida","mana","inimigosMortos","level"};
-					int[] opt2 = {(int) Player.life,(int) Player.mana, Enemy.enemies, this.CUR_LEVEL};
-					Menu.saveGame(opt1,opt2,20);
-					System.out.println("Jogo salvo!");
-				}
-			}
+                        if(Game.saveGame) {
+                                Game.saveGame = false;
+                                String[] opt1 = {"vida","mana","arma","inimigosMortos","levelPlus","level"};
+                                int[] opt2 = {(int) Player.life,(int) Player.mana,(int) Player.weapon, Enemy.enemies, levelPlus, this.CUR_LEVEL};
+                                Menu.saveGame(opt1,opt2,20);
+                                System.out.println("Jogo salvo!");
+                        }
 			
 			this.restartGame = false; // Prevenção
 			for (int i = 0; i < entities.size(); i++) {
@@ -196,28 +217,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 					this.showMessageGameOver = true;
 			}
 
-			if (restartGame) {
-				this.restartGame = false;
-				Game.gameState = "NORMAL";
-				String newWorld = "level1.png";
-				if (Menu.spl2 != null) {
-					System.out.println("spl2: " + Menu.spl2[0]);
-					newWorld = "level" + Menu.spl2[1] + ".png";					
-				}
-				System.out.println("new world: " + newWorld);
-
-				File file = new File("save.txt");
-				file = new File("save.txt");
-				if(file.exists()) {
-					String saver = Menu.loadGame(20);
-					try {
-						Menu.applySave(saver);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-
-			} 
+                        if (restartGame) {
+                                handleGameOverRestart();
+                        }
 		}else if (gameState == "MENU") {
 			//Menu
 			//Iniciando a camera junto com o jogador
@@ -226,7 +228,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 	}
 
-	public void render() { // Renderização funciona por ordem de código, primeira linhas, segunda, etc...
+        public void render() { // Renderização funciona por ordem de código, primeira linhas, segunda, etc...
 
 		BufferStrategy bs = this.getBufferStrategy();
 		if (bs == null) {
@@ -287,10 +289,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			menu.render(g);
 		}
 		bs.show();
-	}
+        }
 
-	@Override
-	public void run() {
+        @Override
+        public void run() {
 
 		long lastTime = System.nanoTime();
 		double amountOfUpdates = 60.0;
@@ -430,9 +432,107 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	}
 
 	@Override
-	public void mouseExited(MouseEvent e) {
-		// TODO Auto-generated method stub
+        public void mouseExited(MouseEvent e) {
+                // TODO Auto-generated method stub
 
-	}
+        }
 
+        private void handleGameOverRestart() {
+                resetGameOverState();
+                this.restartGame = false;
+                if (!loadGameFromSave()) {
+                        startNewGame();
+                }
+        }
+
+        private boolean loadGameFromSave() {
+                File file = new File("save.txt");
+                if (!file.exists()) {
+                        return false;
+                }
+
+                String saver = Menu.loadGame(20);
+                if (saver == null || saver.isEmpty()) {
+                        return false;
+                }
+
+                try {
+                        Menu.applySave(saver);
+                        return true;
+                } catch (IOException e) {
+                        e.printStackTrace();
+                }
+                return false;
+        }
+
+        public void startNewGame() {
+                resetGameOverState();
+                this.levelPlus = 0;
+                this.CUR_LEVEL = 1;
+                Enemy.enemies = 0;
+                Menu.pause = false;
+                resetPlayerToDefaults();
+                World.restartGame("level1.png");
+                gameState = "NORMAL";
+        }
+
+        private void resetPlayerToDefaults() {
+                Player.maxLife = 100;
+                Player.life = Player.maxLife;
+                Player.maxMana = 500;
+                Player.mana = 0;
+                Player.maxWeapon = 250;
+                Player.weapon = 0;
+        }
+
+        private void applyProgressBonuses() {
+                if (this.CUR_LEVEL == MAX_LEVEL) {
+                        Player.maxMana = 1500;
+                        Player.maxLife = 1000;
+                        Player.maxWeapon = 1000;
+                } else {
+                        Player.maxMana = 500;
+                        Player.maxLife = 100;
+                        Player.maxWeapon = 250;
+                }
+
+                if (this.levelPlus >= 1) {
+                        Player.mana = Player.maxMana;
+                        Player.life = Player.maxLife;
+                        Player.weapon = Player.maxWeapon;
+                }
+        }
+
+        private void clampPlayerResources() {
+                if (Player.life <= 0) {
+                        Player.life = Player.maxLife;
+                } else if (Player.life > Player.maxLife) {
+                        Player.life = Player.maxLife;
+                }
+
+                if (Player.mana < 0) {
+                        Player.mana = 0;
+                } else if (Player.mana > Player.maxMana) {
+                        Player.mana = Player.maxMana;
+                }
+
+                if (Player.weapon < 0) {
+                        Player.weapon = 0;
+                } else if (Player.weapon > Player.maxWeapon) {
+                        Player.weapon = Player.maxWeapon;
+                }
+        }
+
+        public void applyPostLoadAdjustments() {
+                resetGameOverState();
+                Menu.pause = false;
+                applyProgressBonuses();
+                clampPlayerResources();
+                gameState = "NORMAL";
+        }
+
+        private void resetGameOverState() {
+                this.framesGameOver = 0;
+                this.showMessageGameOver = true;
+        }
 }
