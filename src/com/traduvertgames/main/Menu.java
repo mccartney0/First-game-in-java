@@ -38,9 +38,6 @@ public class Menu {
         private static final int OPTIONS_INDEX_DIFFICULTY = 1;
         private static final int OPTIONS_INDEX_BACK = 2;
 
-        private static final int ARROW_X = 235;
-        private static final int TEXT_X = 275;
-        private static final int MAIN_MENU_Y = 234;
         private static final int LINE_HEIGHT = 40;
         private static final int OPTIONS_LINE_HEIGHT = 36;
 
@@ -341,11 +338,19 @@ public class Menu {
 
         public void render(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
+                int screenWidth = Game.WIDTH * Game.SCALE;
+                int screenHeight = Game.HEIGHT * Game.SCALE;
+
                 g2.setColor(new Color(0, 0, 0, 150));
-                g2.fillRect(0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE);
+                g2.fillRect(0, 0, screenWidth, screenHeight);
+
+                String title = ">Traduvert<";
+                Font titleFont = new Font("arial", Font.BOLD, 40);
+                g.setFont(titleFont);
+                int titleX = (screenWidth - g.getFontMetrics().stringWidth(title)) / 2;
+                int titleBaseline = (int) (screenHeight * 0.28);
                 g.setColor(Color.yellow);
-                g.setFont(new Font("arial", Font.BOLD, 40));
-                g.drawString(">Traduvert<", 245, 134);
+                g.drawString(title, titleX, titleBaseline);
 
                 if (currentScreen == Screen.MAIN) {
                         renderMainMenu(g);
@@ -355,12 +360,27 @@ public class Menu {
         }
 
         private void renderMainMenu(Graphics g) {
-                g.setFont(new Font("arial", Font.BOLD, 25));
+                Font optionFont = new Font("arial", Font.BOLD, 25);
+                g.setFont(optionFont);
+                String[] labels = new String[MAIN_OPTIONS.length];
+                int maxWidth = 0;
                 for (int i = 0; i < MAIN_OPTIONS.length; i++) {
-                        int y = MAIN_MENU_Y + (LINE_HEIGHT * i);
+                        labels[i] = getMainMenuLabel(i);
+                        maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(labels[i]));
+                }
+
+                int screenWidth = Game.WIDTH * Game.SCALE;
+                int screenHeight = Game.HEIGHT * Game.SCALE;
+                int textX = (screenWidth - maxWidth) / 2;
+                int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
+                int totalHeight = MAIN_OPTIONS.length * LINE_HEIGHT;
+                int startY = (screenHeight - totalHeight) / 2 + g.getFontMetrics().getAscent();
+
+                for (int i = 0; i < MAIN_OPTIONS.length; i++) {
+                        int baselineY = startY + (LINE_HEIGHT * i);
                         if (currentOption == i) {
                                 g.setColor(Color.white);
-                                g.drawString(">", ARROW_X, y);
+                                g.drawString(">", arrowX, baselineY);
                         }
 
                         if (i == OPTION_LOAD_GAME && !saveExists) {
@@ -369,7 +389,7 @@ public class Menu {
                                 g.setColor(Color.white);
                         }
 
-                        g.drawString(getMainMenuLabel(i), TEXT_X, y);
+                        g.drawString(labels[i], textX, baselineY);
                 }
         }
 
@@ -389,25 +409,50 @@ public class Menu {
         }
 
         private void renderOptionsMenu(Graphics g) {
-                g.setColor(Color.white);
-                g.setFont(new Font("arial", Font.BOLD, 28));
-                g.drawString("Opções", TEXT_X, MAIN_MENU_Y - LINE_HEIGHT);
+                int screenWidth = Game.WIDTH * Game.SCALE;
+                int screenHeight = Game.HEIGHT * Game.SCALE;
 
-                g.setFont(new Font("arial", Font.PLAIN, 22));
-                drawOptionsLine(g, OPTIONS_INDEX_MUSIC,
-                                "Música: " + (OptionsConfig.isMusicEnabled() ? "Ligada" : "Desligada"), MAIN_MENU_Y);
-                drawOptionsLine(g, OPTIONS_INDEX_DIFFICULTY,
+                Font headerFont = new Font("arial", Font.BOLD, 28);
+                g.setFont(headerFont);
+                String header = "Opções";
+                int headerWidth = g.getFontMetrics().stringWidth(header);
+
+                Font optionFont = new Font("arial", Font.PLAIN, 22);
+                g.setFont(optionFont);
+                String[] lines = {
+                                "Música: " + (OptionsConfig.isMusicEnabled() ? "Ligada" : "Desligada"),
                                 "Dificuldade: " + OptionsConfig.getDifficulty().getDisplayName(),
-                                MAIN_MENU_Y + OPTIONS_LINE_HEIGHT);
-                drawOptionsLine(g, OPTIONS_INDEX_BACK, "Voltar", MAIN_MENU_Y + (2 * OPTIONS_LINE_HEIGHT));
+                                "Voltar"
+                };
+
+                int maxWidth = headerWidth;
+                for (String line : lines) {
+                        maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(line));
+                }
+
+                int textX = (screenWidth - maxWidth) / 2;
+                int totalHeight = g.getFontMetrics(headerFont).getHeight() + OPTIONS_MENU_COUNT * OPTIONS_LINE_HEIGHT;
+                int startY = (screenHeight - totalHeight) / 2;
+                int headerBaseline = startY + g.getFontMetrics(headerFont).getAscent();
+
+                g.setColor(Color.white);
+                g.setFont(headerFont);
+                g.drawString(header, (screenWidth - headerWidth) / 2, headerBaseline);
+
+                g.setFont(optionFont);
+                int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
+                for (int i = 0; i < lines.length; i++) {
+                        int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
+                        drawOptionsLine(g, i, lines[i], textX, arrowX, baselineY);
+                }
         }
 
-        private void drawOptionsLine(Graphics g, int optionIndex, String text, int y) {
+        private void drawOptionsLine(Graphics g, int optionIndex, String text, int textX, int arrowX, int y) {
                 if (currentOption == optionIndex) {
                         g.setColor(Color.white);
-                        g.drawString(">", ARROW_X, y);
+                        g.drawString(">", arrowX, y);
                 }
                 g.setColor(Color.white);
-                g.drawString(text, TEXT_X, y);
+                g.drawString(text, textX, y);
         }
 }

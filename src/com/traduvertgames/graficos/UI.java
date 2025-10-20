@@ -16,33 +16,33 @@ import com.traduvertgames.quest.QuestManager;
 
 public class UI {
 
-        private static final int BAR_WIDTH = 160;
-        private static final int BAR_HEIGHT = 12;
+        private static final int BAR_WIDTH = 126;
+        private static final int BAR_HEIGHT = 10;
 
         public void render(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                int margin = 24;
+                int margin = 18;
                 int panelX = margin;
                 int panelY = margin;
-                int panelWidth = BAR_WIDTH + 36;
-                int panelHeight = 110;
+                int panelWidth = BAR_WIDTH + 30;
+                int panelHeight = 94;
                 g2.setColor(new Color(8, 12, 20, 200));
                 g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 14, 14);
 
-                g2.setFont(new Font("SansSerif", Font.BOLD, 10));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 9));
                 g2.setColor(Color.WHITE);
 
                 int barX = panelX + 14;
-                int barY = panelY + 26;
+                int barY = panelY + 24;
                 drawResourceBar(g2, "VIDA", Player.life, Player.maxLife, barX, barY, new Color(244, 67, 54));
-                barY += 18;
+                barY += 16;
                 drawResourceBar(g2, "ESCUDO", Player.shield, Player.maxShield, barX, barY,
                                 new Color(121, 134, 203));
-                barY += 18;
+                barY += 16;
                 drawResourceBar(g2, "MANA", Player.mana, Player.maxMana, barX, barY, new Color(33, 150, 243));
-                barY += 18;
+                barY += 16;
 
                 WeaponType currentWeapon = Game.player != null && Game.player.getCurrentWeaponType() != null
                                 ? Game.player.getCurrentWeaponType()
