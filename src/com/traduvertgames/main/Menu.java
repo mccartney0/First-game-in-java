@@ -22,75 +22,143 @@ import com.traduvertgames.world.World;
 
 public class Menu {
 
-	public String[] options = { "novo jogo", "carregar jogo", "sair" };
+        private enum Screen {
+                MAIN,
+                OPTIONS
+        }
 
-	public int currentOption = 0;
-	public int maxOption = options.length - 1;
+        private static final String[] MAIN_OPTIONS = { "novo jogo", "carregar jogo", "opções", "sair" };
+        private static final int OPTION_NEW_GAME = 0;
+        private static final int OPTION_LOAD_GAME = 1;
+        private static final int OPTION_SETTINGS = 2;
+        private static final int OPTION_EXIT = 3;
 
-	public boolean up, down, enter;
+        private static final int OPTIONS_MENU_COUNT = 3;
+        private static final int OPTIONS_INDEX_MUSIC = 0;
+        private static final int OPTIONS_INDEX_DIFFICULTY = 1;
+        private static final int OPTIONS_INDEX_BACK = 2;
+
+        private static final int ARROW_X = 235;
+        private static final int TEXT_X = 275;
+        private static final int MAIN_MENU_Y = 234;
+        private static final int LINE_HEIGHT = 40;
+        private static final int OPTIONS_LINE_HEIGHT = 36;
+
+        private Screen currentScreen = Screen.MAIN;
+        private int currentOption = 0;
+
+        public boolean up, down, enter;
 
 	public static boolean pause = false;
 	
 	public static boolean saveExists = false;
-	public static boolean saveGame = false;
+        public static boolean saveGame = false;
+
         public void update() {
                 File file = new File("save.txt");
-                if(file.exists()) {
-                        saveExists = true;
-                }else {
-                        saveExists = false;
-                }
+                saveExists = file.exists();
 
                 if (up) {
                         up = false;
-                        currentOption--;
-			if (currentOption < 0)
-				currentOption = maxOption;
-		}
-		if (down) {
-			down = false;
-			currentOption++;
-			if (currentOption > maxOption)
-				currentOption = 0;
-		}
+                        moveSelection(-1);
+                }
+                if (down) {
+                        down = false;
+                        moveSelection(1);
+                }
                 if (enter) {
-                        // Inserindo música
-                        Sound.music.loop();
                         enter = false;
-                        String selected = options[currentOption];
-                        if ("novo jogo".equals(selected)) {
-                                if (pause) {
-                                        Game.gameState = "NORMAL";
-                                        pause = false;
-                                } else {
-                                        Game game = Game.getInstance();
-                                        if (game != null) {
-                                                game.startNewGame();
-                                        } else {
-                                                Game.gameState = "NORMAL";
-                                                pause = false;
-                                        }
+                        if (currentScreen == Screen.MAIN) {
+                                handleMainMenuSelection(file);
+                        } else {
+                                handleOptionsSelection();
+                        }
+                }
+        }
 
-                                        file = new File("save.txt");
-                                        if (file.exists()) {
-                                                file.delete();
-                                        }
-                                }
-                        } else if("carregar jogo".equals(selected)) {
-                                file = new File("save.txt");
-                                if(file.exists()) {
+        private void moveSelection(int delta) {
+                int count = getCurrentOptionCount();
+                if (count <= 0) {
+                        currentOption = 0;
+                        return;
+                }
+                currentOption = (currentOption + delta) % count;
+                if (currentOption < 0) {
+                        currentOption += count;
+                }
+        }
+
+        private int getCurrentOptionCount() {
+                return currentScreen == Screen.MAIN ? MAIN_OPTIONS.length : OPTIONS_MENU_COUNT;
+        }
+
+        private void handleMainMenuSelection(File saveFile) {
+                switch (currentOption) {
+                        case OPTION_NEW_GAME:
+                                handleNewGameSelection(saveFile);
+                                break;
+                        case OPTION_LOAD_GAME:
+                                if (saveExists) {
                                         String saver = loadGame(20);
                                         try {
                                                 applySave(saver);
-					} catch (IOException e) {
-						e.printStackTrace();
-					}
-				}
-				
-                        } else if ("sair".equals(selected)) {
+                                        } catch (IOException e) {
+                                                e.printStackTrace();
+                                        }
+                                }
+                                break;
+                        case OPTION_SETTINGS:
+                                currentScreen = Screen.OPTIONS;
+                                currentOption = 0;
+                                break;
+                        case OPTION_EXIT:
                                 JOptionPane.showConfirmDialog(null, "Deseja realmente sair?", "Fechar o jogo", currentOption);
                                 System.exit(1);
+                                break;
+                        default:
+                                break;
+                }
+        }
+
+        private void handleNewGameSelection(File saveFile) {
+                if (pause) {
+                        Game.gameState = "NORMAL";
+                        pause = false;
+                } else {
+                        Game game = Game.getInstance();
+                        if (game != null) {
+                                game.startNewGame();
+                        } else {
+                                Game.gameState = "NORMAL";
+                                pause = false;
                         }
+
+                        if (saveFile.exists()) {
+                                saveFile.delete();
+                        }
+                }
+
+                if (OptionsConfig.isMusicEnabled()) {
+                        OptionsConfig.applyMusicPreference();
+                } else if (Sound.music != null) {
+                        Sound.music.stop();
+                }
+        }
+
+        private void handleOptionsSelection() {
+                switch (currentOption) {
+                        case OPTIONS_INDEX_MUSIC:
+                                OptionsConfig.toggleMusic();
+                                break;
+                        case OPTIONS_INDEX_DIFFICULTY:
+                                OptionsConfig.cycleDifficulty();
+                                break;
+                        case OPTIONS_INDEX_BACK:
+                                currentScreen = Screen.MAIN;
+                                currentOption = 0;
+                                break;
+                        default:
+                                break;
                 }
         }
 
@@ -261,31 +329,75 @@ public class Menu {
 		}
 	}
 
-	public void render(Graphics g) {
-		Graphics2D g2 = (Graphics2D) g;
-		g2.setColor(new Color(0, 0, 0, 150));
-		g2.fillRect(0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE);
-		g.setColor(Color.yellow);
-		g.setFont(new Font("arial", Font.BOLD, 40));
-		g.drawString(">Traduvert<", 245, 134);
+        public void render(Graphics g) {
+                Graphics2D g2 = (Graphics2D) g;
+                g2.setColor(new Color(0, 0, 0, 150));
+                g2.fillRect(0, 0, Game.WIDTH * Game.SCALE, Game.HEIGHT * Game.SCALE);
+                g.setColor(Color.yellow);
+                g.setFont(new Font("arial", Font.BOLD, 40));
+                g.drawString(">Traduvert<", 245, 134);
 
-//Menu do jogo
-		g.setColor(Color.white);
-		g.setFont(new Font("arial", Font.BOLD, 25));
-		if (pause == false)
-			g.drawString("Novo jogo", 295, 234);
-		else
-			g.drawString("Continuar", 295, 234);
+                if (currentScreen == Screen.MAIN) {
+                        renderMainMenu(g);
+                } else {
+                        renderOptionsMenu(g);
+                }
+        }
 
-		g.drawString("Carregar jogo", 275, 274);
-		g.drawString("Sair", 335, 314);
+        private void renderMainMenu(Graphics g) {
+                g.setFont(new Font("arial", Font.BOLD, 25));
+                for (int i = 0; i < MAIN_OPTIONS.length; i++) {
+                        int y = MAIN_MENU_Y + (LINE_HEIGHT * i);
+                        if (currentOption == i) {
+                                g.setColor(Color.white);
+                                g.drawString(">", ARROW_X, y);
+                        }
 
-		if (options[currentOption] == "novo jogo") {
-			g.drawString(">", 255, 234);
-		} else if (options[currentOption] == "carregar jogo") {
-			g.drawString(">", 235, 274);
-		} else if (options[currentOption] == "sair") {
-			g.drawString(">", 295, 314);
-		}
-	}
+                        if (i == OPTION_LOAD_GAME && !saveExists) {
+                                g.setColor(Color.LIGHT_GRAY);
+                        } else {
+                                g.setColor(Color.white);
+                        }
+
+                        g.drawString(getMainMenuLabel(i), TEXT_X, y);
+                }
+        }
+
+        private String getMainMenuLabel(int index) {
+                switch (index) {
+                        case OPTION_NEW_GAME:
+                                return pause ? "Continuar" : "Novo jogo";
+                        case OPTION_LOAD_GAME:
+                                return saveExists ? "Carregar jogo" : "Carregar jogo (indisponível)";
+                        case OPTION_SETTINGS:
+                                return "Opções";
+                        case OPTION_EXIT:
+                                return "Sair";
+                        default:
+                                return "";
+                }
+        }
+
+        private void renderOptionsMenu(Graphics g) {
+                g.setColor(Color.white);
+                g.setFont(new Font("arial", Font.BOLD, 28));
+                g.drawString("Opções", TEXT_X, MAIN_MENU_Y - LINE_HEIGHT);
+
+                g.setFont(new Font("arial", Font.PLAIN, 22));
+                drawOptionsLine(g, OPTIONS_INDEX_MUSIC,
+                                "Música: " + (OptionsConfig.isMusicEnabled() ? "Ligada" : "Desligada"), MAIN_MENU_Y);
+                drawOptionsLine(g, OPTIONS_INDEX_DIFFICULTY,
+                                "Dificuldade: " + OptionsConfig.getDifficulty().getDisplayName(),
+                                MAIN_MENU_Y + OPTIONS_LINE_HEIGHT);
+                drawOptionsLine(g, OPTIONS_INDEX_BACK, "Voltar", MAIN_MENU_Y + (2 * OPTIONS_LINE_HEIGHT));
+        }
+
+        private void drawOptionsLine(Graphics g, int optionIndex, String text, int y) {
+                if (currentOption == optionIndex) {
+                        g.setColor(Color.white);
+                        g.drawString(">", ARROW_X, y);
+                }
+                g.setColor(Color.white);
+                g.drawString(text, TEXT_X, y);
+        }
 }

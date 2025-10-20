@@ -28,6 +28,7 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 - **Ataque:** `X` dispara projéteis enquanto houver munição e mana; o mouse também pode ser usado para mirar e atirar.【F:src/com/traduvertgames/main/Game.java†L452-L516】【F:src/com/traduvertgames/entities/Player.java†L101-L242】
 - **Troca de arma:** `Q`/`E` alternam entre as armas desbloqueadas e as teclas `1` a `4` selecionam diretamente um arquétipo específico.【F:src/com/traduvertgames/main/Game.java†L452-L497】【F:src/com/traduvertgames/entities/Player.java†L484-L512】
 - **Menu:** `Enter` confirma opções, `Esc` retorna ao menu/pausa, `T` salva o progresso quando em jogo.【F:src/com/traduvertgames/main/Game.java†L339-L372】【F:src/com/traduvertgames/main/Menu.java†L42-L103】
+- **Opções:** O submenu "Opções" do menu principal permite ligar ou desligar a música ambiente e alternar a dificuldade entre Fácil, Normal e Difícil; a configuração ajusta automaticamente a vida, mana, capacidade de munição e o dano sofrido pelo jogador.【F:src/com/traduvertgames/main/Menu.java†L25-L230】【F:src/com/traduvertgames/main/OptionsConfig.java†L1-L92】【F:src/com/traduvertgames/main/Game.java†L180-L357】【F:src/com/traduvertgames/entities/BulletShoot.java†L1-L60】【F:src/com/traduvertgames/entities/Enemy.java†L320-L420】
 
 ## Itens e recursos
 

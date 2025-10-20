@@ -105,7 +105,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		entities.add(player);
 		world = new World("/level1.png");
 
-		menu = new Menu();
+                menu = new Menu();
+                applyDifficultyToPlayerStats();
 	}
 
         public static Game getInstance() {
@@ -203,6 +204,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
                 comboMultiplier = 1;
                 comboTimer = 0;
+        }
+
+        public static double getDamageTakenMultiplier() {
+                return OptionsConfig.getDamageTakenMultiplier();
         }
 
         public void initFrame() {
@@ -604,6 +609,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 Enemy.enemies = 0;
                 Menu.pause = false;
                 resetPlayerToDefaults();
+                applyDifficultyToPlayerStats();
                 resetScoreState();
                 World.restartGame("level1.png");
                 gameState = "NORMAL";
@@ -622,15 +628,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         }
 
         private void applyProgressBonuses() {
-                if (this.CUR_LEVEL == MAX_LEVEL) {
-                        Player.maxMana = 1500;
-                        Player.maxLife = 1000;
-                        Player.setWeaponCapacityMultiplier(4.0);
-                } else {
-                        Player.maxMana = 500;
-                        Player.maxLife = 100;
-                        Player.setWeaponCapacityMultiplier(1.0);
-                }
+                applyDifficultyScalingForCurrentLevel();
 
                 if (this.levelPlus >= 1) {
                         Player.mana = Player.maxMana;
@@ -640,6 +638,50 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         } else {
                                 Player.weapon = Player.maxWeapon;
                         }
+                }
+        }
+
+        public void applyDifficultyToPlayerStats() {
+                applyProgressBonuses();
+                clampPlayerResources();
+        }
+
+        private void applyDifficultyScalingForCurrentLevel() {
+                int baseMaxLife;
+                int baseMaxMana;
+                double baseCapacityMultiplier;
+
+                if (this.CUR_LEVEL == MAX_LEVEL) {
+                        baseMaxLife = 1000;
+                        baseMaxMana = 1500;
+                        baseCapacityMultiplier = 4.0;
+                } else {
+                        baseMaxLife = 100;
+                        baseMaxMana = 500;
+                        baseCapacityMultiplier = 1.0;
+                }
+
+                applyDifficultyScaling(baseMaxLife, baseMaxMana, baseCapacityMultiplier);
+        }
+
+        private void applyDifficultyScaling(int baseMaxLife, int baseMaxMana, double baseCapacityMultiplier) {
+                int scaledMaxLife = (int) Math.round(baseMaxLife * OptionsConfig.getLifeMultiplier());
+                int scaledMaxMana = (int) Math.round(baseMaxMana * OptionsConfig.getManaMultiplier());
+                double scaledCapacity = baseCapacityMultiplier * OptionsConfig.getWeaponCapacityMultiplier();
+
+                Player.maxLife = Math.max(1, scaledMaxLife);
+                if (Player.life > Player.maxLife) {
+                        Player.life = Player.maxLife;
+                }
+
+                Player.maxMana = Math.max(0, scaledMaxMana);
+                if (Player.mana > Player.maxMana) {
+                        Player.mana = Player.maxMana;
+                }
+
+                Player.setWeaponCapacityMultiplier(Math.max(0.5, scaledCapacity));
+                if (Player.weapon > Player.maxWeapon) {
+                        Player.weapon = Player.maxWeapon;
                 }
         }
 
