@@ -39,11 +39,21 @@ public class World {
 						// Player
 						Game.player.setX(xx * 16);
 						Game.player.setY(yy * 16);
-					} else if (pixelAtual == 0xFFFF0000) {
-						// Enemy
-						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN);
-						Game.entities.add(en);
-						Game.enemies.add(en);
+} else if (pixelAtual == 0xFFFF0000) {
+// Enemy
+Enemy en = Enemy.spawnRandomVariant(xx * 16, yy * 16);
+Game.entities.add(en);
+Game.enemies.add(en);
+} else if (pixelAtual == 0xFF9C27B0) {
+// Teleporter elite
+Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.TELEPORTER);
+Game.entities.add(en);
+Game.enemies.add(en);
+} else if (pixelAtual == 0xFF00BCD4) {
+// Artillery elite
+Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.ARTILLERY);
+Game.entities.add(en);
+Game.enemies.add(en);
 					} else if (pixelAtual == 0xFFFF6A00) {
 						// Weapon
 						Game.entities.add(new Weapon(xx * 16, yy * 16, 16, 16, Entity.WEAPON_EN));

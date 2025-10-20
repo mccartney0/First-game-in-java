@@ -6,6 +6,7 @@ import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.awt.FontMetrics;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
@@ -39,9 +40,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static JFrame frame;
 	private Thread thread;
 	private boolean isRunning = true;
-	public static final int WIDTH = 240;
-	public static final int HEIGHT = 160;
-	public static final int SCALE = 3;
+        public static final int WIDTH = 320;
+        public static final int HEIGHT = 192;
+        public static final int SCALE = 3;
 
         private static Game instance;
 
@@ -87,7 +88,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 rand = new Random();
 		addKeyListener(this);
 		addMouseListener(this);
-		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
+                setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
 		initFrame();
 // Inicializando objetos;
 		ui = new UI();
@@ -360,31 +361,40 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		g.dispose();
 
                 g = bs.getDrawGraphics();
-                g.drawImage(image, 0, 0, WIDTH * SCALE, HEIGHT * SCALE, null);
+                int scaledWidth = WIDTH * SCALE;
+                int scaledHeight = HEIGHT * SCALE;
+                g.drawImage(image, 0, 0, scaledWidth, scaledHeight, null);
                 ui.renderOverlay((Graphics2D) g);
 
                 if (gameState == "GAMEOVER") {
                         Graphics2D g2 = (Graphics2D) g;
-                        g2.setColor(new Color(0, 0, 0, 100));
-                        g2.fillRect(0, 0, WIDTH * SCALE, HEIGHT * SCALE);
-			g.setFont(new Font("arial", Font.BOLD, 36));
-			g.setColor(Color.white);
-			g.drawString("Game Over", 290, 234);
-			g.setFont(new Font("arial", Font.BOLD, 32));
+                        g2.setColor(new Color(0, 0, 0, 120));
+                        g2.fillRect(0, 0, scaledWidth, scaledHeight);
+                        g.setFont(new Font("arial", Font.BOLD, 36));
+                        g.setColor(Color.white);
+                        drawCenteredString(g, "Game Over", scaledHeight / 2 - 50);
+                        g.setFont(new Font("arial", Font.BOLD, 28));
 
                         if (showMessageGameOver) {
-                                g.drawString(">Pressione Enter para reiniciar<", 130, 284);
+                                drawCenteredString(g, ">Pressione Enter para reiniciar<", scaledHeight / 2 + 4);
                         }
 
                         g.setFont(new Font("arial", Font.BOLD, 24));
-                        g.drawString("Pontuação final: " + Game.getScore(), 215, 334);
-                        g.drawString("Recorde: " + Game.getHighScore(), 215, 364);
-                        g.drawString("Melhor combo da partida: x" + Game.getBestComboThisRun(), 215, 394);
+                        drawCenteredString(g, "Pontuação final: " + Game.getScore(), scaledHeight / 2 + 52);
+                        drawCenteredString(g, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 82);
+                        drawCenteredString(g, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 112);
 
                 } else if (gameState == "MENU") {
                         menu.render(g);
                 }
                 bs.show();
+        }
+
+        private void drawCenteredString(Graphics g, String text, int baselineY) {
+                int width = WIDTH * SCALE;
+                FontMetrics metrics = g.getFontMetrics();
+                int textX = (width - metrics.stringWidth(text)) / 2;
+                g.drawString(text, textX, baselineY);
         }
 
         private void updateComboTimer() {

@@ -14,17 +14,17 @@ import com.traduvertgames.main.Game;
 
 public class UI {
 
-        private static final int BAR_WIDTH = 96;
-        private static final int BAR_HEIGHT = 9;
+private static final int BAR_WIDTH = 128;
+private static final int BAR_HEIGHT = 10;
 
         public void render(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                int panelX = 6;
-                int panelY = 6;
-                int panelWidth = 116;
-                int panelHeight = 54;
+int panelX = 12;
+int panelY = 12;
+int panelWidth = 148;
+int panelHeight = 62;
                 g2.setColor(new Color(8, 12, 20, 190));
                 g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
 
@@ -45,12 +45,17 @@ public class UI {
         public void renderOverlay(Graphics2D g2) {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                int screenWidth = Game.WIDTH * Game.SCALE;
-                int screenHeight = Game.HEIGHT * Game.SCALE;
+int screenWidth = Game.WIDTH * Game.SCALE;
+int screenHeight = Game.HEIGHT * Game.SCALE;
+int margin = 28;
+int statusWidth = 320;
+int scoreWidth = 320;
+int arsenalWidth = Math.min(screenWidth - margin * 2, 420);
+int arsenalHeight = 220;
 
-                drawStatusCard(g2, 20, 20, 280, 156);
-                drawScoreCard(g2, screenWidth - 260 - 20, 20, 260, 180);
-                drawArsenalCard(g2, 20, screenHeight - 220, 340, 200);
+drawStatusCard(g2, margin, margin, statusWidth, 176);
+drawScoreCard(g2, screenWidth - scoreWidth - margin, margin, scoreWidth, 196);
+drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth, arsenalHeight);
         }
 
         private void drawStatusCard(Graphics2D g2, int x, int y, int width, int height) {
