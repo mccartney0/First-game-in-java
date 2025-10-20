@@ -64,6 +64,7 @@ O jogo grava vida, mana, escudo, quantidade de munição (arma), inimigos derrot
 
 - Java 11 ou superior
 - Gradle 7+ (ou utilize o Gradle wrapper incluso)
+- Python 3.8+ com Pillow (`pip install pillow`) para utilizar os utilitários de geração de sprites
 
 ## Compilação e execução
 
@@ -117,6 +118,28 @@ Tokens úteis no gerador:
 - `D` – núcleo de dados (`0xFF00ACC1`)
 - `S` – pesquisador NPC (`0xFF7E57C2`)
 - `I` – engenheiro NPC (`0xFFFFB74D`)
+
+## Gerar novos spritesheets
+
+Para consolidar sprites individuais em uma única textura, utilize o script `tools/generate_spritesheet.py`. Ele aceita diretórios
+com imagens (`.png`, `.bmp`, `.gif`, `.tga`, `.jpg`/`.jpeg`), organiza os sprites em linhas automáticas, aplica espaçamento e,
+opcionalmente, ajusta a folha para potências de dois – útil para motores de jogo que exigem esse formato.
+
+Exemplo básico:
+
+```
+python3 tools/generate_spritesheet.py assets/personagens sprites/custom_sheet.png -m sprites/custom_sheet.json
+```
+
+Parâmetros relevantes:
+
+- `-p/--padding` – define o espaçamento entre sprites (padrão: 2 pixels).
+- `-w/--max-width` – estabelece a largura máxima antes de quebrar para uma nova linha.
+- `-r/--recursive` – inclui imagens de subdiretórios.
+- `--power-of-two` – expande a largura/altura finais para a próxima potência de dois.
+
+O arquivo JSON de metadados opcional descreve a posição de cada sprite na folha gerada, facilitando a importação em motores de
+renderização ou ferramentas externas.
 
 ## Dicas de desenvolvimento
 
