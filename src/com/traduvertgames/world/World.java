@@ -118,6 +118,8 @@ Game.enemies.add(en);
                                                                 Enemy.Variant.OVERSEER, true);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFF673AB7) {
+                                                Game.entities.add(new TeleportPad(xx * 16, yy * 16));
                                         }
                                         // Floor
                                 }

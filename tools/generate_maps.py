@@ -2,6 +2,7 @@
 """Procedurally generate RPG-inspired stage layouts for the Java game."""
 
 import os
+import random
 import struct
 import zlib
 from typing import Dict, Iterable, List, Sequence
@@ -33,6 +34,7 @@ PALETTE: Dict[str, Color] = {
     'D': (0, 172, 193),
     'S': (126, 87, 194),
     'I': (255, 183, 77),
+    'U': (103, 58, 183),
 }
 
 
@@ -67,6 +69,55 @@ def place(grid: List[List[str]], x: int, y: int, token: str) -> None:
     grid[y][x] = token
 
 
+def place_random_teleporters(
+    grid: List[List[str]], count: int = 3, radius: int | None = None
+) -> None:
+    """Scatter teleporters near the center of the map."""
+
+    height = len(grid)
+    if height == 0:
+        return
+    width = len(grid[0])
+    cx, cy = width // 2, height // 2
+
+    if radius is None:
+        radius = max(2, min(width, height) // 5)
+
+    left = max(1, cx - radius)
+    right = min(width - 2, cx + radius)
+    top = max(1, cy - radius)
+    bottom = min(height - 2, cy + radius)
+
+    attempts = 0
+    placed = 0
+    max_attempts = max(10, count * 12)
+    while placed < count and attempts < max_attempts:
+        attempts += 1
+        x = random.randint(left, right)
+        y = random.randint(top, bottom)
+        if grid[y][x] != '.':
+            continue
+        grid[y][x] = 'U'
+        placed += 1
+
+    if placed == 0:
+        if grid[cy][cx] == '.':
+            grid[cy][cx] = 'U'
+        else:
+            best_pos: tuple[int, int] | None = None
+            best_distance = None
+            for y in range(height):
+                for x in range(width):
+                    if grid[y][x] != '.':
+                        continue
+                    distance = abs(x - cx) + abs(y - cy)
+                    if best_pos is None or distance < best_distance:
+                        best_pos = (x, y)
+                        best_distance = distance
+            if best_pos is not None:
+                grid[best_pos[1]][best_pos[0]] = 'U'
+
+
 def level_one() -> List[str]:
     width, height = 32, 22
     grid = create_grid(width, height)
@@ -99,6 +150,8 @@ def level_one() -> List[str]:
     ]:
         place(grid, x, y, 'X')
 
+    place_random_teleporters(grid)
+
     return [''.join(row) for row in grid]
 
 
@@ -126,6 +179,8 @@ def level_two() -> List[str]:
         place(grid, x, y, 'C')
     place(grid, 17, 3, 'W')
 
+    place_random_teleporters(grid)
+
     return [''.join(row) for row in grid]
 
 
@@ -151,6 +206,8 @@ def level_three() -> List[str]:
     for x, y in [(11, 11), (27, 7), (14, 21)]:
         place(grid, x, y, 'H')
     place(grid, 5, 18, 'W')
+
+    place_random_teleporters(grid, count=4)
 
     return [''.join(row) for row in grid]
 
@@ -179,6 +236,8 @@ def level_four() -> List[str]:
         place(grid, x, y, 'C')
     place(grid, 12, 19, 'W')
     place(grid, 30, 19, 'Q')
+
+    place_random_teleporters(grid, count=4)
 
     return [''.join(row) for row in grid]
 
@@ -211,6 +270,8 @@ def level_five() -> List[str]:
     for x, y in [(16, 9), (25, 11)]:
         place(grid, x, y, 'G')
     place(grid, 32, 19, 'B')
+
+    place_random_teleporters(grid, count=5)
 
     return [''.join(row) for row in grid]
 
