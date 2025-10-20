@@ -34,9 +34,12 @@ public class World {
 					if (pixelAtual == 0xFF000000) {
 						// Floor
 						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
-					} else if (pixelAtual == 0xFFFFFFFF) {
-						// Parede
-						tiles[xx + (yy * map.getWidth())] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
+                                        } else if (pixelAtual == 0xFFFFFFFF) {
+                                                // Parede
+                                                tiles[xx + (yy * map.getWidth())] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
+                                        } else if (pixelAtual == 0xFF808080) {
+                                                tiles[xx + (yy * map.getWidth())] = new DestructibleWallTile(xx * 16, yy * 16,
+                                                                Tile.TILE_WALL);
 					} else if (pixelAtual == 0xFF0026FF) {
 						// Player
 						Game.player.setX(xx * 16);
@@ -205,6 +208,29 @@ Game.enemies.add(en);
                 int tileX = pixelX / TILE_SIZE;
                 int tileY = pixelY / TILE_SIZE;
                 return isWallTile(tileX, tileY);
+        }
+
+        public static boolean damageDestructibleWall(int tileX, int tileY, double damage) {
+                if (!isValidTile(tileX, tileY)) {
+                        return false;
+                }
+                Tile tile = tiles[tileX + (tileY * WIDTH)];
+                if (tile instanceof DestructibleWallTile) {
+                        DestructibleWallTile destructible = (DestructibleWallTile) tile;
+                        boolean destroyed = destructible.applyDamage(damage);
+                        if (destroyed) {
+                                tiles[tileX + (tileY * WIDTH)] = new FloorTile(tileX * TILE_SIZE, tileY * TILE_SIZE,
+                                                Tile.TILE_FLOOR);
+                        }
+                        return true;
+                }
+                return false;
+        }
+
+        public static boolean damageDestructibleWallByPixel(int pixelX, int pixelY, double damage) {
+                int tileX = pixelX / TILE_SIZE;
+                int tileY = pixelY / TILE_SIZE;
+                return damageDestructibleWall(tileX, tileY, damage);
         }
         public void render(Graphics g) {
 

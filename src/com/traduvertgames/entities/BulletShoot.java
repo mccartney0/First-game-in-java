@@ -70,6 +70,9 @@ public class BulletShoot extends Entity {
     private boolean hitWall() {
         int centerX = this.getX() + width / 2;
         int centerY = this.getY() + height / 2;
+        if (World.damageDestructibleWallByPixel(centerX, centerY, damage)) {
+            return true;
+        }
         return World.isWallByPixel(centerX, centerY);
     }
 

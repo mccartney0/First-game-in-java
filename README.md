@@ -91,6 +91,30 @@ python3 tools/generate_maps.py
 
 O script depende apenas da biblioteca padrão do Python 3, grava as imagens diretamente em `res/` e imprime um resumo de cada mapa gerado. Sempre que quiser experimentar novos layouts, edite as funções `level_one()`–`level_four()` e execute novamente o comando acima.
 
+Tokens úteis no gerador:
+
+- `.` – piso navegável (preto, utilizado como preenchimento padrão)
+- `#` – parede sólida padrão (branca)
+- `X` – parede destrutível (cinza, `0xFF808080` no PNG gerado)
+- `P` – posição inicial do jogador (`0xFF0026FF`)
+- `E` – ponto de surgimento de inimigo padrão (`0xFFFF0000`)
+- `T` – inimigo variante Teleporter (`0xFF9C27B0`)
+- `A` – inimigo variante Artillery (`0xFF00BCD4`)
+- `G` – inimigo variante Warden (`0xFF3F51B5`)
+- `B` – chefe Warbringer (`0xFFE91E63`)
+- `W` – arma coletável (`0xFFFF6A00`)
+- `H` – kit de vida (`0xFF4CFF00`)
+- `L` – munição/balas extras (`0xFFFFD800`)
+- `Q` – item de missão (`0xFFFFC107`)
+- `O` – baliza de missão (`0xFF4CAF50`)
+- `N` – NPC de missão a ser resgatado (`0xFF795548`)
+- `C` – célula de energia (`0xFF1DE9B6`)
+- `M` – kit de nanites (`0xFFFF5252`)
+- `R` – módulo de sobrecarga (`0xFF00E5FF`)
+- `D` – núcleo de dados (`0xFF00ACC1`)
+- `S` – pesquisador NPC (`0xFF7E57C2`)
+- `I` – engenheiro NPC (`0xFFFFB74D`)
+
 ## Dicas de desenvolvimento
 
 - Ponto de entrada do jogo: `src/com/traduvertgames/main/Game.java`
