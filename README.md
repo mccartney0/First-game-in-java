@@ -42,7 +42,7 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 - **Protocolos de dados e especialistas** – O nível avançado apresenta `DataCore` (`#00ACC1`) como itens colecionáveis e dois novos NPCs (`EngineerNPC` – `#FFB74D`, `ResearcherNPC` – `#7E57C2`) que concedem bônus ao serem resgatados, integrando a missão "Protocolos perdidos".【F:src/com/traduvertgames/entities/DataCore.java†L1-L45】【F:src/com/traduvertgames/entities/EngineerNPC.java†L1-L27】【F:src/com/traduvertgames/entities/ResearcherNPC.java†L1-L18】【F:src/com/traduvertgames/world/World.java†L61-L105】【F:src/com/traduvertgames/quest/DataRecoveryObjective.java†L1-L55】
 - **Arsenal modular** – Seis armas com características próprias (Blaster, Rifle de Íons, Canhão Dispersor, Lança de Fusão, Disruptor de Arco e Canhão Solar) podem ser desbloqueadas, cada uma com custos de mana, dano e cadência diferenciados. A durabilidade de cada arma é persistida no save e pode ser reabastecida ao coletar novos itens.【F:src/com/traduvertgames/entities/WeaponType.java†L16-L167】【F:src/com/traduvertgames/entities/Player.java†L323-L512】【F:src/com/traduvertgames/main/Menu.java†L120-L185】
 - **Projéteis** – Há dois tipos de disparo (`Bullet` e `BulletShoot`) com atualizações e renderização independentes; os disparos energizados (`BulletShoot`) agora também são utilizados pelos inimigos para ataques à distância.【F:src/com/traduvertgames/entities/Bullet.java†L5-L12】【F:src/com/traduvertgames/entities/BulletShoot.java†L12-L52】
-- **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão. Além das variantes Scout, Teleporter e Artillery, os mapas podem convocar Guardiões (`Variant.WARDEN`, tanque pesado) e o chefe Warbringer (`Variant.WARBRINGER`) por meio dos códigos `#3F51B5` e `#E91E63`.【F:src/com/traduvertgames/entities/Enemy.java†L25-L214】【F:src/com/traduvertgames/world/World.java†L44-L120】
+- **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão. Além das variantes Scout, Teleporter e Artillery, os mapas podem convocar Guardiões (`Variant.WARDEN`, tanque pesado), Sentinelas auto-reparadoras (`Variant.SENTINEL`, pulso radial de cura), Desbravadores que executam investidas rápidas (`Variant.RAVAGER`) e agora contam com dois chefes: Warbringer (`Variant.WARBRINGER`) e o estrategista Overseer (`Variant.OVERSEER`, invoca reforços). Os códigos `#3F51B5`, `#009688`, `#F4511E`, `#E91E63` e `#7986CB` habilitam essas variantes diretamente no mapa.【F:src/com/traduvertgames/entities/Enemy.java†L25-L371】【F:src/com/traduvertgames/world/World.java†L44-L120】
 
 ## Pontuação e combos
 
@@ -101,7 +101,10 @@ Tokens úteis no gerador:
 - `T` – inimigo variante Teleporter (`0xFF9C27B0`)
 - `A` – inimigo variante Artillery (`0xFF00BCD4`)
 - `G` – inimigo variante Warden (`0xFF3F51B5`)
+- `Y` – inimigo variante Sentinel (`0xFF009688`)
+- `Z` – inimigo variante Ravager (`0xFFF4511E`)
 - `B` – chefe Warbringer (`0xFFE91E63`)
+- `K` – chefe Overseer (`0xFF7986CB`)
 - `W` – arma coletável (`0xFFFF6A00`)
 - `H` – kit de vida (`0xFF4CFF00`)
 - `L` – munição/balas extras (`0xFFFFD800`)

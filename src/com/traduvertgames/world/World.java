@@ -100,9 +100,22 @@ Game.enemies.add(en);
                                                 Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.WARDEN);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFF009688) {
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.SENTINEL);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFFF4511E) {
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.RAVAGER);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
                                         } else if (pixelAtual == 0xFFE91E63) {
                                                 Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
                                                                 Enemy.Variant.WARBRINGER, true);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFF7986CB) {
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+                                                                Enemy.Variant.OVERSEER, true);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
                                         }

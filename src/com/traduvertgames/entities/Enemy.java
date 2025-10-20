@@ -36,7 +36,10 @@ public class Enemy extends Entity {
         TELEPORTER(3.5, 1.1, 1.25, 5.5, 1.6, 4, 60, 220, 96, new Color(156, 39, 176)),
         ARTILLERY(6.0, 0.85, 0.9, 3.6, 2.8, 5, 110, 260, 128, new Color(3, 169, 244)),
         WARDEN(9.5, 0.7, 0.85, 3.0, 4.2, 6, 140, 0, 0, new Color(63, 81, 181)),
-        WARBRINGER(18.0, 0.95, 1.1, 4.2, 6.5, 7, 90, 160, 140, new Color(233, 30, 99));
+        SENTINEL(14.0, 0.85, 1.3, 4.2, 3.0, 6, 85, 180, 96, new Color(0, 150, 136)),
+        RAVAGER(16.5, 1.25, 1.05, 4.8, 4.1, 6, 70, 150, 160, new Color(244, 81, 30)),
+        WARBRINGER(18.0, 0.95, 1.1, 4.2, 6.5, 7, 90, 160, 140, new Color(233, 30, 99)),
+        OVERSEER(28.0, 1.1, 1.2, 4.6, 5.2, 7, 80, 240, 160, new Color(121, 134, 203));
 
         private final double maxLife;
         private final double speedMultiplier;
@@ -186,14 +189,19 @@ public class Enemy extends Entity {
 
     private static Variant pickRandomVariant() {
         int roll = Game.rand.nextInt(100);
-        if (roll < 45) {
+        if (roll < 35) {
             return Variant.SCOUT;
-        } else if (roll < 70) {
+        } else if (roll < 55) {
             return Variant.TELEPORTER;
-        } else if (roll < 90) {
+        } else if (roll < 75) {
             return Variant.ARTILLERY;
+        } else if (roll < 90) {
+            return Variant.WARDEN;
+        } else if (roll < 96) {
+            return Variant.SENTINEL;
+        } else {
+            return Variant.RAVAGER;
         }
-        return Variant.WARDEN;
     }
 
     public void update() {
@@ -282,6 +290,15 @@ public class Enemy extends Entity {
         case ARTILLERY:
             handleArtilleryAbility(distanceToPlayer);
             break;
+        case SENTINEL:
+            handleSentinelAbility(distanceToPlayer);
+            break;
+        case RAVAGER:
+            handleRavagerAbility(distanceToPlayer);
+            break;
+        case OVERSEER:
+            handleOverseerAbility(distanceToPlayer, canSeePlayer);
+            break;
         default:
             break;
         }
@@ -364,6 +381,120 @@ public class Enemy extends Entity {
                     projectileSize + (i == 2 ? 1 : 0), color);
         }
         attackCooldown = Math.max(attackCooldown, attackCooldownBase + 30);
+    }
+
+    private void handleSentinelAbility(double distanceToPlayer) {
+        if (specialCooldown > 0) {
+            return;
+        }
+        if (distanceToPlayer > specialRange) {
+            return;
+        }
+
+        emitRadialBurst(8, projectileSpeed * 0.8, projectileDamage * 0.75, projectileColor.brighter());
+        double healAmount = maxLife * 0.2;
+        life = Math.min(maxLife, life + healAmount);
+        specialCooldown = specialCooldownBase;
+    }
+
+    private void handleRavagerAbility(double distanceToPlayer) {
+        if (specialCooldown > 0) {
+            return;
+        }
+        if (distanceToPlayer < 48 || distanceToPlayer > specialRange) {
+            return;
+        }
+
+        double angle = Math.atan2(Game.player.getY() - this.getY(), Game.player.getX() - this.getX());
+        double dashDistance = chaseSpeed * 3.4;
+        boolean moved = false;
+        int dashSteps = 4;
+        double stepX = Math.cos(angle) * (dashDistance / dashSteps);
+        double stepY = Math.sin(angle) * (dashDistance / dashSteps);
+        for (int i = 0; i < dashSteps; i++) {
+            moved |= tryMove(stepX, stepY);
+        }
+
+        if (moved) {
+            specialCooldown = specialCooldownBase;
+            attackCooldown = Math.max(attackCooldown, attackCooldownBase / 2);
+        }
+    }
+
+    private void handleOverseerAbility(double distanceToPlayer, boolean canSeePlayer) {
+        if (specialCooldown > 0) {
+            return;
+        }
+        if (!canSeePlayer && distanceToPlayer > specialRange) {
+            return;
+        }
+
+        emitRadialBurst(12, projectileSpeed * 0.95, projectileDamage, projectileColor);
+        spawnSupportDrones();
+        specialCooldown = specialCooldownBase + 60;
+    }
+
+    private void emitRadialBurst(int projectiles, double speed, double damage, Color color) {
+        if (projectiles <= 0) {
+            return;
+        }
+        double angleStep = (Math.PI * 2) / projectiles;
+        for (int i = 0; i < projectiles; i++) {
+            double angle = angleStep * i;
+            spawnProjectile(angle, speed, damage, Math.max(3, projectileSize - 1), color);
+        }
+    }
+
+    private void spawnSupportDrones() {
+        int maxNew = Math.max(0, 12 - Game.enemies.size());
+        if (maxNew <= 0) {
+            return;
+        }
+        int desired = Math.min(2 + Game.rand.nextInt(2), maxNew);
+        for (int i = 0; i < desired; i++) {
+            Vector2i spawn = findSupportSpawnPosition();
+            if (spawn == null) {
+                continue;
+            }
+            Enemy minion = new Enemy(spawn.x, spawn.y, 16, 16, Entity.ENEMY_EN, Variant.SENTINEL);
+            Game.entities.add(minion);
+            Game.enemies.add(minion);
+        }
+    }
+
+    private Vector2i findSupportSpawnPosition() {
+        int attempts = 12;
+        int minRadius = 48;
+        int maxRadius = 112;
+        for (int i = 0; i < attempts; i++) {
+            double angle = Game.rand.nextDouble() * Math.PI * 2;
+            double distance = minRadius + Game.rand.nextDouble() * (maxRadius - minRadius);
+            int targetX = this.getX() + (int) Math.round(Math.cos(angle) * distance);
+            int targetY = this.getY() + (int) Math.round(Math.sin(angle) * distance);
+            targetX = (targetX / 16) * 16;
+            targetY = (targetY / 16) * 16;
+
+            if (!World.isFree(targetX, targetY, 0)) {
+                continue;
+            }
+            boolean occupied = false;
+            for (Enemy enemy : Game.enemies) {
+                if (enemy.calculateDistance(targetX, targetY, enemy.getX(), enemy.getY()) < 16) {
+                    occupied = true;
+                    break;
+                }
+            }
+            if (occupied) {
+                continue;
+            }
+
+            if (this.calculateDistance(targetX, targetY, Game.player.getX(), Game.player.getY()) < 24) {
+                continue;
+            }
+
+            return new Vector2i(targetX, targetY);
+        }
+        return null;
     }
 
     private void animate() {
