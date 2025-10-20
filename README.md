@@ -34,7 +34,7 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 - **Vida, mana e munição** – O jogador possui barras máximas configuradas dinamicamente; pacotes de vida (`LifePack`) e armas (`Weapon`) são coletados via colisão para restaurar recursos.【F:src/com/traduvertgames/entities/Player.java†L19-L118】【F:src/com/traduvertgames/entities/Entity.java†L109-L194】
 - **Arsenal modular** – Quatro armas com características próprias (Blaster, Rifle de Íons, Canhão Dispersor e Lança de Fusão) podem ser desbloqueadas, cada uma com custos de mana, dano e cadência diferenciados. A durabilidade de cada arma é persistida no save e pode ser reabastecida ao coletar novos itens.【F:src/com/traduvertgames/entities/WeaponType.java†L16-L161】【F:src/com/traduvertgames/entities/Player.java†L323-L512】【F:src/com/traduvertgames/main/Menu.java†L120-L185】
 - **Projéteis** – Há dois tipos de disparo (`Bullet` e `BulletShoot`) com atualizações e renderização independentes; os disparos energizados (`BulletShoot`) agora também são utilizados pelos inimigos para ataques à distância.【F:src/com/traduvertgames/entities/Bullet.java†L5-L12】【F:src/com/traduvertgames/entities/BulletShoot.java†L12-L52】
-- **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão, contabilizando eliminações para avançar de fase.【F:src/com/traduvertgames/entities/Enemy.java†L28-L370】
+- **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão. Além do tipo padrão, o carregamento de fases passa a sortear variantes teletransportadoras e artilheiros, cada uma com padrões de disparo próprios; também é possível posicioná-las explicitamente nos mapas usando os códigos de cor `#9C27B0` e `#00BCD4`.【F:src/com/traduvertgames/entities/Enemy.java†L17-L367】【F:src/com/traduvertgames/world/World.java†L33-L88】
 
 ## Pontuação e combos
 
@@ -48,7 +48,7 @@ O jogo grava vida, mana, quantidade de munição (arma), inimigos derrotados, pr
 
 ## HUD, áudio e recursos
 
-- **HUD** – A classe `UI` exibe barras compactas dentro do canvas e, após o escalonamento, projeta painéis translúcidos com status do piloto, placar da missão e arsenal desbloqueado, reduzindo a poluição visual do HUD antigo.【F:src/com/traduvertgames/main/Game.java†L348-L399】【F:src/com/traduvertgames/graficos/UI.java†L17-L157】
+- **HUD** – A classe `UI` exibe barras compactas dentro do canvas e, após o escalonamento, projeta painéis translúcidos com status do piloto, placar da missão e arsenal desbloqueado. O canvas agora opera em 320×192 pixels (960×576 após o `SCALE`), afastando os painéis laterais e centralizando a tela de game over para facilitar a leitura.【F:src/com/traduvertgames/main/Game.java†L37-L320】【F:src/com/traduvertgames/graficos/UI.java†L15-L124】
 - **Áudio** – `Sound.java` encapsula efeitos de som e música ambiente utilizados ao interagir com o menu ou sofrer dano.【F:src/com/traduvertgames/main/Sound.java†L1-L120】
 - **Mundo** – A classe `World` carrega os tiles dos arquivos `level*.png`, gerando colisões, entidades e caminhos de A* a partir dos dados de pixels.【F:src/com/traduvertgames/world/World.java†L20-L145】
 
