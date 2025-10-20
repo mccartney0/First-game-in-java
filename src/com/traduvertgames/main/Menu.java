@@ -116,7 +116,8 @@ public class Menu {
                                                 null,
                                                 "Deseja realmente sair?",
                                                 "Fechar o jogo",
-                                                JOptionPane.YES_NO_OPTION);
+                                                JOptionPane.YES_NO_OPTION,
+                                                JOptionPane.QUESTION_MESSAGE);
                                 if (result == JOptionPane.YES_OPTION) {
                                         System.exit(0);
                                 }
