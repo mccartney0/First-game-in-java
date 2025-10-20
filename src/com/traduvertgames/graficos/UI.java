@@ -54,6 +54,11 @@ public class UI {
         public void renderOverlay(Graphics2D g2) {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+                if (!Game.isOverlayExpanded()) {
+                        drawOverlayHint(g2);
+                        return;
+                }
+
                 int screenWidth = Game.WIDTH * Game.SCALE;
                 int screenHeight = Game.HEIGHT * Game.SCALE;
                 int margin = 36;
@@ -202,6 +207,45 @@ public class UI {
                 int maxSlot = WeaponType.values().length;
                 g2.drawString(String.format("Q/E alternam armas • 1-%d selecionam diretamente", maxSlot), x + 22,
                                 lineY);
+        }
+
+        private void drawOverlayHint(Graphics2D g2) {
+                int screenWidth = Game.WIDTH * Game.SCALE;
+                int screenHeight = Game.HEIGHT * Game.SCALE;
+                int padding = 20;
+
+                String title = "Painel tático minimizado";
+                String hint = "Pressione TAB para exibir detalhes";
+
+                Font titleFont = new Font("SansSerif", Font.BOLD, 14);
+                Font hintFont = new Font("SansSerif", Font.PLAIN, 12);
+
+                FontMetrics titleMetrics = g2.getFontMetrics(titleFont);
+                FontMetrics hintMetrics = g2.getFontMetrics(hintFont);
+
+                int rectWidth = Math.max(titleMetrics.stringWidth(title), hintMetrics.stringWidth(hint)) + 24;
+                int rectHeight = titleMetrics.getHeight() + hintMetrics.getHeight() + 20;
+
+                int x = screenWidth - rectWidth - padding;
+                int y = screenHeight - rectHeight - padding;
+
+                g2.setColor(new Color(8, 12, 20, 190));
+                g2.fillRoundRect(x, y, rectWidth, rectHeight, 16, 16);
+                g2.setColor(new Color(255, 255, 255, 60));
+                g2.setStroke(new BasicStroke(2f));
+                g2.drawRoundRect(x, y, rectWidth, rectHeight, 16, 16);
+
+                int textX = x + 12;
+                int textY = y + 12 + titleMetrics.getAscent();
+
+                g2.setFont(titleFont);
+                g2.setColor(Color.WHITE);
+                g2.drawString(title, textX, textY);
+
+                textY += hintMetrics.getAscent() + 4;
+                g2.setFont(hintFont);
+                g2.setColor(new Color(210, 210, 210));
+                g2.drawString(hint, textX, textY);
         }
 
         private int drawParagraph(Graphics2D g2, String text, int x, int y, int maxWidth, int lineHeight, Color color) {

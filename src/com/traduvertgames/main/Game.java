@@ -84,6 +84,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private static int bestComboRecord = 1;
         private static int bestComboThisRun = 1;
 
+        private static boolean overlayExpanded = false;
+
         public Game() throws IOException {
                 instance = this;
                 rand = new Random();
@@ -181,6 +183,14 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
         public static void setBestComboThisRun(int value) {
                 bestComboThisRun = Math.max(1, value);
+        }
+
+        public static boolean isOverlayExpanded() {
+                return overlayExpanded;
+        }
+
+        public static void toggleOverlayExpanded() {
+                overlayExpanded = !overlayExpanded;
         }
 
         public void setCurrentLevel(int level) {
@@ -529,13 +539,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			gameState = "MENU";
 			Menu.pause = true;
 		}
-		if (e.getKeyCode() == KeyEvent.VK_T) {
-			if(gameState == "NORMAL") {
-				Game.saveGame = true;
-				levelPlus=0;
-			}
-		}
-	}
+                if (e.getKeyCode() == KeyEvent.VK_T) {
+                        if(gameState == "NORMAL") {
+                                Game.saveGame = true;
+                                levelPlus=0;
+                        }
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_TAB) {
+                        if (gameState == "NORMAL") {
+                                Game.toggleOverlayExpanded();
+                        }
+                }
+        }
 
 	@Override
 	public void keyReleased(KeyEvent e) {
