@@ -20,7 +20,11 @@ public enum WeaponType {
         SCATTER_CANNON("Canhão dispersor", "Dispara leque de projéteis a curta distância.", new Color(255, 152, 0),
                         26, 3.8, 1.8, 4.0, 5, 32.0, 0.9, 4, 220, 90, false),
         FUSION_LANCE("Lança de fusão", "Projétil perfurante de alto dano.", new Color(233, 30, 99),
-                        12, 2.4, 1.1, 6.4, 1, 0.0, 2.4, 4, 260, 80, false);
+                        12, 2.4, 1.1, 6.4, 1, 0.0, 2.4, 4, 260, 80, false),
+        ARC_DISRUPTOR("Disruptor de arco", "Rajadas elétricas que saturam corredores estreitos.", new Color(126, 87, 194),
+                        10, 1.6, 0.7, 5.8, 3, 18.0, 1.2, 3, 280, 85, false),
+        SOLAR_CANNON("Canhão solar", "Explosões lentas que derretem escudos inimigos.", new Color(255, 183, 77),
+                        22, 3.6, 1.5, 6.6, 1, 0.0, 3.1, 5, 320, 100, false);
 
         private final String displayName;
         private final String description;

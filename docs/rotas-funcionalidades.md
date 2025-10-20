@@ -16,7 +16,7 @@ Este documento detalha o fluxo das principais rotas de execução do jogo, descr
 
 ## 3. Progressão de níveis
 
-- A cada atualização, quando `Game.enemies` fica vazio, `World.restartGame` é chamado para carregar o próximo mapa (`levelN.png`). Após concluir os quatro níveis padrão, `levelPlus` aumenta e atributos máximos do jogador são elevados para rodadas sucessivas.【F:src/com/traduvertgames/main/Game.java†L160-L187】
+- A cada atualização, quando o objetivo corrente aponta conclusão, `World.restartGame` é chamado para carregar o próximo mapa (`levelN.png`). Após vencer as cinco missões da campanha, `levelPlus` aumenta e atributos máximos do jogador são elevados para rodadas sucessivas.【F:src/com/traduvertgames/main/Game.java†L160-L187】【F:src/com/traduvertgames/quest/QuestManager.java†L24-L95】
 - O arquivo do mundo define a distribuição de tiles, inimigos e itens; `World.java` traduz pixels do PNG em instâncias de `Tile`, `Enemy`, `LifePack`, `Weapon` e projéteis iniciais.【F:src/com/traduvertgames/world/World.java†L20-L145】
 
 ## 4. Sistema de entidades e combate
@@ -38,5 +38,5 @@ Este documento detalha o fluxo das principais rotas de execução do jogo, descr
 ## 7. Recursos e assets
 
 - Sprites e sons residem em `res/`, com `Spritesheet` responsável por cortar imagens para as animações do jogador, inimigos e itens.【F:src/com/traduvertgames/main/Game.java†L63-L114】【F:src/com/traduvertgames/graficos/Spritesheet.java†L7-L82】
-- Os mapas (`level1.png` a `level4.png`) definem a "rota" espacial de cada fase, orientando tanto a geração de tiles (`FloorTile`, `WallTile`) quanto os nós de navegação usados pela IA de A*.【F:src/com/traduvertgames/world/World.java†L20-L145】【F:src/com/traduvertgames/world/AStar.java†L9-L140】
+- Os mapas (`level1.png` a `level5.png`) definem a "rota" espacial de cada fase, orientando tanto a geração de tiles (`FloorTile`, `WallTile`) quanto os nós de navegação usados pela IA de A*.【F:src/com/traduvertgames/world/World.java†L20-L145】【F:src/com/traduvertgames/world/AStar.java†L9-L140】
 

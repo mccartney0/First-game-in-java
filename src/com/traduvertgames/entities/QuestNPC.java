@@ -18,6 +18,9 @@ public class QuestNPC extends Entity {
         QuestManager.registerNpc(this);
     }
 
+    protected void onRescued() {
+    }
+
     @Override
     public void update() {
         if (rescued) {
@@ -26,6 +29,7 @@ public class QuestNPC extends Entity {
         if (Entity.isColliding(this, Game.player)) {
             rescued = true;
             QuestManager.rescueNpc(this);
+            onRescued();
         }
     }
 

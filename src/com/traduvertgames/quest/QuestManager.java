@@ -40,6 +40,8 @@ public final class QuestManager {
             return new RitualObjective();
         case 4:
             return new RescueObjective();
+        case 5:
+            return new DataRecoveryObjective();
         default:
             return NULL_OBJECTIVE;
         }

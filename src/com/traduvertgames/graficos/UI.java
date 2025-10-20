@@ -16,51 +16,57 @@ import com.traduvertgames.quest.QuestManager;
 
 public class UI {
 
-private static final int BAR_WIDTH = 128;
-private static final int BAR_HEIGHT = 10;
+        private static final int BAR_WIDTH = 160;
+        private static final int BAR_HEIGHT = 12;
 
         public void render(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-int panelX = 12;
-int panelY = 12;
-int panelWidth = 148;
-int panelHeight = 74;
-                g2.setColor(new Color(8, 12, 20, 190));
-                g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
+                int margin = 24;
+                int panelX = margin;
+                int panelY = margin;
+                int panelWidth = BAR_WIDTH + 36;
+                int panelHeight = 110;
+                g2.setColor(new Color(8, 12, 20, 200));
+                g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 14, 14);
 
-                g2.setFont(new Font("SansSerif", Font.BOLD, 8));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 10));
                 g2.setColor(Color.WHITE);
 
-                drawResourceBar(g2, "VIDA", Player.life, Player.maxLife, panelX + 8, panelY + 12,
-                                new Color(244, 67, 54));
-                drawResourceBar(g2, "ESCUDO", Player.shield, Player.maxShield, panelX + 8, panelY + 24,
+                int barX = panelX + 14;
+                int barY = panelY + 26;
+                drawResourceBar(g2, "VIDA", Player.life, Player.maxLife, barX, barY, new Color(244, 67, 54));
+                barY += 18;
+                drawResourceBar(g2, "ESCUDO", Player.shield, Player.maxShield, barX, barY,
                                 new Color(121, 134, 203));
-                drawResourceBar(g2, "MANA", Player.mana, Player.maxMana, panelX + 8, panelY + 36,
-                                new Color(33, 150, 243));
+                barY += 18;
+                drawResourceBar(g2, "MANA", Player.mana, Player.maxMana, barX, barY, new Color(33, 150, 243));
+                barY += 18;
 
                 WeaponType currentWeapon = Game.player != null && Game.player.getCurrentWeaponType() != null
                                 ? Game.player.getCurrentWeaponType()
                                 : WeaponType.BLASTER;
-                drawResourceBar(g2, currentWeapon.getDisplayName().toUpperCase(), Player.weapon, Player.maxWeapon,
-                                panelX + 8, panelY + 48, currentWeapon.getUiColor());
+                drawResourceBar(g2, currentWeapon.getDisplayName().toUpperCase(), Player.weapon, Player.maxWeapon, barX,
+                                barY, currentWeapon.getUiColor());
         }
 
         public void renderOverlay(Graphics2D g2) {
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-int screenWidth = Game.WIDTH * Game.SCALE;
-int screenHeight = Game.HEIGHT * Game.SCALE;
-int margin = 28;
-int statusWidth = 320;
-int scoreWidth = 320;
-int arsenalWidth = Math.min(screenWidth - margin * 2, 420);
-int arsenalHeight = 220;
+                int screenWidth = Game.WIDTH * Game.SCALE;
+                int screenHeight = Game.HEIGHT * Game.SCALE;
+                int margin = 36;
+                int halfWidth = screenWidth / 2;
+                int statusWidth = Math.max(320, Math.min(400, halfWidth - margin));
+                int scoreWidth = Math.max(320, Math.min(400, halfWidth - margin));
+                int arsenalWidth = Math.min(screenWidth - margin * 2, 560);
+                int arsenalHeight = 240;
 
-drawStatusCard(g2, margin, margin, statusWidth, 176);
-drawScoreCard(g2, screenWidth - scoreWidth - margin, margin, scoreWidth, 196);
-drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth, arsenalHeight);
+                drawStatusCard(g2, margin, margin, statusWidth, 196);
+                drawScoreCard(g2, screenWidth - scoreWidth - margin, margin, scoreWidth, 214);
+                int arsenalX = (screenWidth - arsenalWidth) / 2;
+                drawArsenalCard(g2, arsenalX, screenHeight - arsenalHeight - margin, arsenalWidth, arsenalHeight);
         }
 
         private void drawStatusCard(Graphics2D g2, int x, int y, int width, int height) {
@@ -94,6 +100,10 @@ drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth,
                 String ammoInfo = String.format("Energia: %.0f / %.0f", Player.weapon, Player.maxWeapon);
                 g2.drawString(ammoInfo, x + 24, textY);
                 textY += 24;
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 15));
+                g2.setColor(new Color(190, 200, 210));
+                textY = drawParagraph(g2, currentWeapon.getDescription(), x + 24, textY, width - 48, 18,
+                                new Color(190, 200, 210));
 
                 g2.setColor(Color.WHITE);
                 g2.setFont(new Font("SansSerif", Font.BOLD, 18));
@@ -105,7 +115,8 @@ drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth,
                         g2.drawString(String.format("Tempo restante: %ds", Game.getComboSecondsRemaining()), x + 24,
                                         textY);
                 } else {
-                        g2.drawString(String.format("Melhor combo: x%d", Game.getBestComboThisRun()), x + 24, textY);
+                        g2.drawString(String.format("Melhor combo: x%d / x%d", Game.getBestComboThisRun(),
+                                        Game.getMaxComboLimit()), x + 24, textY);
                 }
         }
 
@@ -177,7 +188,7 @@ drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth,
                                 g2.fillRoundRect(x + 16, lineY - 18, width - 32, 28, 14, 14);
                                 g2.setColor(Color.WHITE);
                         } else {
-                                g2.setColor(new Color(220, 220, 220));
+                                g2.setColor(unlocked ? new Color(220, 220, 220) : new Color(160, 160, 160));
                         }
 
                         String status = unlocked ? String.format("%d%% de energia", percentage) : "Bloqueada";
@@ -188,7 +199,9 @@ drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth,
                 g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
                 g2.setColor(new Color(200, 200, 200));
                 lineY += 12;
-                g2.drawString("Q/E alternam armas • 1-4 selecionam diretamente", x + 22, lineY);
+                int maxSlot = WeaponType.values().length;
+                g2.drawString(String.format("Q/E alternam armas • 1-%d selecionam diretamente", maxSlot), x + 22,
+                                lineY);
         }
 
         private int drawParagraph(Graphics2D g2, String text, int x, int y, int maxWidth, int lineHeight, Color color) {
@@ -231,5 +244,11 @@ drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth,
                 g2.setFont(new Font("SansSerif", Font.BOLD, 7));
                 String text = String.format("%s", label);
                 g2.drawString(text, x + 2, y - 2);
+                if (max > 0) {
+                        String value = String.format("%.0f/%.0f", current, max);
+                        FontMetrics metrics = g2.getFontMetrics();
+                        int valueX = x + BAR_WIDTH - metrics.stringWidth(value) - 4;
+                        g2.drawString(value, valueX, y - 2);
+                }
         }
 }
