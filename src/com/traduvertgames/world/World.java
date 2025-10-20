@@ -102,34 +102,42 @@ Game.enemies.add(en);
 	}
 
 	public static boolean isFree(int xNext,int yNext, int zplayer) {
-		int x1 = xNext / TILE_SIZE;
-		int y1 = yNext / TILE_SIZE;
-		
-		int x2 = (xNext+TILE_SIZE-1) / TILE_SIZE;
-		int y2 = yNext / TILE_SIZE;
-		
-		int x3 = xNext / TILE_SIZE;
-		int y3 = (yNext+TILE_SIZE-1) / TILE_SIZE;
-		
-		int x4 = (xNext+TILE_SIZE-1) / TILE_SIZE;
-		int y4 = (yNext+TILE_SIZE-1) / TILE_SIZE;
+		final int margin = 1;
+
+		int adjustedX1 = xNext + margin;
+		int adjustedY1 = yNext + margin;
+
+		int adjustedX2 = xNext + TILE_SIZE - 1 - margin;
+		int adjustedY2 = yNext + margin;
+
+		int adjustedX3 = xNext + margin;
+		int adjustedY3 = yNext + TILE_SIZE - 1 - margin;
+
+		int adjustedX4 = xNext + TILE_SIZE - 1 - margin;
+		int adjustedY4 = yNext + TILE_SIZE - 1 - margin;
+
 		try {
-			if( !((tiles[x1+(y1*World.WIDTH)] instanceof WallTile) ||
-					(tiles[x2+(y2*World.WIDTH)] instanceof WallTile) || 
-					(tiles[x3+(y3*World.WIDTH)] instanceof WallTile) || 
-					(tiles[x4+(y4*World.WIDTH)] instanceof WallTile))) {
-				return true;
-			}
-		}catch(ArrayIndexOutOfBoundsException ex) {
-//			System.out.println("Saiu do mapa");
+			int x1 = adjustedX1 / TILE_SIZE;
+			int y1 = adjustedY1 / TILE_SIZE;
+
+			int x2 = adjustedX2 / TILE_SIZE;
+			int y2 = adjustedY2 / TILE_SIZE;
+
+			int x3 = adjustedX3 / TILE_SIZE;
+			int y3 = adjustedY3 / TILE_SIZE;
+
+			int x4 = adjustedX4 / TILE_SIZE;
+			int y4 = adjustedY4 / TILE_SIZE;
+
+			boolean hitsWall = (tiles[x1 + (y1 * World.WIDTH)] instanceof WallTile)
+						|| (tiles[x2 + (y2 * World.WIDTH)] instanceof WallTile)
+						|| (tiles[x3 + (y3 * World.WIDTH)] instanceof WallTile)
+						|| (tiles[x4 + (y4 * World.WIDTH)] instanceof WallTile);
+
+			return !hitsWall;
+		} catch (ArrayIndexOutOfBoundsException ex) {
+			return false;
 		}
-		
-		
-//		Posibilita pular pelas paredes
-//		if(zplayer>0) {
-//			return true;
-//		}
-		return false;
 	}
 	
         public static void restartGame(String level) {

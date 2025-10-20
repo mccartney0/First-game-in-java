@@ -112,8 +112,14 @@ public class Menu {
                                 currentOption = 0;
                                 break;
                         case OPTION_EXIT:
-                                JOptionPane.showConfirmDialog(null, "Deseja realmente sair?", "Fechar o jogo", currentOption);
-                                System.exit(1);
+                                int result = JOptionPane.showConfirmDialog(
+                                                null,
+                                                "Deseja realmente sair?",
+                                                "Fechar o jogo",
+                                                JOptionPane.YES_NO_OPTION);
+                                if (result == JOptionPane.YES_OPTION) {
+                                        System.exit(0);
+                                }
                                 break;
                         default:
                                 break;
