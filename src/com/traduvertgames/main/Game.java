@@ -89,9 +89,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         public Game() throws IOException {
                 instance = this;
                 rand = new Random();
-		addKeyListener(this);
-		addMouseListener(this);
+                addKeyListener(this);
+                addMouseListener(this);
                 setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
+                setFocusable(true);
+                setFocusTraversalKeysEnabled(false);
 		initFrame();
 // Inicializando objetos;
 		ui = new UI();
