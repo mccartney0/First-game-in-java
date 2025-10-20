@@ -2,3 +2,6 @@
 save.txt
 .gradle/
 build/
+
+# Generated RPG maps
+res/level*.png

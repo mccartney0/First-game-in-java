@@ -30,6 +30,7 @@ import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
+import com.traduvertgames.quest.QuestManager;
 
 public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
 
@@ -100,10 +101,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 		spritesheet = new Spritesheet("/spritesheet.png");
 // Passando tamanho dele e posições
-		player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
+                player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
 // Adicionar o jogador na lista e ja aparece na tela
-		entities.add(player);
-		world = new World("/level1.png");
+                entities.add(player);
+                QuestManager.prepareForLevel(CUR_LEVEL);
+                world = new World("/level1.png");
+                QuestManager.onLevelLoaded();
 
                 menu = new Menu();
                 applyDifficultyToPlayerStats();
@@ -296,30 +299,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                                 e.update();
                         }
 
-			for (int i = 0; i < bullets.size(); i++) {
-				bullets.get(i).update();
-			}
-			for (int i = 0; i < bullet.size(); i++) {
-				bullet.get(i).update();
-			}
-
-			if (enemies.size() == 0) {
-//Avançar para o próximo nível
-				CUR_LEVEL++;
-				if(CUR_LEVEL == MAX_LEVEL) {
-					levelPlus+=1;
-				}
-				if (CUR_LEVEL > MAX_LEVEL) {
-					CUR_LEVEL = 1;
-					
-				}
-				
-                                applyProgressBonuses();
-
-                                String newWorld = "level" + CUR_LEVEL + ".png";
-                                World.restartGame(newWorld);
+                        for (int i = 0; i < bullets.size(); i++) {
+                                bullets.get(i).update();
                         }
-		} else if (gameState == "GAMEOVER") {
+                        for (int i = 0; i < bullet.size(); i++) {
+                                bullet.get(i).update();
+                        }
+
+                        QuestManager.update();
+
+                        if (QuestManager.isObjectiveComplete()) {
+                                advanceToNextLevel();
+                        }
+                } else if (gameState == "GAMEOVER") {
 //Forma de Fazer animação - Game over
 			this.framesGameOver++;
 			if (this.framesGameOver == 30) {
@@ -627,6 +619,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 comboMultiplier = 1;
                 comboTimer = 0;
                 bestComboThisRun = 1;
+        }
+
+        private void advanceToNextLevel() {
+                CUR_LEVEL++;
+                if (CUR_LEVEL == MAX_LEVEL) {
+                        levelPlus += 1;
+                }
+                if (CUR_LEVEL > MAX_LEVEL) {
+                        CUR_LEVEL = 1;
+                }
+                applyProgressBonuses();
+                String newWorld = "level" + CUR_LEVEL + ".png";
+                World.restartGame(newWorld);
         }
 
         private void applyProgressBonuses() {

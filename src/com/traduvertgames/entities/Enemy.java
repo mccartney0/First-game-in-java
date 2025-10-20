@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.util.List;
 
 import com.traduvertgames.main.Game;
+import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.world.AStar;
 import com.traduvertgames.world.Camera;
 import com.traduvertgames.world.Node;
@@ -33,7 +34,9 @@ public class Enemy extends Entity {
     public enum Variant {
         SCOUT(2.0, 1.0, 1.0, 4.0, 2.0, 4, 75, 0, 0, new Color(255, 152, 0)),
         TELEPORTER(3.5, 1.1, 1.25, 5.5, 1.6, 4, 60, 220, 96, new Color(156, 39, 176)),
-        ARTILLERY(6.0, 0.85, 0.9, 3.6, 2.8, 5, 110, 260, 128, new Color(3, 169, 244));
+        ARTILLERY(6.0, 0.85, 0.9, 3.6, 2.8, 5, 110, 260, 128, new Color(3, 169, 244)),
+        WARDEN(9.5, 0.7, 0.85, 3.0, 4.2, 6, 140, 0, 0, new Color(63, 81, 181)),
+        WARBRINGER(18.0, 0.95, 1.1, 4.2, 6.5, 7, 90, 160, 140, new Color(233, 30, 99));
 
         private final double maxLife;
         private final double speedMultiplier;
@@ -128,6 +131,7 @@ public class Enemy extends Entity {
     private final int specialCooldownBase;
     private final Color projectileColor;
     private final Color auraColor;
+    private final boolean boss;
 
     private static final double BASE_PATROL_SPEED = 0.6;
     private static final double BASE_CHASE_SPEED = 1.2;
@@ -140,12 +144,17 @@ public class Enemy extends Entity {
     private static final int PATH_RECALC_INTERVAL = 18;
 
     public Enemy(int x, int y, int width, int height, BufferedImage sprite) {
-        this(x, y, width, height, sprite, Variant.SCOUT);
+        this(x, y, width, height, sprite, Variant.SCOUT, false);
     }
 
     public Enemy(int x, int y, int width, int height, BufferedImage sprite, Variant variant) {
+        this(x, y, width, height, sprite, variant, false);
+    }
+
+    public Enemy(int x, int y, int width, int height, BufferedImage sprite, Variant variant, boolean boss) {
         super(x, y, width, height, null);
         this.variant = variant;
+        this.boss = boss;
         this.maxLife = variant.getMaxLife();
         this.life = this.maxLife;
         sprites = new BufferedImage[2];
@@ -166,6 +175,9 @@ public class Enemy extends Entity {
         if (this.specialCooldownBase > 0) {
             specialCooldown = Game.rand.nextInt(this.specialCooldownBase);
         }
+        if (boss) {
+            QuestManager.notifyBossSpotted();
+        }
     }
 
     public static Enemy spawnRandomVariant(int x, int y) {
@@ -174,12 +186,14 @@ public class Enemy extends Entity {
 
     private static Variant pickRandomVariant() {
         int roll = Game.rand.nextInt(100);
-        if (roll < 55) {
+        if (roll < 45) {
             return Variant.SCOUT;
-        } else if (roll < 80) {
+        } else if (roll < 70) {
             return Variant.TELEPORTER;
+        } else if (roll < 90) {
+            return Variant.ARTILLERY;
         }
-        return Variant.ARTILLERY;
+        return Variant.WARDEN;
     }
 
     public void update() {
@@ -583,6 +597,7 @@ public class Enemy extends Entity {
         maybeDropPickup();
         Game.enemies.remove(this);
         Game.entities.remove(this);
+        QuestManager.notifyEnemyKilled(this);
     }
 
     private void maybeDropPickup() {
@@ -633,6 +648,10 @@ public class Enemy extends Entity {
         int playerY = Game.player.getY();
 
         return enemyX < playerX + 16 && enemyX + mwidth > playerX && enemyY < playerY + 16 && enemyY + mheight > playerY;
+    }
+
+    public boolean isBoss() {
+        return boss;
     }
 
     public void render(Graphics g) {
