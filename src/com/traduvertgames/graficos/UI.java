@@ -24,22 +24,25 @@ private static final int BAR_HEIGHT = 10;
 int panelX = 12;
 int panelY = 12;
 int panelWidth = 148;
-int panelHeight = 62;
+int panelHeight = 74;
                 g2.setColor(new Color(8, 12, 20, 190));
                 g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 10, 10);
 
                 g2.setFont(new Font("SansSerif", Font.BOLD, 8));
                 g2.setColor(Color.WHITE);
 
-                drawResourceBar(g2, "VIDA", Player.life, Player.maxLife, panelX + 8, panelY + 12, new Color(244, 67, 54));
-                drawResourceBar(g2, "MANA", Player.mana, Player.maxMana, panelX + 8, panelY + 24,
+                drawResourceBar(g2, "VIDA", Player.life, Player.maxLife, panelX + 8, panelY + 12,
+                                new Color(244, 67, 54));
+                drawResourceBar(g2, "ESCUDO", Player.shield, Player.maxShield, panelX + 8, panelY + 24,
+                                new Color(121, 134, 203));
+                drawResourceBar(g2, "MANA", Player.mana, Player.maxMana, panelX + 8, panelY + 36,
                                 new Color(33, 150, 243));
 
                 WeaponType currentWeapon = Game.player != null && Game.player.getCurrentWeaponType() != null
                                 ? Game.player.getCurrentWeaponType()
                                 : WeaponType.BLASTER;
                 drawResourceBar(g2, currentWeapon.getDisplayName().toUpperCase(), Player.weapon, Player.maxWeapon,
-                                panelX + 8, panelY + 36, currentWeapon.getUiColor());
+                                panelX + 8, panelY + 48, currentWeapon.getUiColor());
         }
 
         public void renderOverlay(Graphics2D g2) {
@@ -74,6 +77,8 @@ drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth,
                 g2.drawString(String.format("Vida: %.0f / %.0f", Player.life, Player.maxLife), x + 24, textY);
                 textY += 26;
                 g2.drawString(String.format("Mana: %.0f / %.0f", Player.mana, Player.maxMana), x + 24, textY);
+                textY += 26;
+                g2.drawString(String.format("Escudo: %.0f / %.0f", Player.shield, Player.maxShield), x + 24, textY);
                 textY += 26;
 
                 WeaponType currentWeapon = Game.player != null && Game.player.getCurrentWeaponType() != null

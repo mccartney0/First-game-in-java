@@ -195,6 +195,9 @@ public class Menu {
                                         fallbackWeaponEnergy = Integer.parseInt(value);
                                         Player.weapon = fallbackWeaponEnergy;
                                         break;
+                                case "escudo":
+                                        Player.shield = Integer.parseInt(value);
+                                        break;
                                 case "armaAtual":
                                         Player.loadCurrentWeaponFromSave(Integer.parseInt(value));
                                         break;
