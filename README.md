@@ -19,7 +19,8 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 
 - **Estados do jogo** – O jogo alterna entre os estados `MENU`, `NORMAL` e `GAMEOVER`. O menu principal permite iniciar ou carregar partidas, o estado normal controla o loop de jogo e, ao zerar a vida do jogador, o estado de game over exibe a tela de reinício.【F:src/com/traduvertgames/main/Game.java†L53-L154】【F:src/com/traduvertgames/main/Menu.java†L21-L103】
 - **Loop principal** – O método `run` mantém o jogo atualizado a 60 ticks por segundo, chamando `update()` para lógica e `render()` para desenhar o cenário, entidades, UI e mensagens contextuais.【F:src/com/traduvertgames/main/Game.java†L207-L312】
-- **Progressão de fases** – Ao eliminar todos os inimigos do nível atual, um novo mapa (`level1.png` a `level4.png`) é carregado. Após o último nível, o jogo aumenta os atributos máximos do jogador para partidas estendidas.【F:src/com/traduvertgames/main/Game.java†L160-L187】
+- **Progressão de fases** – Cada mapa traz um objetivo próprio controlado pelo `QuestManager`; ao completar a missão vigente (coletar relíquias, reativar faróis, resgatar NPCs ou derrotar o comandante) o jogo carrega o próximo arquivo `level1.png`–`level4.png` e reaplica os bônus de progressão quando o ciclo é concluído.【F:src/com/traduvertgames/main/Game.java†L230-L321】【F:src/com/traduvertgames/quest/QuestManager.java†L15-L88】
+- **Sistema de missões** – Os objetivos ficam visíveis no painel “Missão atual” da HUD, exibindo título, descrição e progresso em tempo real para guiar a exploração estilo RPG.【F:src/com/traduvertgames/graficos/UI.java†L94-L166】
 
 ## Controles e interações
 
@@ -35,9 +36,10 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 - **Vida, mana, escudo e munição** – O jogador agora possui um escudo reativo adicional que absorve dano antes de atingir a vida, com limites reajustados pela dificuldade. Pacotes de vida (`LifePack`) e armas (`Weapon`) continuam restaurando recursos ao contato, enquanto a durabilidade das armas persiste entre sessões.【F:src/com/traduvertgames/entities/Player.java†L19-L512】【F:src/com/traduvertgames/main/Game.java†L624-L704】
 - **Orbes de escudo** – Orbes renderizados por vetores (`ShieldOrb`) fornecem cargas de proteção extras. Eles podem ser posicionados diretamente no mapa com a cor `#8E24AA` ou dropados aleatoriamente pelos inimigos ao serem derrotados.【F:src/com/traduvertgames/entities/ShieldOrb.java†L1-L79】【F:src/com/traduvertgames/entities/Enemy.java†L585-L613】【F:src/com/traduvertgames/world/World.java†L39-L88】
 - **Células de energia** – As novas `EnergyCell` restauram mana e recarregam parcialmente a arma ativa, sendo representadas por formas vetoriais animadas. Podem ser adicionadas ao mapa com a cor `#1DE9B6` e também surgem como saque após uma eliminação.【F:src/com/traduvertgames/entities/EnergyCell.java†L1-L74】【F:src/com/traduvertgames/entities/Enemy.java†L585-L613】【F:src/com/traduvertgames/entities/Player.java†L321-L416】【F:src/com/traduvertgames/world/World.java†L39-L88】
+- **Artefatos de missão** – Relíquias (`QuestItem`), faróis (`QuestBeacon`) e pesquisadores (`QuestNPC`) utilizam novas cores (`#FFC107`, `#4CAF50`, `#795548`) para habilitar objetivos estilo RPG – coletar itens, canalizar energia ou resgatar NPCs, respectivamente.【F:src/com/traduvertgames/entities/QuestItem.java†L1-L62】【F:src/com/traduvertgames/entities/QuestBeacon.java†L1-L63】【F:src/com/traduvertgames/entities/QuestNPC.java†L1-L44】【F:src/com/traduvertgames/world/World.java†L44-L120】
 - **Arsenal modular** – Quatro armas com características próprias (Blaster, Rifle de Íons, Canhão Dispersor e Lança de Fusão) podem ser desbloqueadas, cada uma com custos de mana, dano e cadência diferenciados. A durabilidade de cada arma é persistida no save e pode ser reabastecida ao coletar novos itens.【F:src/com/traduvertgames/entities/WeaponType.java†L16-L161】【F:src/com/traduvertgames/entities/Player.java†L323-L512】【F:src/com/traduvertgames/main/Menu.java†L120-L185】
 - **Projéteis** – Há dois tipos de disparo (`Bullet` e `BulletShoot`) com atualizações e renderização independentes; os disparos energizados (`BulletShoot`) agora também são utilizados pelos inimigos para ataques à distância.【F:src/com/traduvertgames/entities/Bullet.java†L5-L12】【F:src/com/traduvertgames/entities/BulletShoot.java†L12-L52】
-- **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão. Além do tipo padrão, o carregamento de fases passa a sortear variantes teletransportadoras e artilheiros, cada uma com padrões de disparo próprios; também é possível posicioná-las explicitamente nos mapas usando os códigos de cor `#9C27B0` e `#00BCD4`.【F:src/com/traduvertgames/entities/Enemy.java†L17-L367】【F:src/com/traduvertgames/world/World.java†L33-L88】
+- **Inimigos** – A IA intercala patrulha, perseguição com recálculo dinâmico de caminhos, flanqueia o jogador e dispara projéteis sempre que há linha de visão. Além das variantes Scout, Teleporter e Artillery, os mapas podem convocar Guardiões (`Variant.WARDEN`, tanque pesado) e o chefe Warbringer (`Variant.WARBRINGER`) por meio dos códigos `#3F51B5` e `#E91E63`.【F:src/com/traduvertgames/entities/Enemy.java†L25-L214】【F:src/com/traduvertgames/world/World.java†L44-L120】
 
 ## Pontuação e combos
 
@@ -51,7 +53,7 @@ O jogo grava vida, mana, escudo, quantidade de munição (arma), inimigos derrot
 
 ## HUD, áudio e recursos
 
-- **HUD** – A classe `UI` exibe barras compactas dentro do canvas (agora incluindo a barra de escudo) e, após o escalonamento, projeta painéis translúcidos com status do piloto, placar da missão e arsenal desbloqueado. O canvas opera em 320×192 pixels (960×576 após o `SCALE`), afastando os painéis laterais e centralizando a tela de game over para facilitar a leitura.【F:src/com/traduvertgames/main/Game.java†L37-L320】【F:src/com/traduvertgames/graficos/UI.java†L15-L132】
+- **HUD** – A classe `UI` exibe barras compactas dentro do canvas (agora incluindo a barra de escudo) e, após o escalonamento, projeta painéis translúcidos com status do piloto, a missão ativa com texto resumido, placar e arsenal desbloqueado. O canvas opera em 320×192 pixels (960×576 após o `SCALE`), afastando os painéis laterais e centralizando a tela de game over para facilitar a leitura.【F:src/com/traduvertgames/main/Game.java†L37-L320】【F:src/com/traduvertgames/graficos/UI.java†L94-L166】
 - **Áudio** – `Sound.java` encapsula efeitos de som e música ambiente utilizados ao interagir com o menu ou sofrer dano.【F:src/com/traduvertgames/main/Sound.java†L1-L120】
 - **Mundo** – A classe `World` carrega os tiles dos arquivos `level*.png`, gerando colisões, entidades e caminhos de A* a partir dos dados de pixels.【F:src/com/traduvertgames/world/World.java†L20-L145】
 
@@ -76,10 +78,20 @@ Para gerar um JAR distribuível:
 
 Os artefatos gerados ficarão disponíveis em `build/libs/`.
 
+## Gerar os mapas RPG
+
+Os arquivos `res/level1.png` a `res/level4.png` não são versionados e devem ser criados localmente sempre que você clonar o repositório ou ajustar o layout das fases. Utilize o script Python localizado em `tools/generate_maps.py`:
+
+```
+python3 tools/generate_maps.py
+```
+
+O script depende apenas da biblioteca padrão do Python 3, grava as imagens diretamente em `res/` e imprime um resumo de cada mapa gerado. Sempre que quiser experimentar novos layouts, edite as funções `level_one()`–`level_four()` e execute novamente o comando acima.
+
 ## Dicas de desenvolvimento
 
 - Ponto de entrada do jogo: `src/com/traduvertgames/main/Game.java`
 - Menu e tratamento de entrada: `src/com/traduvertgames/main/Menu.java`
-- O diretório `res/` contém os sprite sheets, arquivos de fase e clipes de áudio referenciados pelo código.
+- O diretório `res/` contém os sprite sheets, arquivos de fase e clipes de áudio referenciados pelo código; o script `tools/generate_maps.py` recria automaticamente os mapas RPG (`level1.png` a `level4.png`).【F:tools/generate_maps.py†L1-L151】
 
 Sinta-se à vontade para experimentar com o código e aprender mais sobre conceitos básicos de programação de jogos em Java!

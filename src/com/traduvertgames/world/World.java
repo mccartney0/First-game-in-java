@@ -1,5 +1,6 @@
 package com.traduvertgames.world;
 
+import java.awt.Color;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -10,6 +11,7 @@ import javax.imageio.ImageIO;
 import com.traduvertgames.entities.*;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.main.Game;
+import com.traduvertgames.quest.QuestManager;
 
 public class World {
 
@@ -72,6 +74,24 @@ Game.enemies.add(en);
                                         } else if (pixelAtual == 0xFF1DE9B6) {
                                                 // Energy cell
                                                 Game.entities.add(new EnergyCell(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFFFFC107) {
+                                                // Quest item
+                                                Game.entities.add(new QuestItem(xx * 16, yy * 16, new Color(255, 193, 7)));
+                                        } else if (pixelAtual == 0xFF4CAF50) {
+                                                // Quest beacon
+                                                Game.entities.add(new QuestBeacon(xx * 16, yy * 16, new Color(76, 175, 80)));
+                                        } else if (pixelAtual == 0xFF795548) {
+                                                // Quest NPC
+                                                Game.entities.add(new QuestNPC(xx * 16, yy * 16, new Color(121, 85, 72)));
+                                        } else if (pixelAtual == 0xFF3F51B5) {
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.WARDEN);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFFE91E63) {
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+                                                                Enemy.Variant.WARBRINGER, true);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
                                         }
                                         // Floor
                                 }
@@ -113,6 +133,8 @@ Game.enemies.add(en);
 	}
 	
         public static void restartGame(String level) {
+                int levelNumber = parseLevelNumber(level);
+                QuestManager.prepareForLevel(levelNumber);
                 Game.entities.clear();
                 Game.enemies.clear();
                 Game.entities = new ArrayList<Entity>();
@@ -125,7 +147,29 @@ Game.enemies.add(en);
                 // Adicionar o jogador na lista e ja aparece na tela
                 Game.entities.add(Game.player);
                 Game.world = new World("/"+level);
+                QuestManager.onLevelLoaded();
                 return;
+        }
+
+        private static int parseLevelNumber(String level) {
+                if (level == null) {
+                        return QuestManager.getCurrentLevel();
+                }
+                int value = 0;
+                boolean foundDigit = false;
+                for (int i = 0; i < level.length(); i++) {
+                        char c = level.charAt(i);
+                        if (Character.isDigit(c)) {
+                                foundDigit = true;
+                                value = value * 10 + Character.digit(c, 10);
+                        } else if (foundDigit) {
+                                break;
+                        }
+                }
+                if (foundDigit) {
+                        return value;
+                }
+                return QuestManager.getCurrentLevel();
         }
 
         public static boolean isValidTile(int tileX, int tileY) {

@@ -3,6 +3,7 @@ package com.traduvertgames.graficos;
 import java.awt.BasicStroke;
 import java.awt.Color;
 import java.awt.Font;
+import java.awt.FontMetrics;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
@@ -11,6 +12,7 @@ import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.main.Game;
+import com.traduvertgames.quest.QuestManager;
 
 public class UI {
 
@@ -128,6 +130,21 @@ drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth,
                 textY += 26;
                 g2.drawString(String.format("Eliminados: %d", Enemy.enemies), x + 20, textY);
 
+                textY += 32;
+                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+                g2.drawString("Missão atual", x + 20, textY);
+                textY += 22;
+                g2.setFont(new Font("SansSerif", Font.BOLD, 16));
+                textY = drawParagraph(g2, QuestManager.getObjectiveTitle(), x + 20, textY, width - 40, 18,
+                                Color.WHITE);
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 15));
+                textY = drawParagraph(g2, QuestManager.getObjectiveDescription(), x + 20, textY, width - 40, 18,
+                                new Color(210, 210, 210));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 15));
+                textY = drawParagraph(g2, QuestManager.getObjectiveProgress(), x + 20, textY, width - 40, 18,
+                                new Color(129, 199, 132));
+
                 g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
                 g2.setColor(new Color(200, 200, 200));
                 textY += 28;
@@ -172,6 +189,34 @@ drawArsenalCard(g2, margin, screenHeight - arsenalHeight - margin, arsenalWidth,
                 g2.setColor(new Color(200, 200, 200));
                 lineY += 12;
                 g2.drawString("Q/E alternam armas • 1-4 selecionam diretamente", x + 22, lineY);
+        }
+
+        private int drawParagraph(Graphics2D g2, String text, int x, int y, int maxWidth, int lineHeight, Color color) {
+                if (text == null || text.isEmpty()) {
+                        return y;
+                }
+                g2.setColor(color);
+                FontMetrics metrics = g2.getFontMetrics();
+                String[] words = text.split(" ");
+                StringBuilder line = new StringBuilder();
+                for (String word : words) {
+                        if (word == null || word.isEmpty()) {
+                                continue;
+                        }
+                        String candidate = line.length() == 0 ? word : line + " " + word;
+                        if (metrics.stringWidth(candidate) > maxWidth && line.length() > 0) {
+                                g2.drawString(line.toString(), x, y);
+                                y += lineHeight;
+                                line = new StringBuilder(word);
+                        } else {
+                                line = new StringBuilder(candidate);
+                        }
+                }
+                if (line.length() > 0) {
+                        g2.drawString(line.toString(), x, y);
+                        y += lineHeight;
+                }
+                return y;
         }
 
         private void drawResourceBar(Graphics2D g2, String label, double current, double max, int x, int y,
