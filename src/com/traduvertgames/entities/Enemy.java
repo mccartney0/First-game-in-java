@@ -613,6 +613,16 @@ public class Enemy extends Entity {
             EnergyCell cell = new EnergyCell(spawnX, spawnY);
             Game.entities.add(cell);
         }
+
+        if (Game.rand.nextDouble() < 0.12) {
+            NanoMedkit medkit = new NanoMedkit(spawnX, spawnY);
+            Game.entities.add(medkit);
+        }
+
+        if (Game.rand.nextDouble() < 0.08) {
+            OverclockModule module = new OverclockModule(spawnX, spawnY);
+            Game.entities.add(module);
+        }
     }
 
     public void collidingBullet() {

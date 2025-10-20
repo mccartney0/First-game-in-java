@@ -24,6 +24,11 @@ PALETTE: Dict[str, Color] = {
     'O': (76, 175, 80),
     'N': (121, 85, 72),
     'C': (29, 233, 182),
+    'M': (255, 82, 82),
+    'R': (0, 229, 255),
+    'D': (0, 172, 193),
+    'S': (126, 87, 194),
+    'I': (255, 183, 77),
 }
 
 
@@ -166,6 +171,38 @@ def level_four() -> List[str]:
     return [''.join(row) for row in grid]
 
 
+def level_five() -> List[str]:
+    width, height = 36, 26
+    grid = create_grid(width, height)
+
+    add_horizontal_wall(grid, 5, 2, width - 3, openings=[9, 18, 26])
+    add_horizontal_wall(grid, 11, 2, width - 3, openings=[8, 18, 30])
+    add_horizontal_wall(grid, 17, 2, width - 3, openings=[6, 20, 28])
+    add_horizontal_wall(grid, 21, 3, width - 4, openings=[12, 24])
+    add_vertical_wall(grid, 10, 1, height - 2, openings=[5, 12, 20])
+    add_vertical_wall(grid, 18, 1, height - 2, openings=[7, 15, 23])
+    add_vertical_wall(grid, 26, 3, height - 3, openings=[9, 17, 22])
+
+    place(grid, 3, 3, 'P')
+    for x, y in [(9, 6), (21, 10), (29, 16), (15, 20)]:
+        place(grid, x, y, 'D')
+    place(grid, 30, 21, 'S')
+    place(grid, 7, 19, 'I')
+    for x, y in [(12, 8), (24, 14), (28, 22)]:
+        place(grid, x, y, 'Q')
+    for x, y in [(11, 4), (23, 12), (18, 18)]:
+        place(grid, x, y, 'M')
+    for x, y in [(20, 7), (27, 13), (14, 17)]:
+        place(grid, x, y, 'R')
+    for x, y in [(13, 6), (22, 6), (12, 15), (24, 18), (31, 9)]:
+        place(grid, x, y, 'E')
+    for x, y in [(16, 9), (25, 11)]:
+        place(grid, x, y, 'G')
+    place(grid, 32, 19, 'B')
+
+    return [''.join(row) for row in grid]
+
+
 def write_png(path: str, grid: Sequence[str]) -> None:
     height = len(grid)
     width = len(grid[0]) if height > 0 else 0
@@ -204,6 +241,7 @@ def main() -> None:
         "res/level2.png": level_two(),
         "res/level3.png": level_three(),
         "res/level4.png": level_four(),
+        "res/level5.png": level_five(),
     }
     for path, grid in outputs.items():
         write_png(path, grid)

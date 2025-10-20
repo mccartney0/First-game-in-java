@@ -56,12 +56,12 @@ Game.enemies.add(en);
 Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.ARTILLERY);
 Game.entities.add(en);
 Game.enemies.add(en);
-					} else if (pixelAtual == 0xFFFF6A00) {
-						// Weapon
-						Game.entities.add(new Weapon(xx * 16, yy * 16, 16, 16, Entity.WEAPON_EN));
-					} else if (pixelAtual == 0xFF4CFF00) {
-						// Life Pack
-						LifePack pack = new LifePack(xx * 16, yy * 16, 16, 16, Entity.LIFEPACK_EN);
+                                        } else if (pixelAtual == 0xFFFF6A00) {
+                                                // Weapon
+                                                Game.entities.add(new Weapon(xx * 16, yy * 16, 16, 16, Entity.WEAPON_EN));
+                                        } else if (pixelAtual == 0xFF4CFF00) {
+                                                // Life Pack
+                                                LifePack pack = new LifePack(xx * 16, yy * 16, 16, 16, Entity.LIFEPACK_EN);
 						pack.setMask(4, 4,8, 8);
 						Game.entities.add(pack);
 //						Game.entities.add(new LifePack(xx * 16, yy * 16, 16, 16, Entity.LIFEPACK_EN));
@@ -74,15 +74,25 @@ Game.enemies.add(en);
                                         } else if (pixelAtual == 0xFF1DE9B6) {
                                                 // Energy cell
                                                 Game.entities.add(new EnergyCell(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFFFF5252) {
+                                                Game.entities.add(new NanoMedkit(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFF00E5FF) {
+                                                Game.entities.add(new OverclockModule(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFFFFC107) {
                                                 // Quest item
                                                 Game.entities.add(new QuestItem(xx * 16, yy * 16, new Color(255, 193, 7)));
+                                        } else if (pixelAtual == 0xFF00ACC1) {
+                                                Game.entities.add(new DataCore(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFF4CAF50) {
                                                 // Quest beacon
                                                 Game.entities.add(new QuestBeacon(xx * 16, yy * 16, new Color(76, 175, 80)));
                                         } else if (pixelAtual == 0xFF795548) {
                                                 // Quest NPC
                                                 Game.entities.add(new QuestNPC(xx * 16, yy * 16, new Color(121, 85, 72)));
+                                        } else if (pixelAtual == 0xFFFFB74D) {
+                                                Game.entities.add(new EngineerNPC(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFF7E57C2) {
+                                                Game.entities.add(new ResearcherNPC(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFF3F51B5) {
                                                 Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.WARDEN);
                                                 Game.entities.add(en);

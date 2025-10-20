@@ -149,6 +149,10 @@ public class Player extends Entity {
 
                 this.checkCollisionEnergyCell();
 
+                this.checkCollisionNanoMedkit();
+
+                this.checkCollisionOverclockModule();
+
                 if (manaContinue) {
                         this.manaFrames++;
 
@@ -447,6 +451,38 @@ public class Player extends Entity {
                                         manaContinue = true;
                                         addMana(cell.getManaRestore());
                                         addWeaponEnergy(cell.getWeaponRestore());
+                                        Game.entities.remove(i);
+                                        i--;
+                                }
+                        }
+                }
+        }
+
+        public void checkCollisionNanoMedkit() {
+                for (int i = 0; i < Game.entities.size(); i++) {
+                        Entity current = Game.entities.get(i);
+                        if (current instanceof NanoMedkit) {
+                                NanoMedkit kit = (NanoMedkit) current;
+                                if (Entity.isColliding(this, kit)) {
+                                        heal(kit.getHealAmount());
+                                        addShield(kit.getShieldAmount());
+                                        Game.entities.remove(i);
+                                        i--;
+                                }
+                        }
+                }
+        }
+
+        public void checkCollisionOverclockModule() {
+                for (int i = 0; i < Game.entities.size(); i++) {
+                        Entity current = Game.entities.get(i);
+                        if (current instanceof OverclockModule) {
+                                OverclockModule module = (OverclockModule) current;
+                                if (Entity.isColliding(this, module)) {
+                                        manaContinue = true;
+                                        addMana(module.getManaBoost());
+                                        addWeaponEnergy(module.getWeaponBoost());
+                                        Game.applyComboSurge(2, Game.getComboBaseDuration());
                                         Game.entities.remove(i);
                                         i--;
                                 }

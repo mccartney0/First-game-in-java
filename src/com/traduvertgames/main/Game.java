@@ -41,13 +41,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static JFrame frame;
 	private Thread thread;
 	private boolean isRunning = true;
-        public static final int WIDTH = 320;
-        public static final int HEIGHT = 192;
+        public static final int WIDTH = 384;
+        public static final int HEIGHT = 216;
         public static final int SCALE = 3;
 
         private static Game instance;
 
-        private int CUR_LEVEL = 1, MAX_LEVEL = 4;
+        private int CUR_LEVEL = 1, MAX_LEVEL = 5;
 	private BufferedImage image;
 
 	public static List<Entity> entities;
@@ -145,6 +145,26 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         return 0;
                 }
                 return (int) Math.ceil(comboTimer / 60.0);
+        }
+
+        public static int getComboBaseDuration() {
+                return COMBO_DURATION_FRAMES;
+        }
+
+        public static int getMaxComboLimit() {
+                return MAX_COMBO_MULTIPLIER;
+        }
+
+        public static void applyComboSurge(int bonusMultiplier, int bonusFrames) {
+                if (bonusMultiplier > 0) {
+                        comboMultiplier = Math.min(MAX_COMBO_MULTIPLIER, comboMultiplier + bonusMultiplier);
+                        bestComboThisRun = Math.max(bestComboThisRun, comboMultiplier);
+                        bestComboRecord = Math.max(bestComboRecord, bestComboThisRun);
+                }
+                if (bonusFrames > 0) {
+                        int cap = COMBO_DURATION_FRAMES * 2;
+                        comboTimer = Math.min(cap, comboTimer + bonusFrames);
+                }
         }
 
         public static int getBestComboRecord() {
@@ -492,6 +512,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         player.selectWeaponSlot(3);
                 } else if (e.getKeyCode() == KeyEvent.VK_4 || e.getKeyCode() == KeyEvent.VK_NUMPAD4) {
                         player.selectWeaponSlot(4);
+                } else if (e.getKeyCode() == KeyEvent.VK_5 || e.getKeyCode() == KeyEvent.VK_NUMPAD5) {
+                        player.selectWeaponSlot(5);
+                } else if (e.getKeyCode() == KeyEvent.VK_6 || e.getKeyCode() == KeyEvent.VK_NUMPAD6) {
+                        player.selectWeaponSlot(6);
                 }
 
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
