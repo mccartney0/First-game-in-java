@@ -10,7 +10,8 @@ Este documento detalha o fluxo das principais rotas de execução do jogo, descr
 ## 2. Estados do jogo e fluxo de telas
 
 - O atributo `Game.gameState` define as rotas possíveis: `MENU`, `NORMAL` e `GAMEOVER`. Cada estado ativa lógicas diferentes em `update()` e `render()`, como interação com o menu, execução do jogo ou exibição da tela de derrota.【F:src/com/traduvertgames/main/Game.java†L53-L206】
-- No estado `MENU`, a classe `Menu` controla navegação (`up`, `down`, `enter`), habilita música ambiente e decide entre iniciar, continuar ou carregar o jogo salvo, redirecionando o fluxo para `NORMAL` ou finalizando a aplicação.【F:src/com/traduvertgames/main/Menu.java†L21-L103】
+- No estado `MENU`, a classe `Menu` controla navegação (`up`, `down`, `enter`), habilita música ambiente, abre o submenu de opções e decide entre iniciar, continuar ou carregar o jogo salvo, redirecionando o fluxo para `NORMAL` ou finalizando a aplicação.【F:src/com/traduvertgames/main/Menu.java†L23-L230】
+- O submenu "Opções" permite ativar/desativar a música (`OptionsConfig.toggleMusic`) e ciclar a dificuldade; `Game.applyDifficultyToPlayerStats()` recalcula vida, mana e munição máximas enquanto o dano sofrido é escalado via `Game.getDamageTakenMultiplier()`.【F:src/com/traduvertgames/main/Menu.java†L93-L230】【F:src/com/traduvertgames/main/OptionsConfig.java†L1-L92】【F:src/com/traduvertgames/main/Game.java†L200-L360】【F:src/com/traduvertgames/entities/BulletShoot.java†L1-L60】【F:src/com/traduvertgames/entities/Enemy.java†L320-L420】
 - Em `GAMEOVER`, o loop aguarda `Enter` para reiniciar o estado `NORMAL`, recarregando o mundo conforme o progresso salvo (se existir `save.txt`).【F:src/com/traduvertgames/main/Game.java†L124-L206】
 
 ## 3. Progressão de níveis

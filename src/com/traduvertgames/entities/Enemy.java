@@ -401,7 +401,8 @@ public class Enemy extends Entity {
 
         if (isCollidingWithPlayer()) {
             if (Game.rand.nextInt(100) < 20) {
-                Game.player.life -= 2;
+                double scaledDamage = 2 * Game.getDamageTakenMultiplier();
+                Game.player.life -= scaledDamage;
                 Game.player.damage = true;
                 Game.registerPlayerDamage();
             }

@@ -48,7 +48,8 @@ public class BulletShoot extends Entity {
 
         if (fromEnemy) {
             if (Entity.isColliding(this, Game.player)) {
-                Game.player.life -= damage;
+                double scaledDamage = damage * Game.getDamageTakenMultiplier();
+                Game.player.life -= scaledDamage;
                 Game.player.damage = true;
                 Game.registerPlayerDamage();
                 Game.bullets.remove(this);
