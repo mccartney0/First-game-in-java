@@ -402,7 +402,7 @@ public class Enemy extends Entity {
         if (isCollidingWithPlayer()) {
             if (Game.rand.nextInt(100) < 20) {
                 double scaledDamage = 2 * Game.getDamageTakenMultiplier();
-                Game.player.life -= scaledDamage;
+                Game.player.applyDamage(scaledDamage);
                 Game.player.damage = true;
                 Game.registerPlayerDamage();
             }
@@ -580,8 +580,24 @@ public class Enemy extends Entity {
 
     public void destroySelf() {
         Game.registerEnemyKill();
+        maybeDropPickup();
         Game.enemies.remove(this);
         Game.entities.remove(this);
+    }
+
+    private void maybeDropPickup() {
+        int spawnX = this.getX();
+        int spawnY = this.getY();
+
+        if (Game.rand.nextDouble() < 0.14) {
+            ShieldOrb orb = new ShieldOrb(spawnX, spawnY);
+            Game.entities.add(orb);
+        }
+
+        if (Game.rand.nextDouble() < 0.2) {
+            EnergyCell cell = new EnergyCell(spawnX, spawnY);
+            Game.entities.add(cell);
+        }
     }
 
     public void collidingBullet() {

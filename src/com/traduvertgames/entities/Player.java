@@ -21,6 +21,7 @@ public class Player extends Entity {
         public double speed = 1.5;
         public static double life = 100, maxLife = 100;
         public static double mana = 0, maxMana = 500;
+        public static double shield = 0, maxShield = 150;
         public static double weapon = 0, maxWeapon = 250;
         public boolean damage = false;
         private int damageFrames = 0;
@@ -144,6 +145,10 @@ public class Player extends Entity {
 
                 this.checkCollisionGun();
 
+                this.checkCollisionShieldOrb();
+
+                this.checkCollisionEnergyCell();
+
                 if (manaContinue) {
                         this.manaFrames++;
 
@@ -160,10 +165,14 @@ public class Player extends Entity {
                 }
 
                 if (life <= 0) {
-                        life = 0;
-                        weapon = 0;
-                        updateWeaponEnergyEntry(currentWeapon, weapon);
-                        Game.gameState = "GAMEOVER";
+                        if (shield > 0) {
+                                life = Math.max(life, 1);
+                        } else {
+                                life = 0;
+                                weapon = 0;
+                                updateWeaponEnergyEntry(currentWeapon, weapon);
+                                Game.gameState = "GAMEOVER";
+                        }
                 }
 
                 if (fireCooldown > 0) {
@@ -331,6 +340,28 @@ public class Player extends Entity {
                 return false;
         }
 
+        public double applyDamage(double amount) {
+                if (amount <= 0) {
+                        return 0;
+                }
+
+                double remaining = amount;
+                if (shield > 0) {
+                        double absorbed = Math.min(shield, remaining);
+                        shield -= absorbed;
+                        remaining -= absorbed;
+                }
+
+                if (remaining > 0) {
+                        life -= remaining;
+                        if (life < 0) {
+                                life = 0;
+                        }
+                }
+
+                return remaining;
+        }
+
         public void checkCollisionGun() {
                 for (int i = 0; i < Game.entities.size(); i++) {
                         Entity atual = Game.entities.get(i);
@@ -371,10 +402,8 @@ public class Player extends Entity {
                         Entity atual = Game.entities.get(i);
                         if (atual instanceof LifePack) {
                                 if (Entity.isColliding(this, atual)) {
-                                        life += 40;
-                                        if (life >= maxLife)
-                                                life = maxLife;
-                                        Game.entities.remove(atual);
+                                        heal(40);
+                                        Game.entities.remove(i);
                                         i--;
                                 }
                         }
@@ -387,15 +416,108 @@ public class Player extends Entity {
                         if (atual instanceof Bullet) {
                                 if (Entity.isColliding(this, atual)) {
                                         manaContinue = true;
-                                        mana += 50;
-                                        if (mana >= maxMana) {
-                                                mana = maxMana;
-                                        }
-                                        Game.entities.remove(atual);
+                                        addMana(50);
+                                        Game.entities.remove(i);
                                         i--;
                                 }
                         }
                 }
+        }
+
+        public void checkCollisionShieldOrb() {
+                for (int i = 0; i < Game.entities.size(); i++) {
+                        Entity current = Game.entities.get(i);
+                        if (current instanceof ShieldOrb) {
+                                ShieldOrb orb = (ShieldOrb) current;
+                                if (Entity.isColliding(this, orb)) {
+                                        addShield(orb.getShieldValue());
+                                        Game.entities.remove(i);
+                                        i--;
+                                }
+                        }
+                }
+        }
+
+        public void checkCollisionEnergyCell() {
+                for (int i = 0; i < Game.entities.size(); i++) {
+                        Entity current = Game.entities.get(i);
+                        if (current instanceof EnergyCell) {
+                                EnergyCell cell = (EnergyCell) current;
+                                if (Entity.isColliding(this, cell)) {
+                                        manaContinue = true;
+                                        addMana(cell.getManaRestore());
+                                        addWeaponEnergy(cell.getWeaponRestore());
+                                        Game.entities.remove(i);
+                                        i--;
+                                }
+                        }
+                }
+        }
+
+        public void heal(double amount) {
+                if (amount <= 0) {
+                        return;
+                }
+                life += amount;
+                if (life > maxLife) {
+                        life = maxLife;
+                }
+        }
+
+        public void addMana(double amount) {
+                if (amount <= 0) {
+                        return;
+                }
+                mana += amount;
+                if (mana > maxMana) {
+                        mana = maxMana;
+                }
+        }
+
+        public void addShield(double amount) {
+                if (amount <= 0) {
+                        return;
+                }
+                shield += amount;
+                if (shield > maxShield) {
+                        shield = maxShield;
+                }
+        }
+
+        public void addWeaponEnergy(double amount) {
+                if (amount <= 0) {
+                        return;
+                }
+                if (currentWeapon == null) {
+                        currentWeapon = WeaponType.BLASTER;
+                }
+                ensureWeaponEntry(currentWeapon);
+                double stored = weaponEnergy.get(currentWeapon);
+                stored += amount;
+                double maxForType = getMaxDurabilityFor(currentWeapon);
+                if (stored > maxForType) {
+                        stored = maxForType;
+                }
+                weaponEnergy.put(currentWeapon, stored);
+                weapon += amount;
+                if (weapon > stored) {
+                        weapon = stored;
+                }
+                if (weapon > maxWeapon) {
+                        weapon = maxWeapon;
+                }
+                savePersistentArsenal();
+        }
+
+        public double getShield() {
+                return shield;
+        }
+
+        public double getShieldPercentage() {
+                if (maxShield <= 0) {
+                        return 0;
+                }
+                return Math.max(0, Math.min(1, shield / maxShield));
         }
 
         public void render(Graphics g) {
@@ -613,6 +735,8 @@ public class Player extends Entity {
                 life = maxLife;
                 maxMana = 500;
                 mana = 0;
+                maxShield = 150;
+                shield = 0;
                 weaponCapacityMultiplier = 1.0;
                 maxWeapon = WeaponType.BLASTER.getMaxDurability() * weaponCapacityMultiplier;
                 weapon = 0;

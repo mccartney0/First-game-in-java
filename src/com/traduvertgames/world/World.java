@@ -63,13 +63,19 @@ Game.enemies.add(en);
 						pack.setMask(4, 4,8, 8);
 						Game.entities.add(pack);
 //						Game.entities.add(new LifePack(xx * 16, yy * 16, 16, 16, Entity.LIFEPACK_EN));
-					} else if (pixelAtual == 0xFFFFD800) {
-						// Bullet
-						Game.entities.add(new Bullet(xx * 16, yy * 16, 16, 16, Entity.BULLET_EN));
-					}
-					// Floor
-				}
-			}
+                                        } else if (pixelAtual == 0xFFFFD800) {
+                                                // Bullet
+                                                Game.entities.add(new Bullet(xx * 16, yy * 16, 16, 16, Entity.BULLET_EN));
+                                        } else if (pixelAtual == 0xFF8E24AA) {
+                                                // Shield orb
+                                                Game.entities.add(new ShieldOrb(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFF1DE9B6) {
+                                                // Energy cell
+                                                Game.entities.add(new EnergyCell(xx * 16, yy * 16));
+                                        }
+                                        // Floor
+                                }
+                        }
 		} catch (IOException e) {
 			e.printStackTrace();
 		}

@@ -256,6 +256,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                                 values.add((int) Player.mana);
                                 keys.add("arma");
                                 values.add((int) Player.weapon);
+                                keys.add("escudo");
+                                values.add((int) Player.shield);
                                 keys.add("inimigosMortos");
                                 values.add(Enemy.enemies);
                                 keys.add("levelPlus");
@@ -633,6 +635,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 if (this.levelPlus >= 1) {
                         Player.mana = Player.maxMana;
                         Player.life = Player.maxLife;
+                        Player.shield = Player.maxShield;
                         if (player != null) {
                                 player.refillCurrentWeapon();
                         } else {
@@ -649,24 +652,29 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private void applyDifficultyScalingForCurrentLevel() {
                 int baseMaxLife;
                 int baseMaxMana;
+                int baseMaxShield;
                 double baseCapacityMultiplier;
 
                 if (this.CUR_LEVEL == MAX_LEVEL) {
                         baseMaxLife = 1000;
                         baseMaxMana = 1500;
+                        baseMaxShield = 600;
                         baseCapacityMultiplier = 4.0;
                 } else {
                         baseMaxLife = 100;
                         baseMaxMana = 500;
+                        baseMaxShield = 150;
                         baseCapacityMultiplier = 1.0;
                 }
 
-                applyDifficultyScaling(baseMaxLife, baseMaxMana, baseCapacityMultiplier);
+                applyDifficultyScaling(baseMaxLife, baseMaxMana, baseMaxShield, baseCapacityMultiplier);
         }
 
-        private void applyDifficultyScaling(int baseMaxLife, int baseMaxMana, double baseCapacityMultiplier) {
+        private void applyDifficultyScaling(int baseMaxLife, int baseMaxMana, int baseMaxShield,
+                        double baseCapacityMultiplier) {
                 int scaledMaxLife = (int) Math.round(baseMaxLife * OptionsConfig.getLifeMultiplier());
                 int scaledMaxMana = (int) Math.round(baseMaxMana * OptionsConfig.getManaMultiplier());
+                int scaledMaxShield = (int) Math.round(baseMaxShield * OptionsConfig.getLifeMultiplier());
                 double scaledCapacity = baseCapacityMultiplier * OptionsConfig.getWeaponCapacityMultiplier();
 
                 Player.maxLife = Math.max(1, scaledMaxLife);
@@ -677,6 +685,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 Player.maxMana = Math.max(0, scaledMaxMana);
                 if (Player.mana > Player.maxMana) {
                         Player.mana = Player.maxMana;
+                }
+
+                Player.maxShield = Math.max(0, scaledMaxShield);
+                if (Player.shield > Player.maxShield) {
+                        Player.shield = Player.maxShield;
                 }
 
                 Player.setWeaponCapacityMultiplier(Math.max(0.5, scaledCapacity));
@@ -702,6 +715,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         Player.weapon = 0;
                 } else if (Player.weapon > Player.maxWeapon) {
                         Player.weapon = Player.maxWeapon;
+                }
+                if (Player.shield < 0) {
+                        Player.shield = 0;
+                } else if (Player.shield > Player.maxShield) {
+                        Player.shield = Player.maxShield;
                 }
                 if (player != null) {
                         player.setCurrentWeaponEnergy(Player.weapon);
