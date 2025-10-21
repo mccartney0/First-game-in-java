@@ -1,0 +1,17 @@
+[project]
+name = "first-game-python"
+version = "0.1.0"
+description = "Porta em Python do First Game in Java, utilizando pygame."
+authors = [{ name = "First Game Maintainers" }]
+requires-python = ">=3.9"
+dependencies = [
+    "pygame>=2.5",
+    "Pillow>=10.0",
+]
+
+[project.scripts]
+first-game-python = "python_port.main:main"
+
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"

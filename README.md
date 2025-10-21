@@ -68,6 +68,19 @@ O jogo grava vida, mana, escudo, quantidade de munição (arma), inimigos derrot
 
 ## Compilação e execução
 
+
+## Porta em Python (pygame)
+
+Uma reimplementação completa em Python está disponível no diretório `python_port/`. Ela replica o fluxo de jogo principal (loop, estados, HUD, inimigos e itens) utilizando pygame e reutiliza os mesmos arquivos de mapa presentes em `res/`. Para experimentar:
+
+```bash
+pip install -e ./python_port
+python -m python_port.main --level 1
+```
+
+Os mapas (`res/level*.png`) continuam sendo gerados pelo script `tools/generate_maps.py`, e a janela renderiza na mesma resolução interna (384×216) escalada para 1 152×648 pixels. A dificuldade inicial pode ser alterada com `--difficulty easy|normal|hard`.
+
+
 Você pode compilar e executar o projeto utilizando o Gradle wrapper:
 
 ```
