@@ -27,26 +27,28 @@ public class UI {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                int margin = 18;
+                // Painel compacto no canto inferior esquerdo: não cobre a área de jogo.
+                // Coordenadas no espaço do buffer de renderização (384x216), escalado depois pela janela.
+                int margin = 4;
                 int panelX = margin;
-                int panelY = margin;
-                int panelWidth = BAR_WIDTH + 30;
-                int panelHeight = 94;
-                g2.setColor(new Color(8, 12, 20, 200));
-                g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 14, 14);
+                int panelY = Game.HEIGHT - 54 - margin;
+                int panelWidth = BAR_WIDTH + 24;
+                int panelHeight = 54;
+                g2.setColor(new Color(8, 12, 20, 170));
+                g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 6, 6);
 
                 g2.setFont(new Font("SansSerif", Font.BOLD, 9));
                 g2.setColor(Color.WHITE);
 
-                int barX = panelX + 14;
-                int barY = panelY + 24;
+                int barX = panelX + 10;
+                int barY = panelY + 10;
                 drawResourceBar(g2, "VIDA", Player.life, Player.maxLife, barX, barY, new Color(244, 67, 54));
-                barY += 16;
+                barY += 11;
                 drawResourceBar(g2, "ESCUDO", Player.shield, Player.maxShield, barX, barY,
                                 new Color(121, 134, 203));
-                barY += 16;
+                barY += 11;
                 drawResourceBar(g2, "MANA", Player.mana, Player.maxMana, barX, barY, new Color(33, 150, 243));
-                barY += 16;
+                barY += 11;
 
                 WeaponType currentWeapon = Game.player != null && Game.player.getCurrentWeaponType() != null
                                 ? Game.player.getCurrentWeaponType()
@@ -65,15 +67,15 @@ public class UI {
 
                 int screenWidth = Game.WIDTH * Game.SCALE;
                 int screenHeight = Game.HEIGHT * Game.SCALE;
-                int margin = 36;
-                int halfWidth = screenWidth / 2;
-                int statusWidth = Math.max(320, Math.min(400, halfWidth - margin));
-                int scoreWidth = Math.max(320, Math.min(400, halfWidth - margin));
-                int arsenalWidth = Math.min(screenWidth - margin * 2, 560);
-                int arsenalHeight = 240;
+                int margin = 20;
+                // Painel expandido menor: colunas estreitas que não cobrem o campo de batalha.
+                int statusWidth = 264;
+                int scoreWidth = 264;
+                int arsenalWidth = Math.min(screenWidth - margin * 2, 480);
+                int arsenalHeight = 158;
 
-                drawStatusCard(g2, margin, margin, statusWidth, 196);
-                drawScoreCard(g2, screenWidth - scoreWidth - margin, margin, scoreWidth, 214);
+                drawStatusCard(g2, margin, margin, statusWidth, 188);
+                drawScoreCard(g2, screenWidth - scoreWidth - margin, margin, scoreWidth, 188);
                 int arsenalX = (screenWidth - arsenalWidth) / 2;
                 drawArsenalCard(g2, arsenalX, screenHeight - arsenalHeight - margin, arsenalWidth, arsenalHeight);
 
@@ -140,17 +142,17 @@ public class UI {
                 g2.drawRoundRect(x, y, width, height, 24, 24);
 
                 g2.setColor(Color.WHITE);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 24));
-                g2.drawString("Status do piloto", x + 22, y + 34);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 20));
+                g2.drawString("Piloto", x + 22, y + 30);
 
-                g2.setFont(new Font("SansSerif", Font.PLAIN, 18));
-                int textY = y + 64;
-                g2.drawString(String.format("Vida: %.0f / %.0f", Player.life, Player.maxLife), x + 24, textY);
-                textY += 26;
-                g2.drawString(String.format("Mana: %.0f / %.0f", Player.mana, Player.maxMana), x + 24, textY);
-                textY += 26;
-                g2.drawString(String.format("Escudo: %.0f / %.0f", Player.shield, Player.maxShield), x + 24, textY);
-                textY += 26;
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
+                int textY = y + 56;
+                g2.drawString(String.format("Vida: %.0f/%.0f", Player.life, Player.maxLife), x + 24, textY);
+                textY += 24;
+                g2.drawString(String.format("Mana: %.0f/%.0f", Player.mana, Player.maxMana), x + 24, textY);
+                textY += 24;
+                g2.drawString(String.format("Escudo: %.0f/%.0f", Player.shield, Player.maxShield), x + 24, textY);
+                textY += 24;
 
                 WeaponType currentWeapon = Game.player != null && Game.player.getCurrentWeaponType() != null
                                 ? Game.player.getCurrentWeaponType()
@@ -169,17 +171,11 @@ public class UI {
                                 new Color(190, 200, 210));
 
                 g2.setColor(Color.WHITE);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 16));
                 if (Game.getComboMultiplier() > 1) {
-                        g2.drawString(String.format("Combo ativo: x%d", Game.getComboMultiplier()), x + 24, textY);
-                        textY += 22;
-                        g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
-                        g2.setColor(new Color(255, 193, 7));
-                        g2.drawString(String.format("Tempo restante: %ds", Game.getComboSecondsRemaining()), x + 24,
-                                        textY);
+                        g2.drawString(String.format("Combo: x%d", Game.getComboMultiplier()), x + 24, textY);
                 } else {
-                        g2.drawString(String.format("Melhor combo: x%d / x%d", Game.getBestComboThisRun(),
-                                        Game.getMaxComboLimit()), x + 24, textY);
+                        g2.drawString(String.format("Melhor combo: x%d", Game.getBestComboThisRun()), x + 24, textY);
                 }
         }
 
@@ -191,22 +187,20 @@ public class UI {
                 g2.drawRoundRect(x, y, width, height, 24, 24);
 
                 g2.setColor(Color.WHITE);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 24));
-                g2.drawString("Painel de missão", x + 20, y + 34);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 20));
+                g2.drawString("Missão", x + 20, y + 30);
 
-                g2.setFont(new Font("SansSerif", Font.PLAIN, 18));
-                int textY = y + 64;
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
+                int textY = y + 56;
                 g2.drawString(String.format("Pontuação: %d", Game.getScore()), x + 20, textY);
-                textY += 26;
+                textY += 24;
                 g2.drawString(String.format("Recorde: %d", Game.getHighScore()), x + 20, textY);
-                textY += 26;
-                g2.drawString(String.format("Inimigos vivos: %d", Game.enemies.size()), x + 20, textY);
-                textY += 26;
+                textY += 24;
                 g2.drawString(String.format("Eliminados: %d", Enemy.enemies), x + 20, textY);
 
-                textY += 32;
+                textY += 30;
                 g2.setColor(Color.WHITE);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+                g2.setFont(new Font("SansSerif", Font.BOLD, 16));
                 g2.drawString("Missão atual", x + 20, textY);
                 textY += 22;
                 g2.setFont(new Font("SansSerif", Font.BOLD, 16));
@@ -226,84 +220,83 @@ public class UI {
         }
 
         private void drawArsenalCard(Graphics2D g2, int x, int y, int width, int height) {
-                g2.setColor(new Color(8, 12, 20, 205));
-                g2.fillRoundRect(x, y, width, height, 24, 24);
+                g2.setColor(new Color(8, 12, 20, 200));
+                g2.fillRoundRect(x, y, width, height, 20, 20);
                 g2.setColor(new Color(255, 255, 255, 60));
                 g2.setStroke(new BasicStroke(2f));
-                g2.drawRoundRect(x, y, width, height, 24, 24);
+                g2.drawRoundRect(x, y, width, height, 20, 20);
 
                 g2.setColor(Color.WHITE);
-                g2.setFont(new Font("SansSerif", Font.BOLD, 22));
-                g2.drawString("Arsenal tático", x + 22, y + 32);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 18));
+                g2.drawString("Arsenal", x + 20, y + 28);
 
                 Player player = Game.player;
                 WeaponType currentWeapon = player != null ? player.getCurrentWeaponType() : WeaponType.BLASTER;
 
-                g2.setFont(new Font("SansSerif", Font.PLAIN, 18));
-                int lineY = y + 60;
+                // Grade em duas colunas para caber todas as armas em menos altura.
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 14));
+                int cols = 2;
+                int cellWidth = (width - 40) / cols;
+                int lineY = y + 48;
+                int col = 0;
                 for (WeaponType type : WeaponType.values()) {
                         boolean unlocked = player != null && player.hasWeaponUnlocked(type);
                         double percent = player != null ? player.getWeaponEnergyPercentage(type) : 0;
                         int percentage = (int) Math.round(percent * 100);
                         Color accent = type.getUiColor();
+                        int cellX = x + 20 + col * cellWidth;
                         if (type == currentWeapon) {
-                                g2.setColor(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 160));
-                                g2.fillRoundRect(x + 16, lineY - 18, width - 32, 28, 14, 14);
+                                g2.setColor(new Color(accent.getRed(), accent.getGreen(), accent.getBlue(), 140));
+                                g2.fillRoundRect(cellX, lineY - 16, cellWidth - 8, 24, 12, 12);
                                 g2.setColor(Color.WHITE);
                         } else {
                                 g2.setColor(unlocked ? new Color(220, 220, 220) : new Color(160, 160, 160));
                         }
 
-                        String status = unlocked ? String.format("%d%% de energia", percentage) : "Bloqueada";
-                        g2.drawString(String.format("%s — %s", type.getDisplayName(), status), x + 26, lineY);
-                        lineY += 26;
+                        String status = unlocked ? String.format("%d%%", percentage) : "Bloq.";
+                        g2.drawString(String.format("%s %s", type.getDisplayName(), status), cellX + 6, lineY);
+                        col++;
+                        if (col >= cols) {
+                                col = 0;
+                                lineY += 24;
+                        }
                 }
 
-                g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
+                g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
                 g2.setColor(new Color(200, 200, 200));
-                lineY += 12;
-                int maxSlot = WeaponType.values().length;
-                g2.drawString(String.format("Q/E alternam armas • 1-%d selecionam diretamente", maxSlot), x + 22,
-                                lineY);
+                g2.drawString("Q/E alternam • 1-6 selecionam", x + 20, y + height - 14);
         }
 
         private void drawOverlayHint(Graphics2D g2) {
                 int screenWidth = Game.WIDTH * Game.SCALE;
                 int screenHeight = Game.HEIGHT * Game.SCALE;
-                int padding = 20;
+                int padding = 10;
 
-                String title = "Painel tático minimizado";
-                String hint = "Pressione TAB para exibir detalhes";
+                String title = "TAB: painel tático";
+                String hint = "";
 
-                Font titleFont = new Font("SansSerif", Font.BOLD, 14);
-                Font hintFont = new Font("SansSerif", Font.PLAIN, 12);
+                Font hintFont = new Font("SansSerif", Font.BOLD, 12);
 
-                FontMetrics titleMetrics = g2.getFontMetrics(titleFont);
                 FontMetrics hintMetrics = g2.getFontMetrics(hintFont);
 
-                int rectWidth = Math.max(titleMetrics.stringWidth(title), hintMetrics.stringWidth(hint)) + 24;
-                int rectHeight = titleMetrics.getHeight() + hintMetrics.getHeight() + 20;
+                int rectWidth = hintMetrics.stringWidth(title) + 20;
+                int rectHeight = hintMetrics.getHeight() + 14;
 
                 int x = screenWidth - rectWidth - padding;
                 int y = screenHeight - rectHeight - padding;
 
-                g2.setColor(new Color(8, 12, 20, 190));
-                g2.fillRoundRect(x, y, rectWidth, rectHeight, 16, 16);
+                g2.setColor(new Color(8, 12, 20, 150));
+                g2.fillRoundRect(x, y, rectWidth, rectHeight, 10, 10);
                 g2.setColor(new Color(255, 255, 255, 60));
                 g2.setStroke(new BasicStroke(2f));
                 g2.drawRoundRect(x, y, rectWidth, rectHeight, 16, 16);
 
-                int textX = x + 12;
-                int textY = y + 12 + titleMetrics.getAscent();
+                int textX = x + 10;
+                int textY = y + 10 + hintMetrics.getAscent();
 
-                g2.setFont(titleFont);
-                g2.setColor(Color.WHITE);
-                g2.drawString(title, textX, textY);
-
-                textY += hintMetrics.getAscent() + 4;
                 g2.setFont(hintFont);
-                g2.setColor(new Color(210, 210, 210));
-                g2.drawString(hint, textX, textY);
+                g2.setColor(new Color(230, 230, 230));
+                g2.drawString(title, textX, textY);
 
                 // Habilidades ficam visíveis mesmo com o painel minimizado.
                 drawXpHud(g2, screenWidth);

@@ -127,6 +127,18 @@ Game.enemies.add(en);
                                                                 Enemy.Variant.OVERSEER, true);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFF81C784) {
+                                                // Phantom: caçador furtivo que drena escudo e mana
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+                                                                Enemy.Variant.PHANTOM);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFFFF5722) {
+                                                // Guardian: tanque robusto que regenera vida
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+                                                                Enemy.Variant.GUARDIAN);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
                                         } else if (pixelAtual == 0xFF673AB7) {
                                                 Game.entities.add(new TeleportPad(xx * 16, yy * 16));
                                         }

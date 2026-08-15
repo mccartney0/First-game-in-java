@@ -35,6 +35,8 @@ PALETTE: Dict[str, Color] = {
     'S': (126, 87, 194),
     'I': (255, 183, 77),
     'U': (103, 58, 183),
+    'F': (129, 199, 132),
+    'V': (255, 87, 34),
 }
 
 
@@ -130,7 +132,8 @@ def level_one() -> List[str]:
     add_vertical_wall(grid, 24, 2, height - 3, openings=[6, 13, 19])
 
     place(grid, 2, 2, 'P')
-    for x, y in [(6, 2), (13, 6), (21, 8), (10, 18), (26, 12)]:
+    # Zona de segurança: nenhum inimigo nasce a menos de 8 tiles do spawn do jogador
+    for x, y in [(11, 3), (14, 7), (21, 9), (9, 19), (26, 13)]:
         place(grid, x, y, 'E')
     for x, y in [(18, 14), (22, 5)]:
         place(grid, x, y, 'G')
@@ -141,6 +144,10 @@ def level_one() -> List[str]:
     for x, y in [(12, 13), (19, 7)]:
         place(grid, x, y, 'C')
     place(grid, 9, 5, 'W')
+    for x, y in [(16, 18), (28, 7)]:
+        place(grid, x, y, 'F')
+    for x, y in [(20, 12)]:
+        place(grid, x, y, 'V')
 
     for x, y in [
         (11, 4), (12, 4), (19, 4),

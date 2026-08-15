@@ -5,6 +5,7 @@ import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
+import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.world.AStar;
@@ -39,7 +40,11 @@ public class Enemy extends Entity {
         SENTINEL(14.0, 0.85, 1.3, 4.2, 3.0, 6, 85, 180, 96, new Color(0, 150, 136)),
         RAVAGER(16.5, 1.25, 1.05, 4.8, 4.1, 6, 70, 150, 160, new Color(244, 81, 30)),
         WARBRINGER(18.0, 0.95, 1.1, 4.2, 6.5, 7, 90, 160, 140, new Color(233, 30, 99)),
-        OVERSEER(28.0, 1.1, 1.2, 4.6, 5.2, 7, 80, 240, 160, new Color(121, 134, 203));
+        OVERSEER(28.0, 1.1, 1.2, 4.6, 5.2, 7, 80, 240, 160, new Color(121, 134, 203)),
+        // Caçador furtivo: esquivo e letal, drena escudo e mana do piloto.
+        PHANTOM(6.5, 1.45, 1.6, 4.4, 2.6, 5, 80, 140, 120, new Color(129, 199, 132)),
+        // Tanque de bloqueio: lento, robusto e regenera escudo com o tempo.
+        GUARDIAN(20.0, 0.6, 0.5, 3.4, 2.2, 6, 110, 200, 0, new Color(255, 87, 34));
 
         private final double maxLife;
         private final double speedMultiplier;
@@ -109,6 +114,14 @@ public class Enemy extends Entity {
 
         Color getAuraColor() {
             return color;
+        }
+
+        boolean isPhantom() {
+            return this == PHANTOM;
+        }
+
+        boolean isGuardian() {
+            return this == GUARDIAN;
         }
     }
 
@@ -255,10 +268,12 @@ public class Enemy extends Entity {
             return Variant.ARTILLERY;
         } else if (roll < 90) {
             return Variant.WARDEN;
-        } else if (roll < 96) {
+        } else if (roll < 94) {
             return Variant.SENTINEL;
+        } else if (roll < 97) {
+            return Variant.PHANTOM;
         } else {
-            return Variant.RAVAGER;
+            return Variant.GUARDIAN;
         }
     }
 
@@ -359,8 +374,48 @@ public class Enemy extends Entity {
         case OVERSEER:
             handleOverseerAbility(distanceToPlayer, canSeePlayer);
             break;
+        case PHANTOM:
+            handlePhantomAbility(distanceToPlayer, canSeePlayer);
+            break;
+        case GUARDIAN:
+            handleGuardianAbility();
+            break;
         default:
             break;
+        }
+    }
+
+    /** Caçador furtivo: avança em rajadas e drena escudo e mana do piloto ao acertá-lo. */
+    private void handlePhantomAbility(double distanceToPlayer, boolean canSeePlayer) {
+        if (specialCooldown > 0) {
+            specialCooldown--;
+            return;
+        }
+        if (!canSeePlayer) {
+            return;
+        }
+        // Ao ficar próximo do piloto, drena parte do escudo e da mana.
+        if (distanceToPlayer < 96 && Game.player != null) {
+            double drainAmount = 2.0;
+            if (Game.player.shield > 0) {
+                Game.player.shield = Math.max(0, Game.player.shield - drainAmount);
+            } else if (Game.player.mana > 0) {
+                Game.player.mana = Math.max(0, Game.player.mana - drainAmount);
+            }
+            ParticleSystem.burst((int) x, (int) y, variant.getAuraColor(), 4, 1.2);
+        }
+        if (distanceToPlayer > specialRange) {
+            specialCooldown = 20;
+        }
+    }
+
+    /** Tanque de bloqueio: regenera vida lentamente enquanto persegue o piloto. */
+    private void handleGuardianAbility() {
+        if (state != EnemyState.CHASING) {
+            return;
+        }
+        if (frames % 60 == 0 && life > 0 && life < maxLife) {
+            life = Math.min(maxLife, life + 0.5);
         }
     }
 
