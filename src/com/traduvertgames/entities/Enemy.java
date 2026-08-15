@@ -420,8 +420,16 @@ public class Enemy extends Entity {
             double drainAmount = 2.0;
             if (Game.player.shield > 0) {
                 Game.player.shield = Math.max(0, Game.player.shield - drainAmount);
+                // Feedback visual: texto flutuante e partículas indicando o dreno de escudo.
+                if (frames % 12 == 0) {
+                    FloatingText.show("-ESCUDO", (int) Game.player.getX() + 8, (int) Game.player.getY(), new Color(121, 134, 203));
+                }
             } else if (Game.player.mana > 0) {
                 Game.player.mana = Math.max(0, Game.player.mana - drainAmount);
+                // Feedback visual: texto flutuante e partículas indicando o dreno de mana.
+                if (frames % 12 == 0) {
+                    FloatingText.show("-MANA", (int) Game.player.getX() + 8, (int) Game.player.getY(), new Color(33, 150, 243));
+                }
             }
             ParticleSystem.burst((int) x, (int) y, variant.getAuraColor(), 4, 1.2);
         }

@@ -225,6 +225,10 @@ public final class LevelUpManager {
 
 		for (int i = 0; i < CHOICES; i++) {
 			Upgrade upgrade = pendingChoices[i];
+			// Guarda defensiva: slot vazio não deve travar o jogo.
+			if (upgrade == null) {
+				continue;
+			}
 			int cardX = startX + i * (cardWidth + gap);
 			g.setColor(i == choiceIndex ? upgrade.accent : new Color(40, 44, 54, 230));
 			g.fillRoundRect(cardX, cardY, cardWidth, cardHeight, 14, 14);
@@ -242,8 +246,13 @@ public final class LevelUpManager {
 	public static void reset() {
 		xp = 0;
 		playerLevel = 1;
-		showingLevelUp = false;
+		// Se a tela de level-up estiver aberta, fecha-a antes de recriar as
+		// opções — era aqui que o render acessava um slot nulo e crashava.
+		dismiss();
 		pendingChoices = new Upgrade[CHOICES];
+		for (int i = 0; i < CHOICES; i++) {
+			pendingChoices[i] = Upgrade.values()[i % Upgrade.values().length];
+		}
 		choiceIndex = 0;
 	}
 }

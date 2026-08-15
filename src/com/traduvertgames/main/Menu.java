@@ -157,9 +157,14 @@ public class Menu {
 
 	/** Inicia a tela de pausa sem sair do jogo. */
 	public static void openPauseScreen() {
-		currentScreenStatic = Screen.PAUSE;
 		pause = true;
 		Game.gameState = "MENU";
+		Game game = Game.getInstance();
+		if (game != null && game.menu != null) {
+			game.menu.currentScreen = Screen.PAUSE;
+			game.menu.currentOption = 0;
+		}
+		currentScreenStatic = Screen.PAUSE;
 	}
 
 	/** Volta da tela de pausa para o jogo. */
@@ -311,13 +316,25 @@ public class Menu {
 		g2.setColor(new Color(0, 0, 0, 150));
 		g2.fillRect(0, 0, screenWidth, screenHeight);
 
-		String title = pause ? ">Pausa<" : ">Traduvert<";
-		Font titleFont = new Font("arial", Font.BOLD, 40);
-		g.setFont(titleFont);
-		int titleX = (screenWidth - g.getFontMetrics().stringWidth(title)) / 2;
-		int titleBaseline = (int) (screenHeight * 0.28);
-		g.setColor(Color.yellow);
-		g.drawString(title, titleX, titleBaseline);
+		// Painéis do menu (pausa, como jogar, opções, carregar) cobrem o jogo
+		// com fundo totalmente opaco para não sobreporem elementos do mundo.
+		boolean screenOverlay = currentScreen != Screen.MAIN;
+		if (screenOverlay) {
+			g.setColor(new Color(0, 0, 0, 255));
+			g.fillRect(0, 0, screenWidth, screenHeight);
+		}
+
+		// O título amarelo só aparece no menu principal; nos painéis de
+		// overlay, cada painel desenha seu próprio cabeçalho limpo.
+		if (!screenOverlay) {
+			String title = ">Traduvert<";
+			Font titleFont = new Font("arial", Font.BOLD, 40);
+			g.setFont(titleFont);
+			int titleX = (screenWidth - g.getFontMetrics().stringWidth(title)) / 2;
+			int titleBaseline = (int) (screenHeight * 0.28);
+			g.setColor(Color.yellow);
+			g.drawString(title, titleX, titleBaseline);
+		}
 
 		switch (currentScreen) {
 		case PAUSE:
@@ -402,7 +419,10 @@ public class Menu {
 	}
 
 	private void renderPauseMenu(Graphics g) {
-		renderOptionList(g, PAUSE_OPTIONS_LIST, pauseMenuLabel(0));
+		// Cabeçalho próprio "Pausa" — a primeira opção da lista já é
+		// "continuar", então usar pauseMenuLabel(0) como header duplicava
+		// a opção no topo da tela.
+		renderOptionList(g, PAUSE_OPTIONS_LIST, "Pausa");
 	}
 
 	private String pauseMenuLabel(int index) {
@@ -477,37 +497,68 @@ public class Menu {
 		Font headerFont = new Font("arial", Font.BOLD, 28);
 		g.setFont(headerFont);
 		String header = "Como jogar";
-		g.setColor(Color.white);
-		g.drawString(header, (screenWidth - g.getFontMetrics().stringWidth(header)) / 2, 110);
+		int headerWidth = g.getFontMetrics().stringWidth(header);
 
-		Font optionFont = new Font("arial", Font.PLAIN, 18);
+		Font optionFont = new Font("arial", Font.PLAIN, 14);
 		g.setFont(optionFont);
 
 		String[] lines = {
-				"WASD ou setas: mover",
-				"X ou clique do mouse: atirar",
-				"Shift: dash / esquiva",
-				"F: habilidade especial",
-				"Q / E: alternar armas",
-				"1 a 6: selecionar arma direta",
-				"Space: pular",
-				"T: salvar rapidamente",
-				"TAB: painel tático",
-				"ESC: pausar",
-				"",
-				"Pressione Enter para voltar"
+				"WASD/setas: mover — Space: pular — X: atirar — Q/E: armas",
+				"Shift: dash — F: especial — TAB: painel — L: fases — F11: cheia",
+				"Fase 1: recolha as 4 reliquias — Fase 2: derrote o chefe",
+				"Fase 3: ative os obeliscos — Fase 4: evacue sobreviventes",
+				"Fase 5: proteja a pesquisadora e recupere os nucleos",
+				"Matar concede XP e melhoras; a loja abre ao concluir a fase",
+				"PHANTOM (verde furtivo) drena escudo/mana: mantenha distancia!",
+				"GUARDIAN (laranja) regenera escudo — prioridade alta no ataque",
+				"Morrer salva automaticamente; o jogo volta ao menu sozinho",
+				"Enter para voltar"
 		};
 
 		int maxWidth = 0;
 		for (String line : lines) {
 			maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(line));
 		}
+		// Painel escuro por trás do tutorial para garantir legibilidade
+		// (evita que o título e o jogo apareçam por cima do texto).
+		int panelHeight = 124 + linesBlockHeight(lines, 28) + 20;
+		int panelWidth = Math.max(headerWidth, maxWidth) + 80;
+		int panelX = (screenWidth - panelWidth) / 2;
+		// Centraliza o painel na tela para nenhuma linha ficar cortada
+		// em resoluções menores que o conteúdo completo.
+		int panelY = Math.max(20, (screenHeight - panelHeight) / 2);
+		g.setFont(headerFont);
+		g.setColor(new Color(10, 12, 18, 235));
+		g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 16, 16);
+		g.setColor(Color.yellow);
+		g.drawString(header, (screenWidth - headerWidth) / 2, panelY + 40);
+
 		int textX = (screenWidth - maxWidth) / 2;
-		int startY = 140;
+		int startY = panelY + 68;
 		for (int i = 0; i < lines.length; i++) {
 			g.setColor(Color.white);
-			g.drawString(lines[i], textX, startY + (OPTIONS_LINE_HEIGHT * i));
+			g.drawString(lines[i], textX, startY + (28 * i));
 		}
+	}
+
+	private static int linesBlockHeight(String[] lines, int lineHeight) {
+		int count = 0;
+		for (String line : lines) {
+			if (line != null && !line.isEmpty()) {
+				count++;
+			}
+		}
+		return count * lineHeight;
+	}
+
+	private static int maxLineWidth(String[] lines, Graphics g) {
+		int max = 0;
+		for (String line : lines) {
+			if (line != null) {
+				max = Math.max(max, g.getFontMetrics().stringWidth(line));
+			}
+		}
+		return max;
 	}
 
 	private void renderOptionsMenu(Graphics g) {

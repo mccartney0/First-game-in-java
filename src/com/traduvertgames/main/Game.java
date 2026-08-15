@@ -27,6 +27,7 @@ import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.DashAbility;
 import com.traduvertgames.entities.UltimateAbility;
 import com.traduvertgames.entities.Entity;
+import com.traduvertgames.entities.FloatingText;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.graficos.Spritesheet;
@@ -73,6 +74,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private boolean showMessageGameOver = true;
         private int framesGameOver = 0;
         private boolean restartGame = false;
+        /** Contagem regressiva para voltar ao menu principal após o game over. */
+        private int menuReturnTimer = 300;
 
         public static boolean saveGame = false;
         public int levelPlus = 0;
@@ -94,9 +97,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	/** True enquanto a loja está aberta por causa de um objetivo concluído. */
 	private static boolean questCompletedPending = false;
 
+	/** Loja aguardando o level-up ser resolvido antes de abrir. */
+	private static boolean shopPendingOpened = false;
+
 	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
 	public static void clearQuestPending() {
 		questCompletedPending = false;
+		shopPendingOpened = false;
 		showLevelTransition = 0;
 	}
         private static boolean fullscreen = false;
@@ -384,8 +391,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                                 bullet.get(i).update();
                         }
 
-                        QuestManager.update();
-                        ParticleSystem.update();
+			QuestManager.update();
+			ParticleSystem.update();
+			FloatingText.update();
 
                         if (QuestManager.isObjectiveComplete()) {
                                 onObjectiveComplete();
@@ -393,7 +401,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 } else if ("SHOP".equals(gameState)) {
                         ShopManager.update();
                         ParticleSystem.update();
-                } else if ("GAMEOVER".equals(gameState)) {
+		} else if ("GAMEOVER".equals(gameState)) {
 //Forma de Fazer animação - Game over
 			this.framesGameOver++;
 			if (this.framesGameOver == 30) {
@@ -407,6 +415,14 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         if (restartGame) {
                                 handleGameOverRestart();
                         }
+                        // Volta ao menu principal automaticamente após alguns
+                        // segundos (Enter/click reiniciam a partida antes disso).
+                        if (this.menuReturnTimer > 0) {
+					this.menuReturnTimer--;
+					if (this.menuReturnTimer == 0) {
+						returnToMainMenu();
+					}
+				}
                         // Autosave ao morrer: preserva o progresso da partida.
                         SaveManager.saveAutoSave();
 		}else if ("MENU".equals(gameState)) {
@@ -414,11 +430,18 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				//Iniciando a camera junto com o jogador
 				player.updateCamera();
 				menu.update();
-		} else if ("LEVELUP".equals(gameState)) {
-				LevelUpManager.update();
-	} else if ("LEVELSELECT".equals(gameState)) {
+	} else if ("LEVELUP".equals(gameState)) {
+			LevelUpManager.update();
+			// Se o level-up fechou neste frame (Enter/ESC) e havia uma fase
+			// concluída aguardando a loja, abre a loja agora — o level-up
+			// sempre tem prioridade sobre a loja entre fases.
+			if (!LevelUpManager.isShowingLevelUp() && shopPendingOpened) {
+				shopPendingOpened = false;
+				ShopManager.open();
+			}
+		} else if ("LEVELSELECT".equals(gameState)) {
 			LevelSelectScreen.update();
-		}
+	}
 
 		if (showLevelTransition > 0) {
 			showLevelTransition--;
@@ -437,6 +460,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// Marca que a fase foi concluída: ao fechar a loja (compra ou ESC),
 		// o jogo avança automaticamente para a próxima fase.
 		questCompletedPending = true;
+		// O level-up tem prioridade sobre a loja: se o jogador subiu de nível
+		// no mesmo instante em que concluiu a fase, a loja aguarda o level-up
+		// ser resolvido antes de abrir (evita oscilação entre as telas).
+		if (LevelUpManager.isShowingLevelUp()) {
+			shopPendingOpened = true;
+			return;
+		}
 		ShopManager.open();
 	}
 
@@ -467,6 +497,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// evitando HUD duplicada/esmaecida em menus, loja e game over.
 		// ui.render(g) (coordenadas do buffer, por baixo dos overlays) foi removido.
 		ParticleSystem.render(g);
+		FloatingText.render(g, SCALE);
 		UltimateAbility.render(g);
 		g.dispose();
 
@@ -495,7 +526,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         g.setFont(new Font("arial", Font.BOLD, 28));
 
                         if (showMessageGameOver) {
-                                drawCenteredString(g, ">Pressione Enter para reiniciar<", scaledHeight / 2 + 4);
+                                drawCenteredString(g, ">Pressione Enter para reiniciar — ESC para o menu<", scaledHeight / 2 + 4);
+                        }
+                        g.setFont(new Font("arial", Font.PLAIN, 16));
+                        g.setColor(new Color(200, 200, 200));
+                        if (menuReturnTimer > 0) {
+                                drawCenteredString(g, "Voltando ao menu em " + ((menuReturnTimer + 29) / 30) + "s...",
+                                                scaledHeight / 2 + 142);
                         }
 
                         g.setFont(new Font("arial", Font.BOLD, 24));
@@ -681,9 +718,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				LevelUpManager.dismiss();
 			} else if ("LEVELSELECT".equals(gameState)) {
 				LevelSelectScreen.close();
+			} else if ("GAMEOVER".equals(gameState)) {
+				returnToMainMenu();
 			} else {
-				gameState = "MENU";
-				Menu.pause = true;
+				returnToMainMenu();
 			}
 		}
                 if (e.getKeyCode() == KeyEvent.VK_T) {
@@ -816,9 +854,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         public void startNewGame() {
                 resetGameOverState();
                 this.levelPlus = 0;
-                CUR_LEVEL = 1;
-                questCompletedPending = false;
-                showLevelTransition = 0;
+		CUR_LEVEL = 1;
+		questCompletedPending = false;
+		shopPendingOpened = false;
+		showLevelTransition = 0;
                 Enemy.enemies = 0;
                 Menu.pause = false;
                 resetPlayerToDefaults();
@@ -831,6 +870,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 UltimateAbility.reset();
                 LootGuarantee.reset();
                 ParticleSystem.clear();
+		FloatingText.clear();
                 gameState = "NORMAL";
         }
 
@@ -978,10 +1018,22 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 gameState = "NORMAL";
         }
 
-        private void resetGameOverState() {
-                this.framesGameOver = 0;
-                this.showMessageGameOver = true;
-        }
+	private void resetGameOverState() {
+		this.framesGameOver = 0;
+		this.showMessageGameOver = true;
+		this.menuReturnTimer = 300;
+	}
+
+	/** Volta ao menu principal mantendo o autosave do progresso da partida. */
+	public void returnToMainMenu() {
+		gameState = "MENU";
+		Menu.pause = false;
+		Menu.closePauseScreen();
+		questCompletedPending = false;
+		shopPendingOpened = false;
+		showLevelTransition = 0;
+		resetGameOverState();
+	}
 
         private void normalizeScoreAfterLoad() {
                 if (score < 0) {
