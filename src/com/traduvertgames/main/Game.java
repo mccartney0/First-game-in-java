@@ -339,9 +339,20 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	}
 
 	// Toda a lógica fica no update ou tick
-//Primeiro atualiza, depois renderiza
+	//Primeiro atualiza, depois renderiza
 	public void update() {
-		
+		// Avança de fase assim que a loja aberta por objetivo concluído fecha.
+		// DEVE rodar antes da lógica do estado NORMAL: se o avanço rodasse depois,
+		// o bloco NORMAL reabriria a loja (objetivo ainda parece completo) e o jogo
+		// ficaria preso na loja para sempre — era o bug do ESC piscando.
+		if (questCompletedPending) {
+			questCompletedPending = false;
+			advanceToNextLevel();
+			if (QuestManager.isObjectiveComplete()) {
+				questCompletedPending = false;
+			}
+		}
+
                 if ("NORMAL".equals(gameState)) {
 // Salvar o jogo (formato JSON correto com slots)
                         if (Game.saveGame) {
@@ -411,16 +422,6 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 		if (showLevelTransition > 0) {
 			showLevelTransition--;
-		}
-		// Avança de fase assim que a loja aberta por objetivo concluído fecha.
-		if (questCompletedPending && !"SHOP".equals(gameState) && !"LEVELUP".equals(gameState)) {
-			questCompletedPending = false;
-			advanceToNextLevel();
-			// O mundo recarregado limpa o estado do objetivo: se ainda parecer
-			// completo, não reabrir a loja no mesmo frame.
-			if (QuestManager.isObjectiveComplete()) {
-				questCompletedPending = false;
-			}
 		}
 	}
 
