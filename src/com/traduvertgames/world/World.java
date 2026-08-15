@@ -244,7 +244,7 @@ Game.enemies.add(en);
                                 continue;
                         }
                         Enemy boss = new Enemy(fx, fy, 16, 16, Entity.ENEMY_EN,
-                                        Enemy.Variant.WARBRINGER, true);
+                                        levelNumber == 6 ? Enemy.Variant.OVERSEER : Enemy.Variant.WARBRINGER, true);
                         Game.entities.add(boss);
                         Game.enemies.add(boss);
                         return;

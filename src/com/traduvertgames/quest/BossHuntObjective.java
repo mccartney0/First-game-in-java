@@ -6,8 +6,23 @@ public final class BossHuntObjective extends BaseObjective {
     private boolean bossPresent = false;
     private boolean bossDefeated = false;
 
+    private final String bossName;
+
     public BossHuntObjective() {
-        super("Neutralizar comandante", "Elimine o líder tecnomante que controla a fortaleza.");
+        this("Neutralizar comandante", "Elimine o líder tecnomante que controla a fortaleza.", "o Comandante");
+    }
+
+    public BossHuntObjective(String title, String description, String bossName) {
+        super(title, description);
+        this.bossName = bossName;
+    }
+
+    @Override
+    public String getProgressText() {
+        if (!bossPresent) {
+            return "Varra a fortaleza e encontre " + bossName;
+        }
+        return bossDefeated ? bossName.substring(2) + " neutralizado" : "Confronto em andamento";
     }
 
     @Override
@@ -27,13 +42,6 @@ public final class BossHuntObjective extends BaseObjective {
         bossPresent = true;
     }
 
-    @Override
-    public String getProgressText() {
-        if (!bossPresent) {
-            return "Varra a fortaleza e encontre o chefe";
-        }
-        return bossDefeated ? "Chefe neutralizado" : "Confronto em andamento";
-    }
 
     @Override
     public boolean isComplete() {

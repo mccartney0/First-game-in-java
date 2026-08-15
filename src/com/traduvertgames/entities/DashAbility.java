@@ -100,10 +100,11 @@ public final class DashAbility {
 				player.y += dashDy;
 			}
 			activeFrames--;
-			if (activeFrames == 0) {
-				dashDx = 0;
-				dashDy = 0;
-			}
+				if (activeFrames == 0) {
+					dashDx = 0;
+					dashDy = 0;
+					com.traduvertgames.main.OnboardingManager.notifyDashFinished();
+				}
 		}
 	}
 

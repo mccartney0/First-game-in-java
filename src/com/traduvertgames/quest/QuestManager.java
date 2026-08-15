@@ -42,6 +42,9 @@ public final class QuestManager {
             return new RescueObjective();
         case 5:
             return new DataRecoveryObjective();
+        case 6:
+            // Fase final: derrotar o OVERSEER, o chefe supervisor.
+            return new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor");
         default:
             return NULL_OBJECTIVE;
         }

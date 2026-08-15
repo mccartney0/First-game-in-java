@@ -53,7 +53,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
         private static Game instance;
 
-        private static int CUR_LEVEL = 1, MAX_LEVEL = 5;
+        private static int CUR_LEVEL = 1, MAX_LEVEL = 6;
 	private BufferedImage image;
 
 	public static List<Entity> entities;
@@ -287,6 +287,17 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		SCALE = Math.max(1, Math.min(width / WIDTH, height / HEIGHT));
 	}
 
+	/** Registra um listener que recompõe o SCALE sempre que a janela muda de
+	 * tamanho (incluindo a alternância de tela cheia com F11). */
+	public static void installResizeListener() {
+		frame.addComponentListener(new java.awt.event.ComponentAdapter() {
+			@Override
+			public void componentResized(java.awt.event.ComponentEvent e) {
+				recomputeScale();
+			}
+		});
+	}
+
 	/** Alterna tela cheia (F11): maximiza e ajusta o SCALE à resolução do monitor. */
 	public static void toggleFullscreen() {
 		if (!fullscreen) {
@@ -314,13 +325,18 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		recomputeScale();
 	}
 
-	public void initFrame() {
+		public void initFrame() {
 		frame = new JFrame("Game 2 RPG");
 		frame.add(this);
 		frame.setResizable(false);
+		// O fundo fora da área do jogo é preto (antes ficava branco, que
+		// ficava visível como faixa ao redimensionar ou em tela cheia).
+		frame.setBackground(java.awt.Color.BLACK);
+		frame.getContentPane().setBackground(java.awt.Color.BLACK);
 		frame.pack();
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		installResizeListener();
 		frame.setVisible(true);
 		recomputeScale();
 	}
@@ -379,10 +395,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         LevelUpManager.update();
                         LootGuarantee.update();
 
-                        for (int i = 0; i < entities.size(); i++) {
-                                Entity e = entities.get(i);
-                                e.update();
-                        }
+			for (int i = 0; i < entities.size(); i++) {
+				Entity e = entities.get(i);
+				// Durante o onboarding, inimigos ficam paralisados para o novato
+				// praticar sem risco (Player continua atualizando normalmente).
+				if (e instanceof Enemy && OnboardingManager.isEnemyPaused()) {
+					continue;
+				}
+				e.update();
+			}
+			OnboardingManager.update();
 
                         for (int i = 0; i < bullets.size(); i++) {
                                 bullets.get(i).update();
@@ -504,6 +526,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 g = bs.getDrawGraphics();
                 int scaledWidth = WIDTH * SCALE;
                 int scaledHeight = HEIGHT * SCALE;
+                int windowWidth = getWidth();
+                int windowHeight = getHeight();
+                // Preenche a janela inteira de preto: sem isso, a área que
+                // sobra quando a tela não é múltipla do buffer ficava branca
+                // (faixa visível em tela cheia ou ao redimensionar).
+                g.setColor(java.awt.Color.BLACK);
+                g.fillRect(0, 0, windowWidth, windowHeight);
+                // O jogo é desenhado a partir do canto (0,0) para que todos os
+                // overlays (HUD, minimapa, loja, level-up) continuem corretos;
+                // a sobra da janela já está coberta pelo preenchimento preto.
                 g.drawImage(image, 0, 0, scaledWidth, scaledHeight, null);
                 MiniMap.render(g);
                 LevelUpManager.render(g);
@@ -514,9 +546,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 // ui.renderOverlay é desenhado por último para que a HUD compacta
                 // (e os cards do painel tático) fiquem sobre o overlay escuro da loja
                 // e sobre os demais painéis, sem parecer esmaecida no fundo.
-                ui.renderOverlay((Graphics2D) g);
+		ui.renderOverlay((Graphics2D) g);
+		OnboardingManager.render(g);
 
-                if ("GAMEOVER".equals(gameState)) {
+		if ("GAMEOVER".equals(gameState)) {
                         Graphics2D g2 = (Graphics2D) g;
                         g2.setColor(new Color(0, 0, 0, 120));
                         g2.fillRect(0, 0, scaledWidth, scaledHeight);
@@ -630,6 +663,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public void keyPressed(KeyEvent e) {
 		
 		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+			if (OnboardingManager.isActive()) {
+				OnboardingManager.skip();
+			}
 			player.jump = true;
 		}
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
@@ -667,6 +703,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
                 if (e.getKeyCode() == KeyEvent.VK_X) {
                         player.shoot = true;
+                        // Registro por evento de pressão: o flag é consumido no
+                        // mesmo frame pelo Player.update(), então o onboarding
+                        // conta tiros aqui (não via flag no update).
+                        OnboardingManager.notifyShotFired();
                 }
 
                 if (e.getKeyCode() == KeyEvent.VK_Q) {
@@ -869,9 +909,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 DashAbility.reset();
                 UltimateAbility.reset();
                 LootGuarantee.reset();
-                ParticleSystem.clear();
+		ParticleSystem.clear();
 		FloatingText.clear();
-                gameState = "NORMAL";
+		OnboardingManager.start();
+		gameState = "NORMAL";
         }
 
         private void resetPlayerToDefaults() {

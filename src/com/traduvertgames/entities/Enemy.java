@@ -269,6 +269,9 @@ public class Enemy extends Entity {
     }
 
     private static Variant pickRandomVariant() {
+        // O Phantom (que drena escudo/mana) só aparece a partir da fase 2,
+        // para não sobrecarregar o jogador novato já na primeira fase.
+        boolean phantomAllowed = Game.getCurrentLevel() >= 2;
         int roll = Game.rand.nextInt(100);
         if (roll < 35) {
             return Variant.SCOUT;
@@ -280,7 +283,7 @@ public class Enemy extends Entity {
             return Variant.WARDEN;
         } else if (roll < 94) {
             return Variant.SENTINEL;
-        } else if (roll < 97) {
+        } else if (phantomAllowed && roll < 97) {
             return Variant.PHANTOM;
         } else {
             return Variant.GUARDIAN;

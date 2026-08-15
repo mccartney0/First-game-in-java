@@ -413,12 +413,17 @@ public class Player extends Entity {
                 return false;
         }
 
-        public double applyDamage(double amount) {
+                public double applyDamage(double amount) {
                 if (amount <= 0) {
                         return 0;
                 }
-
-                double remaining = amount;
+                // A primeira fase é mais permissiva: o dano recebido é reduzido
+                // para o jogador novato ter tempo de aprender os controles.
+                double effectiveAmount = amount;
+                if (Game.getCurrentLevel() == 1) {
+                        effectiveAmount = amount * 0.7;
+                }
+                double remaining = effectiveAmount;
                 if (shield > 0) {
                         double absorbed = Math.min(shield, remaining);
                         shield -= absorbed;

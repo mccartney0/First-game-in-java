@@ -18,13 +18,14 @@ import com.traduvertgames.entities.Enemy;
 
 public final class LevelSelectScreen {
 
-	private static final int TOTAL_LEVELS = 5;
+	private static final int TOTAL_LEVELS = 6;
 	private static final String[] LEVEL_NAMES = {
 			"Setor Alpha — Coleta de artefatos",
 			"Câmara do Warbringer — Caçada ao chefe",
 			"Círculo do Ritual — Ritual sombrio",
 			"Núcleo da Colônia — Resgate",
-			"Datacenter Nexus — Recuperação de dados"
+			"Datacenter Nexus — Recuperação de dados",
+			"Torre do Supervisor — Queda do Supervisor"
 	};
 
 	private static int selection = 0;
