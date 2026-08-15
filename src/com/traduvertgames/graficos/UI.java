@@ -57,13 +57,17 @@ public class UI {
                                 barY, currentWeapon.getUiColor());
         }
 
-        public void renderOverlay(Graphics2D g2) {
-                g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+	public void renderOverlay(Graphics2D g2) {
+		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                if (!Game.isOverlayExpanded()) {
-                        drawOverlayHint(g2);
-                        return;
-                }
+		// HUD compacta desenhada sobre tudo (inclusive o overlay escuro da loja),
+		// em coordenadas de tela cheia (com SCALE), evitando HUD esmaecida no fundo.
+		drawResourceHudScaled(g2);
+
+		if (!Game.isOverlayExpanded()) {
+			drawOverlayHint(g2);
+			return;
+		}
 
                 int screenWidth = Game.WIDTH * Game.SCALE;
                 int screenHeight = Game.HEIGHT * Game.SCALE;
@@ -112,9 +116,62 @@ public class UI {
         }
 
         /** Indicadores das habilidades: ultimate (F) e dash (Shift). */
-        private void drawAbilityHud(Graphics2D g2, int screenWidth) {
-                int y = 44;
-                g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+	/** HUD compacta em coordenadas de tela cheia (buffer * SCALE). */
+	private void drawResourceHudScaled(Graphics2D g2) {
+		int s = Game.SCALE;
+		int screenWidth = Game.WIDTH * s;
+		int screenHeight = Game.HEIGHT * s;
+		int margin = 6;
+		int panelHeight = (4 * LINE_SPACING + 6) * s;
+		int panelY = screenHeight - panelHeight - margin;
+		int panelX = margin;
+		int panelWidth = (BAR_WIDTH + 16) * s;
+		g2.setColor(new Color(6, 9, 16, 150));
+		g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 8, 8);
+		g2.setFont(new Font("SansSerif", Font.BOLD, 7 * s));
+		int barX = panelX + 12 * s;
+		int barY = panelY + 10 * s;
+		int barSpacing = LINE_SPACING * s;
+		drawScaledBar(g2, "VIDA", Player.life, Player.maxLife, barX, barY, panelWidth - 28 * s, 9 * s,
+				new Color(244, 67, 54));
+		barY += barSpacing;
+		drawScaledBar(g2, "ESCUDO", Player.shield, Player.maxShield, barX, barY, panelWidth - 28 * s, 9 * s,
+				new Color(121, 134, 203));
+		barY += barSpacing;
+		drawScaledBar(g2, "MANA", Player.mana, Player.maxMana, barX, barY, panelWidth - 28 * s, 9 * s,
+				new Color(33, 150, 243));
+		barY += barSpacing;
+		WeaponType currentWeapon = Game.player != null && Game.player.getCurrentWeaponType() != null
+				? Game.player.getCurrentWeaponType()
+				: WeaponType.BLASTER;
+		drawScaledBar(g2, currentWeapon.getShortName().toUpperCase(), Player.weapon, Player.maxWeapon, barX,
+				barY, panelWidth - 28 * s, 9 * s, currentWeapon.getUiColor());
+	}
+
+	private void drawScaledBar(Graphics2D g2, String label, double value, double max, int x, int y,
+			int barWidth, int barHeight, Color color) {
+		double ratio = max > 0 ? Math.min(1, Math.max(0, value / max)) : 0;
+		g2.setFont(new Font("SansSerif", Font.BOLD, 7 * Game.SCALE));
+		FontMetrics fm = g2.getFontMetrics();
+		String valueText = (int) value + "/" + (int) max;
+		int valWidth = fm.stringWidth(valueText);
+		// Fundo da barra
+		g2.setColor(new Color(20, 24, 34));
+		g2.fillRoundRect(x, y, barWidth, barHeight, 3 * Game.SCALE, 3 * Game.SCALE);
+		// Preenchimento colorido
+		g2.setColor(color);
+		if (ratio > 0) {
+			g2.fillRoundRect(x, y, (int) (barWidth * ratio), barHeight, 3 * Game.SCALE, 3 * Game.SCALE);
+		}
+		// Rótulo/valor por cima do preenchimento (texto sempre legível)
+		g2.setColor(Color.WHITE);
+		g2.drawString(label, x + 4 * Game.SCALE, y + barHeight - 2 * Game.SCALE);
+		g2.drawString(valueText, x + barWidth - valWidth - 2 * Game.SCALE, y + barHeight - 2 * Game.SCALE);
+	}
+
+	private void drawAbilityHud(Graphics2D g2, int screenWidth) {
+		int y = 44;
+		g2.setFont(new Font("SansSerif", Font.BOLD, 12));
 
                 double ultimateReady = UltimateAbility.getReadyPercentage();
                 g2.setColor(ultimateReady >= 1 ? new Color(130, 230, 230) : new Color(120, 120, 120));

@@ -394,7 +394,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		for (int i = 0; i < bullet.size(); i++) {
 			bullet.get(i).render(g);
 		}
-		ui.render(g);
+		// A HUD compacta é desenhada exclusivamente pelo overlay (por cima de tudo),
+		// evitando HUD duplicada/esmaecida em menus, loja e game over.
+		// ui.render(g) (coordenadas do buffer, por baixo dos overlays) foi removido.
 		ParticleSystem.render(g);
 		UltimateAbility.render(g);
 		g.dispose();
@@ -403,13 +405,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 int scaledWidth = WIDTH * SCALE;
                 int scaledHeight = HEIGHT * SCALE;
                 g.drawImage(image, 0, 0, scaledWidth, scaledHeight, null);
-                ui.renderOverlay((Graphics2D) g);
                 MiniMap.render(g);
                 LevelUpManager.render(g);
                 ShopManager.render(g);
                 LevelSelectScreen.render(g);
                 WaveManager.render(g);
                 LootGuarantee.render(g);
+                // ui.renderOverlay é desenhado por último para que a HUD compacta
+                // (e os cards do painel tático) fiquem sobre o overlay escuro da loja
+                // e sobre os demais painéis, sem parecer esmaecida no fundo.
+                ui.renderOverlay((Graphics2D) g);
 
                 if ("GAMEOVER".equals(gameState)) {
                         Graphics2D g2 = (Graphics2D) g;
@@ -432,7 +437,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 } else if ("MENU".equals(gameState)) {
                         menu.render(g);
                 } else if ("SHOP".equals(gameState)) {
-                        ui.render(g);
+                        // A HUD compacta é desenhada pelo overlay (por cima do painel da loja).
                         Menu.renderPauseScreen(g);
                         ShopManager.render(g);
                 } else if ("LEVELUP".equals(gameState)) {
@@ -612,7 +617,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 		}
 
-                if (e.getKeyCode() == KeyEvent.VK_F) {
+		if (e.getKeyCode() == KeyEvent.VK_F) {
                         if ("NORMAL".equals(gameState)) {
                                 UltimateAbility.cast();
                         }
