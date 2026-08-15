@@ -66,8 +66,9 @@ public final class ParticleSystem {
 
 	public static void render(Graphics g) {
 		for (Particle particle : particles) {
+			int fadeAlpha = Math.min(255, Math.max(0, particle.life * 10));
 			Color faded = new Color(particle.color.getRed(), particle.color.getGreen(),
-					particle.color.getBlue(), Math.max(0, particle.life * 10));
+					particle.color.getBlue(), fadeAlpha);
 			g.setColor(faded);
 			int size = Math.max(1, particle.life / 6);
 			g.fillRect((int) particle.x - Camera.x, (int) particle.y - Camera.y, size, size);
