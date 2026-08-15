@@ -34,6 +34,13 @@ public final class ShopManager {
 	private static boolean open = false;
 	private static String feedback = "";
 	private static int feedbackTimer = 0;
+	/** Frames em que o ESC deve ser ignorado (evita reabrir menu ao segurar ESC). */
+	private static int escCooldown = 0;
+
+	/** O ESC deve ser ignorado nesta chamada do handler? */
+	public static boolean isEscOnCooldown() {
+		return escCooldown > 0;
+	}
 
 	private ShopManager() {
 	}
@@ -51,8 +58,13 @@ public final class ShopManager {
 	}
 
 	public static void close() {
+		if (!open) {
+			return;
+		}
 		open = false;
 		Game.gameState = "NORMAL";
+		// Evita que o key-repeat do ESC reabra o menu de pausa imediatamente.
+		escCooldown = 15;
 	}
 
 	/** Navegação via setas/W-S: exposta para o handler de teclado do Game. */
@@ -90,6 +102,9 @@ public final class ShopManager {
 				feedback = "";
 			}
 		}
+		if (escCooldown > 0) {
+			escCooldown--;
+		}
 	}
 
 	private static void purchase(ShopItem item) {
@@ -98,53 +113,63 @@ public final class ShopManager {
 			feedbackTimer = 90;
 			return;
 		}
+		boolean purchaseSucceeded = true;
+		String purchaseFeedback = null;
 		switch (item) {
 		case CURAR:
+			purchaseFeedback = "Vida recuperada!";
 			Game.addScore(-item.price);
 			Player.life = Math.min(Player.life + 60, Player.maxLife);
-			feedback = "Vida recuperada!";
 			break;
 		case ESCUDO:
+			purchaseFeedback = "Escudo recarregado!";
 			Game.addScore(-item.price);
 			Player.shield = Math.min(Player.shield + 60, Player.maxShield);
-			feedback = "Escudo recarregado!";
 			break;
 		case MANA:
+			purchaseFeedback = "Mana recarregada!";
 			Game.addScore(-item.price);
 			Player.mana = Math.min(Player.mana + 150, Player.maxMana);
-			feedback = "Mana recarregada!";
 			break;
 		case ENERGIA:
+			purchaseFeedback = "Energia recarregada!";
 			Game.addScore(-item.price);
 			if (Game.player != null) {
 				Game.player.addWeaponEnergy(80);
 			}
-			feedback = "Energia recarregada!";
 			break;
 		case VIDA_MAXIMA:
+			purchaseFeedback = "Vida máxima aumentada!";
 			Game.addScore(-item.price);
 			Player.maxLife += 20;
 			Player.life += 20;
-			feedback = "Vida máxima aumentada!";
 			break;
 		case ESCUDO_MAXIMO:
+			purchaseFeedback = "Escudo máximo aumentado!";
 			Game.addScore(-item.price);
 			Player.maxShield += 25;
 			Player.shield += 25;
-			feedback = "Escudo máximo aumentado!";
 			break;
 		case ARMA:
 			if (unlockNextWeapon()) {
 				Game.addScore(-item.price);
-				feedback = "Nova arma desbloqueada!";
+				purchaseFeedback = "Nova arma desbloqueada!";
 			} else {
-				feedback = "Todas as armas já desbloqueadas!";
+				purchaseSucceeded = false;
+				purchaseFeedback = "Todas as armas já desbloqueadas!";
 			}
 			break;
 		default:
+			purchaseSucceeded = false;
 			break;
 		}
+		feedback = purchaseFeedback;
 		feedbackTimer = 90;
+		// Após uma compra efetuada, a loja fecha sozinha para o jogo continuar.
+		if (purchaseSucceeded) {
+			close();
+		}
+		return;
 	}
 
 	private static boolean unlockNextWeapon() {

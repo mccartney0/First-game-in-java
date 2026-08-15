@@ -47,7 +47,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private boolean isRunning = true;
         public static final int WIDTH = 384;
         public static final int HEIGHT = 216;
-        public static final int SCALE = 3;
+        public static final int SCALE = 4;
 
         private static Game instance;
 
@@ -583,6 +583,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 		
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+			// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
+			// do menu de pausa ao segurar a tecla).
+			if (ShopManager.isEscOnCooldown()) {
+				return;
+			}
 			if ("NORMAL".equals(gameState)) {
 				Menu.openPauseScreen();
 			} else if ("SHOP".equals(gameState)) {
