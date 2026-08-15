@@ -8,10 +8,14 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.RenderingHints;
 
+import com.traduvertgames.entities.DashAbility;
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Player;
+import com.traduvertgames.entities.UltimateAbility;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.main.Game;
+import com.traduvertgames.main.LevelUpManager;
+import com.traduvertgames.main.WaveManager;
 import com.traduvertgames.quest.QuestManager;
 
 public class UI {
@@ -72,6 +76,60 @@ public class UI {
                 drawScoreCard(g2, screenWidth - scoreWidth - margin, margin, scoreWidth, 214);
                 int arsenalX = (screenWidth - arsenalWidth) / 2;
                 drawArsenalCard(g2, arsenalX, screenHeight - arsenalHeight - margin, arsenalWidth, arsenalHeight);
+
+                drawXpHud(g2, screenWidth);
+                drawAbilityHud(g2, screenWidth);
+        }
+
+        /** Barra de XP e nível sempre visíveis no topo. */
+        private void drawXpHud(Graphics2D g2, int screenWidth) {
+                if (!LevelUpManager.isEnabled()) {
+                        return;
+                }
+                int barWidth = Math.min(360, screenWidth - 40);
+                int barHeight = 10;
+                int barX = (screenWidth - barWidth) / 2;
+                int barY = 12;
+                double xp = LevelUpManager.getXp();
+                double needed = LevelUpManager.xpForNextLevel();
+                double ratio = needed > 0 ? Math.min(1, xp / needed) : 0;
+                int level = LevelUpManager.getPlayerLevel();
+
+                g2.setColor(new Color(0, 0, 0, 150));
+                g2.fillRoundRect(barX - 30, barY - 12, barWidth + 60, 26, 12, 12);
+                g2.setColor(new Color(60, 64, 74));
+                g2.fillRoundRect(barX, barY, barWidth, barHeight, 5, 5);
+                g2.setColor(new Color(255, 214, 0));
+                if (ratio > 0) {
+                        g2.fillRoundRect(barX, barY, (int) (barWidth * ratio), barHeight, 5, 5);
+                }
+                g2.setFont(new Font("SansSerif", Font.BOLD, 11));
+                g2.setColor(Color.WHITE);
+                String label = "Nível " + level + " — XP: " + (int) xp + "/" + (int) needed;
+                g2.drawString(label, barX + 6, barY + barHeight + 3);
+        }
+
+        /** Indicadores das habilidades: ultimate (F) e dash (Shift). */
+        private void drawAbilityHud(Graphics2D g2, int screenWidth) {
+                int y = 44;
+                g2.setFont(new Font("SansSerif", Font.BOLD, 12));
+
+                double ultimateReady = UltimateAbility.getReadyPercentage();
+                g2.setColor(ultimateReady >= 1 ? new Color(130, 230, 230) : new Color(120, 120, 120));
+                String ultimateLabel = "[F] Ultimate " + (ultimateReady >= 1 ? "PRONTO" : String.format("%d%%", (int) (ultimateReady * 100)));
+                g2.drawString(ultimateLabel, 18, y);
+
+                double dashReady = DashAbility.getReadyPercentage();
+                g2.setColor(dashReady >= 1 ? new Color(130, 230, 230) : new Color(120, 120, 120));
+                String dashLabel = "[SHIFT] Dash " + (dashReady >= 1 ? "PRONTO" : String.format("%d%%", (int) (dashReady * 100)));
+                g2.drawString(dashLabel, 18, y + 16);
+
+                if (WaveManager.isArenaMode()) {
+                        g2.setColor(new Color(255, 152, 0));
+                        String arenaLabel = "ARENA — Onda " + WaveManager.getArenaWave();
+                        int metricsWidth = g2.getFontMetrics().stringWidth(arenaLabel);
+                        g2.drawString(arenaLabel, screenWidth - metricsWidth - 18, y);
+                }
         }
 
         private void drawStatusCard(Graphics2D g2, int x, int y, int width, int height) {
@@ -246,6 +304,10 @@ public class UI {
                 g2.setFont(hintFont);
                 g2.setColor(new Color(210, 210, 210));
                 g2.drawString(hint, textX, textY);
+
+                // Habilidades ficam visíveis mesmo com o painel minimizado.
+                drawXpHud(g2, screenWidth);
+                drawAbilityHud(g2, screenWidth);
         }
 
         private int drawParagraph(Graphics2D g2, String text, int x, int y, int maxWidth, int lineHeight, Color color) {

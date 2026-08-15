@@ -183,6 +183,64 @@ public class Enemy extends Entity {
         }
     }
 
+    /**
+     * Boss em fases: o chefe muda de comportamento conforme sua vida.
+     * Warbringer abaixo de 50% ataca o dobro e persegue agressivamente;
+     * Overseer abaixo de 40% invoca reforços esporadicamente.
+     */
+    private void applyBossPhaseBehavior(double distanceToPlayer, boolean canSeePlayer) {
+        if (!boss) {
+            return;
+        }
+        double ratio = getLifePercentage();
+        if (variant == Variant.WARBRINGER && ratio < 0.5) {
+            // Fase furiosa: persegue sempre (mesmo longe) e atira mais rápido.
+            if (distanceToPlayer > LOSE_INTEREST_RADIUS * 2) {
+                state = EnemyState.CHASING;
+                path = null;
+            }
+            if (attackCooldown == 0) {
+                attemptShootAtPlayer(distanceToPlayer);
+                attackCooldown = attackCooldownBase / 2;
+            }
+        } else if (variant == Variant.OVERSEER && ratio < 0.4) {
+            // Fase desesperada: invoca um reforço ocasionalmente.
+            if (specialCooldown == 0 && distanceToPlayer < 200 && Game.enemies.size() < 10) {
+                int roll = Game.rand.nextInt(120);
+                if (roll == 0) {
+                    int rx = (int) x + (Game.rand.nextInt(3) - 1) * 16;
+                    int ry = (int) y + (Game.rand.nextInt(3) - 1) * 16;
+                    if (World.isFree(rx, ry, 0)) {
+                        Enemy support = Enemy.spawnRandomVariant(rx, ry);
+                        Game.entities.add(support);
+                        Game.enemies.add(support);
+                    }
+                }
+            }
+        }
+    }
+
+    private void attemptShootAtPlayer(double distanceToPlayer) {
+        if (distanceToPlayer > 220) {
+            return;
+        }
+        if (attackCooldown > 0 || projectileSize <= 0) {
+            return;
+        }
+        double dirX = Game.player.getX() - this.getX();
+        double dirY = Game.player.getY() - this.getY();
+        double length = Math.hypot(dirX, dirY);
+        if (length == 0) {
+            return;
+        }
+        double bulletDx = dirX / length;
+        double bulletDy = dirY / length;
+        BulletShoot bullet = new BulletShoot((int) this.getX() + 6, (int) this.getY() + 6, projectileSize,
+                projectileSize, getSprite(), bulletDx, bulletDy, projectileSpeed, projectileDamage, true,
+                projectileColor);
+        Game.bullets.add(bullet);
+    }
+
     public static Enemy spawnRandomVariant(int x, int y) {
         return new Enemy(x, y, 16, 16, Entity.ENEMY_EN, pickRandomVariant());
     }
@@ -245,6 +303,8 @@ public class Enemy extends Entity {
         updateVariantAbilities(distanceToPlayer, canSeePlayer);
 
         animate();
+
+        applyBossPhaseBehavior(distanceToPlayer, canSeePlayer);
 
         collidingBullet();
         if (life <= 0) {
@@ -726,6 +786,8 @@ public class Enemy extends Entity {
     public void destroySelf() {
         Game.registerEnemyKill();
         maybeDropPickup();
+        com.traduvertgames.main.LootGuarantee.dropForVariant(this);
+        com.traduvertgames.graficos.ParticleSystem.explode(this.getX() + 8, this.getY() + 8, auraColor);
         Game.enemies.remove(this);
         Game.entities.remove(this);
         QuestManager.notifyEnemyKilled(this);
@@ -754,6 +816,29 @@ public class Enemy extends Entity {
             OverclockModule module = new OverclockModule(spawnX, spawnY);
             Game.entities.add(module);
         }
+    }
+
+    /**
+     * Aplica dano direto (ex.: habilidade especial) sem depender de projéteis.
+     */
+    public void takeDamageDirect(double amount) {
+        if (amount <= 0) {
+            return;
+        }
+        life -= amount;
+        isDamaged = true;
+        damageCurrent = 0;
+    }
+
+    public Variant getVariant() {
+        return variant;
+    }
+
+    public double getLifePercentage() {
+        if (maxLife <= 0) {
+            return 0;
+        }
+        return Math.max(0, Math.min(1, life / maxLife));
     }
 
     public void collidingBullet() {

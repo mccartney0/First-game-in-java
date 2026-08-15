@@ -24,10 +24,14 @@ import javax.swing.JFrame;
 import com.traduvertgames.entities.Bullet;
 import com.traduvertgames.entities.BulletShoot;
 import com.traduvertgames.entities.Enemy;
+import com.traduvertgames.entities.DashAbility;
+import com.traduvertgames.entities.UltimateAbility;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.graficos.Spritesheet;
+import com.traduvertgames.graficos.MiniMap;
+import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
 import com.traduvertgames.quest.QuestManager;
@@ -128,6 +132,17 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 score = Math.max(0, value);
         }
 
+        public static void addScore(int delta) {
+                int newValue = score + delta;
+                score = Math.max(0, newValue);
+                if (score > highScore) {
+                        highScore = score;
+                }
+        }
+
+        /** Marcador para tecla Escape: usado por telas que consomem o ESC (loja, seleção de fases). */
+        public static boolean escapePressed = false;
+
         public static int getHighScore() {
                 return highScore;
         }
@@ -218,6 +233,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         }
 
         public static void registerEnemyKill() {
+                LevelUpManager.grantKillXp();
                 int points = BASE_SCORE_PER_KILL * comboMultiplier;
                 score += points;
                 if (score > highScore) {
@@ -279,53 +295,25 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 //Primeiro atualiza, depois renderiza
 	public void update() {
 		
-                if (gameState == "NORMAL") {
-// Salvar o Level
+                if ("NORMAL".equals(gameState)) {
+// Salvar o jogo (formato JSON correto com slots)
                         if (Game.saveGame) {
                                 Game.saveGame = false;
-                                java.util.List<String> keys = new java.util.ArrayList<String>();
-                                java.util.List<Integer> values = new java.util.ArrayList<Integer>();
-                                keys.add("vida");
-                                values.add((int) Player.life);
-                                keys.add("mana");
-                                values.add((int) Player.mana);
-                                keys.add("arma");
-                                values.add((int) Player.weapon);
-                                keys.add("escudo");
-                                values.add((int) Player.shield);
-                                keys.add("inimigosMortos");
-                                values.add(Enemy.enemies);
-                                keys.add("levelPlus");
-                                values.add(levelPlus);
-                                keys.add("level");
-                                values.add(this.CUR_LEVEL);
-                                keys.add("pontuacao");
-                                values.add(Game.getScore());
-                                keys.add("recorde");
-                                values.add(Game.getHighScore());
-                                keys.add("melhorCombo");
-                                values.add(Game.getBestComboRecord());
-                                keys.add("melhorComboSessao");
-                                values.add(Game.getBestComboThisRun());
-                                keys.add("armaAtual");
-                                values.add(Player.getCurrentWeaponOrdinal());
-                                keys.add("armasDesbloqueadas");
-                                values.add(Player.getWeaponUnlockMask());
-                                for (WeaponType type : WeaponType.values()) {
-                                        keys.add("energiaArma_" + type.name());
-                                        values.add((int) Math.round(Player.getStoredEnergyForType(type)));
+                                levelPlus = 0;
+                                if (SaveManager.saveCurrentGame()) {
+                                        System.out.println("Jogo salvo no slot " + SaveManager.activeSlot + "!");
                                 }
-                                String[] opt1 = keys.toArray(new String[0]);
-                                int[] opt2 = new int[values.size()];
-                                for (int i = 0; i < values.size(); i++) {
-                                        opt2[i] = values.get(i);
-                                }
-                                Menu.saveGame(opt1, opt2, 20);
-                                System.out.println("Jogo salvo!");
                         }
 
                         this.restartGame = false; // Prevenção
                         updateComboTimer();
+
+                        DashAbility.update();
+                        UltimateAbility.update();
+                        WaveManager.update();
+                        LevelUpManager.update();
+                        LootGuarantee.update();
+
                         for (int i = 0; i < entities.size(); i++) {
                                 Entity e = entities.get(i);
                                 e.update();
@@ -339,11 +327,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         }
 
                         QuestManager.update();
+                        ParticleSystem.update();
 
                         if (QuestManager.isObjectiveComplete()) {
-                                advanceToNextLevel();
+                                onObjectiveComplete();
                         }
-                } else if (gameState == "GAMEOVER") {
+                } else if ("SHOP".equals(gameState)) {
+                        ShopManager.update();
+                        ParticleSystem.update();
+                } else if ("GAMEOVER".equals(gameState)) {
 //Forma de Fazer animação - Game over
 			this.framesGameOver++;
 			if (this.framesGameOver == 30) {
@@ -357,12 +349,26 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         if (restartGame) {
                                 handleGameOverRestart();
                         }
-		}else if (gameState == "MENU") {
-			//Menu
-			//Iniciando a camera junto com o jogador
-			player.updateCamera();
-			menu.update();
+                        // Autosave ao morrer: preserva o progresso da partida.
+                        SaveManager.saveAutoSave();
+		}else if ("MENU".equals(gameState)) {
+				//Menu
+				//Iniciando a camera junto com o jogador
+				player.updateCamera();
+				menu.update();
+		} else if ("LEVELUP".equals(gameState)) {
+				LevelUpManager.update();
+		} else if ("LEVELSELECT".equals(gameState)) {
+				LevelSelectScreen.update();
 		}
+	}
+
+	/** Quando o objetivo da fase é completado: abre a loja antes de avançar. */
+	private void onObjectiveComplete() {
+		if (WaveManager.isArenaMode()) {
+			return;
+		}
+		ShopManager.open();
 	}
 
         public void render() { // Renderização funciona por ordem de código, primeira linhas, segunda, etc...
@@ -389,6 +395,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			bullet.get(i).render(g);
 		}
 		ui.render(g);
+		ParticleSystem.render(g);
+		UltimateAbility.render(g);
 		g.dispose();
 
                 g = bs.getDrawGraphics();
@@ -396,8 +404,14 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 int scaledHeight = HEIGHT * SCALE;
                 g.drawImage(image, 0, 0, scaledWidth, scaledHeight, null);
                 ui.renderOverlay((Graphics2D) g);
+                MiniMap.render(g);
+                LevelUpManager.render(g);
+                ShopManager.render(g);
+                LevelSelectScreen.render(g);
+                WaveManager.render(g);
+                LootGuarantee.render(g);
 
-                if (gameState == "GAMEOVER") {
+                if ("GAMEOVER".equals(gameState)) {
                         Graphics2D g2 = (Graphics2D) g;
                         g2.setColor(new Color(0, 0, 0, 120));
                         g2.fillRect(0, 0, scaledWidth, scaledHeight);
@@ -415,8 +429,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         drawCenteredString(g, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 82);
                         drawCenteredString(g, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 112);
 
-                } else if (gameState == "MENU") {
+                } else if ("MENU".equals(gameState)) {
                         menu.render(g);
+                } else if ("SHOP".equals(gameState)) {
+                        ui.render(g);
+                        Menu.renderPauseScreen(g);
+                        ShopManager.render(g);
+                } else if ("LEVELUP".equals(gameState)) {
+                        // Tela de level up já renderiza por cima do jogo (LevelUpManager.render).
+                } else if ("LEVELSELECT".equals(gameState)) {
+                        LevelSelectScreen.render(g);
                 }
                 bs.show();
         }
@@ -495,13 +517,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
 			player.up = true;
 
-			if (gameState == "MENU") {
+			if ("MENU".equals(gameState)) {
 				menu.up = true;
 			}
 		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
 			player.down = true;
 
-			if (gameState == "MENU") {
+			if ("MENU".equals(gameState)) {
 				menu.down = true;
 			}
 		}
@@ -532,24 +554,58 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
                 if (e.getKeyCode() == KeyEvent.VK_ENTER) {
                         this.restartGame = true;
-                        if(gameState == "MENU") {
+                        if ("MENU".equals(gameState)) {
                                 menu.enter = true;
 			}
 		}
 		
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-			gameState = "MENU";
-			Menu.pause = true;
+			if ("NORMAL".equals(gameState)) {
+				Menu.openPauseScreen();
+			} else if ("SHOP".equals(gameState)) {
+				ShopManager.close();
+			} else if ("LEVELUP".equals(gameState)) {
+				LevelUpManager.dismiss();
+			} else if ("LEVELSELECT".equals(gameState)) {
+				LevelSelectScreen.close();
+			} else {
+				gameState = "MENU";
+				Menu.pause = true;
+			}
 		}
                 if (e.getKeyCode() == KeyEvent.VK_T) {
-                        if(gameState == "NORMAL") {
+                        if ("NORMAL".equals(gameState)) {
                                 Game.saveGame = true;
                                 levelPlus=0;
                         }
                 }
 
+                if (e.getKeyCode() == KeyEvent.VK_P) {
+                        if ("NORMAL".equals(gameState)) {
+                                Menu.openPauseScreen();
+                        }
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_L) {
+                        if ("NORMAL".equals(gameState)) {
+                                LevelSelectScreen.open();
+                        }
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_F) {
+                        if ("NORMAL".equals(gameState)) {
+                                UltimateAbility.cast();
+                        }
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+                        if ("NORMAL".equals(gameState)) {
+                                DashAbility.perform();
+                        }
+                }
+
                 if (e.getKeyCode() == KeyEvent.VK_TAB) {
-                        if (gameState == "NORMAL") {
+                        if ("NORMAL".equals(gameState)) {
                                 Game.toggleOverlayExpanded();
                         }
                 }
@@ -583,13 +639,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		player.mouseShoot = true;
 		player.mx = (e.getX() / SCALE);
 		player.my = (e.getY() / SCALE);
-		
-		
+
+		if ("GAMEOVER".equals(gameState)) {
 			this.restartGame = true;
-			if(gameState == "MENU") {
-				menu.enter = true;
-			}
-		
+		} else if ("MENU".equals(gameState)) {
+			menu.enter = true;
+		}
 	}
 
 	@Override
@@ -618,21 +673,24 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
         }
 
-        private boolean loadGameFromSave() {
+                private boolean loadGameFromSave() {
                 File file = new File("save.txt");
                 if (!file.exists()) {
                         return false;
                 }
-
+                // Primeiro tenta o autosave do SaveManager; depois a codificação
+                // manual antiga (legado) como último recurso.
+                if (SaveManager.hasAnySave()) {
+                        return SaveManager.loadSlot(SaveManager.activeSlot);
+                }
                 String saver = Menu.loadGame(20);
                 if (saver == null || saver.isEmpty()) {
                         return false;
                 }
-
                 try {
                         Menu.applySave(saver);
                         return true;
-                } catch (IOException e) {
+                } catch (Exception e) {
                         e.printStackTrace();
                 }
                 return false;
@@ -648,6 +706,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 applyDifficultyToPlayerStats();
                 resetScoreState();
                 World.restartGame("level1.png");
+                LevelUpManager.reset();
+                WaveManager.reset();
+                DashAbility.reset();
+                UltimateAbility.reset();
+                LootGuarantee.reset();
+                ParticleSystem.clear();
                 gameState = "NORMAL";
         }
 
@@ -670,6 +734,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
                 if (CUR_LEVEL > MAX_LEVEL) {
                         CUR_LEVEL = 1;
+                }
+                // O progresso de fase encerra a loja aberta (ou level up) para seguir.
+                if (ShopManager.isOpen()) {
+                        ShopManager.close();
+                }
+                if (LevelUpManager.isShowingLevelUp()) {
+                        LevelUpManager.dismiss();
                 }
                 applyProgressBonuses();
                 String newWorld = "level" + CUR_LEVEL + ".png";

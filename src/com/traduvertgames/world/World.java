@@ -37,9 +37,18 @@ public class World {
                                         } else if (pixelAtual == 0xFFFFFFFF) {
                                                 // Parede
                                                 tiles[xx + (yy * map.getWidth())] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
-                                        } else if (pixelAtual == 0xFF808080) {
-                                                tiles[xx + (yy * map.getWidth())] = new DestructibleWallTile(xx * 16, yy * 16,
-                                                                Tile.TILE_WALL);
+					} else if (pixelAtual == 0xFF808080) {
+						tiles[xx + (yy * map.getWidth())] = new DestructibleWallTile(xx * 16, yy * 16,
+								Tile.TILE_WALL);
+					} else if (pixelAtual == 0xFF7CB342) {
+						// Grama: terreno rápido (+20% velocidade)
+						tiles[xx + (yy * WIDTH)] = new GrassTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+					} else if (pixelAtual == 0xFF6D4C41) {
+						// Lama: terreno lento (-30% velocidade)
+						tiles[xx + (yy * WIDTH)] = new MudTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+					} else if (pixelAtual == 0xFFB0BEC5) {
+						// Gelo: terreno escorregadio (inércia)
+						tiles[xx + (yy * WIDTH)] = new IceTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					} else if (pixelAtual == 0xFF0026FF) {
 						// Player
 						Game.player.setX(xx * 16);

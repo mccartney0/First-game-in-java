@@ -99,27 +99,96 @@ public class Player extends Entity {
                 initializeArsenalState();
         }
 
+        /** Inércia para terreno escorregadio (gelo). */
+        private double inertiaDx = 0;
+        private double inertiaDy = 0;
+
+        private static double moveTowards(double current, double target) {
+                if (current < target) {
+                        return Math.min(current + 0.06, target);
+                }
+                if (current > target) {
+                        return Math.max(current - 0.06, target);
+                }
+                return target;
+        }
+
         public void update() {
                 handleJump();
+                if (com.traduvertgames.entities.DashAbility.isDashing()) {
+                        return;
+                }
                 moved = false;
-                if (right && World.isFree((int) (x + speed), this.getY(), z)) {
+
+                // Terreno afeta a velocidade: grama (+20%), lama (-30%), gelo (inércia).
+                double terrainMultiplier = 1.0;
+                boolean onIce = false;
+                int tileX = this.getX() / World.TILE_SIZE;
+                int tileY = this.getY() / World.TILE_SIZE;
+                if (World.isValidTile(tileX, tileY) && World.tiles != null) {
+                        com.traduvertgames.world.Tile center = World.tiles[tileX + (tileY * World.WIDTH)];
+                        if (center instanceof com.traduvertgames.world.GrassTile) {
+                                terrainMultiplier = 1.2;
+                        } else if (center instanceof com.traduvertgames.world.MudTile) {
+                                terrainMultiplier = 0.7;
+                        } else if (center instanceof com.traduvertgames.world.IceTile) {
+                                onIce = true;
+                        }
+                }
+                double effectiveSpeed = speed * terrainMultiplier;
+
+                if (right && World.isFree((int) (x + effectiveSpeed), this.getY(), z)) {
                         moved = true;
                         dir = right_dir;
-                        x += speed;
-                } else if (left && World.isFree((int) (x - speed), this.getY(), z)) {
+                        x += effectiveSpeed;
+                } else if (left && World.isFree((int) (x - effectiveSpeed), this.getY(), z)) {
                         moved = true;
                         dir = left_dir;
-                        x -= speed;
+                        x -= effectiveSpeed;
                 }
-                if (up && World.isFree(this.getX(), (int) (y - speed), z)) {
+                if (up && World.isFree(this.getX(), (int) (y - effectiveSpeed), z)) {
                         moved = true;
                         dir = up_dir;
-                        y -= speed;
-                } else if (down && World.isFree(this.getX(), (int) (y + speed), z)) {
+                        y -= effectiveSpeed;
+                } else if (down && World.isFree(this.getX(), (int) (y + effectiveSpeed), z)) {
 
                         moved = true;
                         dir = down_dir;
-                        y += speed;
+                        y += effectiveSpeed;
+                }
+                if (onIce) {
+                        // Sem comando: desliza até parar.
+                        if (!moved && (Math.abs(inertiaDx) > 0.05 || Math.abs(inertiaDy) > 0.05)) {
+                                double nextX = x + inertiaDx;
+                                double nextY = y + inertiaDy;
+                                if (Math.abs(inertiaDx) > 0.05 && World.isFree((int) nextX, this.getY(), z)) {
+                                        x += inertiaDx;
+                                }
+                                if (Math.abs(inertiaDy) > 0.05 && World.isFree(this.getX(), (int) nextY, z)) {
+                                        y += inertiaDy;
+                                }
+                        }
+                        inertiaDx = moveTowards(inertiaDx, 0);
+                        inertiaDy = moveTowards(inertiaDy, 0);
+                        if (moved) {
+                                if (right) {
+                                        inertiaDx = Math.min(inertiaDx + 0.06, speed);
+                                } else if (left) {
+                                        inertiaDx = Math.max(inertiaDx - 0.06, -speed);
+                                } else {
+                                        inertiaDx = moveTowards(inertiaDx, 0);
+                                }
+                                if (up) {
+                                        inertiaDy = Math.max(inertiaDy - 0.06, -speed);
+                                } else if (down) {
+                                        inertiaDy = Math.min(inertiaDy + 0.06, speed);
+                                } else {
+                                        inertiaDy = moveTowards(inertiaDy, 0);
+                                }
+                        }
+                } else {
+                        inertiaDx = 0;
+                        inertiaDy = 0;
                 }
                 if (moved) {
                         frames++;
@@ -599,6 +668,14 @@ public class Player extends Entity {
 
         public boolean hasWeaponUnlocked(WeaponType type) {
                 return type != null && unlockedWeapons.contains(type);
+        }
+
+        public void unlockWeapon(WeaponType type) {
+                if (type != null && !unlockedWeapons.contains(type)) {
+                        unlockedWeapons.add(type);
+                        weaponEnergy.put(type, type.getMaxDurability() * weaponCapacityMultiplier);
+                        savePersistentArsenal();
+                }
         }
 
         public Set<WeaponType> getUnlockedWeapons() {

@@ -35,6 +35,10 @@ public class Entity {
 
 	private BufferedImage sprite;
 
+	public BufferedImage getSprite() {
+		return sprite;
+	}
+
 	public int maskx, masky, mwidth, mheight;
 
 	public Entity(int x, int y, int width, int height, BufferedImage sprite) {
