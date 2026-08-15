@@ -101,6 +101,8 @@ public final class LevelSelectScreen {
 			return;
 		}
 		game.setCurrentLevel(level);
+		// Cancela qualquer avanço de fase pendente da loja anterior.
+		Game.clearQuestPending();
 		Game.player.resetPersistentArsenal();
 		com.traduvertgames.entities.Player.resetBaseStats();
 		Enemy.enemies = 0;

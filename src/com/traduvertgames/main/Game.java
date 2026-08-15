@@ -47,11 +47,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private boolean isRunning = true;
         public static final int WIDTH = 384;
         public static final int HEIGHT = 216;
-        public static final int SCALE = 4;
+        /** Escala base; em tela cheia o SCALE é recalculado para caber na resolução. */
+        public static int SCALE = 4;
 
         private static Game instance;
 
-        private int CUR_LEVEL = 1, MAX_LEVEL = 5;
+        private static int CUR_LEVEL = 1, MAX_LEVEL = 5;
 	private BufferedImage image;
 
 	public static List<Entity> entities;
@@ -88,7 +89,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private static int bestComboRecord = 1;
         private static int bestComboThisRun = 1;
 
-        private static boolean overlayExpanded = false;
+	private static boolean overlayExpanded = false;
+
+	/** True enquanto a loja está aberta por causa de um objetivo concluído. */
+	private static boolean questCompletedPending = false;
+
+	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
+	public static void clearQuestPending() {
+		questCompletedPending = false;
+		showLevelTransition = 0;
+	}
+        private static boolean fullscreen = false;
+        /** Frames restantes de exibição do aviso "Fase X concluída — próxima fase". */
+        private static int showLevelTransition = 0;
 
         public Game() throws IOException {
                 instance = this;
@@ -210,16 +223,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 overlayExpanded = !overlayExpanded;
         }
 
-        public void setCurrentLevel(int level) {
+                public static void setCurrentLevel(int level) {
                 if (level < 1)
                         level = 1;
                 if (level > MAX_LEVEL)
                         level = MAX_LEVEL;
-                this.CUR_LEVEL = level;
+                CUR_LEVEL = level;
         }
-
-        public int getCurrentLevel() {
-                return this.CUR_LEVEL;
+        public static int getCurrentLevel() {
+                return CUR_LEVEL;
         }
 
         public void setLevelPlus(int value) {
@@ -261,14 +273,49 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return OptionsConfig.getDamageTakenMultiplier();
         }
 
-        public void initFrame() {
-                frame = new JFrame("Game 2 RPG");
-                frame.add(this);
-                frame.setResizable(false);
-                frame.pack();
+	/** Recalcula o SCALE para que o buffer (384x216) caiba na área útil atual. */
+	public static void recomputeScale() {
+		int width = Math.max(1, frame.getContentPane().getWidth());
+		int height = Math.max(1, frame.getContentPane().getHeight());
+		SCALE = Math.max(1, Math.min(width / WIDTH, height / HEIGHT));
+	}
+
+	/** Alterna tela cheia (F11): maximiza e ajusta o SCALE à resolução do monitor. */
+	public static void toggleFullscreen() {
+		if (!fullscreen) {
+			java.awt.GraphicsEnvironment ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
+			java.awt.GraphicsDevice device = ge.getDefaultScreenDevice();
+			if (device.isFullScreenSupported()) {
+				device.setFullScreenWindow(frame);
+				fullscreen = true;
+				frame.setResizable(true);
+			} else {
+				frame.setExtendedState(javax.swing.JFrame.MAXIMIZED_BOTH);
+				fullscreen = true;
+				frame.setResizable(true);
+			}
+		} else {
+			java.awt.GraphicsEnvironment ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
+			java.awt.GraphicsDevice device = ge.getDefaultScreenDevice();
+			device.setFullScreenWindow(null);
+			frame.setExtendedState(javax.swing.JFrame.NORMAL);
+			frame.setResizable(false);
+			frame.pack();
+			frame.setLocationRelativeTo(null);
+			fullscreen = false;
+		}
+		recomputeScale();
+	}
+
+	public void initFrame() {
+		frame = new JFrame("Game 2 RPG");
+		frame.add(this);
+		frame.setResizable(false);
+		frame.pack();
 		frame.setLocationRelativeTo(null);
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setVisible(true);
+		recomputeScale();
 	}
 
 	public synchronized void start() {
@@ -358,8 +405,22 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				menu.update();
 		} else if ("LEVELUP".equals(gameState)) {
 				LevelUpManager.update();
-		} else if ("LEVELSELECT".equals(gameState)) {
-				LevelSelectScreen.update();
+	} else if ("LEVELSELECT".equals(gameState)) {
+			LevelSelectScreen.update();
+		}
+
+		if (showLevelTransition > 0) {
+			showLevelTransition--;
+		}
+		// Avança de fase assim que a loja aberta por objetivo concluído fecha.
+		if (questCompletedPending && !"SHOP".equals(gameState) && !"LEVELUP".equals(gameState)) {
+			questCompletedPending = false;
+			advanceToNextLevel();
+			// O mundo recarregado limpa o estado do objetivo: se ainda parecer
+			// completo, não reabrir a loja no mesmo frame.
+			if (QuestManager.isObjectiveComplete()) {
+				questCompletedPending = false;
+			}
 		}
 	}
 
@@ -368,6 +429,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		if (WaveManager.isArenaMode()) {
 			return;
 		}
+		// Já em transição ou loja aberta: não reabrir nem marcar novamente.
+		if (questCompletedPending || ShopManager.isOpen()) {
+			return;
+		}
+		// Marca que a fase foi concluída: ao fechar a loja (compra ou ESC),
+		// o jogo avança automaticamente para a próxima fase.
+		questCompletedPending = true;
 		ShopManager.open();
 	}
 
@@ -444,6 +512,20 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         // Tela de level up já renderiza por cima do jogo (LevelUpManager.render).
                 } else if ("LEVELSELECT".equals(gameState)) {
                         LevelSelectScreen.render(g);
+                }
+
+                // Aviso de transição de fase: a fase atual foi concluída e o jogo
+                // avança para a próxima assim que a loja/level up forem encerrados.
+                if (showLevelTransition > 0) {
+                        Graphics2D g2 = (Graphics2D) g;
+                        g2.setColor(new Color(0, 0, 0, 160));
+                        g2.fillRect(0, scaledHeight / 2 - 40, scaledWidth, 80);
+                        g2.setColor(new Color(129, 199, 132));
+                        g.setFont(new Font("arial", Font.BOLD, 24));
+                        drawCenteredString(g, "Fase " + Game.getCurrentLevel() + " concluída!", scaledHeight / 2 - 8);
+                        g2.setColor(Color.WHITE);
+                        g.setFont(new Font("arial", Font.BOLD, 16));
+                        drawCenteredString(g, "Próxima fase: " + Math.min(Game.getCurrentLevel() + 1, MAX_LEVEL), scaledHeight / 2 + 22);
                 }
                 bs.show();
         }
@@ -622,6 +704,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 		}
 
+		if (e.getKeyCode() == KeyEvent.VK_F11) {
+			toggleFullscreen();
+		}
+
 		if (e.getKeyCode() == KeyEvent.VK_F) {
                         if ("NORMAL".equals(gameState)) {
                                 UltimateAbility.cast();
@@ -729,7 +815,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         public void startNewGame() {
                 resetGameOverState();
                 this.levelPlus = 0;
-                this.CUR_LEVEL = 1;
+                CUR_LEVEL = 1;
+                questCompletedPending = false;
+                showLevelTransition = 0;
                 Enemy.enemies = 0;
                 Menu.pause = false;
                 resetPlayerToDefaults();
@@ -757,30 +845,33 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 bestComboThisRun = 1;
         }
 
-        private void advanceToNextLevel() {
-                CUR_LEVEL++;
-                if (CUR_LEVEL == MAX_LEVEL) {
-                        levelPlus += 1;
-                }
-                if (CUR_LEVEL > MAX_LEVEL) {
-                        CUR_LEVEL = 1;
-                }
-                // O progresso de fase encerra a loja aberta (ou level up) para seguir.
-                if (ShopManager.isOpen()) {
-                        ShopManager.close();
-                }
-                if (LevelUpManager.isShowingLevelUp()) {
-                        LevelUpManager.dismiss();
-                }
-                applyProgressBonuses();
-                String newWorld = "level" + CUR_LEVEL + ".png";
-                World.restartGame(newWorld);
-        }
+	/** Avança para a próxima fase (loja encerra e o mapa muda). */
+	public static void advanceToNextLevel() {
+		CUR_LEVEL++;
+		if (CUR_LEVEL == MAX_LEVEL) {
+			instance.levelPlus += 1;
+		}
+		if (CUR_LEVEL > MAX_LEVEL) {
+			CUR_LEVEL = MAX_LEVEL;
+		}
+		// O progresso de fase encerra a loja aberta (ou level up) para seguir.
+		if (ShopManager.isOpen()) {
+			ShopManager.close();
+		}
+		if (LevelUpManager.isShowingLevelUp()) {
+			LevelUpManager.dismiss();
+		}
+		applyProgressBonuses();
+		QuestManager.prepareForLevel(CUR_LEVEL);
+		String newWorld = "level" + CUR_LEVEL + ".png";
+		World.restartGame(newWorld);
+		// Avisos de transição de fase.
+		showLevelTransition = 150;
+	}
 
-        private void applyProgressBonuses() {
+                private static void applyProgressBonuses() {
                 applyDifficultyScalingForCurrentLevel();
-
-                if (this.levelPlus >= 1) {
+                if (instance != null && instance.levelPlus >= 1) {
                         Player.mana = Player.maxMana;
                         Player.life = Player.maxLife;
                         Player.shield = Player.maxShield;
@@ -797,13 +888,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 clampPlayerResources();
         }
 
-        private void applyDifficultyScalingForCurrentLevel() {
+        private static void applyDifficultyScalingForCurrentLevel() {
                 int baseMaxLife;
                 int baseMaxMana;
                 int baseMaxShield;
                 double baseCapacityMultiplier;
 
-                if (this.CUR_LEVEL == MAX_LEVEL) {
+                if (CUR_LEVEL == MAX_LEVEL) {
                         baseMaxLife = 1000;
                         baseMaxMana = 1500;
                         baseMaxShield = 600;
@@ -818,7 +909,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 applyDifficultyScaling(baseMaxLife, baseMaxMana, baseMaxShield, baseCapacityMultiplier);
         }
 
-        private void applyDifficultyScaling(int baseMaxLife, int baseMaxMana, int baseMaxShield,
+        private static void applyDifficultyScaling(int baseMaxLife, int baseMaxMana, int baseMaxShield,
                         double baseCapacityMultiplier) {
                 int scaledMaxLife = (int) Math.round(baseMaxLife * OptionsConfig.getLifeMultiplier());
                 int scaledMaxMana = (int) Math.round(baseMaxMana * OptionsConfig.getManaMultiplier());

@@ -205,7 +205,50 @@ Game.enemies.add(en);
                 Game.entities.add(Game.player);
                 Game.world = new World("/"+level);
                 QuestManager.onLevelLoaded();
+                // Garante o chefe da fase: níveis a partir do 2 têm a missão de
+                // neutralizar o comandante; se o mapa não tiver um boss fixo,
+                // um WARBRINGER é posicionado em um local válido distante do spawn.
+                ensurePhaseBoss(levelNumber);
                 return;
+        }
+
+        private static boolean mapHasBoss() {
+                for (Entity e : Game.entities) {
+                        if (e instanceof com.traduvertgames.entities.Enemy && ((com.traduvertgames.entities.Enemy) e).isBoss()) {
+                                return true;
+                        }
+                }
+                return false;
+        }
+
+        private static void ensurePhaseBoss(int levelNumber) {
+                if (levelNumber < 2 || mapHasBoss()) {
+                        return;
+                }
+                int playerX = (int) (Game.player != null ? Game.player.getX() : 0);
+                int playerY = (int) (Game.player != null ? Game.player.getY() : 0);
+                int tries = 0;
+                while (tries < 400) {
+                        int tx = Game.rand.nextInt(WIDTH);
+                        int ty = Game.rand.nextInt(HEIGHT);
+                        if (!isValidTile(tx, ty)) {
+                                tries++;
+                                continue;
+                        }
+                        int fx = tx * 16;
+                        int fy = ty * 16;
+                        double dx = fx - playerX;
+                        double dy = fy - playerY;
+                        if (dx * dx + dy * dy < 200 * 200) {
+                                tries++;
+                                continue;
+                        }
+                        Enemy boss = new Enemy(fx, fy, 16, 16, Entity.ENEMY_EN,
+                                        Enemy.Variant.WARBRINGER, true);
+                        Game.entities.add(boss);
+                        Game.enemies.add(boss);
+                        return;
+                }
         }
 
         private static int parseLevelNumber(String level) {
