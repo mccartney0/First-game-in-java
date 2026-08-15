@@ -519,12 +519,24 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 			if ("MENU".equals(gameState)) {
 				menu.up = true;
+			} else if ("SHOP".equals(gameState)) {
+				ShopManager.navigateUp();
+			} else if ("LEVELUP".equals(gameState)) {
+				LevelUpManager.navigateUp();
+			} else if ("LEVELSELECT".equals(gameState)) {
+				LevelSelectScreen.navigateUp();
 			}
 		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
 			player.down = true;
 
 			if ("MENU".equals(gameState)) {
 				menu.down = true;
+			} else if ("SHOP".equals(gameState)) {
+				ShopManager.navigateDown();
+			} else if ("LEVELUP".equals(gameState)) {
+				LevelUpManager.navigateDown();
+			} else if ("LEVELSELECT".equals(gameState)) {
+				LevelSelectScreen.navigateDown();
 			}
 		}
 
@@ -552,10 +564,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         player.selectWeaponSlot(6);
                 }
 
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                        this.restartGame = true;
-                        if ("MENU".equals(gameState)) {
-                                menu.enter = true;
+		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+			this.restartGame = true;
+			if ("MENU".equals(gameState)) {
+				menu.enter = true;
+			} else if ("SHOP".equals(gameState)) {
+				ShopManager.purchaseSelected();
+			} else if ("LEVELUP".equals(gameState)) {
+				LevelUpManager.confirmChoice();
+			} else if ("LEVELSELECT".equals(gameState)) {
+				LevelSelectScreen.confirmSelection();
 			}
 		}
 		
@@ -563,7 +581,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			if ("NORMAL".equals(gameState)) {
 				Menu.openPauseScreen();
 			} else if ("SHOP".equals(gameState)) {
-				ShopManager.close();
+				if (ShopManager.isOpen()) {
+					ShopManager.close();
+				}
 			} else if ("LEVELUP".equals(gameState)) {
 				LevelUpManager.dismiss();
 			} else if ("LEVELSELECT".equals(gameState)) {
@@ -586,11 +606,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         }
                 }
 
-                if (e.getKeyCode() == KeyEvent.VK_L) {
-                        if ("NORMAL".equals(gameState)) {
-                                LevelSelectScreen.open();
-                        }
-                }
+		if (e.getKeyCode() == KeyEvent.VK_L) {
+			if ("NORMAL".equals(gameState)) {
+				LevelSelectScreen.open();
+			}
+		}
 
                 if (e.getKeyCode() == KeyEvent.VK_F) {
                         if ("NORMAL".equals(gameState)) {

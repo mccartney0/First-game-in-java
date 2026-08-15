@@ -155,6 +155,30 @@ public final class LevelUpManager {
 			Game.gameState = "NORMAL";
 		}
 
+		/** Navegação exposta para o handler de teclado do Game. */
+		public static void navigateUp() {
+			if (!showingLevelUp) {
+				return;
+			}
+			setChoiceIndex(choiceIndex - 1);
+		}
+
+		/** Navegação exposta para o handler de teclado do Game. */
+		public static void navigateDown() {
+			if (!showingLevelUp) {
+				return;
+			}
+			setChoiceIndex(choiceIndex + 1);
+		}
+
+		/** Confirma a escolha selecionada (Enter). */
+		public static void confirmChoice() {
+			if (!showingLevelUp) {
+				return;
+			}
+			applyChoice(choiceIndex);
+		}
+
 		/** Navega entre as opções com setas. */
 		public static void update() {
 			if (!showingLevelUp) {
@@ -166,13 +190,13 @@ public final class LevelUpManager {
 		}
 		if (Game.getInstance().menu.up) {
 			Game.getInstance().menu.up = false;
-			setChoiceIndex(choiceIndex - 1);
+			navigateUp();
 		} else if (Game.getInstance().menu.down) {
 			Game.getInstance().menu.down = false;
-			setChoiceIndex(choiceIndex + 1);
+			navigateDown();
 		} else if (Game.getInstance().menu.enter) {
 			Game.getInstance().menu.enter = false;
-			applyChoice(choiceIndex);
+			confirmChoice();
 		}
 	}
 

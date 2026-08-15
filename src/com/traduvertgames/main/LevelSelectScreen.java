@@ -58,17 +58,41 @@ public final class LevelSelectScreen {
 		}
 		if (Game.getInstance().menu.up) {
 			Game.getInstance().menu.up = false;
-			selection = (selection - 1 + TOTAL_LEVELS) % TOTAL_LEVELS;
+			navigateUp();
 		} else if (Game.getInstance().menu.down) {
 			Game.getInstance().menu.down = false;
-			selection = (selection + 1) % TOTAL_LEVELS;
+			navigateDown();
 		} else if (Game.getInstance().menu.enter) {
 			Game.getInstance().menu.enter = false;
-			playLevel(selection + 1);
+			confirmSelection();
 		} else if (Game.escapePressed) {
 			Game.escapePressed = false;
 			close();
 		}
+	}
+
+	/** Navegação exposta para o handler de teclado do Game. */
+	public static void navigateUp() {
+		if (!open) {
+			return;
+		}
+		selection = (selection - 1 + TOTAL_LEVELS) % TOTAL_LEVELS;
+	}
+
+	/** Navegação exposta para o handler de teclado do Game. */
+	public static void navigateDown() {
+		if (!open) {
+			return;
+		}
+		selection = (selection + 1) % TOTAL_LEVELS;
+	}
+
+	/** Confirma a seleção (Enter). */
+	public static void confirmSelection() {
+		if (!open) {
+			return;
+		}
+		playLevel(selection + 1);
 	}
 
 	private static void playLevel(int level) {

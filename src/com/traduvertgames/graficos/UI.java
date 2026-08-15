@@ -20,40 +20,40 @@ import com.traduvertgames.quest.QuestManager;
 
 public class UI {
 
-        private static final int BAR_WIDTH = 126;
-        private static final int BAR_HEIGHT = 10;
+        private static final int BAR_WIDTH = 110;
+        private static final int BAR_HEIGHT = 9;
+        private static final int LINE_SPACING = 11;
 
         public void render(Graphics g) {
                 Graphics2D g2 = (Graphics2D) g;
                 g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
-                // Painel compacto no canto inferior esquerdo: não cobre a área de jogo.
+                // Painel pequeno no canto inferior esquerdo: não cobre a área de jogo.
                 // Coordenadas no espaço do buffer de renderização (384x216), escalado depois pela janela.
-                int margin = 4;
+                int margin = 3;
                 int panelX = margin;
-                int panelY = Game.HEIGHT - 54 - margin;
-                int panelWidth = BAR_WIDTH + 24;
-                int panelHeight = 54;
-                g2.setColor(new Color(8, 12, 20, 170));
-                g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 6, 6);
+                int panelHeight = 4 * LINE_SPACING + 6;
+                int panelY = Game.HEIGHT - panelHeight - margin;
+                int panelWidth = BAR_WIDTH + 16;
+                g2.setColor(new Color(6, 9, 16, 150));
+                g2.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 4, 4);
 
-                g2.setFont(new Font("SansSerif", Font.BOLD, 9));
-                g2.setColor(Color.WHITE);
+                g2.setFont(new Font("SansSerif", Font.BOLD, 7));
 
-                int barX = panelX + 10;
-                int barY = panelY + 10;
+                int barX = panelX + 7;
+                int barY = panelY + 5;
                 drawResourceBar(g2, "VIDA", Player.life, Player.maxLife, barX, barY, new Color(244, 67, 54));
-                barY += 11;
+                barY += LINE_SPACING;
                 drawResourceBar(g2, "ESCUDO", Player.shield, Player.maxShield, barX, barY,
                                 new Color(121, 134, 203));
-                barY += 11;
+                barY += LINE_SPACING;
                 drawResourceBar(g2, "MANA", Player.mana, Player.maxMana, barX, barY, new Color(33, 150, 243));
-                barY += 11;
+                barY += LINE_SPACING;
 
                 WeaponType currentWeapon = Game.player != null && Game.player.getCurrentWeaponType() != null
                                 ? Game.player.getCurrentWeaponType()
                                 : WeaponType.BLASTER;
-                drawResourceBar(g2, currentWeapon.getDisplayName().toUpperCase(), Player.weapon, Player.maxWeapon, barX,
+                drawResourceBar(g2, currentWeapon.getShortName().toUpperCase(), Player.weapon, Player.maxWeapon, barX,
                                 barY, currentWeapon.getUiColor());
         }
 
@@ -335,19 +335,18 @@ public class UI {
                         Color fillColor) {
                 double percent = max <= 0 ? 0 : current / max;
                 percent = Math.max(0, Math.min(1, percent));
-                g2.setColor(new Color(0, 0, 0, 160));
-                g2.fillRoundRect(x, y, BAR_WIDTH, BAR_HEIGHT, 6, 6);
-                g2.setColor(new Color(fillColor.getRed(), fillColor.getGreen(), fillColor.getBlue(), 210));
-                g2.fillRoundRect(x, y, (int) (BAR_WIDTH * percent), BAR_HEIGHT, 6, 6);
-                g2.setColor(Color.WHITE);
+                g2.setColor(new Color(0, 0, 0, 180));
+                g2.fillRoundRect(x, y, BAR_WIDTH, BAR_HEIGHT, 4, 4);
+                g2.setColor(new Color(fillColor.getRed(), fillColor.getGreen(), fillColor.getBlue(), 220));
+                g2.fillRoundRect(x, y, (int) (BAR_WIDTH * percent), BAR_HEIGHT, 4, 4);
                 g2.setFont(new Font("SansSerif", Font.BOLD, 7));
-                String text = String.format("%s", label);
-                g2.drawString(text, x + 2, y - 2);
+                g2.setColor(Color.WHITE);
+                g2.drawString(label, x + 3, y + BAR_HEIGHT - 2);
                 if (max > 0) {
                         String value = String.format("%.0f/%.0f", current, max);
                         FontMetrics metrics = g2.getFontMetrics();
-                        int valueX = x + BAR_WIDTH - metrics.stringWidth(value) - 4;
-                        g2.drawString(value, valueX, y - 2);
+                        int valueX = x + BAR_WIDTH - metrics.stringWidth(value) - 3;
+                        g2.drawString(value, valueX, y + BAR_HEIGHT - 2);
                 }
         }
 }

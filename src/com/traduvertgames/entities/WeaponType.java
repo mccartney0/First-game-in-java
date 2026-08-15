@@ -66,9 +66,33 @@ public enum WeaponType {
                 this.unlockedByDefault = unlockedByDefault;
         }
 
-        public String getDisplayName() {
-                return displayName;
-        }
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	/** Nome curto para o HUD in-game. */
+	public String getShortName() {
+		switch (this) {
+		case BLASTER:
+			return "PADRÃO";
+		case ION_RIFLE:
+			return "ÍONS";
+		case SCATTER_CANNON:
+			return "DISPERSOR";
+		case FUSION_LANCE:
+			return "FUSÃO";
+		case ARC_DISRUPTOR:
+			return "ARCO";
+		case SOLAR_CANNON:
+			return "SOLAR";
+		case PLASMA_CUTTER:
+			return "PLASMA";
+		case VOID_MORTAR:
+			return "VAZIO";
+		default:
+			return displayName.toUpperCase();
+		}
+	}
 
         public String getDescription() {
                 return description;

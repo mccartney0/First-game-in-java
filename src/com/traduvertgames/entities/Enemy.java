@@ -2,6 +2,8 @@ package com.traduvertgames.entities;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
@@ -174,8 +176,16 @@ public class Enemy extends Entity {
         this.maxLife = variant.getMaxLife();
         this.life = this.maxLife;
         sprites = new BufferedImage[2];
-        sprites[0] = Game.spritesheet.getSprite(112, 16, 16, 16);
-        sprites[1] = Game.spritesheet.getSprite(112 + 16, 16, 16, 16);
+        if (variant == Variant.PHANTOM) {
+            sprites[0] = buildPhantomSprite(false);
+            sprites[1] = buildPhantomSprite(true);
+        } else if (variant == Variant.GUARDIAN) {
+            sprites[0] = buildGuardianSprite(false);
+            sprites[1] = buildGuardianSprite(true);
+        } else {
+            sprites[0] = Game.spritesheet.getSprite(112, 16, 16, 16);
+            sprites[1] = Game.spritesheet.getSprite(112 + 16, 16, 16, 16);
+        }
         spawnTile = new Vector2i(x / 16, y / 16);
         this.patrolSpeed = BASE_PATROL_SPEED * variant.getSpeedMultiplier();
         this.chaseSpeed = BASE_CHASE_SPEED * variant.getSpeedMultiplier();
@@ -385,10 +395,21 @@ public class Enemy extends Entity {
         }
     }
 
-    /** Caçador furtivo: avança em rajadas e drena escudo e mana do piloto ao acertá-lo. */
+    /** Caçador furtivo: avança em rajadas, fica camuflado longe e drena escudo e mana do piloto ao se aproximar. */
     private void handlePhantomAbility(double distanceToPlayer, boolean canSeePlayer) {
         if (specialCooldown > 0) {
             specialCooldown--;
+        }
+        // Furtividade: longe do piloto, fica camuflado e avança em rajadas rápidas.
+        if (distanceToPlayer > specialRange) {
+            if (frames % 6 == 0 && pathCooldown <= 0) {
+                burstStepTowardPlayer();
+                pathCooldown = 14;
+            }
+            // Rastro de fumaça ao se mover camuflado.
+            if (frames % 8 == 0) {
+                ParticleSystem.trail((int) x + 8, (int) y + 8, new Color(129, 199, 132, 90));
+            }
             return;
         }
         if (!canSeePlayer) {
@@ -404,8 +425,27 @@ public class Enemy extends Entity {
             }
             ParticleSystem.burst((int) x, (int) y, variant.getAuraColor(), 4, 1.2);
         }
-        if (distanceToPlayer > specialRange) {
-            specialCooldown = 20;
+    }
+
+    /** Passo em rajada em direção ao jogador (movimento furtivo do Phantom). */
+    private void burstStepTowardPlayer() {
+        if (Game.player == null) {
+            return;
+        }
+        double dirX = Game.player.getX() - this.getX();
+        double dirY = Game.player.getY() - this.getY();
+        double length = Math.hypot(dirX, dirY);
+        if (length == 0) {
+            return;
+        }
+        double stepX = (dirX / length) * 24;
+        double stepY = (dirY / length) * 24;
+        int targetX = (int) (this.getX() + stepX);
+        int targetY = (int) (this.getY() + stepY);
+        if (World.isFree(targetX, targetY, 0)) {
+            this.setX(targetX);
+            this.setY(targetY);
+            path = null;
         }
     }
 
@@ -416,6 +456,7 @@ public class Enemy extends Entity {
         }
         if (frames % 60 == 0 && life > 0 && life < maxLife) {
             life = Math.min(maxLife, life + 0.5);
+            ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(255, 87, 34, 120), 3, 0.8);
         }
     }
 
@@ -942,10 +983,79 @@ public class Enemy extends Entity {
             g.drawImage(Entity.ENEMY_FEEDBACK, this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
         }
 
+        // Aura distinta por variante, mais evidente para os novos mobs.
+        int auraSize = (variant == Variant.GUARDIAN) ? 14 : 12;
         if (variant != Variant.SCOUT) {
             Color aura = new Color(auraColor.getRed(), auraColor.getGreen(), auraColor.getBlue(), 120);
             g.setColor(aura);
-            g.drawOval(this.getX() + 2 - Camera.x, this.getY() + 2 - Camera.y, 12, 12);
+            g.drawOval(this.getX() + 1 - Camera.x, this.getY() + 1 - Camera.y, auraSize, auraSize);
         }
+        if (variant == Variant.GUARDIAN && state == EnemyState.CHASING && life < maxLife) {
+            // Indicador de regeneração: contorno verde pulsante.
+            if (frames % 60 < 30) {
+                g.setColor(new Color(100, 255, 100, 140));
+                g.drawOval(this.getX() - 1 - Camera.x, this.getY() - 1 - Camera.y, 18, 18);
+            }
+        }
+    }
+
+    /**
+     * Sprite procedural do Phantom: silhueta translúcida esverdeada com olhos
+     * brilhantes e véu de fumaça, distinto do sprite genérico de inimigo.
+     */
+    private static BufferedImage buildPhantomSprite(boolean secondFrame) {
+        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Véu de fumaça na base (ondulante entre frames).
+        g2.setColor(new Color(90, 160, 110, 110));
+        int wave = secondFrame ? 2 : 0;
+        for (int i = 0; i < 12; i += 3) {
+            g2.fillOval(i - 1 + wave, 11 - (i % 6) / 2, 5, 5);
+        }
+
+        // Corpo translúcido.
+        g2.setColor(new Color(129, 199, 132, 200));
+        g2.fillOval(3, 3, 10, 10);
+        g2.setColor(new Color(165, 214, 167, 230));
+        g2.fillOval(4, 4, 8, 7);
+
+        // Olhos esverdeados brilhantes.
+        g2.setColor(new Color(200, 255, 200, 255));
+        g2.fillOval(5, 6, 2, 2);
+        g2.fillOval(9, 6, 2, 2);
+
+        g2.dispose();
+        return image;
+    }
+
+    /**
+     * Sprite procedural do Guardian: tanque blindado laranja com carapaça de
+     * metal e núcleo energético, distinto do sprite genérico de inimigo.
+     */
+    private static BufferedImage buildGuardianSprite(boolean secondFrame) {
+        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Carapaça externa (armadura).
+        g2.setColor(new Color(90, 45, 20));
+        g2.fillOval(1, 2, 14, 12);
+        g2.setColor(new Color(255, 87, 34));
+        g2.fillOval(2, 3, 12, 10);
+
+        // Placas de metal (brilho alternado entre frames).
+        g2.setColor(secondFrame ? new Color(255, 150, 90) : new Color(176, 69, 26));
+        g2.fillOval(3, 4, 4, 4);
+        g2.fillOval(9, 4, 4, 4);
+        g2.fillOval(6, 9, 4, 4);
+
+        // Núcleo energético central.
+        g2.setColor(new Color(255, 230, 150));
+        g2.fillOval(6, 6, 4, 4);
+
+        g2.dispose();
+        return image;
     }
 }
