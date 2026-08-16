@@ -1,6 +1,7 @@
 package com.traduvertgames.world;
 
 import java.awt.Color;
+import com.traduvertgames.dialogue.TraitorNpc;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -12,6 +13,8 @@ import com.traduvertgames.entities.*;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
+import com.traduvertgames.dialogue.CommanderNpc;
+import com.traduvertgames.dialogue.SupportNpcs;
 
 public class World {
 
@@ -20,6 +23,16 @@ public class World {
 	public static final int TILE_SIZE = 16;
 	
 	public World(String path) {
+		// Caminhos absolutos (mapas procedurais do modo infinito) são carregados
+		// diretamente do disco em vez do classpath.
+		if (path != null && path.startsWith("/")) {
+			java.io.File f = new java.io.File(path);
+			if (f.exists()) {
+				loadFromFile(f);
+				TeleportPad.linkPairs();
+				return;
+			}
+		}
 		try {
 			BufferedImage map = ImageIO.read(getClass().getResource(path));
 			int[] pixels = new int[map.getWidth() * map.getHeight()];
@@ -27,18 +40,46 @@ public class World {
 			HEIGHT = map.getHeight();
 			tiles = new Tile[map.getWidth() * map.getHeight()];
 			map.getRGB(0, 0, map.getWidth(), map.getHeight(), pixels, 0, map.getWidth());
-			for (int xx = 0; xx < map.getWidth(); xx++) {
-				for (int yy = 0; yy < map.getHeight(); yy++) {
-					int pixelAtual = pixels[xx + (yy * map.getWidth())];
+			applyMapPixels(pixels, map.getWidth());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		TeleportPad.linkPairs();
+	}
+
+	/** Carrega um mapa a partir de um arquivo PNG absoluto (mapas procedurais). */
+	private void loadFromFile(java.io.File mapFile) {
+		try {
+			BufferedImage map = ImageIO.read(mapFile);
+			int[] pixels = new int[map.getWidth() * map.getHeight()];
+			WIDTH = map.getWidth();
+			HEIGHT = map.getHeight();
+			tiles = new Tile[map.getWidth() * map.getHeight()];
+			map.getRGB(0, 0, map.getWidth(), map.getHeight(), pixels, 0, map.getWidth());
+			applyMapPixels(pixels, map.getWidth());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Interpreta os pixels do mapa e popula tiles, entidades e inimigos.
+	 * Separado do construtor para ser reutilizado por mapas carregados de
+	 * arquivos absolutos (fases procedurais do modo infinito).
+	 */
+	private void applyMapPixels(int[] pixels, int mapWidth) {
+		for (int xx = 0; xx < mapWidth; xx++) {
+			for (int yy = 0; yy < pixels.length / mapWidth; yy++) {
+				int pixelAtual = pixels[xx + (yy * mapWidth)];
 					tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					if (pixelAtual == 0xFF000000) {
 						// Floor
 						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
                                         } else if (pixelAtual == 0xFFFFFFFF) {
                                                 // Parede
-                                                tiles[xx + (yy * map.getWidth())] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
+                                                tiles[xx + (yy * mapWidth)] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
 					} else if (pixelAtual == 0xFF808080) {
-						tiles[xx + (yy * map.getWidth())] = new DestructibleWallTile(xx * 16, yy * 16,
+						tiles[xx + (yy * mapWidth)] = new DestructibleWallTile(xx * 16, yy * 16,
 								Tile.TILE_WALL);
 					} else if (pixelAtual == 0xFF7CB342) {
 						// Grama: terreno rápido (+20% velocidade)
@@ -101,6 +142,18 @@ Game.enemies.add(en);
                                         } else if (pixelAtual == 0xFF795548) {
                                                 // Quest NPC
                                                 Game.entities.add(new QuestNPC(xx * 16, yy * 16, new Color(121, 85, 72)));
+                                        } else if (pixelAtual == 0xFF00897C) {
+                                                // Comandante Ava — NPC interativo (diálogo R)
+                                                Game.entities.add(new CommanderNpc(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFF66BB6A) {
+                                                // Engenheira Nia — NPC interativo (recarga + mana)
+                                                Game.entities.add(SupportNpcs.engineer(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFF5E35B1) {
+                                                // Pesquisador Ivo — NPC interativo (mana + dica)
+                                                Game.entities.add(SupportNpcs.researcher(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFFFF9800) {
+                                                // Armeiro Mercúrio — NPC interativo (arma + vida)
+                                                Game.entities.add(SupportNpcs.armorer(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFFFFB74D) {
                                                 Game.entities.add(new EngineerNPC(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFF7E57C2) {
@@ -133,24 +186,35 @@ Game.enemies.add(en);
                                                                 Enemy.Variant.PHANTOM);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFFFF5722) {
-                                                // Guardian: tanque robusto que regenera vida
-                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
-                                                                Enemy.Variant.GUARDIAN);
-                                                Game.entities.add(en);
-                                                Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFF673AB7) {
-                                                Game.entities.add(new TeleportPad(xx * 16, yy * 16));
-                                        }
-                                        // Floor
-                                }
-                        }
-		} catch (IOException e) {
-			e.printStackTrace();
+					} else if (pixelAtual == 0xFFFF5722) {
+						// Guardian: tanque robusto que regenera vida.
+						// Na fase 7 ele é o chefe do subsolo (boss fixo do mapa).
+						boolean boss7 = QuestManager.getCurrentLevel() == 7;
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+								Enemy.Variant.GUARDIAN, boss7);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFFD01937) {
+						// Supervisor-Prime: a mente da colônia, chefe final da campanha (fase 8).
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+								Enemy.Variant.OVERSEER_PRIME, true);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFFA1887F) {
+						// Técnico Hélio — desertor do subsolo (fase 7)
+						Game.entities.add(new TraitorNpc(xx * 16, yy * 16));
+					} else if (pixelAtual == 0xFF673AB7) {
+						Game.entities.add(new TeleportPad(xx * 16, yy * 16));
+					}
+					// Floor: pixels sem caso específico (spawns de entidades, bordas
+					// decorativas) viram chão caminhável — evita tiles null e
+					// NullPointerException no render ao avançar de fase
+					if (tiles[xx + (yy * WIDTH)] == null) {
+						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+					}
+				}
+			}
 		}
-		// Emparelha os teletransportadores do mapa recém-carregado.
-		TeleportPad.linkPairs();
-	}
 
 	public static boolean isFree(int xNext,int yNext, int zplayer) {
 		final int margin = 1;
@@ -191,9 +255,17 @@ Game.enemies.add(en);
 		}
 	}
 	
+        /** Reinicia o jogo a partir de um mapa PNG em caminho absoluto (modo infinito). */
+        public static void restartGameFromFile(String absolutePath) {
+                restartGameCommon(9, absolutePath);
+        }
+
         public static void restartGame(String level) {
-                int levelNumber = parseLevelNumber(level);
-                QuestManager.prepareForLevel(levelNumber);
+                restartGameCommon(parseLevelNumber(level), "/" + level);
+        }
+
+        /** Núcleo comum de reinício: limpa entidades e carrega o mapa informado. */
+        private static void restartGameCommon(int levelNumber, String mapSource) {
                 TeleportPad.reset();
                 Game.entities.clear();
                 Game.enemies.clear();
@@ -201,12 +273,14 @@ Game.enemies.add(en);
                 Game.enemies = new ArrayList<Enemy>();
                 Game.bullet = new ArrayList<Bullet>();
                 Game.bullets = new ArrayList<BulletShoot>();
+                // Nova fase (inclui ciclos procedurais): zera kills, combo da fase e o timer.
+                Game.resetLevelStats();
                 Game.spritesheet = new Spritesheet("/spritesheet.png");
                 // Passando tamanho dele e posições
                 Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
                 // Adicionar o jogador na lista e ja aparece na tela
                 Game.entities.add(Game.player);
-                Game.world = new World("/"+level);
+                Game.world = new World(mapSource);
                 QuestManager.onLevelLoaded();
                 // Garante o chefe da fase: níveis a partir do 2 têm a missão de
                 // neutralizar o comandante; se o mapa não tiver um boss fixo,
@@ -225,7 +299,9 @@ Game.enemies.add(en);
         }
 
         private static void ensurePhaseBoss(int levelNumber) {
-                if (levelNumber < 2 || mapHasBoss()) {
+                // Fases 7 (Subsolo) e 8 (Núcleo Central) já carregam o chefe
+                // fixo diretamente do mapa (GUARDIAN e OVERSEER-PRIME).
+                if (levelNumber == 7 || levelNumber == 8 || levelNumber < 2 || mapHasBoss()) {
                         return;
                 }
                 int playerX = (int) (Game.player != null ? Game.player.getX() : 0);
@@ -332,6 +408,9 @@ Game.enemies.add(en);
 				if(xx<0 || yy < 0 || xx >= WIDTH || yy>= HEIGHT)
 					continue;
 				Tile tile = tiles[xx + (yy * WIDTH)];
+				if (tile == null) {
+					continue;
+				}
 				tile.render(g);
 			}
 		}

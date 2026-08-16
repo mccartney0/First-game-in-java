@@ -3,6 +3,7 @@ package com.traduvertgames.quest;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.traduvertgames.dialogue.InteractiveNpc;
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.QuestBeacon;
@@ -28,6 +29,8 @@ public final class QuestManager {
             "Núcleo da Colônia",
             "Datacenter Nexus",
             "Torre do Supervisor",
+            "Subsolo da Colônia",
+            "Núcleo Central",
             "Modo Sobrevivência"
     };
 
@@ -39,15 +42,20 @@ public final class QuestManager {
 
     /** Texto exibido ao concluir a campanha e entrar no modo sobrevivência. */
     public static final String SURVIVAL_INTRO =
-            "Campanha concluída!\nO Supervisor caiu, mas a colônia não está segura.\n" +
-            "Resista às ondas infinitas.";
+            "Campanha concluída!\nA mente da colônia foi destruída, mas restos das máquinas\n" +
+            "continuam se reagrupando. Resista às ondas infinitas.";
 
     public static String getPhaseTitle(int level) {
         if (level <= 0) {
             return "Arena de Treino";
         }
         if (level >= PHASE_TITLES.length) {
-            return "Fase " + level;
+            // Fases procedurais do modo infinito: título com a profundidade do ciclo atual.
+            int depth = Game.getStaticLevelPlus();
+            if (depth < 1) {
+                depth = 1;
+            }
+            return "Fase Procedural " + depth;
         }
         return PHASE_TITLES[level];
     }
@@ -74,19 +82,34 @@ public final class QuestManager {
     private static RPGObjective createObjectiveForLevel(int level) {
         switch (level) {
         case 1:
-            return new CollectArtifactsObjective();
+            // Fase 1: conversar com a Comandante Ava e coletar os artefatos.
+            return new ContactObjective();
         case 2:
-            return new BossHuntObjective();
+            // Fase 2: falar com a Engenheira Nia antes de caçar o Warbringer.
+            return new DialogueObjective(new BossHuntObjective(), "Engenheira Nia");
         case 3:
-            return new RitualObjective();
+            // Fase 3: pesquisar com Ivo antes de ativar o ritual.
+            return new DialogueObjective(new RitualObjective(), "Pesquisador Ivo");
         case 4:
-            return new RescueObjective();
+            // Fase 4: missão de resgate com apoio do Armeiro.
+            return new DialogueObjective(new RescueObjective(), "Armeiro Mercúrio");
         case 5:
-            return new DataRecoveryObjective();
+            // Fase 5: recuperar os dados com ajuda do Ivo.
+            return new DialogueObjective(new DataRecoveryObjective(), "Pesquisador Ivo");
         case 6:
-            // Fase final: derrotar o OVERSEER, o chefe supervisor.
-            return new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor");
+            // Fase 6: falar com Ava antes de derrubar o OVERSEER, o chefe supervisor.
+            return new DialogueObjective(
+                    new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor"),
+                    "Comandante Ava");
         case 7:
+            // Fase 7: falar com Ava, ouvir o desertor do subsolo, sabotar os
+            // geradores e então destruir o Guardião do Subsolo.
+            return new DialogueObjective(new SabotageObjective(), "Comandante Ava");
+        case 8:
+            // Fase final da campanha: o briefing final da Ava e a destruição
+            // do OVERSEER PRIME, a mente que comanda todas as máquinas.
+            return new InfiltratorObjective();
+        case 9:
             // Modo sobrevivência pós-campanha: ondas infinitas.
             return new NullObjective();
         default:
@@ -124,6 +147,16 @@ public final class QuestManager {
         currentObjective.onEnemyKilled(enemy);
     }
 
+    /** Notifica a missão ativa que o jogador iniciou uma conversa. */
+    public static void notifyDialogueStarted(InteractiveNpc npc) {
+        currentObjective.onDialogueStarted(npc);
+    }
+
+    /** Notifica a missão ativa que o jogador concluiu a conversa. */
+    public static void notifyDialogueFinished(InteractiveNpc npc) {
+        currentObjective.onDialogueFinished(npc);
+    }
+
     public static void notifyBossSpotted() {
         if (currentObjective instanceof BossHuntObjective) {
             ((BossHuntObjective) currentObjective).registerBossPresence();
@@ -142,8 +175,29 @@ public final class QuestManager {
         return currentObjective.getProgressText();
     }
 
+    /** Título do personagem/alvo que o objetivo pede para localizar (usado no waypoint). */
+    public static String getTargetHint() {
+        return currentObjective.getTargetHint();
+    }
+
     public static boolean isObjectiveComplete() {
         return currentObjective.isComplete();
+    }
+
+    /**
+     * Estado lógico da missão da fase atual, para o save.
+     * O formato é opaco e definido por cada objetivo ({@link RPGObjective#serializeState()}).
+     */
+    public static String serializeObjectiveState() {
+        return currentObjective.serializeState();
+    }
+
+    /**
+     * Aplica o estado salvo à missão da fase atual.
+     * Deve ser chamado depois de {@link #prepareForLevel(int)} para a fase salva.
+     */
+    public static void deserializeObjectiveState(String state) {
+        currentObjective.deserializeState(state);
     }
 
     public static void update() {

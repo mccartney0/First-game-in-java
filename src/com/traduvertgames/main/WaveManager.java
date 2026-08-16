@@ -35,6 +35,16 @@ public final class WaveManager {
 	private static int arenaTimer = 0;
 	private static boolean arenaMode = false;
 
+	/** Placar de ondas sobrevividas do modo sobrevivência (por partida).
+	 *  Lido/gravado por {@link SaveManager} junto com o slot de save. */
+	private static int survivalRecord = 0;
+	/** Ondas concluídas na partida atual (usado para placar e drops). */
+	private static int wavesSurvived = 0;
+
+	/** True quando um chefe do modo infinito foi derrotado: o próximo ciclo
+	 *  solta um respiro garantido (vida + escudo) para premiar a vitória. */
+	private static boolean bossDefeated = false;
+
 	private WaveManager() {
 	}
 
@@ -68,7 +78,69 @@ public final class WaveManager {
 		arenaMode = true;
 		arenaWave = 1;
 		arenaTimer = 180;
+		wavesSurvived = 0;
 		announce("ARENA INFINITA", new Color(255, 87, 34));
+	}
+
+	/** Registra uma onda concluída: atualiza placar, drops e escalada. */
+	public static void onWaveCleared() {
+		wavesSurvived++;
+		if (wavesSurvived > survivalRecord) {
+			survivalRecord = wavesSurvived;
+		}
+		// Chefe a cada 5 ondas concluídas.
+		if (wavesSurvived > 0 && wavesSurvived % 5 == 0) {
+			int[] spot = findSpawnSpot();
+			if (spot != null) {
+				Enemy boss = Enemy.spawnArenaBoss(spot[0], spot[1], wavesSurvived);
+				Game.entities.add(boss);
+				Game.enemies.add(boss);
+			}
+			announce("CHEFE — Onda " + wavesSurvived, new Color(233, 30, 99));
+			SoundManager.play(SoundManager.Event.BOSS_ALERT);
+		}
+		// Drop de respiro a cada 3 ondas concluídas. Quando um chefe do modo
+		// infinito é derrotado, um respiro garantido é solto no próximo ciclo
+		// como recompensa pela vitória.
+		if (wavesSurvived > 0 && wavesSurvived % 3 == 0) {
+			dropBreather();
+		}
+		if (bossDefeated) {
+			bossDefeated = false;
+			dropBreather();
+			announce("CHEFE DERROTADO — SUPRIMENTOS!", new Color(255, 214, 0));
+		}
+	}
+
+	/** Soltura um LifePack e um NanoMedkit perto do jogador como recompensa. */
+	private static void dropBreather() {
+		int px = (int) Game.player.getX();
+		int py = (int) Game.player.getY();
+		Game.entities.add(new com.traduvertgames.entities.LifePack(px + 24, py + 12, 16, 16,
+				com.traduvertgames.entities.Entity.LIFEPACK_EN));
+		Game.entities.add(new com.traduvertgames.entities.NanoMedkit(px - 24, py + 12));
+		announce("SUPRIMENTOS!", new Color(102, 187, 106));
+		SoundManager.play(SoundManager.Event.PICKUP);
+	}
+
+	public static int getSurvivalRecord() {
+		return survivalRecord;
+	}
+
+	public static void setSurvivalRecord(int value) {
+		survivalRecord = Math.max(0, value);
+	}
+
+	/** Marca a derrota de um chefe do modo infinito (respiro garantido no
+	 *  próximo ciclo). Chamado pelo jogo quando o boss da arena morre. */
+	public static void onArenaBossDefeated() {
+		if (arenaMode) {
+			bossDefeated = true;
+		}
+	}
+
+	public static int getWavesSurvived() {
+		return wavesSurvived;
 	}
 
 	public static void stopArena() {
@@ -97,6 +169,8 @@ public final class WaveManager {
 		arenaMode = false;
 		arenaWave = 0;
 		arenaTimer = 0;
+		wavesSurvived = 0;
+		bossDefeated = false;
 	}
 
 	public static void update() {
@@ -143,25 +217,58 @@ public final class WaveManager {
 			arenaTimer--;
 			return;
 		}
-		if (Game.enemies.size() == 0) {
+		boolean waveCleared = Game.enemies.size() == 0;
+		if (waveCleared && !waveClearedAnnounced) {
+			waveClearedAnnounced = true;
+			onWaveCleared();
 			arenaWave++;
 			announce("Onda " + arenaWave, new Color(255, 193, 7));
-			arenaTimer = 180;
+			arenaTimer = arenaWaveInterval();
 		}
 		if (arenaTimer <= 0 && Game.enemies.size() < MAX_ENEMIES_ON_MAP) {
 			spawnArenaEnemies();
-			arenaTimer = 240;
+			arenaTimer = arenaSpawnInterval();
 		}
 	}
+
+	/** Intervalo de respiro entre ondas: as 5 primeiras são mais longas para o
+	 *  jogador se adaptar; a partir da 6ª encurta gradualmente até o piso. */
+	private static int arenaWaveInterval() {
+		if (arenaWave <= 5) {
+			return 210;
+		}
+		return Math.max(130, 210 - (arenaWave - 6) * 5);
+	}
+
+	/** Intervalo entre lotes de spawn dentro da onda: começa lento e aperta
+	 *  aos poucos, estabilizando a partir da onda 10. */
+	private static int arenaSpawnInterval() {
+		if (arenaWave <= 5) {
+			return 270;
+		}
+		if (arenaWave <= 10) {
+			return 240 - (arenaWave - 5) * 20;
+		}
+		return 140;
+	}
+
+	private static boolean waveClearedAnnounced = false;
 
 	private static void spawnArenaEnemies() {
 		int count = 2 + arenaWave / 2;
 		for (int i = 0; i < count; i++) {
+			if (Game.enemies.size() >= MAX_ENEMIES_ON_MAP) {
+				return;
+			}
 			int[] spot = findSpawnSpot();
 			if (spot == null) {
 				return;
 			}
 			Enemy enemy = Enemy.spawnRandomVariant(spot[0], spot[1]);
+			// Escalada de dificuldade: mais vida e dano conforme a onda atual.
+			// Curva suavizada (0.22/0.09 por onda) para o arco do modo infinito
+			// permanecer desafiador sem ficar impossível em ondas profundas.
+			enemy.boost(1.0 + wavesSurvived * 0.22, 1.0 + wavesSurvived * 0.09);
 			Game.entities.add(enemy);
 			Game.enemies.add(enemy);
 		}

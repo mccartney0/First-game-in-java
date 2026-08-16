@@ -121,6 +121,10 @@ public class Menu {
 				handleLoadSelection();
 				break;
 			case HOW_TO_PLAY:
+				// A tela do tutorial informa "Enter para voltar"; voltar ao
+				// menu principal em vez de apenas resetar a seleção (o jogador
+				// ficava preso na tela do tutorial).
+				currentScreen = Screen.MAIN;
 				currentOption = 0;
 				break;
 			case EXIT_CONFIRM:
@@ -520,15 +524,31 @@ public class Menu {
 			if (SaveManager.hasSlotSave(slotId)) {
 				int level = SaveManager.getSlotLevel(slotId);
 				int slotScore = SaveManager.getSlotScore(slotId);
-				detail = String.format("  (Fase %d — Pontuação %d)", level, slotScore);
+				int slotSurvival = SaveManager.getSlotSurvivalRecord(slotId);
+				detail = String.format("  (Fase %d — Pontuação %d", level, slotScore);
+				if (slotSurvival > 0) {
+					detail += String.format(" — Sobrevivência: %d ondas", slotSurvival);
+				}
+				detail += ")";
 			} else {
 				detail = "  (vazio)";
 			}
 			lines[i] = LOAD_SLOT_LABELS[i] + detail;
 		}
-		lines[LOAD_SLOT_LABELS.length] = "Voltar";
+			lines[LOAD_SLOT_LABELS.length] = "Voltar";
 
-		int maxWidth = headerWidth;
+			// Rodapé: melhor partida acumulada do save (bestRun v3).
+			// Atualiza o recorde acumulado a partir do disco antes de exibir.
+			SaveManager.refreshBestRun();
+			String bestRunLine = "";
+			if (SaveManager.hasBestRun()) {
+				bestRunLine = String.format("Melhor partida: %d kills — %s — combo x%d",
+						SaveManager.getBestRunKills(),
+						Game.formatLevelTime(SaveManager.getBestRunTimeMs()),
+						SaveManager.getBestRunCombo());
+			}
+
+			int maxWidth = headerWidth;
 		for (String line : lines) {
 			maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(line));
 		}
@@ -543,19 +563,79 @@ public class Menu {
 		g.drawString(header, (screenWidth - headerWidth) / 2, headerBaseline);
 
 		g.setFont(optionFont);
-		int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
-		for (int i = 0; i < lines.length; i++) {
-			int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
-			if (currentOption == i) {
-				g.setColor(Color.yellow);
-				g.drawString(">", arrowX, baselineY);
-				g.setColor(Color.white);
+			int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
+			for (int i = 0; i < lines.length; i++) {
+				int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
+				if (currentOption == i) {
+					g.setColor(Color.yellow);
+					g.drawString(">", arrowX, baselineY);
+					g.setColor(Color.white);
+				}
+				if (i < LOAD_SLOT_LABELS.length && !SaveManager.hasSlotSave(i + 1)) {
+					g.setColor(Color.LIGHT_GRAY);
+				}
+				g.drawString(lines[i], textX, baselineY);
 			}
-			if (i < LOAD_SLOT_LABELS.length && !SaveManager.hasSlotSave(i + 1)) {
-				g.setColor(Color.LIGHT_GRAY);
+
+			// Rodapé dourado com a melhor partida do save, alinhado abaixo dos slots.
+			if (!bestRunLine.isEmpty()) {
+				Font bestFont = new Font("arial", Font.BOLD, 15);
+				g.setFont(bestFont);
+				g.setColor(new Color(255, 214, 0));
+				int bestWidth = g.getFontMetrics().stringWidth(bestRunLine);
+				g.drawString(bestRunLine, (screenWidth - bestWidth) / 2,
+						headerBaseline + OPTIONS_LINE_HEIGHT * (lines.length + 1) + 6);
 			}
-			g.drawString(lines[i], textX, baselineY);
+
+		// Progresso de missão de cada slot abaixo do rótulo, com quebra de linha
+		// para caber na largura do card e sem sobrepor a opção seguinte.
+		Font objectiveFont = new Font("arial", Font.PLAIN, 13);
+		g.setFont(objectiveFont);
+		g.setColor(new Color(180, 200, 255));
+		int maxObjectiveWidth = maxWidth;
+		for (int i = 0; i < LOAD_SLOT_LABELS.length; i++) {
+			if (SaveManager.hasSlotSave(i + 1)) {
+				String objective = SaveManager.getSlotObjectiveText(i + 1);
+				if (!objective.isEmpty()) {
+					java.util.List<String> wrapped = wrapText(objective, g.getFontMetrics(), maxObjectiveWidth);
+					int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1) + 18;
+					for (String segment : wrapped) {
+						g.drawString(segment, textX, baselineY);
+						baselineY += g.getFontMetrics().getHeight();
+					}
+				}
+			}
 		}
+	}
+
+	private static java.util.List<String> wrapText(String text, java.awt.FontMetrics metrics, int maxWidth) {
+		java.util.List<String> lines = new java.util.ArrayList<String>();
+		if (text == null || text.isEmpty() || metrics.stringWidth(text) <= maxWidth) {
+			lines.add(text == null ? "" : text);
+			return lines;
+		}
+		StringBuilder current = new StringBuilder();
+		for (int i = 0; i < text.length(); i++) {
+			current.append(text.charAt(i));
+			if (metrics.stringWidth(current.toString()) > maxWidth) {
+				// Volta ao último espaço para não quebrar palavra.
+				int lastSpace = current.length() - 1;
+				while (lastSpace > 0 && current.charAt(lastSpace) != ' ') {
+					lastSpace--;
+				}
+				if (lastSpace <= 0) {
+					lines.add(current.toString());
+					current = new StringBuilder();
+				} else {
+					lines.add(current.substring(0, lastSpace).trim());
+					current = new StringBuilder(text.substring(i - (current.length() - 1 - lastSpace)));
+				}
+			}
+		}
+		if (current.length() > 0) {
+			lines.add(current.toString());
+		}
+		return lines;
 	}
 
 	private void renderHowToPlay(Graphics g) {

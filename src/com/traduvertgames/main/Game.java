@@ -32,10 +32,13 @@ import com.traduvertgames.entities.Player;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.graficos.MiniMap;
+import com.traduvertgames.graficos.VictoryCutscene;
+import com.traduvertgames.graficos.MissionBanner;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
 import com.traduvertgames.quest.QuestManager;
+import com.traduvertgames.dialogue.DialogueManager;
 
 public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
 
@@ -54,7 +57,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private static Game instance;
 
         private static int CUR_LEVEL = 1;
-        public static int MAX_LEVEL = 6;
+        public static int MAX_LEVEL = 8;
 	private BufferedImage image;
 
 	public static List<Entity> entities;
@@ -93,6 +96,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private static int bestComboRecord = 1;
         private static int bestComboThisRun = 1;
 
+        /** Kills acumuladas apenas na fase atual (para o card de estatísticas pós-fase). */
+        private static int killsThisLevel = 0;
+        /** Momento (ms) em que a fase atual começou, para o timer do card de estatísticas. */
+        private static long levelStartTime = System.currentTimeMillis();
+
 	private static boolean overlayExpanded = false;
 
 	/** True enquanto a loja está aberta por causa de um objetivo concluído. */
@@ -106,6 +114,22 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
+	}
+
+	/** True quando o jogador já falou com o desertor do subsolo (fase 7). */
+	private static boolean traitorTalked = false;
+
+	public static boolean isTraitorTalked() {
+		return traitorTalked;
+	}
+
+	public static void resetTraitorTalked() {
+		traitorTalked = false;
+	}
+
+	/** Define a flag do desertor do subsolo (usada pelo TraitorNpc e pelos saves). */
+	public static void setTraitorTalked(boolean value) {
+		traitorTalked = value;
 	}
         private static boolean fullscreen = false;
         /** Frames restantes de exibição do aviso "Fase X concluída — próxima fase". */
@@ -161,8 +185,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
         }
 
-        /** Marcador para tecla Escape: usado por telas que consomem o ESC (loja, seleção de fases). */
-        public static boolean escapePressed = false;
+	/** Marcador para tecla Escape: usado por telas que consomem o ESC (loja, seleção de fases). */
+	public static boolean escapePressed = false;
+
+	/** Enter/Escape consumidos pela cutscene de vitória no update(). */
+	private boolean enter = false;
+	private boolean escape = false;
 
         public static int getHighScore() {
                 return highScore;
@@ -219,6 +247,42 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return bestComboThisRun;
         }
 
+        /** Kills realizadas desde o início da fase atual. */
+        public static int getKillsThisLevel() {
+                return killsThisLevel;
+        }
+
+        /** Duração da fase atual em milissegundos (0 se ainda não iniciou). */
+        public static long getLevelTimeMs() {
+                long elapsed = System.currentTimeMillis() - levelStartTime;
+                return Math.max(0, elapsed);
+        }
+
+        /** Zera kills e timer ao iniciar uma nova fase (inclui ciclos do modo infinito). */
+        public static void resetLevelStats() {
+                // Antes de zerar os contadores da fase, captura a melhor partida
+                // (bestRun global do save) com base na fase que acabou de terminar.
+                com.traduvertgames.main.SaveManager.captureBestRun();
+                killsThisLevel = 0;
+                bestComboThisRun = 1;
+                comboMultiplier = 1;
+                comboTimer = 0;
+                levelStartTime = System.currentTimeMillis();
+        }
+
+        /** Inicia o timer da fase (usado por World.restartGame ao trocar de mapa). */
+        public static void startLevelTimer() {
+                levelStartTime = System.currentTimeMillis();
+        }
+
+        /** Formata milissegundos como mm:ss para o card de estatísticas. */
+        public static String formatLevelTime(long ms) {
+                long totalSeconds = ms / 1000;
+                long minutes = totalSeconds / 60;
+                long seconds = totalSeconds % 60;
+                return String.format("%d:%02d", minutes, seconds);
+        }
+
         public static void setBestComboThisRun(int value) {
                 bestComboThisRun = Math.max(1, value);
         }
@@ -252,8 +316,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return this.levelPlus;
         }
 
+        /** Acesso estático seguro à profundidade do modo infinito (sem jogo ativo = 0). */
+        public static int getStaticLevelPlus() {
+                Game game = getInstance();
+                return game != null ? game.levelPlus : 0;
+        }
+
         public static void registerEnemyKill() {
                 LevelUpManager.grantKillXp();
+                killsThisLevel++;
                 int points = BASE_SCORE_PER_KILL * comboMultiplier;
                 score += points;
                 if (score > highScore) {
@@ -269,15 +340,21 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
         }
 
-        public static void registerPlayerDamage() {
-                if (comboMultiplier > 1) {
-                        bestComboRecord = Math.max(bestComboRecord, comboMultiplier);
-                }
-                comboMultiplier = 1;
-                comboTimer = 0;
-        }
+	public static void registerPlayerDamage() {
+		if (comboMultiplier > 1) {
+			bestComboRecord = Math.max(bestComboRecord, comboMultiplier);
+		}
+		comboMultiplier = 1;
+		comboTimer = 0;
+		damageOverlayFrames = Math.max(damageOverlayFrames, DAMAGE_OVERLAY_DURATION);
+	}
 
-        public static double getDamageTakenMultiplier() {
+		/** Duração (frames) da vinheta vermelha exibida quando o jogador toma dano. */
+	private static final int DAMAGE_OVERLAY_DURATION = 12;
+	/** Frames restantes da vinheta de dano. */
+	private static int damageOverlayFrames = 0;
+
+	public static double getDamageTakenMultiplier() {
                 return OptionsConfig.getDamageTakenMultiplier();
         }
 
@@ -369,7 +446,30 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// DEVE rodar antes da lógica do estado NORMAL: se o avanço rodasse depois,
 		// o bloco NORMAL reabriria a loja (objetivo ainda parece completo) e o jogo
 		// ficaria preso na loja para sempre — era o bug do ESC piscando.
-		if (questCompletedPending) {
+		// Cutscene de vitória: encerra a campanha ao concluir a fase 6.
+		if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
+			// Card de estatísticas pós-fase: intercepta Enter/ESC enquanto visível.
+			com.traduvertgames.graficos.PhaseStatsScreen.update(enter, escape);
+			enter = false;
+			escape = false;
+		} else if (VictoryCutscene.isShowing()) {
+			com.traduvertgames.graficos.VictoryCutscene.update(enter, escape);
+			enter = false;
+			escape = false;
+		} else if (questCompletedPending && CUR_LEVEL == 8) {
+			// Fim da campanha: cutscene de vitória antes de entrar no modo sobrevivência.
+			questCompletedPending = false;
+			if (SaveManager.saveCurrentGame()) {
+				System.out.println("Jogo salvo no slot " + SaveManager.activeSlot + " (campanha concluída)!");
+			}
+			// Recompensa final da campanha: arma de elite desbloqueada.
+			grantCampaignReward();
+			com.traduvertgames.graficos.VictoryCutscene.start();
+		} else if (questCompletedPending) {
+			// Conclusão da fase 7: recompensa de arma da campanha (Canhão de Vazio).
+			if (CUR_LEVEL == 7) {
+				grantCampaignReward();
+			}
 			questCompletedPending = false;
 			advanceToNextLevel();
 			if (QuestManager.isObjectiveComplete()) {
@@ -400,9 +500,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				Entity e = entities.get(i);
 				// Durante o onboarding, inimigos ficam paralisados para o novato
 				// praticar sem risco (Player continua atualizando normalmente).
-				if (e instanceof Enemy && OnboardingManager.isEnemyPaused()) {
-					continue;
-				}
+if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused())) {
+						continue;
+					}
 				e.update();
 			}
 			OnboardingManager.update();
@@ -414,9 +514,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                                 bullet.get(i).update();
                         }
 
-			QuestManager.update();
-			ParticleSystem.update();
-			FloatingText.update();
+				QuestManager.update();
+				ParticleSystem.update();
+				FloatingText.update();
+				MissionBanner.update();
 
                         if (QuestManager.isObjectiveComplete()) {
                                 onObjectiveComplete();
@@ -451,8 +552,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}else if ("MENU".equals(gameState)) {
 				//Menu
 				//Iniciando a camera junto com o jogador
-				player.updateCamera();
-				menu.update();
+				if (!showInitialWeaponSelect) {
+					player.updateCamera();
+					menu.update();
+				}
 	} else if ("LEVELUP".equals(gameState)) {
 			LevelUpManager.update();
 			// Se o level-up fechou neste frame (Enter/ESC) e havia uma fase
@@ -483,6 +586,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// Marca que a fase foi concluída: ao fechar a loja (compra ou ESC),
 		// o jogo avança automaticamente para a próxima fase.
 		questCompletedPending = true;
+		// Feedback narrativo: banner central de missão concluída com o título da fase.
+		com.traduvertgames.graficos.MissionBanner.reset();
+		com.traduvertgames.graficos.MissionBanner.showComplete(QuestManager.getPhaseTitle(CUR_LEVEL));
+		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LEVELUP);
 		// O level-up tem prioridade sobre a loja: se o jogador subiu de nível
 		// no mesmo instante em que concluiu a fase, a loja aguarda o level-up
 		// ser resolvido antes de abrir (evita oscilação entre as telas).
@@ -521,6 +628,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// ui.render(g) (coordenadas do buffer, por baixo dos overlays) foi removido.
 		ParticleSystem.render(g);
 		FloatingText.render(g, SCALE);
+		MissionBanner.render(g);
 		UltimateAbility.render(g);
 		g.dispose();
 
@@ -547,8 +655,22 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 // ui.renderOverlay é desenhado por último para que a HUD compacta
                 // (e os cards do painel tático) fiquem sobre o overlay escuro da loja
                 // e sobre os demais painéis, sem parecer esmaecida no fundo.
-		ui.renderOverlay((Graphics2D) g);
-		OnboardingManager.render(g);
+	ui.renderOverlay((Graphics2D) g);
+	com.traduvertgames.graficos.MissionHud.render((Graphics2D) g);
+		com.traduvertgames.graficos.VictoryCutscene.render(g, SCALE);
+	com.traduvertgames.graficos.PhaseStatsScreen.render(g, SCALE);
+	if (damageOverlayFrames > 0) {
+		int alpha = Math.max(0, (int) (70.0 * damageOverlayFrames / DAMAGE_OVERLAY_DURATION));
+		g.setColor(new Color(180, 30, 30, alpha));
+		g.fillRect(0, 0, scaledWidth, scaledHeight);
+		damageOverlayFrames--;
+	}
+	DialogueManager.render(g);
+	OnboardingManager.render(g);
+	// A tela de escolha de arma inicial é desenhada por cima de tudo (inclusive
+	// do menu de pausa): durante a seleção o estado é MENU com pause=true, mas o
+	// menu principal não deve aparecer por cima das opções de arma.
+	renderInitialWeaponSelect(g, scaledWidth, scaledHeight);
 
 		if ("GAMEOVER".equals(gameState)) {
                         Graphics2D g2 = (Graphics2D) g;
@@ -575,7 +697,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         drawCenteredString(g, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 112);
 
                 } else if ("MENU".equals(gameState)) {
-                        menu.render(g);
+                        if (!showInitialWeaponSelect) {
+                                menu.render(g);
+                        }
+                        // Durante a seleção de arma inicial o menu não deve
+                        // desenhar nada: o overlay da própria tela de arma
+                        // escurece o fundo e desenha a lista por cima.
                 } else if ("SHOP".equals(gameState)) {
                         // A HUD compacta é desenhada pelo overlay (por cima do painel da loja).
                         Menu.renderPauseScreen(g);
@@ -672,8 +799,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	@Override
 	// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
-	public void keyPressed(KeyEvent e) {
-
+		public void keyPressed(KeyEvent e) {
 		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
 			if (OnboardingManager.isActive()) {
 				OnboardingManager.skip();
@@ -689,6 +815,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 
 		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+			if (showInitialWeaponSelect) {
+				initialWeaponSelection = Math.max(0, initialWeaponSelection - 1);
+				return;
+			}
 			player.up = true;
 
 			if ("MENU".equals(gameState)) {
@@ -701,6 +831,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				LevelSelectScreen.navigateUp();
 			}
 		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+			if (showInitialWeaponSelect) {
+				initialWeaponSelection = Math.min(getUnlockedInitialWeapons().length - 1,
+						initialWeaponSelection + 1);
+				return;
+			}
 			player.down = true;
 
 			if ("MENU".equals(gameState)) {
@@ -743,6 +878,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
 
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+			if (showInitialWeaponSelect) {
+				getInstance().applyInitialWeaponSelection();
+				return;
+			}
 			this.restartGame = true;
 			if ("MENU".equals(gameState)) {
 				menu.enter = true;
@@ -755,10 +894,23 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 		}
 
+		if (e.getKeyCode() == KeyEvent.VK_ESCAPE && VictoryCutscene.isShowing()) {
+			this.escape = true;
+		}
+
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
 			// do menu de pausa ao segurar a tecla).
 			if (ShopManager.isEscOnCooldown()) {
+				return;
+			}
+			// ESC na tela de escolha de arma inicial: cancela e volta ao menu
+			// principal. Não usar Menu.closePauseScreen() aqui: ele define
+			// gameState="NORMAL" e despausaria a fase — o returnToMainMenu já
+			// zera a pausa e coloca o jogo no MENU corretamente.
+			if (showInitialWeaponSelect) {
+				showInitialWeaponSelect = false;
+				returnToMainMenu();
 				return;
 			}
 			if ("NORMAL".equals(gameState)) {
@@ -781,7 +933,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				returnToMainMenu();
 			}
 		}
-                if (e.getKeyCode() == KeyEvent.VK_T) {
+		if (e.getKeyCode() == KeyEvent.VK_T) {
                         if ("NORMAL".equals(gameState)) {
                                 Game.saveGame = true;
                                 levelPlus=0;
@@ -821,7 +973,30 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                                 Game.toggleOverlayExpanded();
                         }
                 }
+
+                if (e.getKeyCode() == KeyEvent.VK_R) {
+                        if (DialogueManager.isActive()) {
+                                DialogueManager.advance();
+                        } else if ("NORMAL".equals(gameState)) {
+                                DialogueManager.startNearestDialogue();
+                        }
+                }
+
+		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+				if (DialogueManager.isActive()) {
+					DialogueManager.advance();
+				} else if (VictoryCutscene.isShowing()) {
+					this.enter = true;
+				}
+			}
+
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                        if (DialogueManager.isActive()) {
+                                DialogueManager.advance();
+                        }
+                }
         }
+
 
 	@Override
 			public void keyReleased(KeyEvent e) {
@@ -908,32 +1083,121 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return false;
         }
 
-        public void startNewGame() {
-                resetGameOverState();
-                this.levelPlus = 0;
+	public void startNewGame() {
+		resetGameOverState();
+		// Novo jogo: remove o companion ativo (persistência apenas por save).
+		com.traduvertgames.entities.Companion.clear();
+		this.levelPlus = 0;
 		CUR_LEVEL = 1;
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
-                Enemy.enemies = 0;
-                Menu.pause = false;
-                resetPlayerToDefaults();
-                applyDifficultyToPlayerStats();
-                resetScoreState();
-                World.restartGame("level1.png");
-                LevelUpManager.reset();
-                WaveManager.reset();
-                DashAbility.reset();
-                UltimateAbility.reset();
-                LootGuarantee.reset();
+			Enemy.enemies = 0;
+			Menu.pause = false;
+		resetPlayerToDefaults();
+		applyDifficultyToPlayerStats();
+		resetScoreState();
+		resetTraitorTalked();
+			World.restartGame("level1.png");
+			LevelUpManager.reset();
+			WaveManager.reset();
+			DashAbility.reset();
+			UltimateAbility.reset();
+			LootGuarantee.reset();
 		ParticleSystem.clear();
-		FloatingText.clear();
+			FloatingText.clear();
+		// Antes do onboarding, o jogador escolhe sua arma inicial entre as
+		// desbloqueadas — a escolha fica registrada no arsenal persistente.
+		startInitialWeaponSelect();
+	}
+
+	/**
+	 * Recompensa de arma concedida ao concluir fases da campanha (7 e 8).
+	 * Fase 7: Morteiro do Vazio. Fase 8 (fim da campanha): Drone Sentinela.
+	 */
+	private static void grantCampaignReward() {
+		WeaponType reward = CUR_LEVEL == 7 ? WeaponType.VOID_MORTAR : WeaponType.DRONE_SENTINEL;
+		if (Game.player != null && !Game.player.hasWeaponUnlocked(reward)) {
+			Game.player.unlockWeapon(reward);
+			FloatingText.show("NOVA ARMA: " + reward.getDisplayName().toUpperCase(),
+					Game.WIDTH * Game.SCALE / 2, Game.SCALE * 40, new java.awt.Color(255, 214, 10), 240);
+			com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LEVELUP);
+		}
+	}
+
+	/** Abre a tela de escolha de arma inicial (pausa o jogo no estado NORMAL). */
+	private static void startInitialWeaponSelect() {
+		showInitialWeaponSelect = true;
+		initialWeaponSelection = 0;
+		gameState = "MENU";
+		Menu.pause = true;
+	}
+
+	private static final WeaponType[] INITIAL_WEAPON_CATALOG = new WeaponType[] {
+		WeaponType.BLASTER, WeaponType.ION_RIFLE, WeaponType.SCATTER_CANNON,
+		WeaponType.FUSION_LANCE, WeaponType.ARC_DISRUPTOR, WeaponType.SOLAR_CANNON,
+		WeaponType.PLASMA_CUTTER, WeaponType.VOID_MORTAR, WeaponType.BOOMERANG_ARCANO,
+		WeaponType.CHAIN_ARC, WeaponType.DRONE_SENTINEL
+	};
+
+	/** Armas desbloqueadas que aparecem na tela de escolha de arma inicial. */
+	private static WeaponType[] getUnlockedInitialWeapons() {
+		java.util.List<WeaponType> unlocked = new java.util.ArrayList<WeaponType>();
+		for (WeaponType type : INITIAL_WEAPON_CATALOG) {
+			if (com.traduvertgames.entities.Player.isWeaponUnlocked(type)) {
+				unlocked.add(type);
+			}
+		}
+		return unlocked.toArray(new WeaponType[0]);
+	}
+
+	/** Aplica a arma inicial selecionada e entra na arena de treino. */
+	private void applyInitialWeaponSelection() {
+		WeaponType[] catalog = getUnlockedInitialWeapons();
+		if (catalog.length > 0 && initialWeaponSelection >= 0
+				&& initialWeaponSelection < catalog.length) {
+			Player.setPersistentCurrentWeapon(catalog[initialWeaponSelection]);
+		}
+		showInitialWeaponSelect = false;
+		Menu.pause = false;
 		// O onboarding roda em uma arena de treino separada (sem itens de
 		// missão nem inimigos); ao concluir, loadFirstPhase() carrega a fase 1 real.
 		World.restartGame("training.png");
 		OnboardingManager.start();
 		gameState = "NORMAL";
-        }
+	}
+
+	private static boolean showInitialWeaponSelect = false;
+	private static int initialWeaponSelection = 0;
+
+	/** Desenha a tela de escolha de arma inicial sobre o buffer do jogo. */
+	private static void renderInitialWeaponSelect(Graphics g, int width, int height) {
+		if (!showInitialWeaponSelect) {
+			return;
+		}
+		g.setColor(new Color(0, 0, 0, 200));
+		g.fillRect(0, 0, width, height);
+		WeaponType[] catalog = getUnlockedInitialWeapons();
+		java.awt.Font titleFont = new java.awt.Font("arial", java.awt.Font.BOLD, 20);
+		java.awt.Font optionFont = new java.awt.Font("arial", java.awt.Font.BOLD, 14);
+		g.setFont(titleFont);
+		g.setColor(new Color(255, 214, 0));
+		String title = "Escolha sua arma inicial";
+		g.drawString(title, (width - g.getFontMetrics().stringWidth(title)) / 2, height / 2 - 60);
+		g.setFont(optionFont);
+		int totalHeight = catalog.length * 22;
+		int startY = (height - totalHeight) / 2;
+		for (int i = 0; i < catalog.length; i++) {
+			WeaponType type = catalog[i];
+			g.setColor(i == initialWeaponSelection ? java.awt.Color.yellow : java.awt.Color.white);
+			String label = (i == initialWeaponSelection ? "> " : "  ") + type.getDisplayName();
+			g.drawString(label, (width - g.getFontMetrics().stringWidth(label)) / 2, startY + i * 22);
+		}
+		g.setColor(new Color(170, 170, 170));
+		String hint = "Up/Down para navegar — Enter para confirmar — Esc para voltar ao menu";
+		g.setFont(new java.awt.Font("arial", java.awt.Font.PLAIN, 11));
+		g.drawString(hint, (width - g.getFontMetrics().stringWidth(hint)) / 2, startY + totalHeight + 20);
+	}
 
 	/**
 	 * Carrega a fase 1 real após o onboarding na arena de treino: o mapa da
@@ -981,7 +1245,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	public static void advanceToNextLevel() {
 		CUR_LEVEL++;
 		if (CUR_LEVEL > MAX_LEVEL) {
-			// Pós-campanha: mantém a fase 6 (Torre do Supervisor) e entra no
+			// Pós-campanha: mantém a fase 8 (Núcleo Central) e entra no
 			// modo sobrevivência com ondas infinitas e dificuldade crescente.
 			CUR_LEVEL = MAX_LEVEL;
 			instance.levelPlus += 1;
@@ -1008,6 +1272,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		QuestManager.prepareForLevel(CUR_LEVEL);
 		String newWorld = "level" + CUR_LEVEL + ".png";
 		World.restartGame(newWorld);
+		// Card de estatísticas da fase que acabou de terminar (kills, tempo, combo).
+		com.traduvertgames.graficos.PhaseStatsScreen.show();
 		// Avisos de transição de fase.
 		showLevelTransition = 150;
 	}
@@ -1020,6 +1286,58 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		WaveManager.startArena();
 		showLevelTransition = 180;
+		// Card de estatísticas do ciclo anterior do modo infinito (se não for a
+		// primeira entrada, que já ganha a cutscene de vitória da campanha).
+		if (instance != null && instance.levelPlus > 1) {
+			com.traduvertgames.graficos.PhaseStatsScreen.show();
+		}
+	}
+
+	/**
+	 * Entra no modo infinito pela primeira vez (a partir do seletor de fases).
+	 * Gera o primeiro mapa procedural, entra no modo arena e exibe o banner de
+	 * transição do modo.
+	 */
+	public static void enterInfiniteMode() {
+		if (instance != null) {
+			instance.levelPlus = 1;
+		}
+		QuestManager.prepareForLevel(MAX_LEVEL + 1);
+		startProceduralLevel(1);
+		showLevelTransition = 180;
+	}
+
+	/**
+	 * Avança para a próxima fase procedural do modo infinito: novo mapa gerado
+	 * pela profundidade (semente determinística), arena reiniciada (mantendo o
+	 * recorde de ondas) e bônus de recursos do piloto aplicados.
+	 * Chamado ao derrotar um chefe enquanto o modo arena estiver ativo.
+	 */
+	public static void advanceProceduralPhase() {
+		if (instance == null) {
+			return;
+		}
+		instance.levelPlus += 1;
+		int depth = instance.levelPlus;
+		QuestManager.prepareForLevel(MAX_LEVEL + 1);
+		applyProgressBonuses();
+		// Card de estatísticas do ciclo que acabou de terminar.
+		com.traduvertgames.graficos.PhaseStatsScreen.show();
+		startProceduralLevel(depth);
+		showLevelTransition = 180;
+	}
+
+	/** Carrega o mapa procedural da profundidade informada. */
+	private static void startProceduralLevel(int depth) {
+		try {
+			java.io.File mapFile = com.traduvertgames.world.ProceduralLevelGenerator.generate(depth);
+			String absPath = mapFile.getAbsolutePath();
+			com.traduvertgames.world.World.restartGameFromFile(absPath);
+		} catch (Exception error) {
+			error.printStackTrace();
+			// Fallback: mapa fixo do Núcleo Central em caso de falha de geração.
+			World.restartGame("level8.png");
+		}
 	}
 
 	private static void applyProgressBonuses() {
@@ -1041,13 +1359,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 clampPlayerResources();
         }
 
-        private static void applyDifficultyScalingForCurrentLevel() {
+                private static void applyDifficultyScalingForCurrentLevel() {
                 int baseMaxLife;
                 int baseMaxMana;
                 int baseMaxShield;
                 double baseCapacityMultiplier;
-
-                if (CUR_LEVEL == MAX_LEVEL) {
+                if (CUR_LEVEL > MAX_LEVEL) {
                         // Fase final: a cada ciclo de sobrevivência (levelPlus),
                         // os recursos máximos do piloto crescem para compensar
                         // as ondas cada vez mais agressivas.
@@ -1056,13 +1373,21 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         baseMaxMana = 1500 + 300 * survivalDepth;
                         baseMaxShield = 600 + 100 * survivalDepth;
                         baseCapacityMultiplier = 4.0;
-                } else {
+                                } else {
                         baseMaxLife = 100;
                         baseMaxMana = 500;
                         baseMaxShield = 150;
                         baseCapacityMultiplier = 1.0;
                 }
-
+                // Agressividade e recursos do piloto crescem no arco final da campanha
+                // (fases 7 e 8), refletindo o esforço da colônia para deter a IA.
+                if (CUR_LEVEL >= 7 && CUR_LEVEL <= MAX_LEVEL) {
+                        int finalStretch = CUR_LEVEL - 6;
+                        baseMaxLife += 10 * finalStretch;          // piloto mais resiliente
+                        baseMaxMana += 50 * finalStretch;
+                        baseMaxShield += 15 * finalStretch;
+                        baseCapacityMultiplier += 0.25 * finalStretch;
+                }
                 applyDifficultyScaling(baseMaxLife, baseMaxMana, baseMaxShield, baseCapacityMultiplier);
         }
 
@@ -1145,6 +1470,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();
+		DialogueManager.stop();
+		MissionBanner.reset();
+		VictoryCutscene.stop();
+		damageOverlayFrames = 0;
+		showInitialWeaponSelect = false;
 		if (this.menu != null) {
 			this.menu.resetToMain();
 		}

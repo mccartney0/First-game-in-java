@@ -7,7 +7,7 @@ import java.awt.Graphics;
 import com.traduvertgames.quest.QuestManager;
 
 /**
- * Tela de seleção de fases com atalho do menu: apresenta as 5 fases do jogo
+ * Tela de seleção de fases com atalho do menu: apresenta as 8 fases do jogo
  * e permite reiniciar em qualquer uma delas (perdendo os recursos da partida
  * atual, como um treino livre).
  */
@@ -19,14 +19,17 @@ import com.traduvertgames.main.OnboardingManager;
 
 public final class LevelSelectScreen {
 
-	private static final int TOTAL_LEVELS = 6;
+	private static final int TOTAL_LEVELS = 9;
 	private static final String[] LEVEL_NAMES = {
 			"Setor Alpha — Coleta de artefatos",
 			"Câmara do Warbringer — Caçada ao chefe",
 			"Círculo do Ritual — Ritual sombrio",
 			"Núcleo da Colônia — Resgate",
 			"Datacenter Nexus — Recuperação de dados",
-			"Torre do Supervisor — Queda do Supervisor"
+			"Torre do Supervisor — Queda do Supervisor",
+			"Subsolo da Colônia — Sabotagem dos geradores",
+			"Núcleo Central — Destruição da IA",
+			"Modo Infinito — Fases Procedurais"
 	};
 
 	private static int selection = 0;
@@ -104,18 +107,24 @@ public final class LevelSelectScreen {
 			return;
 		}
 		System.out.println("[LSS] playLevel(" + level + ") selecionado; gameState=" + Game.gameState);
-		game.setCurrentLevel(level);
 		// Cancela qualquer avanço de fase pendente da loja anterior.
 		Game.clearQuestPending();
 		Game.player.resetPersistentArsenal();
 		com.traduvertgames.entities.Player.resetBaseStats();
+		Game.resetTraitorTalked();
 		Enemy.enemies = 0;
 		Game.setScore(0);
 		LevelUpManager.reset();
 		DashAbility.reset();
 		UltimateAbility.reset();
 		WaveManager.reset();
-		com.traduvertgames.world.World.restartGame("level" + level + ".png");
+		// Opção 9: modo infinito — fases procedurais geradas por semente.
+		if (level == TOTAL_LEVELS) {
+			Game.enterInfiniteMode();
+		} else {
+			game.setCurrentLevel(level);
+			com.traduvertgames.world.World.restartGame("level" + level + ".png");
+		}
 		// Trocar de fase abandona a arena de treino — o onboarding não deve
 		// continuar ativo por cima da nova fase (bug do painel fantasma).
 		OnboardingManager.stop();

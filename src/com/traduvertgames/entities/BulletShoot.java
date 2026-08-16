@@ -10,8 +10,8 @@ import com.traduvertgames.world.World;
 
 public class BulletShoot extends Entity {
 
-    private final double dx;
-    private final double dy;
+    public final double dx;
+    public final double dy;
     private final double speed;
     private final Color overrideColor;
 
@@ -47,6 +47,17 @@ public class BulletShoot extends Entity {
         }
 
         if (fromEnemy) {
+            // O companion ativo intercepta o projétil antes do jogador: absorve
+            // o impacto (com dano parcial ao próprio) salvando o piloto.
+            com.traduvertgames.entities.Companion companion = com.traduvertgames.entities.Companion.getActive();
+            if (companion != null && Entity.isColliding(this, companion)) {
+                companion.applyDamage(this.damage * 0.75);
+                com.traduvertgames.graficos.ParticleSystem.spark(
+                        (int) (companion.getX() + 6), (int) (companion.getY() + 6),
+                        new Color(255, 255, 200));
+                Game.bullets.remove(this);
+                return;
+            }
             if (Entity.isColliding(this, Game.player)) {
                 double scaledDamage = damage * Game.getDamageTakenMultiplier();
                 Game.player.applyDamage(scaledDamage);
@@ -67,7 +78,15 @@ public class BulletShoot extends Entity {
         g.fillOval(this.getX() - Camera.x, this.getY() - Camera.y, width, height);
     }
 
-    private boolean hitWall() {
+    /**
+     * Projéteis persistentes (ex.: bumerangue, relâmpago em cadeia) não são
+     * consumidos no primeiro impacto e continuam existindo para novas colisões.
+     */
+    public boolean isPersistent() {
+        return false;
+    }
+
+    public boolean hitWall() {
         int centerX = this.getX() + width / 2;
         int centerY = this.getY() + height / 2;
         if (World.damageDestructibleWallByPixel(centerX, centerY, damage)) {

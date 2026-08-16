@@ -54,7 +54,6 @@ public final class OptionsConfig {
     /** Ganho master dos efeitos em dB (0 = normal; cada passo = 2 dB). */
     private static int soundVolumeDb = 0;
     private static Difficulty difficulty = Difficulty.NORMAL;
-
     private OptionsConfig() {
     }
 
