@@ -33,7 +33,9 @@ public final class SoundManager {
 		SHOP,
 		WAVE,
 		TUTORIAL_STEP,
-		TUTORIAL_DONE
+		TUTORIAL_DONE,
+		COMPANION_SHOT,
+		COMPANION_PURCHASE
 	}
 
 	private static final Map<Event, String> FILES = new HashMap<>();
@@ -53,6 +55,8 @@ public final class SoundManager {
 		FILES.put(Event.WAVE, "/sounds/wave.wav");
 		FILES.put(Event.TUTORIAL_STEP, "/sounds/tutorial_step.wav");
 		FILES.put(Event.TUTORIAL_DONE, "/sounds/tutorial_done.wav");
+		FILES.put(Event.COMPANION_SHOT, "/sounds/laser.wav");
+		FILES.put(Event.COMPANION_PURCHASE, "/sounds/levelup.wav");
 	}
 
 	/** Pool de clips por evento: cada chamada play() devolve o clip ao pool. */

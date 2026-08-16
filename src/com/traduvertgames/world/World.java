@@ -35,12 +35,15 @@ public class World {
 		}
 		try {
 			BufferedImage map = ImageIO.read(getClass().getResource(path));
+			if (map == null) {
+				throw new IOException("Mapa não encontrado no classpath: " + path);
+			}
 			int[] pixels = new int[map.getWidth() * map.getHeight()];
 			WIDTH = map.getWidth();
 			HEIGHT = map.getHeight();
 			tiles = new Tile[map.getWidth() * map.getHeight()];
 			map.getRGB(0, 0, map.getWidth(), map.getHeight(), pixels, 0, map.getWidth());
-			applyMapPixels(pixels, map.getWidth());
+			applyMapPixels(pixels, map.getWidth(), map.getHeight());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
@@ -51,45 +54,59 @@ public class World {
 	private void loadFromFile(java.io.File mapFile) {
 		try {
 			BufferedImage map = ImageIO.read(mapFile);
+			if (map == null) {
+				throw new IOException("Mapa não encontrado: " + mapFile.getAbsolutePath());
+			}
 			int[] pixels = new int[map.getWidth() * map.getHeight()];
 			WIDTH = map.getWidth();
 			HEIGHT = map.getHeight();
 			tiles = new Tile[map.getWidth() * map.getHeight()];
 			map.getRGB(0, 0, map.getWidth(), map.getHeight(), pixels, 0, map.getWidth());
-			applyMapPixels(pixels, map.getWidth());
+			applyMapPixels(pixels, map.getWidth(), map.getHeight());
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
 	}
 
 	/**
-	 * Interpreta os pixels do mapa e popula tiles, entidades e inimigos.
-	 * Separado do construtor para ser reutilizado por mapas carregados de
-	 * arquivos absolutos (fases procedurais do modo infinito).
-	 */
-	private void applyMapPixels(int[] pixels, int mapWidth) {
+		 * Interpreta os pixels do mapa e popula tiles, entidades e inimigos.
+		 * Separado do construtor para ser reutilizado por mapas carregados de
+		 * arquivos absolutos (fases procedurais do modo infinito).
+		 *
+		 * Os parâmetros mapWidth/mapHeight são passados explicitamente (em vez
+		 * de derivar a altura de pixels.length / mapWidth) para evitar leituras
+		 * fora dos limites quando o array de pixels não é múltiplo exato da
+		 * largura — caso de mapas PNG com dimensões incompatíveis após merges.
+		 */
+	private void applyMapPixels(int[] pixels, int mapWidth, int mapHeight) {
 		for (int xx = 0; xx < mapWidth; xx++) {
-			for (int yy = 0; yy < pixels.length / mapWidth; yy++) {
-				int pixelAtual = pixels[xx + (yy * mapWidth)];
-					tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+			for (int yy = 0; yy < mapHeight; yy++) {
+				int idx = xx + (yy * mapWidth);
+				if (idx >= pixels.length) {
+					continue;
+				}
+				int tileIdx = xx + (yy * WIDTH);
+				if (tileIdx >= tiles.length || tileIdx < 0) {
+					continue;
+				}
+				int pixelAtual = pixels[idx];
 					if (pixelAtual == 0xFF000000) {
 						// Floor
-						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
-                                        } else if (pixelAtual == 0xFFFFFFFF) {
-                                                // Parede
-                                                tiles[xx + (yy * mapWidth)] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
+			} else if (pixelAtual == 0xFFFFFFFF) {
+						// Parede
+						tiles[tileIdx] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
 					} else if (pixelAtual == 0xFF808080) {
-						tiles[xx + (yy * mapWidth)] = new DestructibleWallTile(xx * 16, yy * 16,
+						tiles[tileIdx] = new DestructibleWallTile(xx * 16, yy * 16,
 								Tile.TILE_WALL);
 					} else if (pixelAtual == 0xFF7CB342) {
 						// Grama: terreno rápido (+20% velocidade)
-						tiles[xx + (yy * WIDTH)] = new GrassTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+						tiles[tileIdx] = new GrassTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					} else if (pixelAtual == 0xFF6D4C41) {
 						// Lama: terreno lento (-30% velocidade)
-						tiles[xx + (yy * WIDTH)] = new MudTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+						tiles[tileIdx] = new MudTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					} else if (pixelAtual == 0xFFB0BEC5) {
 						// Gelo: terreno escorregadio (inércia)
-						tiles[xx + (yy * WIDTH)] = new IceTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+						tiles[tileIdx] = new IceTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					} else if (pixelAtual == 0xFF0026FF) {
 						// Player
 						Game.player.setX(xx * 16);
@@ -209,8 +226,8 @@ Game.enemies.add(en);
 					// Floor: pixels sem caso específico (spawns de entidades, bordas
 					// decorativas) viram chão caminhável — evita tiles null e
 					// NullPointerException no render ao avançar de fase
-					if (tiles[xx + (yy * WIDTH)] == null) {
-						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+					if (tiles[tileIdx] == null) {
+						tiles[tileIdx] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					}
 				}
 			}

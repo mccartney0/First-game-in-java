@@ -21,7 +21,10 @@ public final class ShopManager {
 			ARMA("Desbloquear a próxima arma", 2500),
 			DRONE_SCOUT("Drone batedor (atira sozinho)", 3200),
 			SHIELD_BOT("Drone de escudo (+2 escudo/s)", 2600),
-			FAIRY("Fada curadora (+1 vida/s)", 2800);
+			FAIRY("Fada curadora (+1 vida/s)", 2800),
+			SKIN_DOURADO("Skin do companion: Dourado", 1200),
+			SKIN_NEON("Skin do companion: Neon ciano", 1500),
+			SKIN_CARMESIM("Skin do companion: Carmesim", 1800);
 
 		public final String label;
 		public final int price;
@@ -182,6 +185,36 @@ public final class ShopManager {
 					com.traduvertgames.entities.Companion.CompanionType.FAIRY, -1);
 			purchaseFeedback = "Fada curadora acoplada!";
 			break;
+		case SKIN_DOURADO:
+			if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.DOURADO)) {
+				Game.addScore(-item.price);
+				purchaseFeedback = "Skin Dourado aplicada ao companion!";
+				SoundManager.play(SoundManager.Event.COMPANION_PURCHASE);
+			} else {
+				purchaseSucceeded = false;
+				purchaseFeedback = "Compre um companion antes da skin!";
+			}
+			break;
+		case SKIN_NEON:
+			if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.NEON)) {
+				Game.addScore(-item.price);
+				purchaseFeedback = "Skin Neon aplicada ao companion!";
+				SoundManager.play(SoundManager.Event.COMPANION_PURCHASE);
+			} else {
+				purchaseSucceeded = false;
+				purchaseFeedback = "Compre um companion antes da skin!";
+			}
+			break;
+		case SKIN_CARMESIM:
+			if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.CARMESIM)) {
+				Game.addScore(-item.price);
+				purchaseFeedback = "Skin Carmesim aplicada ao companion!";
+				SoundManager.play(SoundManager.Event.COMPANION_PURCHASE);
+			} else {
+				purchaseSucceeded = false;
+				purchaseFeedback = "Compre um companion antes da skin!";
+			}
+			break;
 		default:
 			purchaseSucceeded = false;
 			break;
@@ -193,6 +226,17 @@ public final class ShopManager {
 			close();
 		}
 		return;
+	}
+
+	private static boolean applyCompanionSkin(
+			com.traduvertgames.entities.Companion.CompanionSkin skin) {
+		com.traduvertgames.entities.Companion active =
+				com.traduvertgames.entities.Companion.getActive();
+		if (active == null) {
+			return false;
+		}
+		active.setSkin(skin);
+		return true;
 	}
 
 	private static boolean unlockNextWeapon() {

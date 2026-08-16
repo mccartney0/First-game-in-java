@@ -28,6 +28,21 @@ public class Companion extends Entity {
 		FAIRY;
 	}
 
+	/** Skins de customização compráveis na loja — cada skin altera a cor e o
+	 * estilo visual do companion (o comportamento do tipo permanece o mesmo). */
+	public enum CompanionSkin {
+		/** Cor original de cada tipo (padrão). */
+		PADRAO,
+		/** Dourado brilhante: corpo dourado com núcleo branco. */
+		DOURADO,
+		/** Cyber neon: corpo ciano com anel pulsante. */
+		NEON,
+		/** Carmesim: corpo vermelho com detalhe laranja. */
+		CARMESIM;
+	}
+
+	private static final int PULSE_INTERVAL_FRAMES = 12;
+
 	private static final double ORBIT_RADIUS = 24.0;
 	private static final double ORBIT_SPEED = 0.06;
 	private static final int SCOUT_FIRE_INTERVAL_FRAMES = 20;
@@ -36,9 +51,11 @@ public class Companion extends Entity {
 	private static final int SUPPORT_INTERVAL_FRAMES = 60;
 
 	private CompanionType type;
+	private CompanionSkin skin;
 	private double orbitAngle;
 	private int fireCooldown;
 	private int supportCooldown;
+	private int pulseFrame;
 	private double hp;
 
 	private static Companion active;
@@ -46,9 +63,11 @@ public class Companion extends Entity {
 	private Companion(CompanionType type) {
 		super(0, 0, 12, 12, null);
 		this.type = type;
+		this.skin = CompanionSkin.PADRAO;
 		this.orbitAngle = 0;
 		this.fireCooldown = 0;
 		this.supportCooldown = 0;
+		this.pulseFrame = 0;
 		this.hp = BASE_HP;
 		active = this;
 	}
@@ -94,6 +113,16 @@ public class Companion extends Entity {
 		return type;
 	}
 
+	/** @return skin de customização atual deste companion. */
+	public CompanionSkin getSkin() {
+		return skin;
+	}
+
+	/** Aplica a skin de customização (persistida no save). */
+	public void setSkin(CompanionSkin skin) {
+		this.skin = skin;
+	}
+
 	@Override
 	public void update() {
 		Player player = Game.player;
@@ -121,6 +150,7 @@ public class Companion extends Entity {
 		if (remainingFrames() % 3 == 0) {
 			ParticleSystem.trail((int) (x + width / 2.0), (int) (y + height / 2.0), colorForType());
 		}
+		pulseFrame = (pulseFrame + 1) % PULSE_INTERVAL_FRAMES;
 
 		switch (type) {
 		case SCOUT:
@@ -184,6 +214,10 @@ public class Companion extends Entity {
 		bullet.setMask(0, 0, 4, 4);
 		Game.bullets.add(bullet);
 		fireCooldown = SCOUT_FIRE_INTERVAL_FRAMES;
+		// Faísca visual no disparo do scout.
+		ParticleSystem.spark((int) originX, (int) originY, colorForType());
+		com.traduvertgames.main.SoundManager.play(
+				com.traduvertgames.main.SoundManager.Event.COMPANION_SHOT);
 	}
 
 	private void updateShieldBot() {
@@ -193,6 +227,9 @@ public class Companion extends Entity {
 		}
 		if (Player.shield < Player.maxShield) {
 			Player.shield = Math.min(Player.shield + 2, Player.maxShield);
+			// Pulso de escudo ao regenerar.
+			ParticleSystem.pulse((int) (x + width / 2.0), (int) (y + height / 2.0),
+					colorForType());
 		}
 		supportCooldown = SUPPORT_INTERVAL_FRAMES;
 	}
@@ -204,11 +241,15 @@ public class Companion extends Entity {
 		}
 		if (Player.life < Player.maxLife) {
 			Player.life = Math.min(Player.life + 1, Player.maxLife);
+			// Brilho de cura ao regenerar.
+			ParticleSystem.spark((int) (x + width / 2.0), (int) (y + height / 2.0),
+					colorForType());
 		}
 		supportCooldown = SUPPORT_INTERVAL_FRAMES;
 	}
 
-	private Color colorForType() {
+	/** Cor base do tipo, ignorando a skin. */
+	private Color baseColorForType() {
 		switch (type) {
 		case SHIELD_BOT:
 			return new Color(90, 160, 255);
@@ -220,11 +261,34 @@ public class Companion extends Entity {
 		}
 	}
 
+	/** Cor final do companion conforme a skin de customização ativa. */
+	private Color colorForType() {
+		if (skin == null || skin == CompanionSkin.PADRAO) {
+			return baseColorForType();
+		}
+		switch (skin) {
+		case DOURADO:
+			return new Color(255, 214, 10);
+		case NEON:
+			return new Color(0, 232, 255);
+		case CARMESIM:
+			return new Color(231, 76, 60);
+		default:
+			return baseColorForType();
+		}
+	}
+
 	@Override
 	public void render(Graphics g) {
 		int renderX = this.getX() - Camera.x;
 		int renderY = this.getY() - Camera.y;
 		Color color = colorForType();
+		// Anel pulsante das skins DOURADO e NEON.
+		if (skin == CompanionSkin.DOURADO || skin == CompanionSkin.NEON) {
+			int pulse = pulseFrame < PULSE_INTERVAL_FRAMES / 2 ? 2 : 4;
+			g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 120));
+			g.drawOval(renderX - pulse, renderY - pulse, width + pulse * 2, height + pulse * 2);
+		}
 		// Aura de suporte.
 		g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 80));
 		g.fillOval(renderX - 5, renderY - 5, width + 10, height + 10);
