@@ -92,6 +92,7 @@ public final class SaveManager {
 		slot.put("melhorComboSessao", Game.getBestComboThisRun());
 		slot.put("armaAtual", Player.getCurrentWeaponOrdinal());
 		slot.put("armasDesbloqueadas", Player.getWeaponUnlockMask());
+		slot.put("survivalRecord", com.traduvertgames.main.WaveManager.getSurvivalRecord());
 
 		for (WeaponType type : WeaponType.values()) {
 			slot.put("energiaArma_" + type.name(), clampDouble(Player.getStoredEnergyForType(type)));
@@ -107,6 +108,9 @@ public final class SaveManager {
 		Map<String, Object> progress = buildProgressMap(game);
 		slot.put("session", session);
 		slot.put("progress", progress);
+		// O recorde de sobrevivência também fica em session para exibição rápida
+		// no menu de carregar sem precisar desaninhar o mapa.
+		slot.put("survivalRecord", com.traduvertgames.main.WaveManager.getSurvivalRecord());
 		slot.put("timestamp", currentTimestamp());
 		// Remove as chaves antigas agora duplicadas dentro de session.
 		for (String key : session.keySet()) {
@@ -227,6 +231,8 @@ public final class SaveManager {
 			OnboardingManager.stop();
 			LevelUpManager.reset();
 			WaveManager.reset();
+			// Recorde de sobrevivência restaurado do save (preservado entre sessões).
+			WaveManager.setSurvivalRecord(toInt(session.get("survivalRecord")));
 			DashAbility.reset();
 			UltimateAbility.reset();
 			LootGuarantee.reset();
@@ -407,7 +413,19 @@ public final class SaveManager {
 		return "Fase " + savedLevel + ": " + levelTitle + " (em andamento)";
 	}
 
+	/** Recorde de ondas do modo sobrevivência do slot, ou 0 se vazio. */
+	public static int getSlotSurvivalRecord(int slotId) {
+		Map<String, Object> root = loadRoot();
+		List<Map<String, Object>> slots = getSlots(root);
+		Map<String, Object> slot = findSlot(slots, slotId);
+		if (slot == null) {
+			return 0;
+		}
+		return toInt(getSession(slot).get("survivalRecord"));
+	}
+
 	/** Retorna a pontuação salva em um slot, ou -1 se vazio. */
+
 	public static int getSlotScore(int slotId) {
 		Map<String, Object> root = loadRoot();
 		List<Map<String, Object>> slots = getSlots(root);

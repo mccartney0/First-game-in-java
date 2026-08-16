@@ -712,9 +712,15 @@ public class Player extends Entity {
                 return currentWeapon;
         }
 
-        public boolean hasWeaponUnlocked(WeaponType type) {
-                return type != null && unlockedWeapons.contains(type);
-        }
+	public boolean hasWeaponUnlocked(WeaponType type) {
+		return type != null && unlockedWeapons.contains(type);
+	}
+
+	/** Versão estática usada fora do ciclo de instância (ex.: tela de arma inicial). */
+	public static boolean isWeaponUnlocked(WeaponType type) {
+		return type != null && persistentUnlockedWeapons != null
+				&& persistentUnlockedWeapons.contains(type);
+	}
 
         public void unlockWeapon(WeaponType type) {
                 if (type != null && !unlockedWeapons.contains(type)) {
@@ -883,11 +889,19 @@ public class Player extends Entity {
                 }
         }
 
-        public static void resetPersistentArsenal() {
-                persistentInitialized = false;
-                ensurePersistentDefaults();
-                syncActivePlayer();
-        }
+	public static void resetPersistentArsenal() {
+		persistentInitialized = false;
+		ensurePersistentDefaults();
+		syncActivePlayer();
+	}
+
+	/** Define a arma inicial persistente (usado pela seleção de arma no novo jogo).
+	 *  A arma só é aplicada se estiver desbloqueada; caso contrário vira BLASTER. */
+	public static void setPersistentCurrentWeapon(WeaponType type) {
+		persistentCurrentWeapon = (persistentUnlockedWeapons != null && persistentUnlockedWeapons.contains(type)) ? type
+				: WeaponType.BLASTER;
+		syncActivePlayer();
+	}
 
         public static void resetBaseStats() {
                 maxLife = 100;

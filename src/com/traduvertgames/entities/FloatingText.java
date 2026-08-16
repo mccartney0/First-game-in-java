@@ -17,7 +17,12 @@ public final class FloatingText {
 
 	/** Mostra um texto flutuante na posição informada com a cor dada. */
 	public static void show(String text, int x, int y, Color color) {
-		items.add(new Item(text, x, y, color));
+		show(text, x, y, color, 45);
+	}
+
+	/** Mostra um texto flutuante com duração de vida personalizada (em frames). */
+	public static void show(String text, int x, int y, Color color, int life) {
+		items.add(new Item(text, x, y, color, life));
 		// Limita a quantidade para não sobrecarregar a renderização.
 		if (items.size() > 64) {
 			items.remove(0);
@@ -60,10 +65,15 @@ public final class FloatingText {
 		int life = 45;
 
 		Item(String text, int x, int y, Color color) {
+			this(text, x, y, color, 45);
+		}
+
+		Item(String text, int x, int y, Color color, int life) {
 			this.text = text;
 			this.x = x;
 			this.y = y;
 			this.color = color;
+			this.life = life;
 		}
 	}
 

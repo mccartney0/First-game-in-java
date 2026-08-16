@@ -35,6 +35,12 @@ public final class WaveManager {
 	private static int arenaTimer = 0;
 	private static boolean arenaMode = false;
 
+	/** Placar de ondas sobrevividas do modo sobrevivência (por partida).
+	 *  Lido/gravado por {@link SaveManager} junto com o slot de save. */
+	private static int survivalRecord = 0;
+	/** Ondas concluídas na partida atual (usado para placar e drops). */
+	private static int wavesSurvived = 0;
+
 	private WaveManager() {
 	}
 
@@ -68,7 +74,54 @@ public final class WaveManager {
 		arenaMode = true;
 		arenaWave = 1;
 		arenaTimer = 180;
+		wavesSurvived = 0;
 		announce("ARENA INFINITA", new Color(255, 87, 34));
+	}
+
+	/** Registra uma onda concluída: atualiza placar, drops e escalada. */
+	public static void onWaveCleared() {
+		wavesSurvived++;
+		if (wavesSurvived > survivalRecord) {
+			survivalRecord = wavesSurvived;
+		}
+		// Chefe a cada 5 ondas concluídas.
+		if (wavesSurvived > 0 && wavesSurvived % 5 == 0) {
+			int[] spot = findSpawnSpot();
+			if (spot != null) {
+				Enemy boss = Enemy.spawnArenaBoss(spot[0], spot[1], wavesSurvived);
+				Game.entities.add(boss);
+				Game.enemies.add(boss);
+			}
+			announce("CHEFE — Onda " + wavesSurvived, new Color(233, 30, 99));
+			SoundManager.play(SoundManager.Event.BOSS_ALERT);
+		}
+		// Drop de respiro a cada 3 ondas concluídas.
+		if (wavesSurvived > 0 && wavesSurvived % 3 == 0) {
+			dropBreather();
+		}
+	}
+
+	/** Soltura um LifePack e um NanoMedkit perto do jogador como recompensa. */
+	private static void dropBreather() {
+		int px = (int) Game.player.getX();
+		int py = (int) Game.player.getY();
+		Game.entities.add(new com.traduvertgames.entities.LifePack(px + 24, py + 12, 16, 16,
+				com.traduvertgames.entities.Entity.LIFEPACK_EN));
+		Game.entities.add(new com.traduvertgames.entities.NanoMedkit(px - 24, py + 12));
+		announce("SUPRIMENTOS!", new Color(102, 187, 106));
+		SoundManager.play(SoundManager.Event.PICKUP);
+	}
+
+	public static int getSurvivalRecord() {
+		return survivalRecord;
+	}
+
+	public static void setSurvivalRecord(int value) {
+		survivalRecord = Math.max(0, value);
+	}
+
+	public static int getWavesSurvived() {
+		return wavesSurvived;
 	}
 
 	public static void stopArena() {
@@ -97,6 +150,7 @@ public final class WaveManager {
 		arenaMode = false;
 		arenaWave = 0;
 		arenaTimer = 0;
+		wavesSurvived = 0;
 	}
 
 	public static void update() {
@@ -143,7 +197,10 @@ public final class WaveManager {
 			arenaTimer--;
 			return;
 		}
-		if (Game.enemies.size() == 0) {
+		boolean waveCleared = Game.enemies.size() == 0;
+		if (waveCleared && !waveClearedAnnounced) {
+			waveClearedAnnounced = true;
+			onWaveCleared();
 			arenaWave++;
 			announce("Onda " + arenaWave, new Color(255, 193, 7));
 			arenaTimer = 180;
@@ -154,6 +211,8 @@ public final class WaveManager {
 		}
 	}
 
+	private static boolean waveClearedAnnounced = false;
+
 	private static void spawnArenaEnemies() {
 		int count = 2 + arenaWave / 2;
 		for (int i = 0; i < count; i++) {
@@ -162,6 +221,8 @@ public final class WaveManager {
 				return;
 			}
 			Enemy enemy = Enemy.spawnRandomVariant(spot[0], spot[1]);
+			// Escalada de dificuldade: mais vida e dano conforme a onda atual.
+			enemy.boost(1.0 + wavesSurvived * 0.35, 1.0 + wavesSurvived * 0.15);
 			Game.entities.add(enemy);
 			Game.enemies.add(enemy);
 		}

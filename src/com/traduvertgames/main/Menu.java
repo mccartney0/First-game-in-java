@@ -524,7 +524,12 @@ public class Menu {
 			if (SaveManager.hasSlotSave(slotId)) {
 				int level = SaveManager.getSlotLevel(slotId);
 				int slotScore = SaveManager.getSlotScore(slotId);
-				detail = String.format("  (Fase %d — Pontuação %d)", level, slotScore);
+				int slotSurvival = SaveManager.getSlotSurvivalRecord(slotId);
+				detail = String.format("  (Fase %d — Pontuação %d", level, slotScore);
+				if (slotSurvival > 0) {
+					detail += String.format(" — Sobrevivência: %d ondas", slotSurvival);
+				}
+				detail += ")";
 			} else {
 				detail = "  (vazio)";
 			}

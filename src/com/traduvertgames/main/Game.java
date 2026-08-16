@@ -32,6 +32,8 @@ import com.traduvertgames.entities.Player;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.graficos.MiniMap;
+import com.traduvertgames.graficos.VictoryCutscene;
+import com.traduvertgames.graficos.MissionBanner;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
@@ -162,8 +164,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
         }
 
-        /** Marcador para tecla Escape: usado por telas que consomem o ESC (loja, seleção de fases). */
-        public static boolean escapePressed = false;
+	/** Marcador para tecla Escape: usado por telas que consomem o ESC (loja, seleção de fases). */
+	public static boolean escapePressed = false;
+
+	/** Enter/Escape consumidos pela cutscene de vitória no update(). */
+	private boolean enter = false;
+	private boolean escape = false;
 
         public static int getHighScore() {
                 return highScore;
@@ -270,15 +276,21 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
         }
 
-        public static void registerPlayerDamage() {
-                if (comboMultiplier > 1) {
-                        bestComboRecord = Math.max(bestComboRecord, comboMultiplier);
-                }
-                comboMultiplier = 1;
-                comboTimer = 0;
-        }
+	public static void registerPlayerDamage() {
+		if (comboMultiplier > 1) {
+			bestComboRecord = Math.max(bestComboRecord, comboMultiplier);
+		}
+		comboMultiplier = 1;
+		comboTimer = 0;
+		damageOverlayFrames = Math.max(damageOverlayFrames, DAMAGE_OVERLAY_DURATION);
+	}
 
-        public static double getDamageTakenMultiplier() {
+		/** Duração (frames) da vinheta vermelha exibida quando o jogador toma dano. */
+	private static final int DAMAGE_OVERLAY_DURATION = 12;
+	/** Frames restantes da vinheta de dano. */
+	private static int damageOverlayFrames = 0;
+
+	public static double getDamageTakenMultiplier() {
                 return OptionsConfig.getDamageTakenMultiplier();
         }
 
@@ -370,7 +382,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// DEVE rodar antes da lógica do estado NORMAL: se o avanço rodasse depois,
 		// o bloco NORMAL reabriria a loja (objetivo ainda parece completo) e o jogo
 		// ficaria preso na loja para sempre — era o bug do ESC piscando.
-		if (questCompletedPending) {
+		// Cutscene de vitória: encerra a campanha ao concluir a fase 6.
+		if (VictoryCutscene.isShowing()) {
+			com.traduvertgames.graficos.VictoryCutscene.update(enter, escape);
+			enter = false;
+			escape = false;
+		} else if (questCompletedPending && CUR_LEVEL == 6) {
+			// Fim da campanha: cutscene de vitória antes de entrar no modo sobrevivência.
+			questCompletedPending = false;
+			if (SaveManager.saveCurrentGame()) {
+				System.out.println("Jogo salvo no slot " + SaveManager.activeSlot + " (campanha concluída)!");
+			}
+			com.traduvertgames.graficos.VictoryCutscene.start();
+		} else if (questCompletedPending) {
 			questCompletedPending = false;
 			advanceToNextLevel();
 			if (QuestManager.isObjectiveComplete()) {
@@ -415,9 +439,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                                 bullet.get(i).update();
                         }
 
-			QuestManager.update();
-			ParticleSystem.update();
-			FloatingText.update();
+				QuestManager.update();
+				ParticleSystem.update();
+				FloatingText.update();
+				MissionBanner.update();
 
                         if (QuestManager.isObjectiveComplete()) {
                                 onObjectiveComplete();
@@ -452,8 +477,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		}else if ("MENU".equals(gameState)) {
 				//Menu
 				//Iniciando a camera junto com o jogador
-				player.updateCamera();
-				menu.update();
+				if (!showInitialWeaponSelect) {
+					player.updateCamera();
+					menu.update();
+				}
 	} else if ("LEVELUP".equals(gameState)) {
 			LevelUpManager.update();
 			// Se o level-up fechou neste frame (Enter/ESC) e havia uma fase
@@ -484,6 +511,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// Marca que a fase foi concluída: ao fechar a loja (compra ou ESC),
 		// o jogo avança automaticamente para a próxima fase.
 		questCompletedPending = true;
+		// Feedback narrativo: banner central de missão concluída com o título da fase.
+		com.traduvertgames.graficos.MissionBanner.reset();
+		com.traduvertgames.graficos.MissionBanner.showComplete(QuestManager.getPhaseTitle(CUR_LEVEL));
+		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LEVELUP);
 		// O level-up tem prioridade sobre a loja: se o jogador subiu de nível
 		// no mesmo instante em que concluiu a fase, a loja aguarda o level-up
 		// ser resolvido antes de abrir (evita oscilação entre as telas).
@@ -522,6 +553,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// ui.render(g) (coordenadas do buffer, por baixo dos overlays) foi removido.
 		ParticleSystem.render(g);
 		FloatingText.render(g, SCALE);
+		MissionBanner.render(g);
 		UltimateAbility.render(g);
 		g.dispose();
 
@@ -550,8 +582,19 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 // e sobre os demais painéis, sem parecer esmaecida no fundo.
 	ui.renderOverlay((Graphics2D) g);
 	com.traduvertgames.graficos.MissionHud.render((Graphics2D) g);
+		com.traduvertgames.graficos.VictoryCutscene.render(g, SCALE);
+	if (damageOverlayFrames > 0) {
+		int alpha = Math.max(0, (int) (70.0 * damageOverlayFrames / DAMAGE_OVERLAY_DURATION));
+		g.setColor(new Color(180, 30, 30, alpha));
+		g.fillRect(0, 0, scaledWidth, scaledHeight);
+		damageOverlayFrames--;
+	}
 	DialogueManager.render(g);
 	OnboardingManager.render(g);
+	// A tela de escolha de arma inicial é desenhada por cima de tudo (inclusive
+	// do menu de pausa): durante a seleção o estado é MENU com pause=true, mas o
+	// menu principal não deve aparecer por cima das opções de arma.
+	renderInitialWeaponSelect(g, scaledWidth, scaledHeight);
 
 		if ("GAMEOVER".equals(gameState)) {
                         Graphics2D g2 = (Graphics2D) g;
@@ -578,7 +621,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                         drawCenteredString(g, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 112);
 
                 } else if ("MENU".equals(gameState)) {
-                        menu.render(g);
+                        if (!showInitialWeaponSelect) {
+                                menu.render(g);
+                        }
+                        // Durante a seleção de arma inicial o menu não deve
+                        // desenhar nada: o overlay da própria tela de arma
+                        // escurece o fundo e desenha a lista por cima.
                 } else if ("SHOP".equals(gameState)) {
                         // A HUD compacta é desenhada pelo overlay (por cima do painel da loja).
                         Menu.renderPauseScreen(g);
@@ -691,6 +739,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		}
 
 		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+			if (showInitialWeaponSelect) {
+				initialWeaponSelection = Math.max(0, initialWeaponSelection - 1);
+				return;
+			}
 			player.up = true;
 
 			if ("MENU".equals(gameState)) {
@@ -703,6 +755,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				LevelSelectScreen.navigateUp();
 			}
 		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+			if (showInitialWeaponSelect) {
+				initialWeaponSelection = Math.min(getUnlockedInitialWeapons().length - 1,
+						initialWeaponSelection + 1);
+				return;
+			}
 			player.down = true;
 
 			if ("MENU".equals(gameState)) {
@@ -745,6 +802,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 }
 
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+			if (showInitialWeaponSelect) {
+				getInstance().applyInitialWeaponSelection();
+				return;
+			}
 			this.restartGame = true;
 			if ("MENU".equals(gameState)) {
 				menu.enter = true;
@@ -757,10 +818,23 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			}
 		}
 
+		if (e.getKeyCode() == KeyEvent.VK_ESCAPE && VictoryCutscene.isShowing()) {
+			this.escape = true;
+		}
+
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
 			// do menu de pausa ao segurar a tecla).
 			if (ShopManager.isEscOnCooldown()) {
+				return;
+			}
+			// ESC na tela de escolha de arma inicial: cancela e volta ao menu
+			// principal. Não usar Menu.closePauseScreen() aqui: ele define
+			// gameState="NORMAL" e despausaria a fase — o returnToMainMenu já
+			// zera a pausa e coloca o jogo no MENU corretamente.
+			if (showInitialWeaponSelect) {
+				showInitialWeaponSelect = false;
+				returnToMainMenu();
 				return;
 			}
 			if ("NORMAL".equals(gameState)) {
@@ -783,7 +857,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				returnToMainMenu();
 			}
 		}
-                if (e.getKeyCode() == KeyEvent.VK_T) {
+		if (e.getKeyCode() == KeyEvent.VK_T) {
                         if ("NORMAL".equals(gameState)) {
                                 Game.saveGame = true;
                                 levelPlus=0;
@@ -832,11 +906,13 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                         }
                 }
 
-                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
-                        if (DialogueManager.isActive()) {
-                                DialogueManager.advance();
-                        }
-                }
+		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+				if (DialogueManager.isActive()) {
+					DialogueManager.advance();
+				} else if (VictoryCutscene.isShowing()) {
+					this.enter = true;
+				}
+			}
 
                 if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                         if (DialogueManager.isActive()) {
@@ -931,32 +1007,104 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 return false;
         }
 
-        public void startNewGame() {
-                resetGameOverState();
-                this.levelPlus = 0;
+		public void startNewGame() {
+			resetGameOverState();
+			this.levelPlus = 0;
 		CUR_LEVEL = 1;
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
-                Enemy.enemies = 0;
-                Menu.pause = false;
-                resetPlayerToDefaults();
-                applyDifficultyToPlayerStats();
-                resetScoreState();
-                World.restartGame("level1.png");
-                LevelUpManager.reset();
-                WaveManager.reset();
-                DashAbility.reset();
-                UltimateAbility.reset();
-                LootGuarantee.reset();
+			Enemy.enemies = 0;
+			Menu.pause = false;
+			resetPlayerToDefaults();
+			applyDifficultyToPlayerStats();
+			resetScoreState();
+			World.restartGame("level1.png");
+			LevelUpManager.reset();
+			WaveManager.reset();
+			DashAbility.reset();
+			UltimateAbility.reset();
+			LootGuarantee.reset();
 		ParticleSystem.clear();
-		FloatingText.clear();
+			FloatingText.clear();
+		// Antes do onboarding, o jogador escolhe sua arma inicial entre as
+		// desbloqueadas — a escolha fica registrada no arsenal persistente.
+		startInitialWeaponSelect();
+	}
+
+	/** Abre a tela de escolha de arma inicial (pausa o jogo no estado NORMAL). */
+	private static void startInitialWeaponSelect() {
+		showInitialWeaponSelect = true;
+		initialWeaponSelection = 0;
+		gameState = "MENU";
+		Menu.pause = true;
+	}
+
+	private static final WeaponType[] INITIAL_WEAPON_CATALOG = new WeaponType[] {
+		WeaponType.BLASTER, WeaponType.ION_RIFLE, WeaponType.SCATTER_CANNON,
+		WeaponType.FUSION_LANCE, WeaponType.ARC_DISRUPTOR, WeaponType.SOLAR_CANNON,
+		WeaponType.PLASMA_CUTTER, WeaponType.VOID_MORTAR, WeaponType.BOOMERANG_ARCANO,
+		WeaponType.CHAIN_ARC, WeaponType.DRONE_SENTINEL
+	};
+
+	/** Armas desbloqueadas que aparecem na tela de escolha de arma inicial. */
+	private static WeaponType[] getUnlockedInitialWeapons() {
+		java.util.List<WeaponType> unlocked = new java.util.ArrayList<WeaponType>();
+		for (WeaponType type : INITIAL_WEAPON_CATALOG) {
+			if (com.traduvertgames.entities.Player.isWeaponUnlocked(type)) {
+				unlocked.add(type);
+			}
+		}
+		return unlocked.toArray(new WeaponType[0]);
+	}
+
+	/** Aplica a arma inicial selecionada e entra na arena de treino. */
+	private void applyInitialWeaponSelection() {
+		WeaponType[] catalog = getUnlockedInitialWeapons();
+		if (catalog.length > 0 && initialWeaponSelection >= 0
+				&& initialWeaponSelection < catalog.length) {
+			Player.setPersistentCurrentWeapon(catalog[initialWeaponSelection]);
+		}
+		showInitialWeaponSelect = false;
+		Menu.pause = false;
 		// O onboarding roda em uma arena de treino separada (sem itens de
 		// missão nem inimigos); ao concluir, loadFirstPhase() carrega a fase 1 real.
 		World.restartGame("training.png");
 		OnboardingManager.start();
 		gameState = "NORMAL";
-        }
+	}
+
+	private static boolean showInitialWeaponSelect = false;
+	private static int initialWeaponSelection = 0;
+
+	/** Desenha a tela de escolha de arma inicial sobre o buffer do jogo. */
+	private static void renderInitialWeaponSelect(Graphics g, int width, int height) {
+		if (!showInitialWeaponSelect) {
+			return;
+		}
+		g.setColor(new Color(0, 0, 0, 200));
+		g.fillRect(0, 0, width, height);
+		WeaponType[] catalog = getUnlockedInitialWeapons();
+		java.awt.Font titleFont = new java.awt.Font("arial", java.awt.Font.BOLD, 20);
+		java.awt.Font optionFont = new java.awt.Font("arial", java.awt.Font.BOLD, 14);
+		g.setFont(titleFont);
+		g.setColor(new Color(255, 214, 0));
+		String title = "Escolha sua arma inicial";
+		g.drawString(title, (width - g.getFontMetrics().stringWidth(title)) / 2, height / 2 - 60);
+		g.setFont(optionFont);
+		int totalHeight = catalog.length * 22;
+		int startY = (height - totalHeight) / 2;
+		for (int i = 0; i < catalog.length; i++) {
+			WeaponType type = catalog[i];
+			g.setColor(i == initialWeaponSelection ? java.awt.Color.yellow : java.awt.Color.white);
+			String label = (i == initialWeaponSelection ? "> " : "  ") + type.getDisplayName();
+			g.drawString(label, (width - g.getFontMetrics().stringWidth(label)) / 2, startY + i * 22);
+		}
+		g.setColor(new Color(170, 170, 170));
+		String hint = "Up/Down para navegar — Enter para confirmar — Esc para voltar ao menu";
+		g.setFont(new java.awt.Font("arial", java.awt.Font.PLAIN, 11));
+		g.drawString(hint, (width - g.getFontMetrics().stringWidth(hint)) / 2, startY + totalHeight + 20);
+	}
 
 	/**
 	 * Carrega a fase 1 real após o onboarding na arena de treino: o mapa da
@@ -1169,6 +1317,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		Menu.pause = false;
 		Menu.closePauseScreen();
 		DialogueManager.stop();
+		MissionBanner.reset();
+		VictoryCutscene.stop();
+		damageOverlayFrames = 0;
+		showInitialWeaponSelect = false;
 		if (this.menu != null) {
 			this.menu.resetToMain();
 		}

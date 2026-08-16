@@ -8,6 +8,7 @@ import java.awt.image.BufferedImage;
 import java.util.List;
 
 import com.traduvertgames.graficos.ParticleSystem;
+import com.traduvertgames.entities.FloatingText;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.world.AStar;
@@ -150,6 +151,8 @@ public class Enemy extends Entity {
     private final Color projectileColor;
     private final Color auraColor;
     private final boolean boss;
+    private boolean furyAnnounced = false;
+    private int furySpreadCooldown = 0;
 
     private static final double BASE_PATROL_SPEED = 0.6;
     private static final double BASE_CHASE_SPEED = 1.2;
@@ -228,7 +231,26 @@ public class Enemy extends Entity {
                 attackCooldown = attackCooldownBase / 2;
             }
         } else if (variant == Variant.OVERSEER && ratio < 0.4) {
-            // Fase desesperada: invoca um reforço ocasionalmente.
+            // Modo de fúria: rajada dupla com burst de velocidade + reforços.
+            if (!furyAnnounced) {
+                furyAnnounced = true;
+                FloatingText.show("SUPERVISOR ENFURECIDO!",
+                        (int) this.getX(), (int) this.getY() - 24, new Color(255, 61, 61), 90);
+                com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.BOSS_ALERT);
+            }
+            if (attackCooldown == 0 && distanceToPlayer <= 220) {
+                // Rajada dupla: dois disparos em rápida sucessão, levemente dispersos.
+                attemptShootAtPlayer(distanceToPlayer);
+                if (furySpreadCooldown <= 0) {
+                    attemptShootAtPlayer(distanceToPlayer + 18);
+                    furySpreadCooldown = 8;
+                }
+                attackCooldown = attackCooldownBase / 2;
+            }
+            if (furySpreadCooldown > 0) {
+                furySpreadCooldown--;
+            }
+            // Reforço ocasional quando perto do jogador.
             if (specialCooldown == 0 && distanceToPlayer < 200 && Game.enemies.size() < 10) {
                 int roll = Game.rand.nextInt(120);
                 if (roll == 0) {
@@ -260,7 +282,7 @@ public class Enemy extends Entity {
         double bulletDx = dirX / length;
         double bulletDy = dirY / length;
         BulletShoot bullet = new BulletShoot((int) this.getX() + 6, (int) this.getY() + 6, projectileSize,
-                projectileSize, getSprite(), bulletDx, bulletDy, projectileSpeed, projectileDamage, true,
+                projectileSize, getSprite(), bulletDx, bulletDy, projectileSpeed, getEffectiveProjectileDamage(), true,
                 projectileColor);
         Game.bullets.add(bullet);
     }
@@ -268,6 +290,55 @@ public class Enemy extends Entity {
     public static Enemy spawnRandomVariant(int x, int y) {
         return new Enemy(x, y, 16, 16, Entity.ENEMY_EN, pickRandomVariant());
     }
+
+    /** Chefe do modo sobrevivência: WARBRINGER ou GUARDIAN escalados pela onda.
+     *  @param depth ondas concluídas antes deste chefe (para escala de vida/dano). */
+    public static Enemy spawnArenaBoss(int x, int y, int depth) {
+        Variant variant = (depth / 5 % 2 == 0) ? Variant.WARBRINGER : Variant.GUARDIAN;
+        Enemy boss = new Enemy(x, y, 20, 20, ENEMY_EN, variant, true);
+        // Escala por profundidade: +40% de vida e +20% de dano por bloco de 5 ondas.
+        boss.boost(1.0 + depth * 0.4, 1.0 + depth * 0.2);
+        return boss;
+    }
+
+    /** Multiplica a vida atual/máxima e o dano de projétil deste inimigo.
+     *  Usado pelo modo sobrevivência para escalar dificuldade. */
+    public void boost(double lifeMultiplier, double damageMultiplier) {
+        if (lifeMultiplier > 1.0) {
+            double boosted = this.maxLife * lifeMultiplier;
+            // A vida máxima é final — o campo de vida guarda a proporção excedente
+            // via lifeBoost, que é aplicada nos cálculos de colisão de bala.
+            life = Math.max(0.0, life); // mantém a vida atual proporcional
+            this.lifeBoost = Math.max(0.0, this.lifeBoost + this.maxLife * (lifeMultiplier - 1.0));
+        }
+        if (damageMultiplier > 1.0) {
+            this.damageBoost = Math.max(1.0, this.damageBoost * damageMultiplier);
+        }
+    }
+
+    private double lifeBoost = 0.0;
+    private double damageBoost = 1.0;
+
+    /** @return vida total considerando o reforço de vida do modo sobrevivência. */
+    public double getTotalLife() {
+        return this.life + this.lifeBoost;
+    }
+
+    public double getLifeBoost() {
+        return this.lifeBoost;
+    }
+
+	/** @return dano efetivo de projétil considerando o reforço do modo sobrevivência. */
+	public double getEffectiveProjectileDamage() {
+		return this.projectileDamage * this.damageBoost;
+	}
+
+	/** XP base concedido ao derrotar este inimigo (bônus para chefes e reforçados). */
+	private int calculateXpGain() {
+		int base = this.boss ? 100 : 10;
+		int combo = com.traduvertgames.main.Game.getComboMultiplier();
+		return Math.max(1, (int) ((base + this.lifeBoost * 0.5)) * Math.min(combo, 5));
+	}
 
     private static Variant pickRandomVariant() {
         // O Phantom (que drena escudo/mana) só aparece a partir da fase 2,
@@ -899,8 +970,14 @@ public class Enemy extends Entity {
         Game.registerEnemyKill();
         maybeDropPickup();
         com.traduvertgames.main.LootGuarantee.dropForVariant(this);
-        com.traduvertgames.graficos.ParticleSystem.explode(this.getX() + 8, this.getY() + 8, auraColor);
-        Game.enemies.remove(this);
+	com.traduvertgames.graficos.ParticleSystem.explode(this.getX() + 8, this.getY() + 8, auraColor);
+	// Feedback de XP: mostra a experiência ganha ao derrotar o inimigo.
+	int xpGain = calculateXpGain();
+	if (xpGain > 0) {
+		FloatingText.show("+" + xpGain + " XP", (int) this.getX() + 8, (int) this.getY(),
+				new Color(255, 214, 0), 45);
+	}
+	Game.enemies.remove(this);
         Game.entities.remove(this);
         QuestManager.notifyEnemyKilled(this);
     }
@@ -937,9 +1014,24 @@ public class Enemy extends Entity {
         if (amount <= 0) {
             return;
         }
-        life -= amount;
+        applyDamage(amount);
         isDamaged = true;
         damageCurrent = 0;
+    }
+
+    /** Aplica dano consumindo primeiro o reforço de vida (boost do modo sobrevivência). */
+    private void applyDamage(double amount) {
+        if (this.lifeBoost > 0) {
+            double remaining = this.lifeBoost - amount;
+            if (remaining >= 0) {
+                this.lifeBoost = remaining;
+                return;
+            }
+            this.lifeBoost = 0;
+            this.life += remaining; // restante é descontado da vida normal
+        } else {
+            this.life -= amount;
+        }
     }
 
     public Variant getVariant() {
@@ -947,10 +1039,12 @@ public class Enemy extends Entity {
     }
 
     public double getLifePercentage() {
-        if (maxLife <= 0) {
+        double total = getTotalLife();
+        double cap = maxLife + Math.max(0, this.lifeBoost);
+        if (cap <= 0) {
             return 0;
         }
-        return Math.max(0, Math.min(1, life / maxLife));
+        return Math.max(0, Math.min(1, total / cap));
     }
 
     public void collidingBullet() {
@@ -972,7 +1066,7 @@ public class Enemy extends Entity {
                     takenDamage = projectile.getDamage();
                     persistent = projectile.isPersistent();
                 }
-                life -= takenDamage;
+                applyDamage(takenDamage);
                 if (!persistent) {
                     Game.bullets.remove(i);
                     i--;
