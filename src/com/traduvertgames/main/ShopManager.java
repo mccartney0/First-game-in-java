@@ -121,6 +121,9 @@ public final class ShopManager {
 			feedbackTimer = 90;
 			return;
 		}
+		// Feedback sonoro de compra bem-sucedida (rodada 15): itens de skin e
+		// companion já tocam seu próprio som; a compra genérica toca PURCHASE.
+		SoundManager.play(SoundManager.Event.PURCHASE);
 		boolean purchaseSucceeded = true;
 		String purchaseFeedback = null;
 		switch (item) {

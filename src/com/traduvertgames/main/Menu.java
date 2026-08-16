@@ -75,7 +75,7 @@ public class Menu {
 	private int currentOption = 0;
 	private int exitConfirmSelection = 0; // 0 = Não, 1 = Sim
 
-	public boolean up, down, enter;
+	public boolean up, down, enter, left, right, escape;
 
 	public static boolean pause = false;
 
@@ -104,6 +104,23 @@ public class Menu {
 		if (down) {
 			down = false;
 			moveSelection(1);
+		}
+		// Navegação horizontal por A/D e setas esquerda/direita: nas telas de
+		// opções (pausa, opções, carregar, confirmação de saída) move a seleção
+		// para os lados; no EXIT_CONFIRM escolhe Não/Sim.
+		if (left) {
+			left = false;
+			moveSelection(-1);
+		}
+		if (right) {
+			right = false;
+			moveSelection(1);
+		}
+		// ESC fecha a tela atual voltando ao nível anterior (o jogador ficava
+		// preso em "Deseja realmente sair?" e nas demais telas do menu).
+		if (escape) {
+			escape = false;
+			escapeFromCurrentScreen();
 		}
 		if (enter) {
 			enter = false;
@@ -136,11 +153,47 @@ public class Menu {
 		}
 	}
 
+	/** ESC fecha a tela atual voltando ao nível anterior do menu. */
+	private void escapeFromCurrentScreen() {
+		switch (currentScreen) {
+		case MAIN:
+			// ESC no menu principal com o jogo pausado fecha a pausa (volta ao jogo).
+			if (pause) {
+				closePauseScreen();
+			}
+			break;
+		case PAUSE:
+			closePauseScreen();
+			break;
+		case OPTIONS:
+			currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
+			currentOption = 0;
+			break;
+		case LOAD:
+			currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
+			currentOption = 0;
+			break;
+		case HOW_TO_PLAY:
+			currentScreen = Screen.MAIN;
+			currentOption = 0;
+			break;
+		case EXIT_CONFIRM:
+			// ESC na confirmação de saída equivale a "Não".
+			currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
+			currentOption = 0;
+			break;
+		default:
+			break;
+		}
+	}
+
 	private void moveSelection(int delta) {
 		if (currentScreen == Screen.EXIT_CONFIRM) {
 			exitConfirmSelection += delta;
 			if (exitConfirmSelection < 0) exitConfirmSelection = 1;
 			if (exitConfirmSelection > 1) exitConfirmSelection = 0;
+			// Blip discreto ao mover a seleção Não/Sim (rodada 15).
+			com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.MENU_SELECT);
 			return;
 		}
 		int count = getCurrentOptionCount();
@@ -152,6 +205,8 @@ public class Menu {
 		if (currentOption < 0) {
 			currentOption += count;
 		}
+		// Blip discreto ao mover a seleção nas telas do menu (rodada 15).
+		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.MENU_SELECT);
 	}
 
 	private int getCurrentOptionCount() {

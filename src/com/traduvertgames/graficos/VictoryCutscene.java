@@ -41,7 +41,8 @@ public final class VictoryCutscene {
 		framesElapsed = 0;
 		Game.gameState = "MENU";
 		Menu.pause = true;
-		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LEVELUP);
+		// Vitória da campanha: fanfarra completa (VICTORY), não level-up (rodada 15).
+		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.VICTORY);
 	}
 
 	public static boolean isShowing() {

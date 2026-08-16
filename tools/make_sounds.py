@@ -174,6 +174,63 @@ def tutorial():
     return gen(0.06, fn)
 
 
+# Fase concluída: fanfarra curta em 5 notas (celebração, mais longa que o level-up)
+def level_complete():
+    def fn(t):
+        notes = [523.0, 659.0, 784.0, 1046.0, 784.0]
+        per = 0.09
+        i = int(t / per)
+        f = notes[min(i, 4)]
+        env = 1.0 - ((t % per) / per)
+        return sine(f, t) * env * math.exp(-t * 2.2)
+    return gen(0.45, fn)
+
+
+# Vitória da campanha: fanfarra completa com acorde final sustentado
+def victory():
+    def fn(t):
+        if t < 0.48:
+            notes = [523.0, 659.0, 784.0, 1046.0]
+            per = 0.12
+            i = int(t / per)
+            f = notes[min(i, 3)]
+            phase = (t % per) / per
+            env = 1.0 - phase
+            return sine(f, t) * env
+        # acorde final de sol maior (G4+B4+D5) com release lento
+        a = (sine(392.0, t) + sine(494.0, t) * 0.8 + sine(587.0, t) * 0.8) / 2.4
+        return a * math.exp(-(t - 0.48) * 1.8)
+    return gen(1.2, fn)
+
+
+# Diálogo iniciado: blip duplo grave
+
+def dialogue_start():
+    def fn(t):
+        f = 440.0 if t < 0.05 else 523.0
+        return sine(f, t) * math.exp(-t * 25.0)
+    return gen(0.14, fn)
+
+
+# Compra na loja: "coin" ascendente em 3 notas rápidas
+def purchase():
+    def fn(t):
+        notes = [784.0, 988.0, 1175.0]
+        per = 0.055
+        i = int(t / per)
+        f = notes[min(i, 2)]
+        env = 1.0 - ((t % per) / per)
+        return sine(f, t) * env * math.exp(-t * 4.0)
+    return gen(0.17, fn)
+
+
+# Seleção de menu: blip muito curto
+def menu_select():
+    def fn(t):
+        return sine(1175.0, t) * math.exp(-t * 45.0)
+    return gen(0.05, fn)
+
+
 # Tutorial concluído: subida em 3 notas
 def tutorial_done():
     def fn(t):
@@ -200,5 +257,10 @@ save("blip.wav", blip())
 save("wave.wav", wave())
 save("tutorial_step.wav", tutorial())
 save("tutorial_done.wav", tutorial_done())
+save("level_complete.wav", level_complete())
+save("victory.wav", victory())
+save("dialogue_start.wav", dialogue_start())
+save("purchase.wav", purchase())
+save("menu_select.wav", menu_select())
 
 print("Sons gerados em", OUT, "->", sorted(os.listdir(OUT)))

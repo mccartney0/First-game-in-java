@@ -180,6 +180,32 @@ public final class LevelUpManager {
 			applyChoice(choiceIndex);
 		}
 
+		/** Seleciona um upgrade pelo índice e aplica de imediato (teclas 1/2/3). */
+		public static void selectAndConfirm(int index) {
+			if (!showingLevelUp) {
+				return;
+			}
+			applyChoice(index);
+		}
+
+		/** Navega horizontalmente entre os cards por A/D e setas esquerda/direita.
+		 *  Clamp no limite (não wrap): o primeiro card não leva ao último. */
+		public static void navigateLeft() {
+			if (!showingLevelUp) {
+				return;
+			}
+			setChoiceIndex(Math.max(0, choiceIndex - 1));
+		}
+
+		/** Navega horizontalmente entre os cards por A/D e setas esquerda/direita.
+		 *  Clamp no limite (não wrap): o último card não leva ao primeiro. */
+		public static void navigateRight() {
+			if (!showingLevelUp) {
+				return;
+			}
+			setChoiceIndex(Math.min(CHOICES - 1, choiceIndex + 1));
+		}
+
 		/** Navega entre as opções com setas. */
 		public static void update() {
 			if (!showingLevelUp) {
@@ -240,7 +266,7 @@ public final class LevelUpManager {
 
 		g.setFont(new Font("arial", Font.PLAIN, 14));
 		g.setColor(new Color(200, 200, 200));
-		String hint = "Setas para escolher — Enter para confirmar";
+		String hint = "Setas/A/D para escolher — Enter para confirmar — 1, 2, 3 para escolher direto";
 		g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2, cardY + cardHeight + 30);
 	}
 
