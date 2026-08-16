@@ -685,7 +685,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 	com.traduvertgames.graficos.MissionHud.render(overlayG);
 		com.traduvertgames.graficos.VictoryCutscene.render(overlayG, SCALE);
 		com.traduvertgames.graficos.PhaseStatsScreen.render(overlayG, SCALE);
-	overlayG.dispose();
+	// OBS: o dispose do overlayG foi MOVIDO para o final do render — antes ele
+	// ficava aqui, logo após a HUD, e todos os overlays seguintes (dano, diálogos,
+	// onboarding, seleção de arma, menu, cutscene de vitória, stats, level-up,
+	// loja, level select) desenhavam em um Graphics já descartado: eles
+	// silenciosamente NÃO apareciam. Isso fazia o menu principal sumir e o
+	// jogo parecer "preso" na primeira fase sem qualquer interface.
 	if (damageOverlayFrames > 0) {
 		int alpha = Math.max(0, (int) (70.0 * damageOverlayFrames / DAMAGE_OVERLAY_DURATION));
 		overlayG.setColor(new Color(180, 30, 30, alpha));
@@ -764,6 +769,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                         g.setFont(new Font("arial", Font.PLAIN, 13));
                         drawCenteredString(overlayG, "Missão: " + nextObjective, scaledHeight / 2 + 20);
                 }
+                overlayG.dispose();
                 bs.show();
         }
 
