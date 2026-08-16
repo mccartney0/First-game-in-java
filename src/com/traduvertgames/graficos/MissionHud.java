@@ -171,6 +171,20 @@ public final class MissionHud {
 				return e;
 			}
 		}
+		// Alvo narrativo de chefe (ex.: "o Guardião do Subsolo", "o Supervisor-Prime"):
+		// localiza o boss vivo da fase pelo nome do objetivo ou pelo prefixo "o ".
+		boolean looksLikeBoss = targetName.startsWith("o ") || targetName.toLowerCase().contains("chefe")
+				|| targetName.toLowerCase().contains("supervisor");
+		if (looksLikeBoss) {
+			for (int i = 0; i < Game.entities.size(); i++) {
+				Entity e = Game.entities.get(i);
+				if (e instanceof com.traduvertgames.entities.Enemy
+						&& ((com.traduvertgames.entities.Enemy) e).isBoss()
+						&& ((com.traduvertgames.entities.Enemy) e).getTotalLife() > 0) {
+					return e;
+				}
+			}
+		}
 		return null;
 	}
 

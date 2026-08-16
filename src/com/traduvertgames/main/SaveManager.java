@@ -143,6 +143,8 @@ public final class SaveManager {
 			objectiveState.put(String.valueOf(key), state);
 		}
 		progress.put("objectiveState", objectiveState);
+		// Flags narrativas da campanha (ex.: desertor do subsolo da fase 7).
+		progress.put("traitorTalked", Game.isTraitorTalked());
 		return progress;
 	}
 
@@ -285,7 +287,23 @@ public final class SaveManager {
 		Menu.pause = false;
 		activeSlot = slotId;
 		restoreObjectiveState(slot, savedLevel);
+		restoreNarrativeFlags(slot);
 		return true;
+	}
+
+	/** Restaura as flags narrativas salvas (ex.: TraitorNpc da fase 7). */
+	@SuppressWarnings("unchecked")
+	private static void restoreNarrativeFlags(Map<String, Object> slot) {
+		Object raw = slot.get("progress");
+		if (!(raw instanceof Map)) {
+			return;
+		}
+		Map<String, Object> progress = (Map<String, Object>) raw;
+		Object talked = progress.get("traitorTalked");
+		Game.resetTraitorTalked();
+		if ("true".equalsIgnoreCase(String.valueOf(talked))) {
+			Game.setTraitorTalked(true);
+		}
 	}
 
 	/** Sessão do slot: v2 usa a seção "session"; v1 é o próprio slot (flat). */

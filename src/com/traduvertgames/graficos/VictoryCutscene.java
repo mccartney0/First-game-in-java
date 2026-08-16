@@ -9,7 +9,7 @@ import com.traduvertgames.main.Menu;
 import com.traduvertgames.main.Game;
 
 /**
- * Cutscene de vitória ao concluir a fase 6 (campanha). Exibe a mensagem final
+ * Cutscene de vitória ao concluir a campanha (fase 8). Exibe a mensagem final
  * da Comandante Ava, as estatísticas da campanha e permite avançar ao modo
  * sobrevivência com Enter ou ao menu principal com ESC.
  */
@@ -21,8 +21,9 @@ public final class VictoryCutscene {
 	private static int framesElapsed = 0;
 
 	private static final String[] MESSAGES = {
-			"O Supervisor foi destruído.",
-			"O núcleo de controle da colônia voltou às nossas mãos.",
+			"O Supervisor-Prime foi destruído.",
+			"A mente que comandava as máquinas está desativada.",
+			"A colônia finalmente pertence a nós novamente.",
 			"Obrigada, piloto. Você salvou todos nós.",
 			"— Comandante Ava"
 	};
@@ -30,7 +31,7 @@ public final class VictoryCutscene {
 	private VictoryCutscene() {
 	}
 
-	/** Inicia a cutscene de vitória (chamada uma única vez ao concluir a fase 6). */
+	/** Inicia a cutscene de vitória (chamada uma única vez ao concluir a campanha). */
 	public static void start() {
 		if (showing) {
 			return;

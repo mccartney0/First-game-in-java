@@ -44,6 +44,9 @@ public class Enemy extends Entity {
         RAVAGER(16.5, 1.25, 1.05, 4.8, 4.1, 6, 70, 150, 160, new Color(244, 81, 30)),
         WARBRINGER(18.0, 0.95, 1.1, 4.2, 6.5, 7, 90, 160, 140, new Color(233, 30, 99)),
         OVERSEER(28.0, 1.1, 1.2, 4.6, 5.2, 7, 80, 240, 160, new Color(121, 134, 203)),
+        // Supervisor-Prime: a mente da colônia — chefe final da campanha,
+        // com mais vida, dano e alcance que o OVERSEER comum.
+        OVERSEER_PRIME(42.0, 1.2, 1.3, 5.4, 6.2, 8, 70, 240, 160, new Color(208, 25, 55)),
         // Caçador furtivo: esquivo e letal, drena escudo e mana do piloto.
         PHANTOM(6.5, 1.45, 1.6, 4.4, 2.6, 5, 80, 140, 120, new Color(129, 199, 132)),
         // Tanque de bloqueio: lento, robusto e regenera escudo com o tempo.
@@ -238,12 +241,21 @@ public class Enemy extends Entity {
                         (int) this.getX(), (int) this.getY() - 24, new Color(255, 61, 61), 90);
                 com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.BOSS_ALERT);
             }
+        } else if (variant == Variant.OVERSEER_PRIME && ratio < 0.55) {
+            // A mente da colônia reage à perda de poder: rajada dupla mais
+            // agressiva e alertas visuais do núcleo sendo desativado.
+            if (!furyAnnounced) {
+                furyAnnounced = true;
+                FloatingText.show("NÚCLEO DA IA EM COLAPSO!",
+                        (int) this.getX(), (int) this.getY() - 24, new Color(255, 61, 61), 90);
+                com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.BOSS_ALERT);
+            }
             if (attackCooldown == 0 && distanceToPlayer <= 220) {
                 // Rajada dupla: dois disparos em rápida sucessão, levemente dispersos.
                 attemptShootAtPlayer(distanceToPlayer);
                 if (furySpreadCooldown <= 0) {
                     attemptShootAtPlayer(distanceToPlayer + 18);
-                    furySpreadCooldown = 8;
+                    furySpreadCooldown = 6;
                 }
                 attackCooldown = attackCooldownBase / 2;
             }
@@ -252,7 +264,7 @@ public class Enemy extends Entity {
             }
             // Reforço ocasional quando perto do jogador.
             if (specialCooldown == 0 && distanceToPlayer < 200 && Game.enemies.size() < 10) {
-                int roll = Game.rand.nextInt(120);
+                int roll = Game.rand.nextInt(90);
                 if (roll == 0) {
                     int rx = (int) x + (Game.rand.nextInt(3) - 1) * 16;
                     int ry = (int) y + (Game.rand.nextInt(3) - 1) * 16;
@@ -457,6 +469,7 @@ public class Enemy extends Entity {
             handleRavagerAbility(distanceToPlayer);
             break;
         case OVERSEER:
+        case OVERSEER_PRIME:
             handleOverseerAbility(distanceToPlayer, canSeePlayer);
             break;
         case PHANTOM:

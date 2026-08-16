@@ -57,7 +57,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private static Game instance;
 
         private static int CUR_LEVEL = 1;
-        public static int MAX_LEVEL = 6;
+        public static int MAX_LEVEL = 8;
 	private BufferedImage image;
 
 	public static List<Entity> entities;
@@ -109,6 +109,22 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
+	}
+
+	/** True quando o jogador já falou com o desertor do subsolo (fase 7). */
+	private static boolean traitorTalked = false;
+
+	public static boolean isTraitorTalked() {
+		return traitorTalked;
+	}
+
+	public static void resetTraitorTalked() {
+		traitorTalked = false;
+	}
+
+	/** Define a flag do desertor do subsolo (usada pelo TraitorNpc e pelos saves). */
+	public static void setTraitorTalked(boolean value) {
+		traitorTalked = value;
 	}
         private static boolean fullscreen = false;
         /** Frames restantes de exibição do aviso "Fase X concluída — próxima fase". */
@@ -387,14 +403,20 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			com.traduvertgames.graficos.VictoryCutscene.update(enter, escape);
 			enter = false;
 			escape = false;
-		} else if (questCompletedPending && CUR_LEVEL == 6) {
+		} else if (questCompletedPending && CUR_LEVEL == 8) {
 			// Fim da campanha: cutscene de vitória antes de entrar no modo sobrevivência.
 			questCompletedPending = false;
 			if (SaveManager.saveCurrentGame()) {
 				System.out.println("Jogo salvo no slot " + SaveManager.activeSlot + " (campanha concluída)!");
 			}
+			// Recompensa final da campanha: arma de elite desbloqueada.
+			grantCampaignReward();
 			com.traduvertgames.graficos.VictoryCutscene.start();
 		} else if (questCompletedPending) {
+			// Conclusão da fase 7: recompensa de arma da campanha (Canhão de Vazio).
+			if (CUR_LEVEL == 7) {
+				grantCampaignReward();
+			}
 			questCompletedPending = false;
 			advanceToNextLevel();
 			if (QuestManager.isObjectiveComplete()) {
@@ -1016,9 +1038,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		showLevelTransition = 0;
 			Enemy.enemies = 0;
 			Menu.pause = false;
-			resetPlayerToDefaults();
-			applyDifficultyToPlayerStats();
-			resetScoreState();
+		resetPlayerToDefaults();
+		applyDifficultyToPlayerStats();
+		resetScoreState();
+		resetTraitorTalked();
 			World.restartGame("level1.png");
 			LevelUpManager.reset();
 			WaveManager.reset();
@@ -1030,6 +1053,20 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// Antes do onboarding, o jogador escolhe sua arma inicial entre as
 		// desbloqueadas — a escolha fica registrada no arsenal persistente.
 		startInitialWeaponSelect();
+	}
+
+	/**
+	 * Recompensa de arma concedida ao concluir fases da campanha (7 e 8).
+	 * Fase 7: Morteiro do Vazio. Fase 8 (fim da campanha): Drone Sentinela.
+	 */
+	private static void grantCampaignReward() {
+		WeaponType reward = CUR_LEVEL == 7 ? WeaponType.VOID_MORTAR : WeaponType.DRONE_SENTINEL;
+		if (Game.player != null && !Game.player.hasWeaponUnlocked(reward)) {
+			Game.player.unlockWeapon(reward);
+			FloatingText.show("NOVA ARMA: " + reward.getDisplayName().toUpperCase(),
+					Game.WIDTH * Game.SCALE / 2, Game.SCALE * 40, new java.awt.Color(255, 214, 10), 240);
+			com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LEVELUP);
+		}
 	}
 
 	/** Abre a tela de escolha de arma inicial (pausa o jogo no estado NORMAL). */
@@ -1152,7 +1189,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 	public static void advanceToNextLevel() {
 		CUR_LEVEL++;
 		if (CUR_LEVEL > MAX_LEVEL) {
-			// Pós-campanha: mantém a fase 6 (Torre do Supervisor) e entra no
+			// Pós-campanha: mantém a fase 8 (Núcleo Central) e entra no
 			// modo sobrevivência com ondas infinitas e dificuldade crescente.
 			CUR_LEVEL = MAX_LEVEL;
 			instance.levelPlus += 1;
@@ -1212,13 +1249,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 clampPlayerResources();
         }
 
-        private static void applyDifficultyScalingForCurrentLevel() {
+                private static void applyDifficultyScalingForCurrentLevel() {
                 int baseMaxLife;
                 int baseMaxMana;
                 int baseMaxShield;
                 double baseCapacityMultiplier;
-
-                if (CUR_LEVEL == MAX_LEVEL) {
+                if (CUR_LEVEL > MAX_LEVEL) {
                         // Fase final: a cada ciclo de sobrevivência (levelPlus),
                         // os recursos máximos do piloto crescem para compensar
                         // as ondas cada vez mais agressivas.
@@ -1227,13 +1263,21 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                         baseMaxMana = 1500 + 300 * survivalDepth;
                         baseMaxShield = 600 + 100 * survivalDepth;
                         baseCapacityMultiplier = 4.0;
-                } else {
+                                } else {
                         baseMaxLife = 100;
                         baseMaxMana = 500;
                         baseMaxShield = 150;
                         baseCapacityMultiplier = 1.0;
                 }
-
+                // Agressividade e recursos do piloto crescem no arco final da campanha
+                // (fases 7 e 8), refletindo o esforço da colônia para deter a IA.
+                if (CUR_LEVEL >= 7 && CUR_LEVEL <= MAX_LEVEL) {
+                        int finalStretch = CUR_LEVEL - 6;
+                        baseMaxLife += 10 * finalStretch;          // piloto mais resiliente
+                        baseMaxMana += 50 * finalStretch;
+                        baseMaxShield += 15 * finalStretch;
+                        baseCapacityMultiplier += 0.25 * finalStretch;
+                }
                 applyDifficultyScaling(baseMaxLife, baseMaxMana, baseMaxShield, baseCapacityMultiplier);
         }
 

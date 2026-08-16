@@ -1,6 +1,7 @@
 package com.traduvertgames.world;
 
 import java.awt.Color;
+import com.traduvertgames.dialogue.TraitorNpc;
 import java.awt.Graphics;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
@@ -147,12 +148,23 @@ Game.enemies.add(en);
                                                                 Enemy.Variant.PHANTOM);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFFFF5722) {
-                                                // Guardian: tanque robusto que regenera vida
-                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
-                                                                Enemy.Variant.GUARDIAN);
-                                                Game.entities.add(en);
-                                                Game.enemies.add(en);
+					} else if (pixelAtual == 0xFFFF5722) {
+						// Guardian: tanque robusto que regenera vida.
+						// Na fase 7 ele é o chefe do subsolo (boss fixo do mapa).
+						boolean boss7 = QuestManager.getCurrentLevel() == 7;
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+								Enemy.Variant.GUARDIAN, boss7);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFFD01937) {
+						// Supervisor-Prime: a mente da colônia, chefe final da campanha (fase 8).
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+								Enemy.Variant.OVERSEER_PRIME, true);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFFA1887F) {
+						// Técnico Hélio — desertor do subsolo (fase 7)
+						Game.entities.add(new TraitorNpc(xx * 16, yy * 16));
 					} else if (pixelAtual == 0xFF673AB7) {
 						Game.entities.add(new TeleportPad(xx * 16, yy * 16));
 					}
@@ -244,7 +256,9 @@ Game.enemies.add(en);
         }
 
         private static void ensurePhaseBoss(int levelNumber) {
-                if (levelNumber < 2 || mapHasBoss()) {
+                // Fases 7 (Subsolo) e 8 (Núcleo Central) já carregam o chefe
+                // fixo diretamente do mapa (GUARDIAN e OVERSEER-PRIME).
+                if (levelNumber == 7 || levelNumber == 8 || levelNumber < 2 || mapHasBoss()) {
                         return;
                 }
                 int playerX = (int) (Game.player != null ? Game.player.getX() : 0);
@@ -351,6 +365,9 @@ Game.enemies.add(en);
 				if(xx<0 || yy < 0 || xx >= WIDTH || yy>= HEIGHT)
 					continue;
 				Tile tile = tiles[xx + (yy * WIDTH)];
+				if (tile == null) {
+					continue;
+				}
 				tile.render(g);
 			}
 		}

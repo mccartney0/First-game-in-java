@@ -29,6 +29,8 @@ public final class QuestManager {
             "Núcleo da Colônia",
             "Datacenter Nexus",
             "Torre do Supervisor",
+            "Subsolo da Colônia",
+            "Núcleo Central",
             "Modo Sobrevivência"
     };
 
@@ -40,8 +42,8 @@ public final class QuestManager {
 
     /** Texto exibido ao concluir a campanha e entrar no modo sobrevivência. */
     public static final String SURVIVAL_INTRO =
-            "Campanha concluída!\nO Supervisor caiu, mas a colônia não está segura.\n" +
-            "Resista às ondas infinitas.";
+            "Campanha concluída!\nA mente da colônia foi destruída, mas restos das máquinas\n" +
+            "continuam se reagrupando. Resista às ondas infinitas.";
 
     public static String getPhaseTitle(int level) {
         if (level <= 0) {
@@ -90,11 +92,19 @@ public final class QuestManager {
             // Fase 5: recuperar os dados com ajuda do Ivo.
             return new DialogueObjective(new DataRecoveryObjective(), "Pesquisador Ivo");
         case 6:
-            // Fase final: falar com Ava antes de derrubar o OVERSEER, o chefe supervisor.
+            // Fase 6: falar com Ava antes de derrubar o OVERSEER, o chefe supervisor.
             return new DialogueObjective(
                     new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor"),
                     "Comandante Ava");
         case 7:
+            // Fase 7: falar com Ava, ouvir o desertor do subsolo, sabotar os
+            // geradores e então destruir o Guardião do Subsolo.
+            return new DialogueObjective(new SabotageObjective(), "Comandante Ava");
+        case 8:
+            // Fase final da campanha: o briefing final da Ava e a destruição
+            // do OVERSEER PRIME, a mente que comanda todas as máquinas.
+            return new InfiltratorObjective();
+        case 9:
             // Modo sobrevivência pós-campanha: ondas infinitas.
             return new NullObjective();
         default:
