@@ -3,6 +3,7 @@ package com.traduvertgames.quest;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.traduvertgames.dialogue.InteractiveNpc;
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.QuestBeacon;
@@ -74,18 +75,25 @@ public final class QuestManager {
     private static RPGObjective createObjectiveForLevel(int level) {
         switch (level) {
         case 1:
-            return new CollectArtifactsObjective();
+            // Fase 1: conversar com a Comandante Ava e coletar os artefatos.
+            return new ContactObjective();
         case 2:
-            return new BossHuntObjective();
+            // Fase 2: falar com a Engenheira Nia antes de caçar o Warbringer.
+            return new DialogueObjective(new BossHuntObjective(), "Engenheira Nia");
         case 3:
-            return new RitualObjective();
+            // Fase 3: pesquisar com Ivo antes de ativar o ritual.
+            return new DialogueObjective(new RitualObjective(), "Pesquisador Ivo");
         case 4:
-            return new RescueObjective();
+            // Fase 4: missão de resgate com apoio do Armeiro.
+            return new DialogueObjective(new RescueObjective(), "Armeiro Mercúrio");
         case 5:
-            return new DataRecoveryObjective();
+            // Fase 5: recuperar os dados com ajuda do Ivo.
+            return new DialogueObjective(new DataRecoveryObjective(), "Pesquisador Ivo");
         case 6:
-            // Fase final: derrotar o OVERSEER, o chefe supervisor.
-            return new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor");
+            // Fase final: falar com Ava antes de derrubar o OVERSEER, o chefe supervisor.
+            return new DialogueObjective(
+                    new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor"),
+                    "Comandante Ava");
         case 7:
             // Modo sobrevivência pós-campanha: ondas infinitas.
             return new NullObjective();
@@ -124,6 +132,16 @@ public final class QuestManager {
         currentObjective.onEnemyKilled(enemy);
     }
 
+    /** Notifica a missão ativa que o jogador iniciou uma conversa. */
+    public static void notifyDialogueStarted(InteractiveNpc npc) {
+        currentObjective.onDialogueStarted(npc);
+    }
+
+    /** Notifica a missão ativa que o jogador concluiu a conversa. */
+    public static void notifyDialogueFinished(InteractiveNpc npc) {
+        currentObjective.onDialogueFinished(npc);
+    }
+
     public static void notifyBossSpotted() {
         if (currentObjective instanceof BossHuntObjective) {
             ((BossHuntObjective) currentObjective).registerBossPresence();
@@ -140,6 +158,11 @@ public final class QuestManager {
 
     public static String getObjectiveProgress() {
         return currentObjective.getProgressText();
+    }
+
+    /** Título do personagem/alvo que o objetivo pede para localizar (usado no waypoint). */
+    public static String getTargetHint() {
+        return currentObjective.getTargetHint();
     }
 
     public static boolean isObjectiveComplete() {

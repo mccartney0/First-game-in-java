@@ -1,0 +1,168 @@
+package com.traduvertgames.dialogue;
+
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+
+import com.traduvertgames.entities.Entity;
+import com.traduvertgames.main.Game;
+import com.traduvertgames.world.Camera;
+
+/**
+ * NPC/objeto interativo com diálogo. Aproxime-se do personagem e pressione R
+ * para conversar. Subclasses definem as falas, a cor e a ação ao concluir.
+ *
+ * O prompt de interação aparece apenas dentro do raio definido e a conversa
+ * pausa inimigos e objetivos durante a duração (comportamento parecido ao
+ * onboarding, mas restrito ao diálogo).
+ */
+public class InteractiveNpc extends Entity {
+
+	/** Raio em pixels a partir do qual o prompt "R" aparece. */
+	public static final int INTERACTION_RADIUS = 48;
+
+	private final String name;
+	private final String[] lines;
+	private final Color bodyColor;
+	private final Color headColor;
+	private final InteractionListener listener;
+	private boolean finished = false;
+	private boolean wasInteracted = false;
+
+	public InteractiveNpc(int x, int y, String name, Color bodyColor, Color headColor, String[] lines,
+			InteractionListener listener) {
+		super(x, y, 16, 16, null);
+		this.name = name;
+		this.bodyColor = bodyColor;
+		this.headColor = headColor;
+		this.lines = lines;
+		this.listener = listener;
+		setMask(2, 2, 12, 12);
+	}
+
+	/**
+	 * Cria um NPC com falas padrão — útil para NPCs puramente narrativos sem
+	 * recompensa.
+	 */
+	public InteractiveNpc(int x, int y, String name, Color bodyColor, String[] lines) {
+		this(x, y, name, bodyColor, new Color(255, 224, 178), lines, new InteractionListener() {
+			@Override
+			public void onInteractionStart(InteractiveNpc npc) {
+			}
+
+			@Override
+			public void onInteractionEnd(InteractiveNpc npc) {
+			}
+		});
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public boolean hasFinished() {
+		return finished;
+	}
+
+	/** Indica se o jogador está perto o suficiente para interagir. */
+	public boolean isWithinReach() {
+		if (Game.player == null) {
+			return false;
+		}
+		return calculateDistance(getX(), getY(), Game.player.getX(), Game.player.getY())
+				<= INTERACTION_RADIUS;
+	}
+
+	@Override
+	public void update() {
+		// NPC só interage durante o jogo normal (não em menus, loja, pausa etc.).
+		if (!"NORMAL".equals(Game.gameState)) {
+			return;
+		}
+		// A conversa pausa durante o diálogo — nada a atualizar além do estado.
+		if (finished) {
+			return;
+		}
+		// Registra o primeiro momento em que o jogador interage (usado para
+		// desbloquear flags de diálogo no Journal).
+		if (!wasInteracted && isWithinReach() && DialogueManager.isActive() && DialogueManager.getTarget() == this) {
+			wasInteracted = true;
+		}
+	}
+
+	@Override
+	public void render(Graphics g) {
+		if (finished) {
+			return;
+		}
+		int screenX = this.getX() - Camera.x;
+		int screenY = this.getY() - Camera.y;
+		// Corpo (túnica)
+		g.setColor(bodyColor);
+		g.fillRoundRect(screenX + 3, screenY + 10, 10, 6, 4, 4);
+		// Cabeça
+		g.setColor(headColor);
+		g.fillOval(screenX + 5, screenY + 5, 6, 6);
+		// Cabelo/capuz escuro
+		g.setColor(new Color(30, 30, 30));
+		g.fillRect(screenX + 6, screenY + 2, 4, 4);
+	}
+
+	/**
+	 * Chamado pelo DialogueManager quando a conversa com este NPC termina.
+	 */
+	public void finishInteraction() {
+		if (finished) {
+			return;
+		}
+		finished = true;
+		if (listener != null) {
+			listener.onInteractionEnd(this);
+		}
+	}
+
+	/**
+	 * Chamado pelo DialogueManager quando a conversa começa.
+	 */
+	public void startInteraction() {
+		if (listener != null) {
+			listener.onInteractionStart(this);
+		}
+	}
+
+	/** Notificação de que o diálogo foi concluído e o overlay fechou. */
+	public void onDialogueClosed() {
+		finishInteraction();
+	}
+
+	/**
+	 * Listener opcional para recompensas/flags ao conversar com o NPC.
+	 * onInteractionStart roda ao abrir o diálogo; onInteractionEnd ao terminar.
+	 */
+	public interface InteractionListener {
+		void onInteractionStart(InteractiveNpc npc);
+
+		void onInteractionEnd(InteractiveNpc npc);
+	}
+
+	/**
+	 * Desenha o prompt de interação "R — conversar" flutuando acima do NPC
+	 * quando o jogador está perto e o diálogo está inativo.
+	 */
+	public static void renderPrompt(Graphics g, InteractiveNpc npc, int scale) {
+		if (npc.hasFinished() || !npc.isWithinReach()) {
+			return;
+		}
+		String label = "R — " + npc.getName();
+		g.setFont(new Font("arial", Font.BOLD, 8 * scale / 4 + 2));
+		int w = g.getFontMetrics().stringWidth(label);
+		int screenX = npc.getX() - Camera.x;
+		int screenY = npc.getY() - Camera.y;
+		int px = screenX + 8 - w / 2;
+		int py = screenY - 6;
+		g.setColor(new Color(0, 0, 0, 200));
+		g.fillRoundRect(px - 3, py - 8, w + 6, 11, 5, 5);
+		g.setColor(new Color(255, 255, 255, 245));
+		g.drawString(label, px, py);
+	}
+}

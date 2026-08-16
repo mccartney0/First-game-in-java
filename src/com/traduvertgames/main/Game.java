@@ -36,6 +36,7 @@ import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
 import com.traduvertgames.quest.QuestManager;
+import com.traduvertgames.dialogue.DialogueManager;
 
 public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
 
@@ -400,9 +401,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				Entity e = entities.get(i);
 				// Durante o onboarding, inimigos ficam paralisados para o novato
 				// praticar sem risco (Player continua atualizando normalmente).
-				if (e instanceof Enemy && OnboardingManager.isEnemyPaused()) {
-					continue;
-				}
+if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused())) {
+						continue;
+					}
 				e.update();
 			}
 			OnboardingManager.update();
@@ -547,8 +548,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 // ui.renderOverlay é desenhado por último para que a HUD compacta
                 // (e os cards do painel tático) fiquem sobre o overlay escuro da loja
                 // e sobre os demais painéis, sem parecer esmaecida no fundo.
-		ui.renderOverlay((Graphics2D) g);
-		OnboardingManager.render(g);
+	ui.renderOverlay((Graphics2D) g);
+	com.traduvertgames.graficos.MissionHud.render((Graphics2D) g);
+	DialogueManager.render(g);
+	OnboardingManager.render(g);
 
 		if ("GAMEOVER".equals(gameState)) {
                         Graphics2D g2 = (Graphics2D) g;
@@ -672,8 +675,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	@Override
 	// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
-	public void keyPressed(KeyEvent e) {
-
+		public void keyPressed(KeyEvent e) {
 		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
 			if (OnboardingManager.isActive()) {
 				OnboardingManager.skip();
@@ -821,7 +823,28 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                                 Game.toggleOverlayExpanded();
                         }
                 }
+
+                if (e.getKeyCode() == KeyEvent.VK_R) {
+                        if (DialogueManager.isActive()) {
+                                DialogueManager.advance();
+                        } else if ("NORMAL".equals(gameState)) {
+                                DialogueManager.startNearestDialogue();
+                        }
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                        if (DialogueManager.isActive()) {
+                                DialogueManager.advance();
+                        }
+                }
+
+                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                        if (DialogueManager.isActive()) {
+                                DialogueManager.advance();
+                        }
+                }
         }
+
 
 	@Override
 			public void keyReleased(KeyEvent e) {
@@ -1145,6 +1168,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();
+		DialogueManager.stop();
 		if (this.menu != null) {
 			this.menu.resetToMain();
 		}

@@ -12,6 +12,8 @@ import com.traduvertgames.entities.*;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
+import com.traduvertgames.dialogue.CommanderNpc;
+import com.traduvertgames.dialogue.SupportNpcs;
 
 public class World {
 
@@ -101,6 +103,18 @@ Game.enemies.add(en);
                                         } else if (pixelAtual == 0xFF795548) {
                                                 // Quest NPC
                                                 Game.entities.add(new QuestNPC(xx * 16, yy * 16, new Color(121, 85, 72)));
+                                        } else if (pixelAtual == 0xFF00897C) {
+                                                // Comandante Ava — NPC interativo (diálogo R)
+                                                Game.entities.add(new CommanderNpc(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFF66BB6A) {
+                                                // Engenheira Nia — NPC interativo (recarga + mana)
+                                                Game.entities.add(SupportNpcs.engineer(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFF5E35B1) {
+                                                // Pesquisador Ivo — NPC interativo (mana + dica)
+                                                Game.entities.add(SupportNpcs.researcher(xx * 16, yy * 16));
+                                        } else if (pixelAtual == 0xFFFF9800) {
+                                                // Armeiro Mercúrio — NPC interativo (arma + vida)
+                                                Game.entities.add(SupportNpcs.armorer(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFFFFB74D) {
                                                 Game.entities.add(new EngineerNPC(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFF7E57C2) {
@@ -139,11 +153,16 @@ Game.enemies.add(en);
                                                                 Enemy.Variant.GUARDIAN);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFF673AB7) {
-                                                Game.entities.add(new TeleportPad(xx * 16, yy * 16));
-                                        }
-                                        // Floor
-                                }
+					} else if (pixelAtual == 0xFF673AB7) {
+						Game.entities.add(new TeleportPad(xx * 16, yy * 16));
+					}
+					// Floor: pixels sem caso específico (spawns de entidades, bordas
+					// decorativas) viram chão caminhável — evita tiles null e
+					// NullPointerException no render ao avançar de fase
+					if (tiles[xx + (yy * WIDTH)] == null) {
+						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+					}
+				}
                         }
 		} catch (IOException e) {
 			e.printStackTrace();
