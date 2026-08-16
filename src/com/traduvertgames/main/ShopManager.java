@@ -80,6 +80,8 @@ public final class ShopManager {
 		if (!open) {
 			return;
 		}
+		closeOnNextEnter = false; // navegar cancela o "fecha" pós-compra
+		purchaseSelection = -1;
 		selection = (selection - 1 + ITEMS.length) % ITEMS.length;
 	}
 
@@ -88,7 +90,19 @@ public final class ShopManager {
 		if (!open) {
 			return;
 		}
+		closeOnNextEnter = false; // navegar cancela o "fecha" pós-compra
+		purchaseSelection = -1;
 		selection = (selection + 1) % ITEMS.length;
+	}
+
+	/** Navegação por A/D: mesmo comportamento das setas (lista vertical). */
+	public static void navigateA() {
+		navigateUp();
+	}
+
+	/** Navegação por A/D: mesmo comportamento das setas (lista vertical). */
+	public static void navigateD() {
+		navigateDown();
 	}
 
 	/** Compra o item selecionado: exposta para o Enter do Game. */
@@ -224,11 +238,37 @@ public final class ShopManager {
 		}
 		feedback = purchaseFeedback;
 		feedbackTimer = 90;
-		// Após uma compra efetuada, a loja fecha sozinha para o jogo continuar.
+		// Após uma compra efetuada, a loja PERMANECE aberta (rodada de QA):
+		// assim o jogador consegue comprar vários itens em uma única visita
+		// e vê o feedback da compra antes de sair. Fecha-se com ESC ou
+		// pressionando Enter com o feedback ativo (confirma e sai).
 		if (purchaseSucceeded) {
-			close();
+			closeOnNextEnter = true;
+			purchaseSelection = selection;
+		} else {
+			purchaseSelection = -1;
 		}
 		return;
+	}
+
+	/** Após uma compra bem-sucedida, o próximo Enter fecha a loja. Navegar
+	 *  (setas/A-D) antes do Enter cancela o "fecha" e compra o novo item
+	 *  selecionado — assim o jogador consegue fazer várias compras seguidas. */
+	private static boolean closeOnNextEnter = false;
+	private static int purchaseSelection = -1;
+
+	/** Enter com loja aberta: confirma a compra e, se acabou de comprar,
+	 *  fecha a loja na confirmação. */
+	public static void confirmOrPurchase() {
+		if (!open) {
+			return;
+		}
+		if (closeOnNextEnter) {
+			closeOnNextEnter = false;
+			close();
+			return;
+		}
+		purchaseSelected();
 	}
 
 	private static boolean applyCompanionSkin(
@@ -327,7 +367,7 @@ public final class ShopManager {
 
 		g.setFont(hintFont);
 		g.setColor(new Color(200, 200, 200));
-		String hint = "Setas/W-S para navegar — Enter para comprar — ESC para fechar";
+			String hint = "Setas/A-D/W-S para navegar — Enter para comprar (Enter de novo fecha) — ESC para fechar";
 		g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2,
 				panelY + panelHeight + 56);
 	}

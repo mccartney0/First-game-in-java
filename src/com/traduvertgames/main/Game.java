@@ -718,14 +718,20 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		if (!hidingHud) {
 		MiniMap.render(overlayG);
 		LevelUpManager.render(overlayG);
-		ShopManager.render(overlayG);
 		LevelSelectScreen.render(overlayG);
 		WaveManager.render(overlayG);
 		LootGuarantee.render(overlayG);
+		// A loja tem seu próprio painel completo com fundo escuro; renderizá-la
+		// aqui (bloco NORMAL) fazia o painel desenhar DUAS vezes por frame
+		// (uma aqui e outra no bloco SHOP) e misturava a HUD compacta por cima
+		// — era a causa do "menu de vida aparecendo no fundo da loja".
+		if (!"SHOP".equals(gameState)) {
+			ShopManager.render(overlayG);
 		}
-                // ui.renderOverlay é desenhado por último para que a HUD compacta
-                // (e os cards do painel tático) fiquem sobre o overlay escuro da loja
-                // e sobre os demais painéis, sem parecer esmaecida no fundo.
+		}
+		// ui.renderOverlay é desenhado por último para que a HUD compacta
+		// (e os cards do painel tático) fiquem sobre o overlay escuro da loja
+		// e sobre os demais painéis, sem parecer esmaecida no fundo.
 	ui.renderOverlay(overlayG);
 	if (!hidingHud) {
 	com.traduvertgames.graficos.MissionHud.render(overlayG);
@@ -782,11 +788,13 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                         // Durante a seleção de arma inicial o menu não deve
                         // desenhar nada: o overlay da própria tela de arma
                         // escurece o fundo e desenha a lista por cima.
-                } else if ("SHOP".equals(gameState)) {
-				// A HUD compacta é desenhada pelo overlay (por cima do painel da loja).
-				Menu.renderPauseScreen(overlayG);
+		} else if ("SHOP".equals(gameState)) {
+				// Painel único da loja (fundo escuro + lista + feedback + dica).
+				// Sem Menu.renderPauseScreen atrás: o overlay do menu de pausa
+				// era desenhado com a HUD "em melhor qualidade" no fundo, o que
+				// deixava a loja com aparência duplicada.
 				ShopManager.render(overlayG);
-                } else if ("LEVELUP".equals(gameState)) {
+			} else if ("LEVELUP".equals(gameState)) {
                         // Tela de level up já renderiza por cima do jogo (LevelUpManager.render).
 			} else if ("LEVELSELECT".equals(gameState)) {
 				LevelSelectScreen.render(overlayG);
@@ -974,11 +982,22 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			if ("MENU".equals(gameState)) {
 				menu.enter = true;
 			} else if ("SHOP".equals(gameState)) {
-				ShopManager.purchaseSelected();
+				// Enter confirma/compra: após uma compra bem-sucedida, o Enter
+				// seguinte fecha a loja (rodada de QA — compras múltiplas).
+				ShopManager.confirmOrPurchase();
 			} else if ("LEVELUP".equals(gameState)) {
 				LevelUpManager.confirmChoice();
 			} else if ("LEVELSELECT".equals(gameState)) {
 				LevelSelectScreen.confirmSelection();
+			}
+		}
+
+		// Navegação da loja por A/D (rodada de QA): A sobe, D desce na lista de itens.
+		if ("SHOP".equals(gameState)) {
+			if (e.getKeyCode() == KeyEvent.VK_A) {
+				ShopManager.navigateA();
+			} else if (e.getKeyCode() == KeyEvent.VK_D) {
+				ShopManager.navigateD();
 			}
 		}
 
