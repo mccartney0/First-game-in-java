@@ -1134,6 +1134,11 @@ public class Enemy extends Entity {
     }
 
     public void render(Graphics g) {
+        // Transição de fase: inimigos ficam invisíveis para limpar a tela
+        // enquanto o banner de conclusão e o fade preto substituem a cena.
+        if (com.traduvertgames.main.Game.isTransitioning()) {
+            return;
+        }
         if (!isDamaged) {
             g.drawImage(sprites[index], this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
         } else {

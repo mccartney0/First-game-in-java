@@ -303,12 +303,16 @@ Game.enemies.add(en);
 			QuestManager.prepareForLevel(levelNumber);
 			Game.world = new World(mapSource);
 			QuestManager.onLevelLoaded();
-                // Garante o chefe da fase: níveis a partir do 2 têm a missão de
-                // neutralizar o comandante; se o mapa não tiver um boss fixo,
-                // um WARBRINGER é posicionado em um local válido distante do spawn.
-                ensurePhaseBoss(levelNumber);
-                return;
-        }
+			// Garante o chefe da fase: níveis a partir do 2 têm a missão de
+			// neutralizar o comandante; se o mapa não tiver um boss fixo,
+			// um WARBRINGER é posicionado em um local válido distante do spawn.
+			ensurePhaseBoss(levelNumber);
+			// Narrativa: os NPCs da campanha ficam em pontos temáticos do mapa
+			// (centro de comando, esconderijo técnico, laboratório, forja), em
+			// vez de sempre no canto superior esquerdo da fase.
+			com.traduvertgames.quest.StoryManager.placeStoryNpcs();
+			return;
+	}
 
         private static boolean mapHasBoss() {
                 for (Entity e : Game.entities) {

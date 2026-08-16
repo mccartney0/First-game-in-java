@@ -110,10 +110,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private static boolean shopPendingOpened = false;
 
 	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
-	public static void clearQuestPending() {
+		public static void clearQuestPending() {
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
+		transitionAlpha = 0;
 	}
 
 	/** True quando o jogador já falou com o desertor do subsolo (fase 7). */
@@ -121,6 +122,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public static boolean isTraitorTalked() {
 		return traitorTalked;
+	}
+
+	/**
+	 * True enquanto a tela está no estado de transição de fase: a fase atual
+	 * já foi concluída (loja da conclusão aberta) ou o fade preto de troca
+	 * de fase ainda está visível. Usado para congelar e ocultar inimigos.
+	 */
+	public static boolean isTransitioning() {
+		return questCompletedPending || showLevelTransition > 0;
 	}
 
 	public static void resetTraitorTalked() {
@@ -140,6 +150,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         public static int drawOffsetY = 0;
         /** Frames restantes de exibição do aviso "Fase X concluída — próxima fase". */
         private static int showLevelTransition = 0;
+        /** Opacidade do fade preto da transição de fase (150 = totalmente escuro). */
+        private static int transitionAlpha = 0;
 
         public Game() throws IOException {
                 instance = this;
@@ -593,6 +605,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		if (showLevelTransition > 0) {
 			showLevelTransition--;
 		}
+		// Fade preto da transição de fase: escurece a fase antiga e some
+		// suavemente para revelar a nova (fade de ~50 frames).
+		if (transitionAlpha > 0) {
+			transitionAlpha = Math.max(0, transitionAlpha - 3);
+		}
 	}
 
 	/** Quando o objetivo da fase é completado: abre a loja antes de avançar. */
@@ -607,6 +624,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// Marca que a fase foi concluída: ao fechar a loja (compra ou ESC),
 		// o jogo avança automaticamente para a próxima fase.
 		questCompletedPending = true;
+		// A fase terminou: inimigos ficam paralisados na hora (não seguem
+		// atacando enquanto a loja está aberta) e os projéteis inimigos em
+		// voo são removidos para acalmar a tela.
+		for (int i = bullets.size() - 1; i >= 0; i--) {
+			bullets.remove(i);
+		}
 		// Feedback narrativo: banner central de missão concluída com o título da fase.
 		com.traduvertgames.graficos.MissionBanner.reset();
 		com.traduvertgames.graficos.MissionBanner.showComplete(QuestManager.getPhaseTitle(CUR_LEVEL));
@@ -634,8 +657,13 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 
 // Renderizar jogo //
 		world.render(g);
+		// Fase concluída: inimigos e seus projéteis ficam invisíveis — a
+		// próxima fase carrega limpa, sem "ruído" herdado da anterior.
 		for (int i = 0; i < entities.size(); i++) {
 			Entity e = entities.get(i);
+			if (questCompletedPending && e instanceof Enemy) {
+				continue;
+			}
 			e.render(g);
 		}
 		for (int i = 0; i < bullets.size(); i++) {
@@ -643,6 +671,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		}
 		for (int i = 0; i < bullet.size(); i++) {
 			bullet.get(i).render(g);
+		}
+		// Fade preto da transição de fase (desenha por cima do jogo).
+		if (transitionAlpha > 0) {
+			g.setColor(new Color(0, 0, 0, transitionAlpha));
+			g.fillRect(0, 0, WIDTH, HEIGHT);
 		}
 		// A HUD compacta é desenhada exclusivamente pelo overlay (por cima de tudo),
 		// evitando HUD duplicada/esmaecida em menus, loja e game over.
@@ -678,17 +711,24 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 // (fullscreen com letterboxing), revertendo depois.
                 Graphics2D overlayG = (Graphics2D) g.create();
                 overlayG.translate(offsetX, offsetY);
-                MiniMap.render(overlayG);
-                LevelUpManager.render(overlayG);
-                ShopManager.render(overlayG);
-                LevelSelectScreen.render(overlayG);
-                WaveManager.render(overlayG);
-                LootGuarantee.render(overlayG);
+		// Durante a transição de fase (banner de conclusão / lore) as HUDs
+		// de combate ficam escondidas para deixar o momento mais limpo.
+		boolean hidingHud = questCompletedPending || showLevelTransition > 0;
+		if (!hidingHud) {
+		MiniMap.render(overlayG);
+		LevelUpManager.render(overlayG);
+		ShopManager.render(overlayG);
+		LevelSelectScreen.render(overlayG);
+		WaveManager.render(overlayG);
+		LootGuarantee.render(overlayG);
+		}
                 // ui.renderOverlay é desenhado por último para que a HUD compacta
                 // (e os cards do painel tático) fiquem sobre o overlay escuro da loja
                 // e sobre os demais painéis, sem parecer esmaecida no fundo.
 	ui.renderOverlay(overlayG);
+	if (!hidingHud) {
 	com.traduvertgames.graficos.MissionHud.render(overlayG);
+	}
 		com.traduvertgames.graficos.VictoryCutscene.render(overlayG, SCALE);
 		com.traduvertgames.graficos.PhaseStatsScreen.render(overlayG, SCALE);
 	// OBS: o dispose do overlayG foi MOVIDO para o final do render — antes ele
@@ -1139,7 +1179,8 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
-			Enemy.enemies = 0;
+		transitionAlpha = 0;
+		Enemy.enemies = 0;
 			Menu.pause = false;
 		resetPlayerToDefaults();
 		applyDifficultyToPlayerStats();
@@ -1259,11 +1300,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 	 * fase é recarregado com todos os itens de missão, o chefe da fase e a
 	 * quest intactos — o treino nunca consome progresso da campanha.
 	 */
-	public void loadFirstPhase() {
+		public void loadFirstPhase() {
 		CUR_LEVEL = 1;
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
+		transitionAlpha = 0;
 		Enemy.enemies = 0;
 		resetScoreState();
 		applyDifficultyToPlayerStats();
@@ -1281,6 +1323,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		}
 		// A QuestManager já recebe a quest da fase 1 dentro do restartGame.
 		World.restartGame("level1.png");
+		// Lore de abertura da campanha: mesmo banner dourado das demais fases.
+		com.traduvertgames.graficos.MissionBanner.reset();
+		com.traduvertgames.graficos.MissionBanner.show(
+				com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(1),
+				com.traduvertgames.quest.StoryManager.getPhaseLore(1),
+				new java.awt.Color(255, 235, 59), java.awt.Color.WHITE, 360);
 		gameState = "NORMAL";
 	}
 
@@ -1314,6 +1362,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			}
 			applyProgressBonuses();
 			showLevelTransition = 180;
+		transitionAlpha = 150;
 			return;
 		}
 		// O progresso de fase encerra a loja aberta (ou level up) para seguir.
@@ -1324,13 +1373,26 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			LevelUpManager.dismiss();
 		}
 		applyProgressBonuses();
+		// Remove os projéteis inimigos em voo antes de carregar a nova fase
+		// (evita projéteis perdidos na transição).
+		bullets.clear();
+		questCompletedPending = false;
+		shopPendingOpened = false;
 		QuestManager.prepareForLevel(CUR_LEVEL);
 		String newWorld = "level" + CUR_LEVEL + ".png";
 		World.restartGame(newWorld);
 		// Card de estatísticas da fase que acabou de terminar (kills, tempo, combo).
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
-		// Avisos de transição de fase.
+		// Transição de fase limpa: fade preto suave para "apagar" a fase
+		// antiga antes de revelar a nova, com HUDs escondidas no meio tempo.
+		transitionAlpha = 150;
 		showLevelTransition = 150;
+		// Lore da nova fase: título e texto de ambientação em destaque dourado.
+		com.traduvertgames.graficos.MissionBanner.reset();
+		com.traduvertgames.graficos.MissionBanner.show(
+			com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(CUR_LEVEL),
+			com.traduvertgames.quest.StoryManager.getPhaseLore(CUR_LEVEL),
+			new Color(255, 235, 59), Color.WHITE, 360);
 	}
 
 	/**
@@ -1341,6 +1403,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		WaveManager.startArena();
 		showLevelTransition = 180;
+		transitionAlpha = 150;
 		// Card de estatísticas do ciclo anterior do modo infinito (se não for a
 		// primeira entrada, que já ganha a cutscene de vitória da campanha).
 		if (instance != null && instance.levelPlus > 1) {
@@ -1360,6 +1423,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		startProceduralLevel(1);
 		showLevelTransition = 180;
+		transitionAlpha = 150;
 	}
 
 	/**
@@ -1380,6 +1444,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
 		startProceduralLevel(depth);
 		showLevelTransition = 180;
+		transitionAlpha = 150;
 	}
 
 	/** Carrega o mapa procedural da profundidade informada. */
@@ -1536,6 +1601,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
+		transitionAlpha = 0;
 		resetGameOverState();
 	}
 
