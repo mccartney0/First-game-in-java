@@ -121,6 +121,10 @@ public class Menu {
 				handleLoadSelection();
 				break;
 			case HOW_TO_PLAY:
+				// A tela do tutorial informa "Enter para voltar"; voltar ao
+				// menu principal em vez de apenas resetar a seleção (o jogador
+				// ficava preso na tela do tutorial).
+				currentScreen = Screen.MAIN;
 				currentOption = 0;
 				break;
 			case EXIT_CONFIRM:
@@ -557,20 +561,55 @@ public class Menu {
 			g.drawString(lines[i], textX, baselineY);
 		}
 
-		// Progresso de missão de cada slot abaixo do rótulo.
-		Font objectiveFont = new Font("arial", Font.PLAIN, 15);
+		// Progresso de missão de cada slot abaixo do rótulo, com quebra de linha
+		// para caber na largura do card e sem sobrepor a opção seguinte.
+		Font objectiveFont = new Font("arial", Font.PLAIN, 13);
 		g.setFont(objectiveFont);
 		g.setColor(new Color(180, 200, 255));
-		int objectiveHeight = g.getFontMetrics(objectiveFont).getHeight();
+		int maxObjectiveWidth = maxWidth;
 		for (int i = 0; i < LOAD_SLOT_LABELS.length; i++) {
 			if (SaveManager.hasSlotSave(i + 1)) {
 				String objective = SaveManager.getSlotObjectiveText(i + 1);
 				if (!objective.isEmpty()) {
-					int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1) + objectiveHeight - 4;
-					g.drawString(objective, textX, baselineY);
+					java.util.List<String> wrapped = wrapText(objective, g.getFontMetrics(), maxObjectiveWidth);
+					int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1) + 18;
+					for (String segment : wrapped) {
+						g.drawString(segment, textX, baselineY);
+						baselineY += g.getFontMetrics().getHeight();
+					}
 				}
 			}
 		}
+	}
+
+	private static java.util.List<String> wrapText(String text, java.awt.FontMetrics metrics, int maxWidth) {
+		java.util.List<String> lines = new java.util.ArrayList<String>();
+		if (text == null || text.isEmpty() || metrics.stringWidth(text) <= maxWidth) {
+			lines.add(text == null ? "" : text);
+			return lines;
+		}
+		StringBuilder current = new StringBuilder();
+		for (int i = 0; i < text.length(); i++) {
+			current.append(text.charAt(i));
+			if (metrics.stringWidth(current.toString()) > maxWidth) {
+				// Volta ao último espaço para não quebrar palavra.
+				int lastSpace = current.length() - 1;
+				while (lastSpace > 0 && current.charAt(lastSpace) != ' ') {
+					lastSpace--;
+				}
+				if (lastSpace <= 0) {
+					lines.add(current.toString());
+					current = new StringBuilder();
+				} else {
+					lines.add(current.substring(0, lastSpace).trim());
+					current = new StringBuilder(text.substring(i - (current.length() - 1 - lastSpace)));
+				}
+			}
+		}
+		if (current.length() > 0) {
+			lines.add(current.toString());
+		}
+		return lines;
 	}
 
 	private void renderHowToPlay(Graphics g) {
