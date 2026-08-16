@@ -169,6 +169,22 @@ public final class QuestManager {
         return currentObjective.isComplete();
     }
 
+    /**
+     * Estado lógico da missão da fase atual, para o save.
+     * O formato é opaco e definido por cada objetivo ({@link RPGObjective#serializeState()}).
+     */
+    public static String serializeObjectiveState() {
+        return currentObjective.serializeState();
+    }
+
+    /**
+     * Aplica o estado salvo à missão da fase atual.
+     * Deve ser chamado depois de {@link #prepareForLevel(int)} para a fase salva.
+     */
+    public static void deserializeObjectiveState(String state) {
+        currentObjective.deserializeState(state);
+    }
+
     public static void update() {
         currentObjective.update();
         processPendingRemovals();

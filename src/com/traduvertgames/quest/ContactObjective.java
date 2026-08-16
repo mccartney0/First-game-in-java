@@ -75,4 +75,40 @@ public class ContactObjective implements RPGObjective {
 		}
 		return null;
 	}
+
+	@Override
+	public String serializeState() {
+		if (talkedToCommander && artifactsCollected >= REQUIRED_ARTIFACTS) {
+			return "COMPLETE";
+		}
+		return "TALKED=" + talkedToCommander + ",ARTIFACTS=" + Math.min(artifactsCollected, REQUIRED_ARTIFACTS);
+	}
+
+	@Override
+	public void deserializeState(String state) {
+		if (state == null || state.isEmpty()) {
+			return;
+		}
+		if ("COMPLETE".equals(state)) {
+			talkedToCommander = true;
+			artifactsCollected = REQUIRED_ARTIFACTS;
+			return;
+		}
+		for (String part : state.split(",")) {
+			int eq = part.indexOf('=');
+			if (eq < 0) {
+				continue;
+			}
+			String key = part.substring(0, eq);
+			String value = part.substring(eq + 1);
+			if ("TALKED".equals(key)) {
+				talkedToCommander = "true".equalsIgnoreCase(value);
+			} else if ("ARTIFACTS".equals(key)) {
+				try {
+					artifactsCollected = Integer.parseInt(value);
+				} catch (NumberFormatException ignored) {
+				}
+			}
+		}
+	}
 }

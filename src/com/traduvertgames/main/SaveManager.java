@@ -25,25 +25,35 @@ import com.traduvertgames.world.World;
  * escapam do intervalo codificável.
  *
  * Arquivo: saves.json
- * Estrutura:
+ * Estrutura (v2):
  * {
+ *   "version": 2,
  *   "activeSlot": 1,
+ *   "campaign": { "completedLevels": [1,2], "maxLevelReached": 3 },
  *   "slots": [
  *     {
  *       "id": 1,
- *       "vida": 100, "mana": 50, ...,
- *       "level": 3, "levelPlus": 1,
- *       "pontuacao": 12000, "recorde": 50000,
- *       "energiaArma_BLASTER": 250, ...
+ *       "session": { "vida": 100, "level": 3, "levelPlus": 1, ... },
+ *       "progress": { "objectiveState": { "1": "COMPLETE", "2": "TALKED=..." } },
+ *       "timestamp": "2026-08-16T14:30:00"
  *     },
  *     ...
  *   ]
  * }
+ *
+ * Saves v1 (sem version/session) são migrados automaticamente na leitura.
+ * A gravação é atômica (tmp + rename) para evitar corrupção por travamento.
  */
 public final class SaveManager {
 
 	/** Arquivo único que guarda todos os slots. */
 	public static final File SAVE_FILE = new File("saves.json");
+
+	/** Arquivo temporário usado na gravação atômica. */
+	private static final File SAVE_TMP = new File("saves.tmp");
+
+	/** Versão atual do esquema de save emitida na escrita. */
+	public static final int SCHEMA_VERSION = 2;
 
 	/** Número de slots disponíveis. */
 	public static final int SLOT_COUNT = 3;
@@ -52,6 +62,7 @@ public final class SaveManager {
 	public static int activeSlot = 1;
 
 	private static final String INDENT = "  ";
+
 
 	private SaveManager() {
 	}
@@ -86,6 +97,24 @@ public final class SaveManager {
 			slot.put("energiaArma_" + type.name(), clampDouble(Player.getStoredEnergyForType(type)));
 		}
 
+		Map<String, Object> session = new HashMap<String, Object>();
+		for (Map.Entry<String, Object> entry : slot.entrySet()) {
+			String key = entry.getKey();
+			if (!"id".equals(key) && !"progress".equals(key) && !"timestamp".equals(key)) {
+				session.put(key, entry.getValue());
+			}
+		}
+		Map<String, Object> progress = buildProgressMap(game);
+		slot.put("session", session);
+		slot.put("progress", progress);
+		slot.put("timestamp", currentTimestamp());
+		// Remove as chaves antigas agora duplicadas dentro de session.
+		for (String key : session.keySet()) {
+			slot.remove(key);
+		}
+
+		updateCampaign(root, game);
+
 		root.put("activeSlot", activeSlot);
 		root.put("slots", slots);
 
@@ -96,36 +125,51 @@ public final class SaveManager {
 	 * Salva automaticamente no slot ativo (usado ao morrer ou trocar de fase).
 	 */
 	public static boolean saveAutoSave() {
-		Game game = Game.getInstance();
-		if (game == null) {
-			return false;
+		return saveCurrentGame();
+	}
+
+	/** Progresso narrativo da fase atual (estado da missão) por nível. */
+	private static Map<String, Object> buildProgressMap(Game game) {
+		Map<String, Object> progress = new HashMap<String, Object>();
+		Map<String, String> objectiveState = new HashMap<String, String>();
+		String state = com.traduvertgames.quest.QuestManager.serializeObjectiveState();
+		if (state != null && !state.isEmpty() && !"UNKNOWN".equals(state)) {
+			int key = game != null ? game.getCurrentLevel()
+					: Math.max(1, com.traduvertgames.quest.QuestManager.getCurrentLevel());
+			objectiveState.put(String.valueOf(key), state);
 		}
-		Map<String, Object> root = loadRoot();
-		List<Map<String, Object>> slots = getSlots(root);
-		Map<String, Object> slot = findOrCreateSlot(slots, activeSlot);
+		progress.put("objectiveState", objectiveState);
+		return progress;
+	}
 
-		slot.put("vida", clampDouble(Player.life));
-		slot.put("mana", clampDouble(Player.mana));
-		slot.put("arma", clampDouble(Player.weapon));
-		slot.put("escudo", clampDouble(Player.shield));
-		slot.put("inimigosMortos", Enemy.enemies);
-		slot.put("levelPlus", game.getLevelPlus());
-		slot.put("level", game.getCurrentLevel());
-		slot.put("pontuacao", Game.getScore());
-		slot.put("recorde", Game.getHighScore());
-		slot.put("melhorCombo", Game.getBestComboRecord());
-		slot.put("melhorComboSessao", Game.getBestComboThisRun());
-		slot.put("armaAtual", Player.getCurrentWeaponOrdinal());
-		slot.put("armasDesbloqueadas", Player.getWeaponUnlockMask());
-
-		for (WeaponType type : WeaponType.values()) {
-			slot.put("energiaArma_" + type.name(), clampDouble(Player.getStoredEnergyForType(type)));
+	/** Atualiza a seção de campanha global (fases concluídas e fase máxima). */
+	private static void updateCampaign(Map<String, Object> root, Game game) {
+		@SuppressWarnings("unchecked")
+		Map<String, Object> campaign = (Map<String, Object>) root.get("campaign");
+		if (campaign == null) {
+			campaign = new HashMap<String, Object>();
+			root.put("campaign", campaign);
 		}
-
-		root.put("activeSlot", activeSlot);
-		root.put("slots", slots);
-
-		return writeRoot(root);
+		Game current = game != null ? game : Game.getInstance();
+		if (current != null) {
+			int reached = current.getCurrentLevel();
+			int previousMax = toInt(campaign.get("maxLevelReached"));
+			campaign.put("maxLevelReached", Math.max(previousMax, reached));
+			// Uma fase é considerada concluída quando o jogador avança além dela:
+			// o save registra a fase ANTERIOR à atual como concluída ao avançar.
+			int completedLevel = reached - 1;
+			if (completedLevel >= 1 && completedLevel < Game.MAX_LEVEL) {
+				@SuppressWarnings("unchecked")
+				List<Object> completed = (List<Object>) campaign.get("completedLevels");
+				if (completed == null) {
+					completed = new ArrayList<Object>();
+					campaign.put("completedLevels", completed);
+				}
+				if (!completed.contains(completedLevel)) {
+					completed.add(completedLevel);
+				}
+			}
+		}
 	}
 
 	/** ---------- Leitura ---------- */
@@ -148,26 +192,29 @@ public final class SaveManager {
 
 		Game game = Game.getInstance();
 
+		// Migração v1→v2: se o slot é flat (v1), a sessão é o próprio slot.
+		Map<String, Object> session = getSession(slot);
+
 		// Valores salvos são aplicados DEPOIS do reload do mundo, pois o
 		// restart redefine os máximos de vida/mana/escudo para a fase carregada.
-		double savedLife = toDouble(slot.get("vida"));
-		double savedMana = toDouble(slot.get("mana"));
-		double savedWeapon = toDouble(slot.get("arma"));
-		double savedShield = toDouble(slot.get("escudo"));
-		int savedEnemies = toInt(slot.get("inimigosMortos"));
-		int savedLevelPlus = toInt(slot.get("levelPlus"));
-		int savedLevel = toInt(slot.get("level"));
-		int savedScore = toInt(slot.get("pontuacao"));
-		int savedHighScore = toInt(slot.get("recorde"));
-		int savedBestComboRecord = toInt(slot.get("melhorCombo"));
-		int savedBestComboSession = toInt(slot.get("melhorComboSessao"));
-		int savedWeaponOrdinal = toInt(slot.get("armaAtual"));
-		int savedWeaponMask = toInt(slot.get("armasDesbloqueadas"));
+		double savedLife = toDouble(session.get("vida"));
+		double savedMana = toDouble(session.get("mana"));
+		double savedWeapon = toDouble(session.get("arma"));
+		double savedShield = toDouble(session.get("escudo"));
+		int savedEnemies = toInt(session.get("inimigosMortos"));
+		int savedLevelPlus = toInt(session.get("levelPlus"));
+		int savedLevel = toInt(session.get("level"));
+		int savedScore = toInt(session.get("pontuacao"));
+		int savedHighScore = toInt(session.get("recorde"));
+		int savedBestComboRecord = toInt(session.get("melhorCombo"));
+		int savedBestComboSession = toInt(session.get("melhorComboSessao"));
+		int savedWeaponOrdinal = toInt(session.get("armaAtual"));
+		int savedWeaponMask = toInt(session.get("armasDesbloqueadas"));
 
 		Player.loadCurrentWeaponFromSave(savedWeaponOrdinal);
 		Player.loadUnlockedWeaponsFromSave(savedWeaponMask);
 		for (WeaponType type : WeaponType.values()) {
-			Object raw = slot.get("energiaArma_" + type.name());
+			Object raw = session.get("energiaArma_" + type.name());
 			if (raw != null) {
 				Player.loadWeaponEnergyFromSave(type, toDouble(raw));
 			}
@@ -209,6 +256,7 @@ public final class SaveManager {
 			Game.gameState = "NORMAL";
 			Menu.pause = false;
 			activeSlot = slotId;
+			restoreObjectiveState(slot, savedLevel);
 			return true;
 		}
 
@@ -224,7 +272,37 @@ public final class SaveManager {
 		Game.gameState = "NORMAL";
 		Menu.pause = false;
 		activeSlot = slotId;
+		restoreObjectiveState(slot, savedLevel);
 		return true;
+	}
+
+	/** Sessão do slot: v2 usa a seção "session"; v1 é o próprio slot (flat). */
+	@SuppressWarnings("unchecked")
+	private static Map<String, Object> getSession(Map<String, Object> slot) {
+		Object raw = slot.get("session");
+		if (raw instanceof Map) {
+			return (Map<String, Object>) raw;
+		}
+		return slot;
+	}
+
+	/** Restaura o estado da missão da fase salva após o reload do mundo. */
+	@SuppressWarnings("unchecked")
+	private static void restoreObjectiveState(Map<String, Object> slot, int savedLevel) {
+		Object raw = slot.get("progress");
+		if (!(raw instanceof Map)) {
+			return;
+		}
+		Map<String, Object> progress = (Map<String, Object>) raw;
+		Object rawState = progress.get("objectiveState");
+		if (!(rawState instanceof Map)) {
+			return;
+		}
+		Map<String, Object> objectiveState = (Map<String, Object>) rawState;
+		Object state = objectiveState.get(String.valueOf(savedLevel));
+		if (state instanceof String) {
+			com.traduvertgames.quest.QuestManager.deserializeObjectiveState((String) state);
+		}
 	}
 
 	/** Verifica se existe ao menos um slot salvo. */
@@ -235,7 +313,8 @@ public final class SaveManager {
 		Map<String, Object> root = loadRoot();
 		List<Map<String, Object>> slots = getSlots(root);
 		for (Map<String, Object> slot : slots) {
-			if (slot.containsKey("vida") || slot.containsKey("level")) {
+			Map<String, Object> session = getSession(slot);
+			if (session.containsKey("vida") || session.containsKey("level")) {
 				return true;
 			}
 		}
@@ -247,7 +326,7 @@ public final class SaveManager {
 		Map<String, Object> root = loadRoot();
 		List<Map<String, Object>> slots = getSlots(root);
 		Map<String, Object> slot = findSlot(slots, slotId);
-		return slot != null && (slot.containsKey("vida") || slot.containsKey("level"));
+		return slot != null && (getSession(slot).containsKey("vida") || getSession(slot).containsKey("level"));
 	}
 
 	/** Retorna a fase salva em um slot, ou -1 se vazio. */
@@ -258,8 +337,68 @@ public final class SaveManager {
 		if (slot == null) {
 			return -1;
 		}
-		Object level = slot.get("level");
+		Object level = getSession(slot).get("level");
 		return level instanceof Number ? ((Number) level).intValue() : -1;
+	}
+
+	/**
+	 * Resumo humano do progresso de missão salvo em um slot (ex.: "Fase 1:
+	 * Fale com a Comandante Ava"), ou "" quando não há progresso de missão.
+	 */
+	public static String getSlotObjectiveText(int slotId) {
+		Map<String, Object> root = loadRoot();
+		List<Map<String, Object>> slots = getSlots(root);
+		Map<String, Object> slot = findSlot(slots, slotId);
+		if (slot == null) {
+			return "";
+		}
+		Object raw = slot.get("progress");
+		if (!(raw instanceof Map)) {
+			return "";
+		}
+		Map<String, Object> progress = (Map<String, Object>) raw;
+		Object rawState = progress.get("objectiveState");
+		if (!(rawState instanceof Map)) {
+			return "";
+		}
+		Map<String, Object> objectiveState = (Map<String, Object>) rawState;
+		// Procura o estado pela fase salva no slot e, se não houver, pela fase
+		// registrada na sessão (o save pode ter sido feito com uma fase
+		// ligeiramente diferente da exibida no rótulo do slot).
+		int savedLevel = getSlotLevel(slotId);
+		Object state = objectiveState.get(String.valueOf(savedLevel));
+		if (!(state instanceof String)) {
+			Object sessionLevel = getSession(slot).get("level");
+			if (sessionLevel instanceof Number) {
+				state = objectiveState.get(String.valueOf(((Number) sessionLevel).intValue()));
+			}
+		}
+		if (!(state instanceof String) && !objectiveState.isEmpty()) {
+			// Usa o estado da chave mais alta como estimativa.
+			int bestLevel = 0;
+			Object bestState = null;
+			for (Map.Entry<String, Object> entry : objectiveState.entrySet()) {
+				int candidate = toInt(entry.getValue() == null ? 0 : Integer.parseInt(entry.getKey()));
+				if (candidate > bestLevel) {
+					bestLevel = candidate;
+					bestState = entry.getValue();
+				}
+			}
+			state = bestState;
+		}
+		if (!(state instanceof String)) {
+			return "";
+		}
+		String stateText = (String) state;
+		if ("COMPLETE".equals(stateText) || stateText.startsWith("COMPLETE")) {
+			return "";
+		}
+		String levelTitle = com.traduvertgames.quest.QuestManager.getPhaseTitle(savedLevel);
+		if (stateText.startsWith("TALKED=false")) {
+			// Estado salvo antes de falar com o NPC da fase: indica o alvo da missão.
+			return "Fase " + savedLevel + ": " + levelTitle + " (falta falar com o NPC)";
+		}
+		return "Fase " + savedLevel + ": " + levelTitle + " (em andamento)";
 	}
 
 	/** Retorna a pontuação salva em um slot, ou -1 se vazio. */
@@ -270,7 +409,7 @@ public final class SaveManager {
 		if (slot == null) {
 			return -1;
 		}
-		Object score = slot.get("pontuacao");
+		Object score = getSession(slot).get("pontuacao");
 		return score instanceof Number ? ((Number) score).intValue() : -1;
 	}
 
@@ -280,8 +419,15 @@ public final class SaveManager {
 		List<Map<String, Object>> slots = getSlots(root);
 		Map<String, Object> slot = findSlot(slots, slotId);
 		if (slot != null) {
+			Map<String, Object> session = getSession(slot);
+			session.clear();
+			Object progress = slot.get("progress");
 			slot.clear();
 			slot.put("id", slotId);
+			if (progress instanceof Map) {
+				slot.put("progress", progress);
+			}
+			slot.put("timestamp", "");
 		}
 		root.put("slots", slots);
 		return writeRoot(root);
@@ -371,17 +517,53 @@ public final class SaveManager {
 	}
 
 	private static boolean writeRoot(Map<String, Object> root) {
+		root.put("version", SCHEMA_VERSION);
 		BufferedWriter writer = null;
 		try {
-			writer = new BufferedWriter(new FileWriter(SAVE_FILE));
+			// Gravação atômica: escreve em tmp e renomeia, evitando corrupção
+			// se o jogo travar no meio da escrita.
+			if (SAVE_TMP.exists() && !SAVE_TMP.delete()) {
+				return false;
+			}
+			writer = new BufferedWriter(new FileWriter(SAVE_TMP));
 			writer.write(JsonWriter.write(root));
 			writer.flush();
 			writer.close();
+			writer = null;
+			if (!SAVE_TMP.renameTo(SAVE_FILE)) {
+				SAVE_TMP.delete();
+				return false;
+			}
 			return true;
 		} catch (IOException e) {
 			e.printStackTrace();
 			return false;
+		} finally {
+			if (writer != null) {
+				try {
+					writer.close();
+				} catch (IOException ignored) {
+				}
+			}
 		}
+	}
+
+	/** Timestamp ISO simples para o campo "timestamp" do slot. */
+	private static String currentTimestamp() {
+		java.util.Calendar calendar = java.util.Calendar.getInstance();
+		StringBuilder builder = new StringBuilder();
+		builder.append(calendar.get(java.util.Calendar.YEAR));
+		append2(builder, calendar.get(java.util.Calendar.MONTH) + 1);
+		append2(builder, calendar.get(java.util.Calendar.DAY_OF_MONTH));
+		builder.append('T');
+		append2(builder, calendar.get(java.util.Calendar.HOUR_OF_DAY));
+		append2(builder, calendar.get(java.util.Calendar.MINUTE));
+		append2(builder, calendar.get(java.util.Calendar.SECOND));
+		return builder.toString();
+	}
+
+	private static void append2(StringBuilder builder, int value) {
+		builder.append(value < 10 ? "0" : "").append(value);
 	}
 
 	private static int clampDouble(double value) {

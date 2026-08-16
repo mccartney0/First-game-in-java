@@ -54,6 +54,22 @@ public interface RPGObjective {
     boolean isComplete();
 
     /**
+     * Estado lógico do objetivo para o save/load (ex.: "COMPLETE", "IN_PROGRESS",
+     * "DIALOG_PENDING", "NOT_STARTED"). O formato é definido por cada objetivo.
+     */
+    default String serializeState() {
+        return "UNKNOWN";
+    }
+
+    /**
+     * Restaura o estado lógico do objetivo a partir do save.
+     * O texto recebido foi produzido por {@link #serializeState()} na versão
+     * salva; objetivos antigos desconhecem o texto e continuam do zero.
+     */
+    default void deserializeState(String state) {
+    }
+
+    /**
      * Nome do alvo (personagem ou ponto) usado para desenhar o waypoint
      * apontando para ele. Retorna null quando não há alvo destacado.
      */

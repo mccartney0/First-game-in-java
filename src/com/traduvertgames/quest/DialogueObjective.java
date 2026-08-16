@@ -113,4 +113,25 @@ public class DialogueObjective implements RPGObjective {
 		}
 		return delegate.getTargetHint();
 	}
+
+	@Override
+	public String serializeState() {
+		return "TALKED=" + talkedToTarget + ";DELEGATE=" + delegate.serializeState();
+	}
+
+	@Override
+	public void deserializeState(String state) {
+		if (state == null || state.isEmpty()) {
+			return;
+		}
+		int sep = state.indexOf(';');
+		String talkedPart = sep >= 0 ? state.substring(0, sep) : state;
+		String delegatePart = sep >= 0 ? state.substring(sep + 1) : "";
+		if (talkedPart.startsWith("TALKED=")) {
+			talkedToTarget = "true".equalsIgnoreCase(talkedPart.substring("TALKED=".length()));
+		}
+		if (delegatePart.startsWith("DELEGATE=")) {
+			delegate.deserializeState(delegatePart.substring("DELEGATE=".length()));
+		}
+	}
 }

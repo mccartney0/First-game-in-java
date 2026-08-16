@@ -556,6 +556,21 @@ public class Menu {
 			}
 			g.drawString(lines[i], textX, baselineY);
 		}
+
+		// Progresso de missão de cada slot abaixo do rótulo.
+		Font objectiveFont = new Font("arial", Font.PLAIN, 15);
+		g.setFont(objectiveFont);
+		g.setColor(new Color(180, 200, 255));
+		int objectiveHeight = g.getFontMetrics(objectiveFont).getHeight();
+		for (int i = 0; i < LOAD_SLOT_LABELS.length; i++) {
+			if (SaveManager.hasSlotSave(i + 1)) {
+				String objective = SaveManager.getSlotObjectiveText(i + 1);
+				if (!objective.isEmpty()) {
+					int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1) + objectiveHeight - 4;
+					g.drawString(objective, textX, baselineY);
+				}
+			}
+		}
 	}
 
 	private void renderHowToPlay(Graphics g) {
