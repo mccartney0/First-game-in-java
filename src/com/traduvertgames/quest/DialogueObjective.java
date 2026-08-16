@@ -46,6 +46,17 @@ public class DialogueObjective implements RPGObjective {
 	@Override
 	public void onLevelLoaded() {
 		delegate.onLevelLoaded();
+		// Dica de abertura: o jogador frequentemente mata todos os inimigos da
+		// fase e não sabe que precisa conversar com o NPC-alvo antes de a missão
+		// progredir (bug reportado: "peguei tudo, matei tudo e não avança").
+		if (!talkedToTarget) {
+			com.traduvertgames.graficos.MissionBanner.show(
+				"MISSÃO",
+				"Fale com " + dialogueTarget + " para iniciar (tecla R próximo a ele)",
+				new java.awt.Color(255, 235, 59),
+				java.awt.Color.WHITE,
+				300);
+		}
 	}
 
 	@Override

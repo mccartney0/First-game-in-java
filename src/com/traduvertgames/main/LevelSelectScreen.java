@@ -48,9 +48,22 @@ public final class LevelSelectScreen {
 		Game.gameState = "LEVELSELECT";
 	}
 
+	/** Fecha a tela de seleção restaurando o jogo (não o menu principal).
+	 * A tela pode ser aberta no meio de uma fase — fechar deve devolver o
+	 * jogador ao combate em vez de mandá-lo de volta ao menu. */
 	public static void close() {
+		if (!open) {
+			return;
+		}
 		open = false;
-		Game.gameState = "MENU";
+		Game.gameState = "NORMAL";
+	}
+
+	/** TAB também fecha a tela (mesmo atalho do painel tático, sem conflito). */
+	public static void closeOnTab() {
+		if (open) {
+			close();
+		}
 	}
 
 	public static void update() {
@@ -92,12 +105,19 @@ public final class LevelSelectScreen {
 		selection = (selection + 1) % TOTAL_LEVELS;
 	}
 
-	/** Confirma a seleção (Enter). */
+	/** Confirma a seleção (Enter). Se a fase escolhida for a atual, apenas
+	 * fecha a tela: reiniciar a própria fase por acidente já custou partidas
+	 * inteiras (o jogador perdeu o progresso dos recursos coletados). */
 	public static void confirmSelection() {
 		if (!open) {
 			return;
 		}
-		playLevel(selection + 1);
+		int chosen = selection + 1;
+		if (chosen == QuestManager.getCurrentLevel()) {
+			close();
+			return;
+		}
+		playLevel(chosen);
 	}
 
 	private static void playLevel(int level) {
@@ -128,7 +148,6 @@ public final class LevelSelectScreen {
 		// Trocar de fase abandona a arena de treino — o onboarding não deve
 		// continuar ativo por cima da nova fase (bug do painel fantasma).
 		OnboardingManager.stop();
-		Game.gameState = "NORMAL";
 		open = false;
 		Menu.pause = false;
 	}
@@ -173,7 +192,7 @@ public final class LevelSelectScreen {
 
 		g.setFont(new Font("arial", Font.PLAIN, 14));
 		g.setColor(new Color(200, 200, 200));
-		String hint = "Setas para escolher — Enter para jogar — ESC para voltar";
+		String hint = "Setas para escolher — Enter para trocar de fase — ESC ou TAB para voltar";
 		g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2, panelY + panelHeight + 30);
 	}
 }

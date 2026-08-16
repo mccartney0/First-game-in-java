@@ -187,3 +187,99 @@ Hipótese alternativa: o usuário pressionou F11 2x (entrou fullscreen exclusivo
 - Ferramentas: build `cd /home/ubuntu/First-game-in-java && javac -d bin -cp bin $(find src -name "*.java") 2>&1 | grep error; echo BUILD_OK`; teste visual `DISPLAY=:120 ...`; driver `DISPLAY=:120 python3 /tmp/xinput.py` (keymap tem F11); capturas `DISPLAY=:120 import -window root /tmp/X.png`; suíte: for b in AutoValidate NarrativeLogicTest SaveLoadLogicTest QuestLogicTest ShopSkinLogicTest; javac -d /tmp/test_$b -cp bin tools/$b.java && java -cp /tmp/test_$b:bin $b
 - PR #28: https://github.com/mccartney0/First-game-in-java/pull/28 ; comentar com `gh pr comment 28 --body-file /tmp/pr_body.md`
 - PR é da branch manus/bin-consistente para main. Usuário aplica com `git pull origin manus/bin-consistente`
+
+## RODADA 11 — achados:
+1. **Travamento em LEVELSELECT**: o usuário apertou **L** (keyPressed VK_L) em "NORMAL" → LevelSelectScreen.open() → gameState="LEVELSELECT". playLevel(1) foi chamado (Enter) → World.restartGame("level1.png") → mas o log "[LSS] playLevel(1)" indica gameState LEVELSELECT no momento da seleção; depois jogo voltou a NORMAL... MAS o usuário diz "não avança". Hipótese real: o usuário apertou L achando que era outra coisa, e ficou preso na tela LEVELSELECT achando que era o TAB do painel tático. Fix: deixar LevelSelectScreen.close() com ESC claro (já existe) e impedir que a seleção de fase reinicie a fase atual sem aviso + avisar no HUD. Melhor fix: TAB deve fechar qualquer overlay; e quando nível selecionado == nível atual, fechar sem reiniciar (evitar perder progresso). Também o painel tático (overlayExpanded via TAB) pode conflitar.
+2. **Enquadramento janela minimizada**: frame.setResizable(false) + setSize fixo, mas usuário redimensionou? O log mostra gradle rodando em outra janela; o jogo está com tamanho diferente (janela menor deitada). setSize foi chamado no toggle off, mas e se o usuário usou botão maximizar do Windows? (botão maximizar é diferente de F11) — a maximização nativa altera o tamanho sem o SCALE recalcular (listener só recalcula se fullscreen). Fix: recomputeScale SEMPRE no resize (voltar ao comportamento anterior) MAS manter janela não-redimensionável — ou melhor: usar ComponentListener para ajustar setSize de volta ao tamanho alvo quando não fullscreen (snap-back) + recomputeScale no resize (como antes). Na verdade: o problema da rodada 9 era escala mudando com redimensionamento manual → mira errada. Melhor: manter janela fixa (setResizable false) + se o usuário maximizar, snap de volta + mensagem. Mais simples: no componentResized fora de fullscreen, restaurar tamanho alvo e centralizar (snap-back), mantendo recomputeScale só fullscreen.
+3. **Waypoint apontando para comandantes errados**: verificar HUD de waypoint (MissionHud) — aponta para o alvo do objetivo atual; "seta deveria apontar pros comandantes". Ver como MissionHud calcula o alvo.
+Próximos: ver MissionHud.java e o drawDirectionalMarker; fazer fixes; testes; commit; PR.
+
+## Análise "não avança" (rodada 11):
+Fluxo BossHuntObjective: onLevelStart zera bossPresent/bossDefeated → construtor Enemy com boss=true chama notifyBossSpotted (registerBossPresence=bossPresent=true) → onEnemyKilled marca bossDefeated=true → isComplete=bossPresent&&bossDefeated. Parece correto.
+PORÉM o usuário mata TUDO e não avança. Possibilidades:
+1. O boss da fase 2 é gerado pela WaveManager? Se o WaveManager gera boss, bossPresent é registrado. onObjectiveComplete→ abre SHOP (shopPendingOpened), depois a fase avança? onObjectiveComplete chama ShopManager.open. Após fechar a loja, advance. Se a loja não abre (arena mode? não), trava?
+2. A captura mostra nível 2 com XP 56/56 — o usuário pegou XP. Mas o log "[LSS] playLevel(1)" diz que ele ABRIU A TELA DE SELEÇÃO DE FASE e re-selecionou fase 1? Não: playLevel(selection+1) com selection=0 → level 1. Mas ele estava na fase 2 com XP 56. A menos que o LevelSelectScreen abriu (L) e o usuário navegou (setas contam como movimento? NÃO — setas no LEVELSELECT chamam navigateDown que mudam selection) e apertou Enter → REINICIOU a fase 1 perdendo tudo! Mas captura mostra nível 2... Contradição.
+3. MELHOR EXPLICAÇÃO DA CAPTURA: captura mostra nível 2 no HUD ("Nível 2 — XP: 56/56") mas levelPlus=0, CUR_LEVEL=2 (fase 2). O banner "Missão: Neutralizar comandante — Fale com Engenheira Nia" — objetivo atual é BOSS HUNT. Ele diz "peguei tudo, matei tudo e não avança". Se ele matou o boss, isComplete=true, onObjectiveComplete abre a LOJA. Se a loja não abrir visivelmente (HUD cobre? ou WaveManager.isArenaMode()=true bloqueia?)... Ver WaveManager.isArenaMode().
+4. TAMBÉM: "peguei tudo" — coletou itens/XP; "não fala de objetivo" — banner sumiu? MissionBanner só mostra quando completado. Se não completou... O waypoint deveria apontar para o boss. "seta deveria apontar pros comandantes? pois parecem meio erradas" — a seta aponta para "o Comandante" (hint), mas findTargetEntity busca InteractiveNpc com nome "o Comandante" (não existe!) ou boss. Se o boss está fora da tela, seta na borda. Se o boss NÃO EXISTE MAIS (já matou), target=null → sem seta → "parecem erradas".
+DECISÃO: os 3 problemas do usuário têm causa provável:
+- Não avança: boss morreu, objective complete, mas talvez WaveManager.isArenaMode() true (bloqueia) OU ele NÃO matou o boss (só os mobs comuns) e o waypoint sumiu → sem saber onde está o chefe.
+- Seta errada: findTargetEntity não encontra o boss (nome não bate "o Comandante"?) → seta some ou aponta para NPC errado.
+- Nível travado no LEVELSELECT: se ele apertou L por engano, ficou preso.
+FIX PLANEJADO:
+1. LevelSelectScreen: impedir re-selecionar a fase atual (mostrar aviso ou simplesmente fechar); ESC fecha; TAB também fecha (toggle overlayExpanded + close).
+2. BossHuntObjective: waypoint deve apontar para o boss vivo; se boss já derrotado e fase não avança (arena mode?), mostrar feedback claro.
+3. Se WaveManager.isArenaMode() bloqueia onObjectiveComplete — verificar; em fases normais com boss, isArenaMode deve ser false.
+4. Enquadramento: snap-back no resize fora de fullscreen.
+PRÓXIMO: ver WaveManager.isArenaMode e onObjectiveComplete completo; ver como boss é spawnado (WaveManager vs mapa) na fase 2.
+
+## Mais achados rodada 11 (fluxo boss):
+Enemy.notifyEnemyKilled(this) ocorre APÓS Game.enemies.remove — OK (notifica antes de remover da entities? não, remove primeiro, depois notifica — QuestManager.onEnemyKilled usa a entidade passada, funciona).
+Fluxo parece correto. Por que "não avança"? Suspeitas: (a) usuário apertou L e ficou preso no LEVELSELECT (log mostra playLevel(1) — ele re-selecionou a fase atual e perdeu progresso, ficando em fase 1 enquanto HUD mostra nível 2 do PERSONAGEM (player level 2), não fase 2! HUD "Nível 2 — XP 56/56" é o LEVEL do player! Ele está na FASE 1 com player nível 2. playLevel(1) reiniciou a fase 1 — e ele matou os mobs da fase 1 (que não têm boss? fase 1 não tem boss! ensurePhaseBoss ignora level<2). ENTÃO: na fase 1 o objetivo é outro (ContactObjective "Contacto com o Comando — fale com Comandante Ava"). Ele "matou tudo" mas o objetivo é FALAR com NPC. Não avança pq não completou o objetivo de diálogo. E o waypoint: "parecem meio erradas" — o hint é "Comandante Ava" → NPC interativo existe. Mas o boss hunt hint "o Comandante" não acha nada (nenhum NPC com esse nome, boss só fase 2+) → se objective for ContactObjective, hint="Comandante Ava" (InteractiveNpc existe).
+CONFIRMAR: qual objetivo tem fase 1? Ver QuestManager.setup por nível.
+FIX (mesma lista da rodada 11):
+1. LevelSelectScreen: não permitir reiniciar a fase atual (aviso), ESC/TAB fecha.
+2. HUD objetivo na fase 1: destacar "Fale com Comandante Ava" — já existe? Verificar texto.
+3. Waypoint: testar com test harness — fase 1 com objective Contact, waypoint para Ava.
+4. Snap-back no resize.
+
+## ESTADO COMPLETO RODADA 11 (salvo antes de compaction):
+
+### Problemas do usuário (captura rod11):
+1. "Peguei tudo, matei tudo e não avança, nem fala de objetivo" — causa: na fase 2 o objetivo é DialogueObjective(BossHuntObjective, "Engenheira Nia"). O usuário precisa FALAR com a NPC Engenheira Nia (R) ANTES de a caça ao chefe contar. Ele só matou inimigos. Também a captura mostra log "[LSS] playLevel(1)" — ele apertou L, abriu o LevelSelectScreen e re-selecionou a fase atual (reiniciando sem aviso), perdendo progresso.
+2. "Menu minimizado não reenquadra" — janela redimensionada; fix: snap-back no resize fora de fullscreen.
+3. "Seta aponta errada" — waypoint de DialogueObjective antes do diálogo aponta para "Engenheira Nia"; a NPC existe (SupportNpcs.makeEngineerNia, nome exato "Engenheira Nia" em DialogueManager case). Mas se o usuário está na fase 1 reiniciada via LSS (log!), o objetivo é ContactObjective ("Contacto com o Comando — fale com Comandante Ava"). A seta pode ficar confusa entre fases.
+
+### Fixes a implementar (arquivos):
+- `src/com/traduvertgames/main/LevelSelectScreen.java`:
+  a) ESC e TAB (via Game.escapePressed + toggle?) — TAB já alterna overlayExpanded; fazer TAB fechar o LevelSelectScreen quando aberto (verificar no update: adicionar verificação de TAB via keyTyped ou adicionar parâmetro). MAIS SIMPLES: Game.keyPressed: se LevelSelectScreen.isOpen() e TAB → close() (adicionar branch antes do toggleOverlayExpanded).
+  b) confirmSelection: se selection+1 == getCurrentLevel → não reiniciar; mostrar mensagem/flavor ou apenas fechar silenciosamente (close sem reset).
+- `src/com/traduvertgames/main/Game.java`:
+  a) keyPressed VK_TAB: branch `if (LevelSelectScreen.isOpen()) { LevelSelectScreen.close(); }` antes de toggleOverlayExpanded.
+  b) componentResized fora de fullscreen: restaurar setSize(WIDTH*SCALE, HEIGHT*SCALE) e setLocationRelativeTo(null) (snap-back).
+- `src/com/traduvertgames/graficos/MissionHud.java` ou QuestManager: quando objetivo exige diálogo não realizado, WAYPOINT mais chamativo (raio maior/label "Fale com X") e talvez MissionBanner mostrar dica ao entrar na fase.
+- `src/com/traduvertgames/quest/DialogueObjective.java`: getProgressText já diz "Fale com X". Adicionar no onLevelLoaded um MissionBanner.showHint? Verificar API do MissionBanner (show(title, subtitle)?).
+
+### Ferramentas (repetindo):
+- Build: `cd /home/ubuntu/First-game-in-java && javac -d bin -cp bin $(find src -name "*.java") 2>&1 | grep -v "^Note" | grep error | head -3; echo BUILD_OK`
+- Jogo headless: `killall -9 java; rm -f saves.json; DISPLAY=:120 java -cp bin com.traduvertgames.main.Game > /tmp/game_r11.log 2>&1 &`
+- Driver teclado: `DISPLAY=:120 python3 /tmp/xinput.py` (keymap inclui Down/Up/Return/Left/Right/Escape/F11; adicionar L e Tab se necessário)
+- Captura: `DISPLAY=:120 import -window root /tmp/X.png` (raiz 1920x1080 no Xvfb)
+- Janela: `DISPLAY=:120 xwininfo -root -tree | grep '"Game 2 RPG"'`
+- Suíte: `for b in AutoValidate NarrativeLogicTest SaveLoadLogicTest QuestLogicTest ShopSkinLogicTest; do out=/tmp/test_$b; mkdir -p $out; javac -d $out -cp bin tools/$b.java 2>/dev/null && java -cp $out:bin $b 2>&1 | tail -1; done` (+ CompanionSaveRestoreTest com saves.json simulado)
+- Commit/push: `git add -A && git commit -m "..." && git push origin manus/bin-consistente`
+- PR #28: `gh pr comment 28 --body-file /tmp/pr_body.md` (usar cat > /tmp/pr_body.md << 'HEREDOC')
+- Branch: manus/bin-consistente → PR #28 → main. Usuário atualiza: `git pull origin manus/bin-consistente`
+
+### Contexto de código (importações úteis):
+- LevelSelectScreen: open()→gameState LEVELSELECT; close()→gameState MENU, open=false; update() consome menu.up/down/enter e Game.escapePressed.
+- MissionBanner.showComplete(String title) existe; ver MissionBanner.java para API de dica (reset(), showComplete()).
+- DialogueObjective.getTargetHint: antes do diálogo retorna dialogueTarget ("Engenheira Nia").
+- WaveManager.isArenaMode() false em fases normais; onObjectiveComplete abre ShopManager (prioridade LevelUpManager).
+
+## PROGRESSO RODADA 11 (atualizado):
+
+### Fixes já implementados (arquivos editados, NÃO commitados):
+1. `LevelSelectScreen.java`: close() agora restaura gameState "NORMAL" (não MENU); adicionado closeOnTab(); confirmSelection() não reinicia a fase atual (apenas fecha); hint atualizado ("ESC ou TAB para voltar").
+2. `Game.java`: componentResized com snap-back (fora de fullscreen, restaura tamanho WIDTH*SCALE x HEIGHT*SCALE + setLocationRelativeTo); handler TAB fecha LSS se aberta (closeOnTab), senão toggleOverlayExpanded.
+3. `DialogueObjective.java`: onLevelLoaded mostra MissionBanner.show("MISSÃO", "Fale com X para iniciar (tecla R próximo a ele)", amarelo/branco, 300 frames).
+
+### Testes rodados:
+- LevelSelectLogicTest (tools/LevelSelectLogicTest.java, headless com Game instanciado via reflexão): **10/10 PASSARAM** (open/close/closeOnTab/ESC/confirm-na-fase-atual/não recria World).
+- BannerHintTest (tools/BannerHintTest.java): 4/4 **FALHARAM** — causa: restartGameCommon(parseLevelNumber("level2.png"), ...) — setCurrentLevel(2) ANTES é sobrescrito? Na verdade o teste verificou QuestManager.getCurrentLevel()==2 → FAIL. Diagnóstico: restartGameCommon(int levelNumber, String path) chama prepareForLevel(levelNumber) — deveria funcionar. Ver o código restartGameCommon (linha ~281-295 do World.java) para achar o bug no teste.
+  - IMPORTANTE: o restartGameCommon usa path "/level2.png" — no bin headless o png vem do res/ (classpath) OK.
+  - Checar se QuestManager.prepareForLevel seta currentLevel e se getCurrentLevel retorna currentLevel.
+- Suíte completa pendente após corrigir BannerHintTest: AutoValidate, NarrativeLogicTest, SaveLoadLogicTest, QuestLogicTest, ShopSkinLogicTest, CompanionSaveRestoreTest.
+
+### Próximos passos:
+1. Corrigir BannerHintTest (ver restartGameCommon; talvez o problema é que a vida do banner = 300 mas MissionBanner.show só é chamado se DialogueObjective é criado — verify QuestManager.createObjectiveForLevel(2)).
+2. Rodar suíte completa.
+3. Validação visual: jogo roda (já visto menu OK), snap-back do resize: difícil validar sem UI real; aceitar via código.
+4. Commitar, push, comentar no PR #28.
+5. Instruções: `git pull origin manus/bin-consistente`.
+
+### Comandos (repetindo):
+- Build: `cd /home/ubuntu/First-game-in-java && javac -d bin -cp bin $(find src -name "*.java") 2>&1 | grep -v "^Note" | grep error | head -3; echo BUILD_OK`
+- Jogo headless: `pkill -9 java; sleep 1; DISPLAY=:120 nohup java -cp bin com.traduvertgames.main.Game > /tmp/game_r11.log 2>&1 &`
+- Captura: `DISPLAY=:120 import -window root /tmp/X.png`; janela: `DISPLAY=:120 xwininfo -root -tree | grep '"Game 2 RPG"'`
+- Driver: `DISPLAY=:120 python3 /tmp/xinput.py Down ms:300 Return ms:4000` (BadMatch no root é normal; teclas ainda chegam — Down moveu a seleção)
+- PR: `gh pr comment 28 --body-file /tmp/pr_body.md` (escrever via cat > /tmp/pr_body.md << 'HEREDOC')

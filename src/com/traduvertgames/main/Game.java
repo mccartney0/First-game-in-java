@@ -376,11 +376,27 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		frame.addComponentListener(new java.awt.event.ComponentAdapter() {
 			@Override
 			public void componentResized(java.awt.event.ComponentEvent e) {
-				// Fora do modo de tela cheia a janela é fixa (não redimensionável),
-				// então a recomposição do SCALE só ocorre durante o fullscreen,
-				// quando o monitor/redimensionamento da janela fullscreen muda.
+				// Modo tela cheia (F11, maximização nativa): recalcula o SCALE
+				// para preencher o monitor mantendo a nitidez da pixel art.
 				if (fullscreen) {
 					recomputeScale();
+					return;
+				}
+				// Modo janela: o tamanho alvo do jogo é fixo (buffer * SCALE).
+				// Se a janela mudou de tamanho por qualquer motivo (botão de
+				// maximizar, arrastar para outro monitor, acidental), o jogo
+				// volta ao tamanho exato e recentraliza — sem isso a escala
+				// errada cortava o jogo, criava áreas pretas e deslocava a mira.
+				int targetW = WIDTH * SCALE;
+				int targetH = HEIGHT * SCALE;
+				java.awt.Dimension c = frame.getContentPane().getSize();
+				int curW = Math.max(1, c.width);
+				int curH = Math.max(1, c.height);
+				if (Math.abs(curW - targetW) > 4 || Math.abs(curH - targetH) > 4) {
+					int dw = targetW - curW;
+					int dh = targetH - curH;
+					frame.setSize(frame.getWidth() + dw, frame.getHeight() + dh);
+					frame.setLocationRelativeTo(null);
 				}
 			}
 		});
@@ -992,7 +1008,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 }
 
                 if (e.getKeyCode() == KeyEvent.VK_TAB) {
-                        if ("NORMAL".equals(gameState)) {
+                        if (LevelSelectScreen.isOpen()) {
+                                // TAB fecha a seleção de fases (mesmo atalho do
+                                // painel tático, sem abrir o painel por cima).
+                                LevelSelectScreen.closeOnTab();
+                        } else if ("NORMAL".equals(gameState)) {
                                 Game.toggleOverlayExpanded();
                         }
                 }

@@ -297,8 +297,12 @@ Game.enemies.add(en);
                 Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
                 // Adicionar o jogador na lista e ja aparece na tela
                 Game.entities.add(Game.player);
-                Game.world = new World(mapSource);
-                QuestManager.onLevelLoaded();
+			// Sem prepareForLevel o nível da campanha ficava desatualizado ao
+			// trocar de fase pelo painel tático (bug reportado: "matei tudo e
+			// não avança").
+			QuestManager.prepareForLevel(levelNumber);
+			Game.world = new World(mapSource);
+			QuestManager.onLevelLoaded();
                 // Garante o chefe da fase: níveis a partir do 2 têm a missão de
                 // neutralizar o comandante; se o mapa não tiver um boss fixo,
                 // um WARBRINGER é posicionado em um local válido distante do spawn.
