@@ -259,8 +259,70 @@ save("tutorial_step.wav", tutorial())
 save("tutorial_done.wav", tutorial_done())
 save("level_complete.wav", level_complete())
 save("victory.wav", victory())
+# --- Sons dos companions (rodada companions-ux) ---
+
+# Companion acoplado (spawn na loja): flutuação ascendente suave com chirp
+def companion_spawn():
+    def fn(t):
+        f = 523.0 + 330.0 * min(t / 0.16, 1.0)
+        env = math.exp(-t * 7.0)
+        return sine(f, t) * env + sine(f * 1.5, t + 0.04) * env * 0.4
+    return gen(0.26, fn)
+
+# Fada curadora: trinado de sino (cura de vida)
+def fairy_heal():
+    def fn(t):
+        notes = [880.0, 1175.0, 880.0]
+        per = 0.06
+        i = int(t / per)
+        f = notes[min(i, 2)]
+        env = 1.0 - ((t % per) / per)
+        return sine(f, t) * env * math.exp(-t * 6.0)
+    return gen(0.19, fn)
+
+# Drone de escudo: pulso grave de energia (regeneração de escudo)
+def shield_pulse():
+    def fn(t):
+        env = math.exp(-t * 18.0)
+        return sine(165.0, t) * env + sine(330.0, t) * env * 0.5
+    return gen(0.12, fn)
+
+# Drone scout dispara: bip metálico curto (diferente do tiro do jogador)
+def scout_shot():
+    def fn(t):
+        env = math.exp(-t * 34.0)
+        f = 1480.0 * (1 - 0.3 * t / 0.10)
+        sq = 1.0 if sine(f, t) > 0 else -1.0
+        return sq * env * 0.7
+    return gen(0.10, fn)
+
+# Companion destruído: estalo + queda grave (lamento curto)
+def companion_death():
+    def fn(t):
+        f = 440.0 - 260.0 * min(t / 0.30, 1.0)
+        env = math.exp(-t * 7.0)
+        return (sine(f, t) + noise(t) * 0.35) * env
+    return gen(0.34, fn)
+
+# Skin aplicada: brilho cintilante em 4 notas rápidas
+def skin_apply():
+    def fn(t):
+        notes = [1046.0, 1318.0, 1568.0, 2093.0]
+        per = 0.05
+        i = int(t / per)
+        f = notes[min(i, 3)]
+        env = 1.0 - ((t % per) / per)
+        return sine(f, t) * env * math.exp(-t * 6.0)
+    return gen(0.21, fn)
+
 save("dialogue_start.wav", dialogue_start())
 save("purchase.wav", purchase())
 save("menu_select.wav", menu_select())
+save("companion_spawn.wav", companion_spawn())
+save("fairy_heal.wav", fairy_heal())
+save("shield_pulse.wav", shield_pulse())
+save("scout_shot.wav", scout_shot())
+save("companion_death.wav", companion_death())
+save("skin_apply.wav", skin_apply())
 
 print("Sons gerados em", OUT, "->", sorted(os.listdir(OUT)))

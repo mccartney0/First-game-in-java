@@ -36,6 +36,12 @@ public final class SoundManager {
 		TUTORIAL_DONE,
 		COMPANION_SHOT,
 		COMPANION_PURCHASE,
+		COMPANION_SPAWN,
+		FAIRY_HEAL,
+		SHIELD_PULSE,
+		SCOUT_SHOT,
+		COMPANION_DEATH,
+		SKIN_APPLY,
 		LEVEL_COMPLETE,
 		VICTORY,
 		DIALOGUE_START,
@@ -62,6 +68,14 @@ public final class SoundManager {
 		FILES.put(Event.TUTORIAL_DONE, "/sounds/tutorial_done.wav");
 		FILES.put(Event.COMPANION_SHOT, "/sounds/laser.wav");
 		FILES.put(Event.COMPANION_PURCHASE, "/sounds/levelup.wav");
+			// Sons dos companions (rodada companions-ux): acoplagem, cura da
+			// fada, pulso de escudo, disparo do scout, destruição e skin.
+			FILES.put(Event.COMPANION_SPAWN, "/sounds/companion_spawn.wav");
+			FILES.put(Event.FAIRY_HEAL, "/sounds/fairy_heal.wav");
+			FILES.put(Event.SHIELD_PULSE, "/sounds/shield_pulse.wav");
+			FILES.put(Event.SCOUT_SHOT, "/sounds/scout_shot.wav");
+			FILES.put(Event.COMPANION_DEATH, "/sounds/companion_death.wav");
+			FILES.put(Event.SKIN_APPLY, "/sounds/skin_apply.wav");
 		// Sons novos (rodada 15): fase concluída, vitória da campanha, início
 		// de diálogo, compra na loja e seleção de item de menu.
 		FILES.put(Event.LEVEL_COMPLETE, "/sounds/level_complete.wav");

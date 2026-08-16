@@ -240,10 +240,13 @@ public class Player extends Entity {
                         if (shield > 0) {
                                 life = Math.max(life, 1);
                         } else {
-                                life = 0;
-                                weapon = 0;
-                                updateWeaponEnergyEntry(currentWeapon, weapon);
-                                Game.gameState = "GAMEOVER";
+				life = 0;
+				weapon = 0;
+				updateWeaponEnergyEntry(currentWeapon, weapon);
+				Game.gameState = "GAMEOVER";
+				// Som de derrota ao entrar na tela de game over (rodada de UX).
+				com.traduvertgames.main.SoundManager.play(
+						com.traduvertgames.main.SoundManager.Event.DAMAGE);
                         }
                 }
 

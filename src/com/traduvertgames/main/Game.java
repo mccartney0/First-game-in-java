@@ -80,6 +80,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private boolean restartGame = false;
         /** Contagem regressiva para voltar ao menu principal após o game over. */
         private int menuReturnTimer = 300;
+        // Seleção da tela de game over (rodada companions-ux): 0 = Reiniciar
+        // partida, 1 = Voltar ao menu principal. O countdown automático continua
+        // operando por cima da seleção.
+        private int gameOverSelection = 0;
 
         public static boolean saveGame = false;
         public int levelPlus = 0;
@@ -764,17 +768,20 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                         g.setFont(new Font("arial", Font.BOLD, 36));
                         g.setColor(Color.white);
                         drawCenteredString(overlayG, "Game Over", scaledHeight / 2 - 50);
-                        g.setFont(new Font("arial", Font.BOLD, 28));
-
-                        if (showMessageGameOver) {
-                                drawCenteredString(overlayG, ">Pressione Enter para reiniciar — ESC para o menu<", scaledHeight / 2 + 4);
-                        }
-                        g.setFont(new Font("arial", Font.PLAIN, 16));
-                        g.setColor(new Color(200, 200, 200));
-                        if (menuReturnTimer > 0) {
-                                drawCenteredString(overlayG, "Voltando ao menu em " + ((menuReturnTimer + 29) / 30) + "s...",
-                                                scaledHeight / 2 + 142);
-                        }
+                        			g.setFont(new Font("arial", Font.BOLD, 28));
+			if (showMessageGameOver) {
+				drawCenteredString(overlayG, ">Setas/A-D para escolher — Enter para confirmar — ESC para o menu<",
+						scaledHeight / 2 + 4);
+			}
+			g.setFont(new Font("arial", Font.PLAIN, 16));
+			g.setColor(new Color(200, 200, 200));
+			if (menuReturnTimer > 0) {
+				drawCenteredString(overlayG, "Voltando ao menu em " + ((menuReturnTimer + 29) / 30) + "s...",
+						scaledHeight / 2 + 142);
+			}
+			// Botões de ação da tela de game over (rodada de UX) — o botão
+			// selecionado recebe um painel de destaque para leitura clara.
+			drawGameOverActions(overlayG, scaledWidth, scaledHeight);
 
                         g.setFont(new Font("arial", Font.BOLD, 24));
                         drawCenteredString(overlayG, "Pontuação final: " + Game.getScore(), scaledHeight / 2 + 52);
@@ -895,6 +902,13 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			player.jump = true;
 		}
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
+			if ("GAMEOVER".equals(gameState)) {
+				// Navegação da tela de game over (rodada de UX): seleciona a ação
+				// — Reiniciar partida (0) ou Voltar ao menu (1).
+				this.gameOverSelection = (this.gameOverSelection + 1) % 2;
+				SoundManager.play(SoundManager.Event.MENU_SELECT);
+				return;
+			}
 			if ("MENU".equals(gameState)) {
 				// Navegação horizontal do menu por A/D e seta direita (rodada 15):
 				// evita mover o personagem pelos itens do menu.
@@ -903,6 +917,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				player.right = true;
 			}
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
+			if ("GAMEOVER".equals(gameState)) {
+				this.gameOverSelection = (this.gameOverSelection + 1) % 2;
+				SoundManager.play(SoundManager.Event.MENU_SELECT);
+				return;
+			}
 			if ("MENU".equals(gameState)) {
 				menu.left = true;
 			} else {
@@ -978,10 +997,19 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				getInstance().applyInitialWeaponSelection();
 				return;
 			}
-			this.restartGame = true;
-			if ("MENU".equals(gameState)) {
-				menu.enter = true;
-			} else if ("SHOP".equals(gameState)) {
+		if ("GAMEOVER".equals(gameState)) {
+			// Enter na tela de game over executa a ação selecionada: Reiniciar
+			// partida (0) ou Voltar ao menu principal (1) — rodada de UX.
+			this.restartGame = (this.gameOverSelection == 0);
+			if (this.gameOverSelection == 1) {
+				returnToMainMenu();
+			}
+			return;
+		}
+		this.restartGame = true;
+		if ("MENU".equals(gameState)) {
+			menu.enter = true;
+		} else if ("SHOP".equals(gameState)) {
 				// Enter confirma/compra: após uma compra bem-sucedida, o Enter
 				// seguinte fecha a loja (rodada de QA — compras múltiplas).
 				ShopManager.confirmOrPurchase();
@@ -1185,12 +1213,52 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 
         }
 
-        private void handleGameOverRestart() {
+	        private void handleGameOverRestart() {
                 resetGameOverState();
                 this.restartGame = false;
                 if (!loadGameFromSave()) {
                         startNewGame();
                 }
+        }
+
+        // Desenha os botões de ação da tela de game over (rodada de UX):
+        // "Reiniciar partida" e "Voltar ao menu" lado a lado, com destaque
+        // no botão selecionado.
+        private void drawGameOverActions(Graphics g, int scaledWidth,
+                int scaledHeight) {
+                String restartLabel = "[ Reiniciar partida ]";
+                String menuLabel = "[ Voltar ao menu ]";
+                Font buttonFont = new Font("arial", Font.BOLD, 20);
+                g.setFont(buttonFont);
+                java.awt.FontMetrics fm = g.getFontMetrics();
+                int restartWidth = fm.stringWidth(restartLabel);
+                int menuWidth = fm.stringWidth(menuLabel);
+                int gap = 40;
+                int totalWidth = restartWidth + gap + menuWidth;
+                int baseX = (scaledWidth - totalWidth) / 2;
+                int buttonY = scaledHeight / 2 + 170;
+                int buttonHeight = 36;
+                // Botão: Reiniciar partida.
+                if (gameOverSelection == 0) {
+                        g.setColor(new Color(76, 175, 80));
+                        g.fillRoundRect(baseX - 10, buttonY - buttonHeight + 6,
+                                restartWidth + 20, buttonHeight, 10, 10);
+                        g.setColor(Color.WHITE);
+                } else {
+                        g.setColor(new Color(200, 200, 200));
+                }
+                g.drawString(restartLabel, baseX, buttonY);
+                // Botão: Voltar ao menu.
+                int menuX = baseX + restartWidth + gap;
+                if (gameOverSelection == 1) {
+                        g.setColor(new Color(90, 110, 180));
+                        g.fillRoundRect(menuX - 10, buttonY - buttonHeight + 6,
+                                menuWidth + 20, buttonHeight, 10, 10);
+                        g.setColor(Color.WHITE);
+                } else {
+                        g.setColor(new Color(200, 200, 200));
+                }
+                g.drawString(menuLabel, menuX, buttonY);
         }
 
                 private boolean loadGameFromSave() {
@@ -1632,16 +1700,20 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		this.framesGameOver = 0;
 		this.showMessageGameOver = true;
 		this.menuReturnTimer = 300;
+		this.gameOverSelection = 0;
 	}
 
 	/** Volta ao menu principal mantendo o autosave do progresso da partida. */
 	public void returnToMainMenu() {
+		// Parar overlays ANTES de definir o estado de menu: as paradas
+		// podem sobrescrever gameState (por exemplo, VictoryCutscene.stop
+		// restaura NORMAL); o MENU é definido depois para valer como final.
+		VictoryCutscene.stop();
+		DialogueManager.stop();
+		MissionBanner.reset();
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();
-		DialogueManager.stop();
-		MissionBanner.reset();
-		VictoryCutscene.stop();
 		damageOverlayFrames = 0;
 		showInitialWeaponSelect = false;
 		if (this.menu != null) {
