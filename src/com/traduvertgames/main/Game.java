@@ -1210,6 +1210,14 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// O onboarding roda em uma arena de treino separada (sem itens de
 		// missão nem inimigos); ao concluir, loadFirstPhase() carrega a fase 1 real.
 		World.restartGame("training.png");
+		// O tutorial pede para atirar — sem munição o jogador ficava travado
+		// (resetPlayerToDefaults zera weapon/mana). A arena de treino começa
+		// com mana e munição cheias; isso não afeta o save nem a fase 1 real.
+		Player.mana = Player.maxMana;
+		Player.weapon = Player.maxWeapon;
+		if (player != null) {
+			player.setCurrentWeaponEnergy(Player.weapon);
+		}
 		OnboardingManager.start();
 		gameState = "NORMAL";
 	}

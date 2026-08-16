@@ -504,7 +504,7 @@ public class Enemy extends Entity {
         }
         // Furtividade: longe do piloto, fica camuflado e avança em rajadas rápidas.
         if (distanceToPlayer > specialRange) {
-            if (frames % 6 == 0 && pathCooldown <= 0) {
+            if (frames % 10 == 0 && pathCooldown <= 0) {
                 burstStepTowardPlayer();
                 pathCooldown = 14;
             }
@@ -548,15 +548,18 @@ public class Enemy extends Entity {
         if (length == 0) {
             return;
         }
-        double stepX = (dirX / length) * 24;
-        double stepY = (dirY / length) * 24;
-        int targetX = (int) (this.getX() + stepX);
-        int targetY = (int) (this.getY() + stepY);
-        if (World.isFree(targetX, targetY, 0)) {
-            this.setX(targetX);
-            this.setY(targetY);
-            path = null;
-        }
+	        // Passo furtivo menor e com rastro: o avanço em saltos grandes e
+	        // sem efeito parecia "teletransporte bizarro" (relato do jogador).
+	        double stepX = (dirX / length) * 16;
+	        double stepY = (dirY / length) * 16;
+	        int targetX = (int) (this.getX() + stepX);
+	        int targetY = (int) (this.getY() + stepY);
+	        if (World.isFree(targetX, targetY, 0)) {
+	            this.setX(targetX);
+	            this.setY(targetY);
+	            path = null;
+	            ParticleSystem.trail((int) x + 8, (int) y + 8, new Color(138, 43, 226, 140));
+	        }
     }
 
     /** Tanque de bloqueio: regenera vida lentamente enquanto persegue o piloto. */
@@ -578,11 +581,11 @@ public class Enemy extends Entity {
         if (!canSeePlayer && distanceToPlayer > 48) {
             wantsTeleport = true;
         }
-        if (wantsTeleport && attemptTeleportNearPlayer()) {
-            specialCooldown = specialCooldownBase;
-            path = null;
-            state = EnemyState.CHASING;
-        }
+	        if (wantsTeleport && attemptTeleportNearPlayer()) {
+	            specialCooldown = specialCooldownBase;
+	            path = null;
+	            state = EnemyState.CHASING;
+	        }
     }
 
     private boolean attemptTeleportNearPlayer() {
@@ -613,17 +616,21 @@ public class Enemy extends Entity {
                     break;
                 }
             }
-            if (collidingOther) {
-                continue;
-            }
+	            if (collidingOther) {
+	                continue;
+	            }
 
-            this.x = targetX;
-            this.y = targetY;
-            strafeTimer = 0;
-            return true;
-        }
-        return false;
-    }
+	            // Flash de partículas: o mob "desaparece" na posição antiga e
+	            // "aparece" no destino — o teleport deixa de parecer um bug.
+	            ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(156, 39, 176, 200), 8, 1.0);
+	            this.x = targetX;
+	            this.y = targetY;
+	            ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(233, 30, 99, 200), 8, 1.0);
+	            strafeTimer = 0;
+	            return true;
+	        }
+	        return false;
+	    }
 
     private void handleArtilleryAbility(double distanceToPlayer) {
         if (specialCooldown > 0) {

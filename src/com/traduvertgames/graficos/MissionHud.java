@@ -128,34 +128,43 @@ public final class MissionHud {
 			g2.setStroke(new java.awt.BasicStroke(1.5f));
 			g2.drawOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
 		} else {
-			// Alvo fora da tela: seta na borda na direção do alvo
+			// Alvo fora da tela: seta na borda na direção do alvo. A seta é
+			// sempre desenhada um pouco para dentro da borda (offset) e sobre um
+			// painel escuro contínuo com a distância — assim ela nunca fica
+			// grudada na borda nem é lida como "apontando para uma parede".
 			double angle = Math.atan2(dy, dx);
-			double arrowX = centerX + Math.cos(angle) * WAYPOINT_DISTANCE * 0.85;
-			double arrowY = centerY + Math.sin(angle) * WAYPOINT_DISTANCE * 0.85;
-			// Clampa à área visível
+			double arrowDist = Math.min(WAYPOINT_DISTANCE * 0.85, distance);
+			double arrowX = centerX + Math.cos(angle) * arrowDist;
+			double arrowY = centerY + Math.sin(angle) * arrowDist;
+			// Clampa à área visível, com margem de segurança da borda
 			int visibleW = Game.WIDTH * s;
 			int visibleH = Game.HEIGHT * s;
-			arrowX = Math.max(18, Math.min(visibleW - 18, arrowX));
-			arrowY = Math.max(18, Math.min(visibleH - 18, arrowY));
+			int margin = 16;
+			arrowX = Math.max(margin, Math.min(visibleW - margin, arrowX));
+			arrowY = Math.max(margin, Math.min(visibleH - margin, arrowY));
+			Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
+			g2.setFont(smallFont);
+			String distLabel = String.format("%dm", (int) (distance / 16));
+			int labelW = g2.getFontMetrics().stringWidth(distLabel);
+			int labelH = 11;
+			// Painel escuro único atrás do label e da flecha
+			int padX = 5, padY = 3;
+			int panelW = Math.max(labelW + padX * 2, 14);
+			int panelH = labelH + padY * 2 + 10;
+			g2.setColor(new Color(0, 0, 0, 200));
+			g2.fillRoundRect((int) arrowX - panelW / 2, (int) arrowY - 2 - padY, panelW, panelH, 6, 6);
+			g2.setColor(new Color(255, 235, 59, 255));
 			int size = 7;
 			double headAngle1 = angle + Math.toRadians(150);
 			double headAngle2 = angle - Math.toRadians(150);
-			g2.setColor(new Color(255, 235, 59, 230));
 			g2.fillPolygon(
 					new int[] { (int) arrowX, (int) (arrowX + size * Math.cos(headAngle1)),
 							(int) (arrowX + size * Math.cos(headAngle2)) },
 					new int[] { (int) arrowY, (int) (arrowY + size * Math.sin(headAngle1)),
 							(int) (arrowY + size * Math.sin(headAngle2)) },
 					3);
-			// Distância até o alvo
-			Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
-			g2.setFont(smallFont);
-			String distLabel = String.format("%dm", (int) (distance / 16));
-			int labelW = g2.getFontMetrics().stringWidth(distLabel);
-			g2.setColor(new Color(0, 0, 0, 180));
-			g2.fillRoundRect((int) arrowX - labelW / 2 - 4, (int) arrowY + 9, labelW + 8, 10, 5, 5);
 			g2.setColor(new Color(255, 235, 59, 245));
-			g2.drawString(distLabel, (int) arrowX - labelW / 2, (int) arrowY + 17);
+			g2.drawString(distLabel, (int) arrowX - labelW / 2, (int) arrowY + 9 + labelH);
 		}
 	}
 
