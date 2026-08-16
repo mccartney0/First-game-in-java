@@ -23,6 +23,16 @@ public class World {
 	public static final int TILE_SIZE = 16;
 	
 	public World(String path) {
+		// Caminhos absolutos (mapas procedurais do modo infinito) são carregados
+		// diretamente do disco em vez do classpath.
+		if (path != null && path.startsWith("/")) {
+			java.io.File f = new java.io.File(path);
+			if (f.exists()) {
+				loadFromFile(f);
+				TeleportPad.linkPairs();
+				return;
+			}
+		}
 		try {
 			BufferedImage map = ImageIO.read(getClass().getResource(path));
 			int[] pixels = new int[map.getWidth() * map.getHeight()];
@@ -30,18 +40,46 @@ public class World {
 			HEIGHT = map.getHeight();
 			tiles = new Tile[map.getWidth() * map.getHeight()];
 			map.getRGB(0, 0, map.getWidth(), map.getHeight(), pixels, 0, map.getWidth());
-			for (int xx = 0; xx < map.getWidth(); xx++) {
-				for (int yy = 0; yy < map.getHeight(); yy++) {
-					int pixelAtual = pixels[xx + (yy * map.getWidth())];
+			applyMapPixels(pixels, map.getWidth());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		TeleportPad.linkPairs();
+	}
+
+	/** Carrega um mapa a partir de um arquivo PNG absoluto (mapas procedurais). */
+	private void loadFromFile(java.io.File mapFile) {
+		try {
+			BufferedImage map = ImageIO.read(mapFile);
+			int[] pixels = new int[map.getWidth() * map.getHeight()];
+			WIDTH = map.getWidth();
+			HEIGHT = map.getHeight();
+			tiles = new Tile[map.getWidth() * map.getHeight()];
+			map.getRGB(0, 0, map.getWidth(), map.getHeight(), pixels, 0, map.getWidth());
+			applyMapPixels(pixels, map.getWidth());
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+
+	/**
+	 * Interpreta os pixels do mapa e popula tiles, entidades e inimigos.
+	 * Separado do construtor para ser reutilizado por mapas carregados de
+	 * arquivos absolutos (fases procedurais do modo infinito).
+	 */
+	private void applyMapPixels(int[] pixels, int mapWidth) {
+		for (int xx = 0; xx < mapWidth; xx++) {
+			for (int yy = 0; yy < pixels.length / mapWidth; yy++) {
+				int pixelAtual = pixels[xx + (yy * mapWidth)];
 					tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					if (pixelAtual == 0xFF000000) {
 						// Floor
 						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
                                         } else if (pixelAtual == 0xFFFFFFFF) {
                                                 // Parede
-                                                tiles[xx + (yy * map.getWidth())] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
+                                                tiles[xx + (yy * mapWidth)] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
 					} else if (pixelAtual == 0xFF808080) {
-						tiles[xx + (yy * map.getWidth())] = new DestructibleWallTile(xx * 16, yy * 16,
+						tiles[xx + (yy * mapWidth)] = new DestructibleWallTile(xx * 16, yy * 16,
 								Tile.TILE_WALL);
 					} else if (pixelAtual == 0xFF7CB342) {
 						// Grama: terreno rápido (+20% velocidade)
@@ -175,13 +213,8 @@ Game.enemies.add(en);
 						tiles[xx + (yy * WIDTH)] = new FloorTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					}
 				}
-                        }
-		} catch (IOException e) {
-			e.printStackTrace();
+			}
 		}
-		// Emparelha os teletransportadores do mapa recém-carregado.
-		TeleportPad.linkPairs();
-	}
 
 	public static boolean isFree(int xNext,int yNext, int zplayer) {
 		final int margin = 1;
@@ -222,9 +255,17 @@ Game.enemies.add(en);
 		}
 	}
 	
+        /** Reinicia o jogo a partir de um mapa PNG em caminho absoluto (modo infinito). */
+        public static void restartGameFromFile(String absolutePath) {
+                restartGameCommon(9, absolutePath);
+        }
+
         public static void restartGame(String level) {
-                int levelNumber = parseLevelNumber(level);
-                QuestManager.prepareForLevel(levelNumber);
+                restartGameCommon(parseLevelNumber(level), "/" + level);
+        }
+
+        /** Núcleo comum de reinício: limpa entidades e carrega o mapa informado. */
+        private static void restartGameCommon(int levelNumber, String mapSource) {
                 TeleportPad.reset();
                 Game.entities.clear();
                 Game.enemies.clear();
@@ -232,12 +273,14 @@ Game.enemies.add(en);
                 Game.enemies = new ArrayList<Enemy>();
                 Game.bullet = new ArrayList<Bullet>();
                 Game.bullets = new ArrayList<BulletShoot>();
+                // Nova fase (inclui ciclos procedurais): zera kills, combo da fase e o timer.
+                Game.resetLevelStats();
                 Game.spritesheet = new Spritesheet("/spritesheet.png");
                 // Passando tamanho dele e posições
                 Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
                 // Adicionar o jogador na lista e ja aparece na tela
                 Game.entities.add(Game.player);
-                Game.world = new World("/"+level);
+                Game.world = new World(mapSource);
                 QuestManager.onLevelLoaded();
                 // Garante o chefe da fase: níveis a partir do 2 têm a missão de
                 // neutralizar o comandante; se o mapa não tiver um boss fixo,

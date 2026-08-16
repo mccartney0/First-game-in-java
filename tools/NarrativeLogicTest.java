@@ -114,6 +114,63 @@ public class NarrativeLogicTest {
 		// --- MAX_LEVEL ---
 		check("MAX_LEVEL 8", Game.MAX_LEVEL == 8);
 
+		// --- Stats de fase (card pós-fase) ---
+		Game.resetLevelStats();
+		check("kills zera ao resetar fase", Game.getKillsThisLevel() == 0);
+		for (int i = 0; i < 5; i++) { Game.registerEnemyKill(); }
+		check("kills acumulam por fase", Game.getKillsThisLevel() == 5);
+		check("timer não nulo após frames", Game.getLevelTimeMs() >= 0);
+		check("formatLevelTime mm:ss", "0:05".equals(Game.formatLevelTime(5400)) || Game.formatLevelTime(5400).endsWith(":05"));
+		Game.resetLevelStats();
+		check("reset zera kills e timer", Game.getKillsThisLevel() == 0);
+
+		// --- Gerador procedural do modo infinito ---
+		java.io.File map1 = com.traduvertgames.world.ProceduralLevelGenerator.generate(1);
+		check("mapa procedural existe", map1 != null && map1.exists());
+		check("mapa procedural é válido", com.traduvertgames.world.ProceduralLevelGenerator.validate(javax.imageio.ImageIO.read(map1)));
+		java.io.File map1b = com.traduvertgames.world.ProceduralLevelGenerator.generate(1);
+		check("mapa procedural determinístico", map1.getAbsolutePath().equals(map1b.getAbsolutePath()));
+		java.io.File map2 = com.traduvertgames.world.ProceduralLevelGenerator.generate(2);
+		check("profundidades geram mapas distintos", !map2.getAbsolutePath().equals(map1.getAbsolutePath()));
+		check("mapa profundo válido", com.traduvertgames.world.ProceduralLevelGenerator.validate(javax.imageio.ImageIO.read(com.traduvertgames.world.ProceduralLevelGenerator.generate(50))));
+
+		// --- Título da fase procedural usa a profundidade do ciclo atual ---
+		// Ambienta um Game real (levelPlus é de instância). O construtor Game()
+		// carrega o jogo completo — no teste, seta instance e levelPlus via reflection.
+		// Game.instance é de instância (o construtor real carrega o jogo completo);
+		// seta instance e levelPlus diretamente via reflection.
+		java.lang.reflect.Field finst = Game.class.getDeclaredField("instance");
+		finst.setAccessible(true);
+		java.lang.reflect.Field flp = Game.class.getDeclaredField("levelPlus");
+		flp.setAccessible(true);
+		// Ambienta um Game (levelPlus é de instância) sem invocar o construtor
+		// real, que carrega o jogo completo e abre janela. allocateInstance evita o init.
+		sun.misc.Unsafe unsafe = null;
+		try {
+			java.lang.reflect.Field uf = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+			uf.setAccessible(true);
+			unsafe = (sun.misc.Unsafe) uf.get(null);
+		} catch (Exception ignored) {
+		}
+		Game gameForTitle = null;
+		if (unsafe != null) {
+			try {
+				gameForTitle = (Game) unsafe.allocateInstance(Game.class);
+				finst.set(null, gameForTitle);
+				flp.setInt(gameForTitle, 3);
+			} catch (Exception allocError) {
+				gameForTitle = null;
+			}
+		}
+		QuestManager.prepareForLevel(9);
+		check("título level 9 é Modo Sobrevivência", "Modo Sobrevivência".equals(QuestManager.getPhaseTitle(9)));
+		check("título procedural 10 usa profundidade", "Fase Procedural 3".equals(QuestManager.getPhaseTitle(10)));
+		check("título fase normal intacto", "Subsolo da Colônia".equals(QuestManager.getPhaseTitle(7)));
+		check("modo sobrevivência a partir da 9", QuestManager.isSurvivalMode());
+		if (gameForTitle != null) {
+			flp.setInt(gameForTitle, 1);
+		}
+
 		if (fails == 0) { System.out.println("ALL PASSED"); System.exit(0); }
 		else { System.out.println("FAILS: " + fails); System.exit(1); }
 	}

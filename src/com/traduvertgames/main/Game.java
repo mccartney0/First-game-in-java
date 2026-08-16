@@ -96,6 +96,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         private static int bestComboRecord = 1;
         private static int bestComboThisRun = 1;
 
+        /** Kills acumuladas apenas na fase atual (para o card de estatísticas pós-fase). */
+        private static int killsThisLevel = 0;
+        /** Momento (ms) em que a fase atual começou, para o timer do card de estatísticas. */
+        private static long levelStartTime = System.currentTimeMillis();
+
 	private static boolean overlayExpanded = false;
 
 	/** True enquanto a loja está aberta por causa de um objetivo concluído. */
@@ -242,6 +247,39 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return bestComboThisRun;
         }
 
+        /** Kills realizadas desde o início da fase atual. */
+        public static int getKillsThisLevel() {
+                return killsThisLevel;
+        }
+
+        /** Duração da fase atual em milissegundos (0 se ainda não iniciou). */
+        public static long getLevelTimeMs() {
+                long elapsed = System.currentTimeMillis() - levelStartTime;
+                return Math.max(0, elapsed);
+        }
+
+        /** Zera kills e timer ao iniciar uma nova fase (inclui ciclos do modo infinito). */
+        public static void resetLevelStats() {
+                killsThisLevel = 0;
+                bestComboThisRun = 1;
+                comboMultiplier = 1;
+                comboTimer = 0;
+                levelStartTime = System.currentTimeMillis();
+        }
+
+        /** Inicia o timer da fase (usado por World.restartGame ao trocar de mapa). */
+        public static void startLevelTimer() {
+                levelStartTime = System.currentTimeMillis();
+        }
+
+        /** Formata milissegundos como mm:ss para o card de estatísticas. */
+        public static String formatLevelTime(long ms) {
+                long totalSeconds = ms / 1000;
+                long minutes = totalSeconds / 60;
+                long seconds = totalSeconds % 60;
+                return String.format("%d:%02d", minutes, seconds);
+        }
+
         public static void setBestComboThisRun(int value) {
                 bestComboThisRun = Math.max(1, value);
         }
@@ -275,8 +313,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return this.levelPlus;
         }
 
+        /** Acesso estático seguro à profundidade do modo infinito (sem jogo ativo = 0). */
+        public static int getStaticLevelPlus() {
+                Game game = getInstance();
+                return game != null ? game.levelPlus : 0;
+        }
+
         public static void registerEnemyKill() {
                 LevelUpManager.grantKillXp();
+                killsThisLevel++;
                 int points = BASE_SCORE_PER_KILL * comboMultiplier;
                 score += points;
                 if (score > highScore) {
@@ -399,7 +444,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// o bloco NORMAL reabriria a loja (objetivo ainda parece completo) e o jogo
 		// ficaria preso na loja para sempre — era o bug do ESC piscando.
 		// Cutscene de vitória: encerra a campanha ao concluir a fase 6.
-		if (VictoryCutscene.isShowing()) {
+		if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
+			// Card de estatísticas pós-fase: intercepta Enter/ESC enquanto visível.
+			com.traduvertgames.graficos.PhaseStatsScreen.update(enter, escape);
+			enter = false;
+			escape = false;
+		} else if (VictoryCutscene.isShowing()) {
 			com.traduvertgames.graficos.VictoryCutscene.update(enter, escape);
 			enter = false;
 			escape = false;
@@ -605,6 +655,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 	ui.renderOverlay((Graphics2D) g);
 	com.traduvertgames.graficos.MissionHud.render((Graphics2D) g);
 		com.traduvertgames.graficos.VictoryCutscene.render(g, SCALE);
+	com.traduvertgames.graficos.PhaseStatsScreen.render(g, SCALE);
 	if (damageOverlayFrames > 0) {
 		int alpha = Math.max(0, (int) (70.0 * damageOverlayFrames / DAMAGE_OVERLAY_DURATION));
 		g.setColor(new Color(180, 30, 30, alpha));
@@ -1216,6 +1267,8 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		QuestManager.prepareForLevel(CUR_LEVEL);
 		String newWorld = "level" + CUR_LEVEL + ".png";
 		World.restartGame(newWorld);
+		// Card de estatísticas da fase que acabou de terminar (kills, tempo, combo).
+		com.traduvertgames.graficos.PhaseStatsScreen.show();
 		// Avisos de transição de fase.
 		showLevelTransition = 150;
 	}
@@ -1228,6 +1281,58 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		WaveManager.startArena();
 		showLevelTransition = 180;
+		// Card de estatísticas do ciclo anterior do modo infinito (se não for a
+		// primeira entrada, que já ganha a cutscene de vitória da campanha).
+		if (instance != null && instance.levelPlus > 1) {
+			com.traduvertgames.graficos.PhaseStatsScreen.show();
+		}
+	}
+
+	/**
+	 * Entra no modo infinito pela primeira vez (a partir do seletor de fases).
+	 * Gera o primeiro mapa procedural, entra no modo arena e exibe o banner de
+	 * transição do modo.
+	 */
+	public static void enterInfiniteMode() {
+		if (instance != null) {
+			instance.levelPlus = 1;
+		}
+		QuestManager.prepareForLevel(MAX_LEVEL + 1);
+		startProceduralLevel(1);
+		showLevelTransition = 180;
+	}
+
+	/**
+	 * Avança para a próxima fase procedural do modo infinito: novo mapa gerado
+	 * pela profundidade (semente determinística), arena reiniciada (mantendo o
+	 * recorde de ondas) e bônus de recursos do piloto aplicados.
+	 * Chamado ao derrotar um chefe enquanto o modo arena estiver ativo.
+	 */
+	public static void advanceProceduralPhase() {
+		if (instance == null) {
+			return;
+		}
+		instance.levelPlus += 1;
+		int depth = instance.levelPlus;
+		QuestManager.prepareForLevel(MAX_LEVEL + 1);
+		applyProgressBonuses();
+		// Card de estatísticas do ciclo que acabou de terminar.
+		com.traduvertgames.graficos.PhaseStatsScreen.show();
+		startProceduralLevel(depth);
+		showLevelTransition = 180;
+	}
+
+	/** Carrega o mapa procedural da profundidade informada. */
+	private static void startProceduralLevel(int depth) {
+		try {
+			java.io.File mapFile = com.traduvertgames.world.ProceduralLevelGenerator.generate(depth);
+			String absPath = mapFile.getAbsolutePath();
+			com.traduvertgames.world.World.restartGameFromFile(absPath);
+		} catch (Exception error) {
+			error.printStackTrace();
+			// Fallback: mapa fixo do Núcleo Central em caso de falha de geração.
+			World.restartGame("level8.png");
+		}
 	}
 
 	private static void applyProgressBonuses() {

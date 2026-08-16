@@ -50,7 +50,12 @@ public final class QuestManager {
             return "Arena de Treino";
         }
         if (level >= PHASE_TITLES.length) {
-            return "Fase " + level;
+            // Fases procedurais do modo infinito: título com a profundidade do ciclo atual.
+            int depth = Game.getStaticLevelPlus();
+            if (depth < 1) {
+                depth = 1;
+            }
+            return "Fase Procedural " + depth;
         }
         return PHASE_TITLES[level];
     }

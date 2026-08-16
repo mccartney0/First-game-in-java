@@ -55,7 +55,14 @@ public final class MiniMap {
 			}
 		}
 
-		for (Enemy enemy : Game.enemies) {
+		// Snapshot defensivo: durante a transição de fase a lista de inimigos é
+		// recriada em outro fluxo, o que causava ConcurrentModificationException.
+		Object[] enemySnapshot = Game.enemies.toArray();
+		for (Object obj : enemySnapshot) {
+			if (!(obj instanceof Enemy)) {
+				continue;
+			}
+			Enemy enemy = (Enemy) obj;
 			int mapX = panelX + (enemy.getX() / 16) * TILE_DRAW;
 			int mapY = panelY + (enemy.getY() / 16) * TILE_DRAW;
 			g2.setColor(COLOR_ENEMY);

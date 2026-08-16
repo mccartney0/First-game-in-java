@@ -46,11 +46,11 @@ public class Enemy extends Entity {
         OVERSEER(28.0, 1.1, 1.2, 4.6, 5.2, 7, 80, 240, 160, new Color(121, 134, 203)),
         // Supervisor-Prime: a mente da colônia — chefe final da campanha,
         // com mais vida, dano e alcance que o OVERSEER comum.
-        OVERSEER_PRIME(42.0, 1.2, 1.3, 5.4, 6.2, 8, 70, 240, 160, new Color(208, 25, 55)),
+        OVERSEER_PRIME(52.0, 1.15, 1.3, 5.4, 5.8, 8, 70, 240, 160, new Color(208, 25, 55)),
         // Caçador furtivo: esquivo e letal, drena escudo e mana do piloto.
         PHANTOM(6.5, 1.45, 1.6, 4.4, 2.6, 5, 80, 140, 120, new Color(129, 199, 132)),
         // Tanque de bloqueio: lento, robusto e regenera escudo com o tempo.
-        GUARDIAN(20.0, 0.6, 0.5, 3.4, 2.2, 6, 110, 200, 0, new Color(255, 87, 34));
+        GUARDIAN(28.0, 0.7, 0.5, 3.4, 2.6, 6, 110, 200, 0, new Color(255, 87, 34));
 
         private final double maxLife;
         private final double speedMultiplier;
@@ -264,7 +264,7 @@ public class Enemy extends Entity {
             }
             // Reforço ocasional quando perto do jogador.
             if (specialCooldown == 0 && distanceToPlayer < 200 && Game.enemies.size() < 10) {
-                int roll = Game.rand.nextInt(90);
+                int roll = Game.rand.nextInt(180);
                 if (roll == 0) {
                     int rx = (int) x + (Game.rand.nextInt(3) - 1) * 16;
                     int ry = (int) y + (Game.rand.nextInt(3) - 1) * 16;
@@ -306,7 +306,19 @@ public class Enemy extends Entity {
     /** Chefe do modo sobrevivência: WARBRINGER ou GUARDIAN escalados pela onda.
      *  @param depth ondas concluídas antes deste chefe (para escala de vida/dano). */
     public static Enemy spawnArenaBoss(int x, int y, int depth) {
-        Variant variant = (depth / 5 % 2 == 0) ? Variant.WARBRINGER : Variant.GUARDIAN;
+        // Rotação de chefes profundos: WARBRINGER → GUARDIAN → OVERSEER_PRIME (ciclo de 3 blocos de 5 ondas).
+        Variant variant;
+        switch (depth / 5 % 3) {
+            case 1:
+                variant = Variant.GUARDIAN;
+                break;
+            case 2:
+                variant = Variant.OVERSEER_PRIME;
+                break;
+            default:
+                variant = Variant.WARBRINGER;
+                break;
+        }
         Enemy boss = new Enemy(x, y, 20, 20, ENEMY_EN, variant, true);
         // Escala por profundidade: +40% de vida e +20% de dano por bloco de 5 ondas.
         boss.boost(1.0 + depth * 0.4, 1.0 + depth * 0.2);
@@ -990,9 +1002,14 @@ public class Enemy extends Entity {
 		FloatingText.show("+" + xpGain + " XP", (int) this.getX() + 8, (int) this.getY(),
 				new Color(255, 214, 0), 45);
 	}
-	Game.enemies.remove(this);
+        Game.enemies.remove(this);
         Game.entities.remove(this);
         QuestManager.notifyEnemyKilled(this);
+        // Modo infinito: matar um chefe no modo arena avança para a próxima
+        // fase procedural (novo mapa gerado por semente e rotação de chefes).
+        if (this.boss && com.traduvertgames.main.WaveManager.isArenaMode()) {
+            Game.advanceProceduralPhase();
+        }
     }
 
     private void maybeDropPickup() {

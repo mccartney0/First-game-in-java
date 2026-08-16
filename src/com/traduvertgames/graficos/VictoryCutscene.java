@@ -120,11 +120,15 @@ public final class VictoryCutscene {
 		String statsLabel = "Estatísticas da campanha";
 		g.drawString(statsLabel, (screenWidth - g.getFontMetrics().stringWidth(statsLabel)) / 2, y);
 		y += 24 * scale / 4;
-		g.setFont(new Font("arial", Font.PLAIN, 12 * scale / 4));
-		g.setColor(new Color(200, 200, 200, alpha));
-		String scoreLine = String.format("Pontuação: %d — Melhor combo: %d — Inimigos derrotados: %d",
-				Game.getScore(), Game.getBestComboRecord(), Enemy.enemies);
-		g.drawString(scoreLine, (screenWidth - g.getFontMetrics().stringWidth(scoreLine)) / 2, y);
+			g.setFont(new Font("arial", Font.PLAIN, 12 * scale / 4));
+			g.setColor(new Color(200, 200, 200, alpha));
+			String scoreLine = String.format("Pontuação: %d — Melhor combo: %d — Inimigos derrotados: %d",
+					Game.getScore(), Game.getBestComboRecord(), Enemy.enemies);
+			g.drawString(scoreLine, (screenWidth - g.getFontMetrics().stringWidth(scoreLine)) / 2, y);
+			y += 18 * scale / 4;
+			String detailLine = String.format("Última fase: %d kills — Tempo: %s — Combo máximo: x%d",
+					Game.getKillsThisLevel(), Game.formatLevelTime(Game.getLevelTimeMs()), Game.getBestComboThisRun());
+			g.drawString(detailLine, (screenWidth - g.getFontMetrics().stringWidth(detailLine)) / 2, y);
 
 		if (framesElapsed > FADE_TOTAL) {
 			y += 34 * scale / 4;

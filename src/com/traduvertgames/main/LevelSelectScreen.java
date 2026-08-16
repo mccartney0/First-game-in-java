@@ -19,7 +19,7 @@ import com.traduvertgames.main.OnboardingManager;
 
 public final class LevelSelectScreen {
 
-	private static final int TOTAL_LEVELS = 8;
+	private static final int TOTAL_LEVELS = 9;
 	private static final String[] LEVEL_NAMES = {
 			"Setor Alpha — Coleta de artefatos",
 			"Câmara do Warbringer — Caçada ao chefe",
@@ -28,7 +28,8 @@ public final class LevelSelectScreen {
 			"Datacenter Nexus — Recuperação de dados",
 			"Torre do Supervisor — Queda do Supervisor",
 			"Subsolo da Colônia — Sabotagem dos geradores",
-			"Núcleo Central — Destruição da IA"
+			"Núcleo Central — Destruição da IA",
+			"Modo Infinito — Fases Procedurais"
 	};
 
 	private static int selection = 0;
@@ -106,7 +107,6 @@ public final class LevelSelectScreen {
 			return;
 		}
 		System.out.println("[LSS] playLevel(" + level + ") selecionado; gameState=" + Game.gameState);
-		game.setCurrentLevel(level);
 		// Cancela qualquer avanço de fase pendente da loja anterior.
 		Game.clearQuestPending();
 		Game.player.resetPersistentArsenal();
@@ -118,7 +118,13 @@ public final class LevelSelectScreen {
 		DashAbility.reset();
 		UltimateAbility.reset();
 		WaveManager.reset();
-		com.traduvertgames.world.World.restartGame("level" + level + ".png");
+		// Opção 9: modo infinito — fases procedurais geradas por semente.
+		if (level == TOTAL_LEVELS) {
+			Game.enterInfiniteMode();
+		} else {
+			game.setCurrentLevel(level);
+			com.traduvertgames.world.World.restartGame("level" + level + ".png");
+		}
 		// Trocar de fase abandona a arena de treino — o onboarding não deve
 		// continuar ativo por cima da nova fase (bug do painel fantasma).
 		OnboardingManager.stop();
