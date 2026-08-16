@@ -48,5 +48,8 @@ spawn(3, H - 3)
 for x, y in [(7, 4), (13, 6), (20, 4), (9, 12), (18, 12)]:
     wall(x, y)
 
+Path("/home/ubuntu/First-game-in-java/bin").mkdir(parents=True, exist_ok=True)
 img.save("/home/ubuntu/First-game-in-java/bin/training.png")
+Path("/home/ubuntu/First-game-in-java/res").mkdir(parents=True, exist_ok=True)
+img.save("/home/ubuntu/First-game-in-java/res/training.png")
 print("training.png gerado:", W, "x", H)

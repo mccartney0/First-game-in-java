@@ -36,5 +36,8 @@ px[3, H - 3] = PLAYER
 # Boss OVERSEER no centro superior (área limpa)
 px[W // 2, 5] = BOSS
 
+Path("bin").mkdir(parents=True, exist_ok=True)
 img.save("bin/level6.png")
+Path("res").mkdir(parents=True, exist_ok=True)
+img.save("res/level6.png")
 print("level6.png gerado:", img.size)

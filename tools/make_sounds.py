@@ -9,7 +9,9 @@ import os
 import struct
 
 OUT = "/home/ubuntu/First-game-in-java/bin/sounds"
+OUT_RES = "/home/ubuntu/First-game-in-java/res/sounds"
 os.makedirs(OUT, exist_ok=True)
+os.makedirs(OUT_RES, exist_ok=True)
 
 SR = 8000
 
@@ -47,8 +49,11 @@ def wave_header(data):
 
 
 def save(name, data):
+    wav = wave_header(data)
     with open(os.path.join(OUT, name), "wb") as f:
-        f.write(wave_header(data))
+        f.write(wav)
+    with open(os.path.join(OUT_RES, name), "wb") as f:
+        f.write(wav)
 
 
 # Tiro: pulso quadrado descendente rápido (o pitch varia por arma na integração)

@@ -5,6 +5,7 @@ build/
 
 # Generated RPG maps
 res/level*.png
+!res/level6.png
 saves.json
 bin/*.class
 bin/AutoValidate.class
