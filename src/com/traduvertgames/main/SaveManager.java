@@ -137,6 +137,8 @@ public final class SaveManager {
 			if (activeCompanion != null) {
 				slot.put("companionType", activeCompanion.getType().name());
 				slot.put("companionHp", clampDouble(activeCompanion.getHp()));
+				// Skin de customização do companion (v3).
+				slot.put("companionSkin", activeCompanion.getSkin().name());
 			} else {
 				slot.put("companionType", "");
 			}
@@ -496,10 +498,18 @@ public final class SaveManager {
 					com.traduvertgames.entities.Companion.CompanionType.valueOf(type);
 			double savedHp = toDouble(session.get("companionHp"));
 			com.traduvertgames.entities.Companion.spawn(companionType, savedHp);
+			// Skin de customização (v3): padrão se o campo estiver ausente.
+			Object skinRaw = session.get("companionSkin");
+			String skin = skinRaw instanceof String ? (String) skinRaw : "";
+			if (!skin.isEmpty() && com.traduvertgames.entities.Companion.getActive() != null) {
+				com.traduvertgames.entities.Companion.CompanionSkin companionSkin =
+						com.traduvertgames.entities.Companion.CompanionSkin.valueOf(skin);
+				com.traduvertgames.entities.Companion.getActive().setSkin(companionSkin);
+			}
 		} catch (Throwable ignored) {
 			// Save sem companion (v2 ou campo ausente): segue sem criatura.
 		}
-}
+	}
 
 	/** Restaura as flags narrativas salvas (ex.: TraitorNpc da fase 7). */
 	@SuppressWarnings("unchecked")

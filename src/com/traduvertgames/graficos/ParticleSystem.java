@@ -39,7 +39,16 @@ public final class ParticleSystem {
 		burst(x, y, color, 14, 2.4);
 	}
 
-	/** Partícula em arco, usada pelo dash do jogador. */
+	/** Partículas em anel radial: usadas pelo Shield Bot ao regenerar escudo. */
+	public static void pulse(int x, int y, Color color) {
+		for (int i = 0; i < 8; i++) {
+			double angle = Math.PI * 2 * i / 8.0;
+			double dx = Math.cos(angle) * 1.2;
+			double dy = Math.sin(angle) * 1.2;
+			particles.add(new Particle(x, y, dx, dy, color, 12));
+		}
+	}
+
 	public static void trail(int x, int y, Color color) {
 		if (Game.rand.nextInt(3) != 0) {
 			return;

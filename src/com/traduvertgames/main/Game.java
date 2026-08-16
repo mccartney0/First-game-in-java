@@ -132,6 +132,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		traitorTalked = value;
 	}
         private static boolean fullscreen = false;
+
+        /** Offset de centralização do jogo na janela (letterboxing em
+         * fullscreen/resolução não múltipla do buffer). Os overlays devem
+         * somar esses valores às próprias coordenadas. */
+        public static int drawOffsetX = 0;
+        public static int drawOffsetY = 0;
         /** Frames restantes de exibição do aviso "Fase X concluída — próxima fase". */
         private static int showLevelTransition = 0;
 
@@ -376,13 +382,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		});
 	}
 
-	/** Alterna tela cheia (F11): maximiza e ajusta o SCALE à resolução do monitor. */
+	/** Alterna tela cheia (F11): maximiza e ajusta o SCALE à resolução do monitor.
+	 * Em monitores cuja resolução não é múltiplo exato do buffer, o jogo fica
+	 * centralizado (letterboxing preto) para preservar a nitidez da pixel art
+	 * e a escala correta da HUD. */
 	public static void toggleFullscreen() {
 		if (!fullscreen) {
 			java.awt.GraphicsEnvironment ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
 			java.awt.GraphicsDevice device = ge.getDefaultScreenDevice();
 			if (device.isFullScreenSupported()) {
+				frame.dispose();
+				frame.setUndecorated(true);
 				device.setFullScreenWindow(frame);
+				frame.setVisible(true);
 				fullscreen = true;
 				frame.setResizable(true);
 			} else {
@@ -394,9 +406,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			java.awt.GraphicsEnvironment ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
 			java.awt.GraphicsDevice device = ge.getDefaultScreenDevice();
 			device.setFullScreenWindow(null);
+			frame.dispose();
+			frame.setUndecorated(false);
 			frame.setExtendedState(javax.swing.JFrame.NORMAL);
 			frame.setResizable(false);
 			frame.pack();
+			frame.setVisible(true);
 			frame.setLocationRelativeTo(null);
 			fullscreen = false;
 		}
@@ -645,83 +660,95 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 // O jogo é desenhado a partir do canto (0,0) para que todos os
                 // overlays (HUD, minimapa, loja, level-up) continuem corretos;
                 // a sobra da janela já está coberta pelo preenchimento preto.
-                g.drawImage(image, 0, 0, scaledWidth, scaledHeight, null);
-                MiniMap.render(g);
-                LevelUpManager.render(g);
-                ShopManager.render(g);
-                LevelSelectScreen.render(g);
-                WaveManager.render(g);
-                LootGuarantee.render(g);
+                // Centraliza o jogo na janela quando ela for maior que o
+                // canvas escalado (fullscreen com resolution não múltipla do
+                // buffer — letterboxing preto nas bordas).
+                int offsetX = Math.max(0, (windowWidth - scaledWidth) / 2);
+                int offsetY = Math.max(0, (windowHeight - scaledHeight) / 2);
+                drawOffsetX = offsetX;
+                drawOffsetY = offsetY;
+                g.drawImage(image, offsetX, offsetY, offsetX + scaledWidth, offsetY + scaledHeight, null);
+                // Translada os overlays para o espaço do jogo centralizado
+                // (fullscreen com letterboxing), revertendo depois.
+                Graphics2D overlayG = (Graphics2D) g.create();
+                overlayG.translate(offsetX, offsetY);
+                MiniMap.render(overlayG);
+                LevelUpManager.render(overlayG);
+                ShopManager.render(overlayG);
+                LevelSelectScreen.render(overlayG);
+                WaveManager.render(overlayG);
+                LootGuarantee.render(overlayG);
                 // ui.renderOverlay é desenhado por último para que a HUD compacta
                 // (e os cards do painel tático) fiquem sobre o overlay escuro da loja
                 // e sobre os demais painéis, sem parecer esmaecida no fundo.
-	ui.renderOverlay((Graphics2D) g);
-	com.traduvertgames.graficos.MissionHud.render((Graphics2D) g);
-		com.traduvertgames.graficos.VictoryCutscene.render(g, SCALE);
-	com.traduvertgames.graficos.PhaseStatsScreen.render(g, SCALE);
+	ui.renderOverlay(overlayG);
+	com.traduvertgames.graficos.MissionHud.render(overlayG);
+		com.traduvertgames.graficos.VictoryCutscene.render(overlayG, SCALE);
+		com.traduvertgames.graficos.PhaseStatsScreen.render(overlayG, SCALE);
+	overlayG.dispose();
 	if (damageOverlayFrames > 0) {
 		int alpha = Math.max(0, (int) (70.0 * damageOverlayFrames / DAMAGE_OVERLAY_DURATION));
-		g.setColor(new Color(180, 30, 30, alpha));
-		g.fillRect(0, 0, scaledWidth, scaledHeight);
+		overlayG.setColor(new Color(180, 30, 30, alpha));
+		overlayG.fillRect(0, 0, scaledWidth, scaledHeight);
 		damageOverlayFrames--;
 	}
-	DialogueManager.render(g);
-	OnboardingManager.render(g);
+	DialogueManager.render(overlayG);
+	OnboardingManager.render(overlayG);
 	// A tela de escolha de arma inicial é desenhada por cima de tudo (inclusive
 	// do menu de pausa): durante a seleção o estado é MENU com pause=true, mas o
 	// menu principal não deve aparecer por cima das opções de arma.
-	renderInitialWeaponSelect(g, scaledWidth, scaledHeight);
+	renderInitialWeaponSelect(overlayG, scaledWidth, scaledHeight);
 
 		if ("GAMEOVER".equals(gameState)) {
-                        Graphics2D g2 = (Graphics2D) g;
+                        Graphics2D g2 = overlayG;
                         g2.setColor(new Color(0, 0, 0, 120));
                         g2.fillRect(0, 0, scaledWidth, scaledHeight);
                         g.setFont(new Font("arial", Font.BOLD, 36));
                         g.setColor(Color.white);
-                        drawCenteredString(g, "Game Over", scaledHeight / 2 - 50);
+                        drawCenteredString(overlayG, "Game Over", scaledHeight / 2 - 50);
                         g.setFont(new Font("arial", Font.BOLD, 28));
 
                         if (showMessageGameOver) {
-                                drawCenteredString(g, ">Pressione Enter para reiniciar — ESC para o menu<", scaledHeight / 2 + 4);
+                                drawCenteredString(overlayG, ">Pressione Enter para reiniciar — ESC para o menu<", scaledHeight / 2 + 4);
                         }
                         g.setFont(new Font("arial", Font.PLAIN, 16));
                         g.setColor(new Color(200, 200, 200));
                         if (menuReturnTimer > 0) {
-                                drawCenteredString(g, "Voltando ao menu em " + ((menuReturnTimer + 29) / 30) + "s...",
+                                drawCenteredString(overlayG, "Voltando ao menu em " + ((menuReturnTimer + 29) / 30) + "s...",
                                                 scaledHeight / 2 + 142);
                         }
 
                         g.setFont(new Font("arial", Font.BOLD, 24));
-                        drawCenteredString(g, "Pontuação final: " + Game.getScore(), scaledHeight / 2 + 52);
-                        drawCenteredString(g, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 82);
-                        drawCenteredString(g, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 112);
+                        drawCenteredString(overlayG, "Pontuação final: " + Game.getScore(), scaledHeight / 2 + 52);
+                        drawCenteredString(overlayG, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 82);
+                        drawCenteredString(overlayG, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 112);
 
                 } else if ("MENU".equals(gameState)) {
                         if (!showInitialWeaponSelect) {
-                                menu.render(g);
+			menu.render(overlayG);
                         }
                         // Durante a seleção de arma inicial o menu não deve
                         // desenhar nada: o overlay da própria tela de arma
                         // escurece o fundo e desenha a lista por cima.
                 } else if ("SHOP".equals(gameState)) {
-                        // A HUD compacta é desenhada pelo overlay (por cima do painel da loja).
-                        Menu.renderPauseScreen(g);
-                        ShopManager.render(g);
+				// A HUD compacta é desenhada pelo overlay (por cima do painel da loja).
+				Menu.renderPauseScreen(overlayG);
+				ShopManager.render(overlayG);
                 } else if ("LEVELUP".equals(gameState)) {
                         // Tela de level up já renderiza por cima do jogo (LevelUpManager.render).
-                } else if ("LEVELSELECT".equals(gameState)) {
-                        LevelSelectScreen.render(g);
+			} else if ("LEVELSELECT".equals(gameState)) {
+				LevelSelectScreen.render(overlayG);
                 }
 
                 // Aviso de transição de fase: a fase atual foi concluída e o jogo
                 // avança para a próxima assim que a loja/level up forem encerrados.
                 if (showLevelTransition > 0) {
-                        Graphics2D g2 = (Graphics2D) g;
+                        Graphics2D g2 = overlayG;
                         g2.setColor(new Color(0, 0, 0, 190));
                         g2.fillRect(0, scaledHeight / 2 - 60, scaledWidth, 120);
                         g2.setColor(new Color(255, 235, 59));
                         g.setFont(new Font("arial", Font.BOLD, 26));
-                        drawCenteredString(g, "Fase " + Game.getCurrentLevel() + " concluída!", scaledHeight / 2 - 34);
+                        drawCenteredString(overlayG, "Fase " + Game.getCurrentLevel() + " concluída!", scaledHeight / 2 - 34);
                         String nextTitle;
                         String nextObjective = QuestManager.getObjectiveTitle();
                         if (QuestManager.isSurvivalMode()) {
@@ -732,10 +759,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                         }
                         g2.setColor(Color.WHITE);
                         g.setFont(new Font("arial", Font.BOLD, 16));
-                        drawCenteredString(g, nextTitle, scaledHeight / 2 - 4);
+                        drawCenteredString(overlayG, nextTitle, scaledHeight / 2 - 4);
                         g2.setColor(new Color(176, 190, 197));
                         g.setFont(new Font("arial", Font.PLAIN, 13));
-                        drawCenteredString(g, "Missão: " + nextObjective, scaledHeight / 2 + 20);
+                        drawCenteredString(overlayG, "Missão: " + nextObjective, scaledHeight / 2 + 20);
                 }
                 bs.show();
         }
