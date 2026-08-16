@@ -10,7 +10,7 @@ public final class CollectArtifactsObjective extends BaseObjective {
     private int collected = 0;
 
     public CollectArtifactsObjective() {
-        super("Recuperar relíquias", "Reúna todos os núcleos de mana perdidos na base.");
+        super("Recuperar relíquias", "Os drones da colônia se voltaram contra nós. Recupere todos os núcleos de mana perdidos no Setor Alpha antes que sejam corrompidos.");
     }
 
     @Override

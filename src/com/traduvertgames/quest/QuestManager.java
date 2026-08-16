@@ -19,6 +19,47 @@ public final class QuestManager {
     private QuestManager() {
     }
 
+    /** Título narrativo curto de cada fase da campanha. */
+    private static final String[] PHASE_TITLES = {
+            "", // índice 0 não usado
+            "Setor Alpha",
+            "Câmara do Warbringer",
+            "Círculo do Ritual",
+            "Núcleo da Colônia",
+            "Datacenter Nexus",
+            "Torre do Supervisor",
+            "Modo Sobrevivência"
+    };
+
+    /** Abertura da campanha, exibida no banner inicial da fase 1. */
+    public static final String CAMPAIGN_OPENING =
+            "O sistema da colônia foi infectado.\n" +
+            "As máquinas se voltaram contra nós.\n" +
+            "Você é a última linha de defesa.";
+
+    /** Texto exibido ao concluir a campanha e entrar no modo sobrevivência. */
+    public static final String SURVIVAL_INTRO =
+            "Campanha concluída!\nO Supervisor caiu, mas a colônia não está segura.\n" +
+            "Resista às ondas infinitas.";
+
+    public static String getPhaseTitle(int level) {
+        if (level <= 0) {
+            return "Arena de Treino";
+        }
+        if (level >= PHASE_TITLES.length) {
+            return "Fase " + level;
+        }
+        return PHASE_TITLES[level];
+    }
+
+    public static boolean isSurvivalMode() {
+        return currentLevel >= PHASE_TITLES.length - 1;
+    }
+
+    public static int getCurrentLevel() {
+        return currentLevel;
+    }
+
     public static void prepareForLevel(int level) {
         currentLevel = level;
         currentObjective = createObjectiveForLevel(level);
@@ -45,6 +86,9 @@ public final class QuestManager {
         case 6:
             // Fase final: derrotar o OVERSEER, o chefe supervisor.
             return new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor");
+        case 7:
+            // Modo sobrevivência pós-campanha: ondas infinitas.
+            return new NullObjective();
         default:
             return NULL_OBJECTIVE;
         }
@@ -100,10 +144,6 @@ public final class QuestManager {
 
     public static boolean isObjectiveComplete() {
         return currentObjective.isComplete();
-    }
-
-    public static int getCurrentLevel() {
-        return currentLevel;
     }
 
     public static void update() {

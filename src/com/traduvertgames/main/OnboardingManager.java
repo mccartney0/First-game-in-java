@@ -6,19 +6,25 @@ import java.awt.Graphics;
 
 import com.traduvertgames.entities.DashAbility;
 import com.traduvertgames.entities.Player;
+import com.traduvertgames.world.World;
 
 /**
- * Onboarding interativo: guia o jogador novato pelas ações básicas antes de
- * liberar o combate. Durante o onboarding, todos os inimigos ficam paralisados
- * (não se movem nem atiram), de modo que o jogador pode praticar sem risco.
+ * Onboarding interativo em ARENA DE TREINO separada: o novato pratica as ações
+ * básicas (mover, atirar, dash) em um mapa de treino limpo, sem itens de
+ * missão, chefes ou inimigos hostis. Assim o progresso da fase 1 não é
+ * consumido durante o tutorial — ao concluir, o jogo carrega o
+ * {@code level1.png} com a missão intacta e todos os itens no lugar.
  *
  * Etapas:
  * 1. Movimentação — segurar WASD/setas por ~1 segundo de movimento contínuo.
  * 2. Atirar — pressionar X (ou clicar) 3 vezes.
  * 3. Dash — usar Shift 2 vezes.
- * Encerra automaticamente (ou pula com Space) e libera o jogo.
+ * Encerra automaticamente (ou pula com Space) e libera o jogo na fase 1.
  */
 public final class OnboardingManager {
+
+	/** Mapa da arena de treino, sem itens de missão e sem inimigos. */
+	private static final String TRAINING_WORLD = "training.png";
 
 	private static boolean active = false;
 	private static int step = 0; // 0=mover, 1=atirar, 2=dash, 3=concluído
@@ -38,12 +44,19 @@ public final class OnboardingManager {
 	private OnboardingManager() {
 	}
 
+	/**
+	 * Inicia o onboarding na arena de treino. Deve ser chamado pelo Game
+	 * depois do reset inicial (World.restartGame da arena).
+	 */
 	public static void start() {
 		active = true;
 		step = 0;
 		moveFrames = 0;
 		shotsDone = 0;
 		dashesDone = 0;
+		wasMoving = false;
+		wasShootPressed = false;
+		wasDashing = false;
 		skipFrames = 0;
 	}
 
@@ -51,14 +64,15 @@ public final class OnboardingManager {
 		return active;
 	}
 
+	/** Encerra o onboarding sem liberar jogo nenhum — usado ao carregar um save. */
+	public static void stop() {
+		active = false;
+		step = 3;
+	}
+
 	/** Avança/encerra o onboarding imediatamente (usado ao pular com Space). */
 	public static void skip() {
 		finish();
-	}
-
-	private static void finish() {
-		active = false;
-		step = 3;
 	}
 
 	private static Player getPlayer() {
@@ -93,6 +107,7 @@ public final class OnboardingManager {
 			}
 			if (moveFrames >= MOVE_REQUIRED_FRAMES) {
 				step = 1;
+				SoundManager.play(SoundManager.Event.TUTORIAL_STEP);
 			}
 		} else if (step == 1) {
 			// O flag de tiro é consumido no mesmo frame pelo Player.update,
@@ -103,6 +118,8 @@ public final class OnboardingManager {
 				dashesDone++;
 				if (dashesDone >= DASHES_REQUIRED) {
 					finish();
+				} else {
+					SoundManager.play(SoundManager.Event.TUTORIAL_STEP);
 				}
 			}
 			wasDashing = DashAbility.isDashing();
@@ -117,6 +134,7 @@ public final class OnboardingManager {
 	public static void notifyShotFired() {
 		if (active && step == 1) {
 			shotsDone++;
+			SoundManager.play(SoundManager.Event.TUTORIAL_STEP);
 			if (shotsDone >= SHOTS_REQUIRED) {
 				step = 2;
 			}
@@ -140,11 +158,24 @@ public final class OnboardingManager {
 		}
 	}
 
-
+	/**
+	 * Encerra o onboarding e carrega a fase 1 real: inimigos, itens de missão e
+	 * o chefe da fase 1 voltam ao mapa, com a quest intacta.
+	 */
+	private static void finish() {
+		if (!active) {
+			return;
+		}
+		active = false;
+		step = 3;
+		SoundManager.play(SoundManager.Event.TUTORIAL_DONE);
+		Game.getInstance().loadFirstPhase();
+	}
 
 	/**
 	 * Inimigos em onboarding ficam paralisados: ainda existem no mundo (o
 	 * jogador pode vê-los e se preparar), mas não atualizam IA nem atiram.
+	 * Na arena de treino não há inimigos; o parâmetro protege casos antigos.
 	 */
 	public static boolean isEnemyPaused() {
 		return active;
@@ -166,11 +197,11 @@ public final class OnboardingManager {
 	private static String progressHint() {
 		switch (step) {
 		case 0:
-			return "Movimento: quase lá...";
+			return "Arena de treino — pratique antes da missão";
 		case 1:
-			return "Tiros: " + shotsDone + "/" + SHOTS_REQUIRED;
+			return "Movimento OK — Tiros: " + shotsDone + "/" + SHOTS_REQUIRED;
 		case 2:
-			return "Dash: " + dashesDone + "/" + DASHES_REQUIRED;
+			return "Tiros OK — Dash: " + dashesDone + "/" + DASHES_REQUIRED;
 		default:
 			return "";
 		}

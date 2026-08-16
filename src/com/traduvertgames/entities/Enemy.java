@@ -203,6 +203,7 @@ public class Enemy extends Entity {
         }
         if (boss) {
             QuestManager.notifyBossSpotted();
+            com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.BOSS_ALERT);
         }
     }
 
@@ -891,6 +892,10 @@ public class Enemy extends Entity {
     }
 
     public void destroySelf() {
+        // Som de morte do inimigo; chefes ganham um efeito de derrota especial.
+        com.traduvertgames.main.SoundManager.play(boss
+                        ? com.traduvertgames.main.SoundManager.Event.BOSS_DEFEAT
+                        : com.traduvertgames.main.SoundManager.Event.KILL);
         Game.registerEnemyKill();
         maybeDropPickup();
         com.traduvertgames.main.LootGuarantee.dropForVariant(this);

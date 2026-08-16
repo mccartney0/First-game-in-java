@@ -102,7 +102,6 @@ public class Player extends Entity {
         /** Inércia para terreno escorregadio (gelo). */
         private double inertiaDx = 0;
         private double inertiaDy = 0;
-
         private static double moveTowards(double current, double target) {
                 if (current < target) {
                         return Math.min(current + 0.06, target);
@@ -336,12 +335,23 @@ public class Player extends Entity {
                 return mana >= currentWeapon.getManaCost();
         }
 
-        private void fireWeapon(double angle) {
-                if (currentWeapon == null) {
+	private void fireWeapon(double angle) {
+		if (currentWeapon == null) {
                         return;
                 }
                 if (!consumeResourcesForShot(currentWeapon)) {
                         return;
+                }
+                // Efeito sonoro coerente com a arma usada: armas de energia
+                // ganham o tom agudo de laser; as demais, o pulso de tiro.
+                if (currentWeapon.getDisplayName().toLowerCase().contains("plasma")
+                                || currentWeapon.getDisplayName().toLowerCase().contains("vazio")
+                                || currentWeapon.getDisplayName().toLowerCase().contains("íons")
+                                || currentWeapon.getDisplayName().toLowerCase().contains("laser")
+                                || currentWeapon.getDisplayName().toLowerCase().contains("disruptor")) {
+                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LASER);
+                } else {
+                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.SHOT);
                 }
 
                 int projectiles = Math.max(1, currentWeapon.getProjectilesPerShot());
@@ -417,6 +427,7 @@ public class Player extends Entity {
                 if (amount <= 0) {
                         return 0;
                 }
+                com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.DAMAGE);
                 // A primeira fase é mais permissiva: o dano recebido é reduzido
                 // para o jogador novato ter tempo de aprender os controles.
                 double effectiveAmount = amount;
@@ -508,6 +519,7 @@ public class Player extends Entity {
                         if (current instanceof ShieldOrb) {
                                 ShieldOrb orb = (ShieldOrb) current;
                                 if (Entity.isColliding(this, orb)) {
+                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
                                         addShield(orb.getShieldValue());
                                         Game.entities.remove(i);
                                         i--;
@@ -538,6 +550,7 @@ public class Player extends Entity {
                         if (current instanceof NanoMedkit) {
                                 NanoMedkit kit = (NanoMedkit) current;
                                 if (Entity.isColliding(this, kit)) {
+                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
                                         heal(kit.getHealAmount());
                                         addShield(kit.getShieldAmount());
                                         Game.entities.remove(i);
@@ -553,6 +566,7 @@ public class Player extends Entity {
                         if (current instanceof OverclockModule) {
                                 OverclockModule module = (OverclockModule) current;
                                 if (Entity.isColliding(this, module)) {
+                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
                                         manaContinue = true;
                                         addMana(module.getManaBoost());
                                         addWeaponEnergy(module.getWeaponBoost());

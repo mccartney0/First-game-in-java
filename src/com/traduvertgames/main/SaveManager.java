@@ -11,8 +11,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import com.traduvertgames.entities.DashAbility;
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Player;
+import com.traduvertgames.entities.UltimateAbility;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.world.World;
 
@@ -146,23 +148,24 @@ public final class SaveManager {
 
 		Game game = Game.getInstance();
 
-		Player.life = toDouble(slot.get("vida"));
-		Player.mana = toDouble(slot.get("mana"));
-		Player.weapon = toDouble(slot.get("arma"));
-		Player.shield = toDouble(slot.get("escudo"));
-		Enemy.enemies = toInt(slot.get("inimigosMortos"));
+		// Valores salvos são aplicados DEPOIS do reload do mundo, pois o
+		// restart redefine os máximos de vida/mana/escudo para a fase carregada.
+		double savedLife = toDouble(slot.get("vida"));
+		double savedMana = toDouble(slot.get("mana"));
+		double savedWeapon = toDouble(slot.get("arma"));
+		double savedShield = toDouble(slot.get("escudo"));
+		int savedEnemies = toInt(slot.get("inimigosMortos"));
+		int savedLevelPlus = toInt(slot.get("levelPlus"));
+		int savedLevel = toInt(slot.get("level"));
+		int savedScore = toInt(slot.get("pontuacao"));
+		int savedHighScore = toInt(slot.get("recorde"));
+		int savedBestComboRecord = toInt(slot.get("melhorCombo"));
+		int savedBestComboSession = toInt(slot.get("melhorComboSessao"));
+		int savedWeaponOrdinal = toInt(slot.get("armaAtual"));
+		int savedWeaponMask = toInt(slot.get("armasDesbloqueadas"));
 
-		int levelPlus = toInt(slot.get("levelPlus"));
-		int level = toInt(slot.get("level"));
-
-		Game.setScore(toInt(slot.get("pontuacao")));
-		Game.setHighScore(toInt(slot.get("recorde")));
-		Game.setBestComboRecord(Math.max(1, toInt(slot.get("melhorCombo"))));
-		Game.setBestComboThisRun(Math.max(1, toInt(slot.get("melhorComboSessao"))));
-
-		Player.loadCurrentWeaponFromSave(toInt(slot.get("armaAtual")));
-		Player.loadUnlockedWeaponsFromSave(toInt(slot.get("armasDesbloqueadas")));
-
+		Player.loadCurrentWeaponFromSave(savedWeaponOrdinal);
+		Player.loadUnlockedWeaponsFromSave(savedWeaponMask);
 		for (WeaponType type : WeaponType.values()) {
 			Object raw = slot.get("energiaArma_" + type.name());
 			if (raw != null) {
@@ -170,15 +173,54 @@ public final class SaveManager {
 			}
 		}
 
+		Enemy.enemies = savedEnemies;
+		Game.setScore(savedScore);
+		Game.setHighScore(Math.max(savedScore, savedHighScore));
+		Game.setBestComboRecord(Math.max(1, savedBestComboRecord));
+		Game.setBestComboThisRun(Math.max(1, savedBestComboSession));
+
 		if (game != null) {
-			game.setLevelPlus(levelPlus);
-			game.setCurrentLevel(level);
-			game.applyPostLoadAdjustments();
+			// Troca de fase completa: recarrega o mapa, a quest e o chefe da fase
+			// salva (sem reabrir o onboarding), garantindo que o jogo retorne
+			// exatamente à fase em que foi salvo — e não à fase atual.
+			game.setLevelPlus(savedLevelPlus);
+			game.setCurrentLevel(savedLevel);
+			World.restartGame("level" + Math.min(Math.max(1, savedLevel), Game.MAX_LEVEL) + ".png");
+			OnboardingManager.stop();
+			LevelUpManager.reset();
+			WaveManager.reset();
+			DashAbility.reset();
+			UltimateAbility.reset();
+			LootGuarantee.reset();
+			com.traduvertgames.graficos.ParticleSystem.clear();
+			com.traduvertgames.entities.FloatingText.clear();
+			game.resetGameOverState();
+			game.clearQuestPending();
+			game.applyDifficultyToPlayerStats();
+			Player.life = savedLife;
+			Player.mana = savedMana;
+			Player.weapon = savedWeapon;
+			Player.shield = savedShield;
+			game.clampPlayerResources();
+			if (game.player != null) {
+				game.player.syncFromPersistentState();
+				game.player.updateCamera();
+			}
+			Game.gameState = "NORMAL";
+			Menu.pause = false;
 			activeSlot = slotId;
 			return true;
 		}
 
-		World.restartGame("level" + level + ".png");
+		World.restartGame("level" + Math.min(Math.max(1, savedLevel), Game.MAX_LEVEL) + ".png");
+		if (game != null) {
+			game.setLevelPlus(savedLevelPlus);
+			game.applyDifficultyToPlayerStats();
+		}
+		Player.life = savedLife;
+		Player.mana = savedMana;
+		Player.weapon = savedWeapon;
+		Player.shield = savedShield;
 		Game.gameState = "NORMAL";
 		Menu.pause = false;
 		activeSlot = slotId;

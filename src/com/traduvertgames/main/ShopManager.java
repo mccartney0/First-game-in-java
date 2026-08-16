@@ -55,6 +55,7 @@ public final class ShopManager {
 		feedback = "";
 		feedbackTimer = 0;
 		Game.gameState = "SHOP";
+		SoundManager.play(SoundManager.Event.SHOP);
 	}
 
 	public static void close() {
@@ -65,6 +66,7 @@ public final class ShopManager {
 		Game.gameState = "NORMAL";
 		// Evita que o key-repeat do ESC reabra o menu de pausa imediatamente.
 		escCooldown = 15;
+		SoundManager.play(SoundManager.Event.SHOP);
 	}
 
 	/** Navegação via setas/W-S: exposta para o handler de teclado do Game. */

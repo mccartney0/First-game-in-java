@@ -17,7 +17,7 @@ public final class DataRecoveryObjective extends BaseObjective {
     private boolean engineerAssisted = false;
 
     public DataRecoveryObjective() {
-        super("Protocolos perdidos", "Recupere os núcleos de dados e evacue a equipe de pesquisa.");
+        super("Protocolos perdidos", "O servidor central do Datacenter Nexus guarda os dados da colônia. Recupere os núcleos de dados e evacue a equipe de pesquisa com vida.");
     }
 
     @Override

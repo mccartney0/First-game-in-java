@@ -148,6 +148,8 @@ Game.enemies.add(en);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		// Emparelha os teletransportadores do mapa recém-carregado.
+		TeleportPad.linkPairs();
 	}
 
 	public static boolean isFree(int xNext,int yNext, int zplayer) {
@@ -192,6 +194,7 @@ Game.enemies.add(en);
         public static void restartGame(String level) {
                 int levelNumber = parseLevelNumber(level);
                 QuestManager.prepareForLevel(levelNumber);
+                TeleportPad.reset();
                 Game.entities.clear();
                 Game.enemies.clear();
                 Game.entities = new ArrayList<Entity>();
@@ -254,6 +257,11 @@ Game.enemies.add(en);
         private static int parseLevelNumber(String level) {
                 if (level == null) {
                         return QuestManager.getCurrentLevel();
+                }
+                // A arena de treino do onboarding não é uma fase real: não ganha
+                // chefe de fase nem o escalonamento de dificuldade de campanha.
+                if (level.startsWith("training")) {
+                        return 0;
                 }
                 int value = 0;
                 boolean foundDigit = false;

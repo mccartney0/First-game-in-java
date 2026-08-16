@@ -81,6 +81,11 @@ public final class WaveManager {
 		return arenaWave;
 	}
 
+	/** Número atual da onda no modo sobrevivência (alias de getArenaWave). */
+	public static int getCurrentWaveNumber() {
+		return arenaWave;
+	}
+
 	public static void reset() {
 		spawnQueue.clear();
 		waveIndex = 0;
@@ -191,6 +196,9 @@ public final class WaveManager {
 		announceColor = color;
 		announcing = true;
 		announceTimer = 90;
+		if (text.startsWith("Onda ") || text.startsWith("ARENA")) {
+			SoundManager.play(SoundManager.Event.WAVE);
+		}
 	}
 
 	public static void render(Graphics g) {

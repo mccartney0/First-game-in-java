@@ -15,6 +15,7 @@ import com.traduvertgames.main.Game;
 import com.traduvertgames.entities.UltimateAbility;
 import com.traduvertgames.entities.DashAbility;
 import com.traduvertgames.entities.Enemy;
+import com.traduvertgames.main.OnboardingManager;
 
 public final class LevelSelectScreen {
 
@@ -99,8 +100,10 @@ public final class LevelSelectScreen {
 	private static void playLevel(int level) {
 		Game game = Game.getInstance();
 		if (game == null) {
+			System.out.println("[LSS] playLevel(" + level + ") ignorado: game null");
 			return;
 		}
+		System.out.println("[LSS] playLevel(" + level + ") selecionado; gameState=" + Game.gameState);
 		game.setCurrentLevel(level);
 		// Cancela qualquer avanço de fase pendente da loja anterior.
 		Game.clearQuestPending();
@@ -113,6 +116,9 @@ public final class LevelSelectScreen {
 		UltimateAbility.reset();
 		WaveManager.reset();
 		com.traduvertgames.world.World.restartGame("level" + level + ".png");
+		// Trocar de fase abandona a arena de treino — o onboarding não deve
+		// continuar ativo por cima da nova fase (bug do painel fantasma).
+		OnboardingManager.stop();
 		Game.gameState = "NORMAL";
 		open = false;
 		Menu.pause = false;

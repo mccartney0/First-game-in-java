@@ -10,7 +10,7 @@ public final class RitualObjective extends BaseObjective {
     private int activated = 0;
 
     public RitualObjective() {
-        super("Reativar obeliscos", "Canalize energia em cada farol arcano para purificar o setor.");
+        super("Desativar o ritual", "Cultistas ativam obeliscos para um ritual sombrio no Círculo do Ritual. Desative os três beacons antes que a invocação se complete.");
     }
 
     @Override

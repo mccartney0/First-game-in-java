@@ -60,6 +60,13 @@ public class UI {
 	public void renderOverlay(Graphics2D g2) {
 		g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
 
+		// No menu o jogador ainda não tem valores de jogo; desenhar a HUD aqui
+		// mostraria "VIDA 0/100" por baixo dos painéis. A HUD só aparece durante
+		// a partida (NORMAL, SHOP, LEVELUP, LEVELSELECT).
+		if ("MENU".equals(Game.gameState) || "GAMEOVER".equals(Game.gameState)) {
+			return;
+		}
+
 		// HUD compacta desenhada sobre tudo (inclusive o overlay escuro da loja),
 		// em coordenadas de tela cheia (com SCALE), evitando HUD esmaecida no fundo.
 		drawResourceHudScaled(g2);

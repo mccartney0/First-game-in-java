@@ -99,6 +99,7 @@ public final class LevelUpManager {
 	private static void offerChoices() {
 		Game.gameState = "LEVELUP";
 		showingLevelUp = true;
+		SoundManager.play(SoundManager.Event.LEVELUP);
 		Upgrade[] all = Upgrade.values();
 		pendingChoices = new Upgrade[CHOICES];
 		for (int i = 0; i < CHOICES; i++) {

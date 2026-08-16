@@ -40,7 +40,7 @@ import com.traduvertgames.quest.QuestManager;
 public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 	public static JFrame frame;
@@ -53,7 +53,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
         private static Game instance;
 
-        private static int CUR_LEVEL = 1, MAX_LEVEL = 6;
+        private static int CUR_LEVEL = 1;
+        public static int MAX_LEVEL = 6;
 	private BufferedImage image;
 
 	public static List<Entity> entities;
@@ -589,14 +590,25 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 // avança para a próxima assim que a loja/level up forem encerrados.
                 if (showLevelTransition > 0) {
                         Graphics2D g2 = (Graphics2D) g;
-                        g2.setColor(new Color(0, 0, 0, 160));
-                        g2.fillRect(0, scaledHeight / 2 - 40, scaledWidth, 80);
-                        g2.setColor(new Color(129, 199, 132));
-                        g.setFont(new Font("arial", Font.BOLD, 24));
-                        drawCenteredString(g, "Fase " + Game.getCurrentLevel() + " concluída!", scaledHeight / 2 - 8);
+                        g2.setColor(new Color(0, 0, 0, 190));
+                        g2.fillRect(0, scaledHeight / 2 - 60, scaledWidth, 120);
+                        g2.setColor(new Color(255, 235, 59));
+                        g.setFont(new Font("arial", Font.BOLD, 26));
+                        drawCenteredString(g, "Fase " + Game.getCurrentLevel() + " concluída!", scaledHeight / 2 - 34);
+                        String nextTitle;
+                        String nextObjective = QuestManager.getObjectiveTitle();
+                        if (QuestManager.isSurvivalMode()) {
+                                nextTitle = "Campanha concluída — Modo Sobrevivência";
+                        } else {
+                                int nextLevel = Math.min(Game.getCurrentLevel() + 1, MAX_LEVEL);
+                                nextTitle = "Próxima fase: " + QuestManager.getPhaseTitle(nextLevel);
+                        }
                         g2.setColor(Color.WHITE);
                         g.setFont(new Font("arial", Font.BOLD, 16));
-                        drawCenteredString(g, "Próxima fase: " + Math.min(Game.getCurrentLevel() + 1, MAX_LEVEL), scaledHeight / 2 + 22);
+                        drawCenteredString(g, nextTitle, scaledHeight / 2 - 4);
+                        g2.setColor(new Color(176, 190, 197));
+                        g.setFont(new Font("arial", Font.PLAIN, 13));
+                        drawCenteredString(g, "Missão: " + nextObjective, scaledHeight / 2 + 20);
                 }
                 bs.show();
         }
@@ -661,7 +673,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	@Override
 	// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
 	public void keyPressed(KeyEvent e) {
-		
+
 		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
 			if (OnboardingManager.isActive()) {
 				OnboardingManager.skip();
@@ -671,6 +683,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 			// execute tal ação!
 			player.right = true;
+
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			player.left = true;
 		}
@@ -741,7 +754,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				LevelSelectScreen.confirmSelection();
 			}
 		}
-		
+
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
 			// do menu de pausa ao segurar a tecla).
@@ -807,7 +820,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         }
 
 	@Override
-	public void keyReleased(KeyEvent e) {
+			public void keyReleased(KeyEvent e) {
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 			// execute tal ação!
 			player.right = false;
@@ -820,7 +833,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
 			player.down = false;
 		}
-		
+
 	}
 
 	@Override
@@ -911,14 +924,47 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 LootGuarantee.reset();
 		ParticleSystem.clear();
 		FloatingText.clear();
+		// O onboarding roda em uma arena de treino separada (sem itens de
+		// missão nem inimigos); ao concluir, loadFirstPhase() carrega a fase 1 real.
+		World.restartGame("training.png");
 		OnboardingManager.start();
 		gameState = "NORMAL";
         }
 
-        private void resetPlayerToDefaults() {
-                Player.resetPersistentArsenal();
-                Player.resetBaseStats();
-        }
+	/**
+	 * Carrega a fase 1 real após o onboarding na arena de treino: o mapa da
+	 * fase é recarregado com todos os itens de missão, o chefe da fase e a
+	 * quest intactos — o treino nunca consome progresso da campanha.
+	 */
+	public void loadFirstPhase() {
+		CUR_LEVEL = 1;
+		questCompletedPending = false;
+		shopPendingOpened = false;
+		showLevelTransition = 0;
+		Enemy.enemies = 0;
+		resetScoreState();
+		applyDifficultyToPlayerStats();
+		clampPlayerResources();
+		LevelUpManager.reset();
+		WaveManager.reset();
+		DashAbility.reset();
+		UltimateAbility.reset();
+		LootGuarantee.reset();
+		ParticleSystem.clear();
+		FloatingText.clear();
+		if (player != null) {
+			player.syncFromPersistentState();
+			player.updateCamera();
+		}
+		// A QuestManager já recebe a quest da fase 1 dentro do restartGame.
+		World.restartGame("level1.png");
+		gameState = "NORMAL";
+	}
+
+	private void resetPlayerToDefaults() {
+		Player.resetPersistentArsenal();
+		Player.resetBaseStats();
+	}
 
         private void resetScoreState() {
                 score = 0;
@@ -930,11 +976,22 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	/** Avança para a próxima fase (loja encerra e o mapa muda). */
 	public static void advanceToNextLevel() {
 		CUR_LEVEL++;
-		if (CUR_LEVEL == MAX_LEVEL) {
-			instance.levelPlus += 1;
-		}
 		if (CUR_LEVEL > MAX_LEVEL) {
+			// Pós-campanha: mantém a fase 6 (Torre do Supervisor) e entra no
+			// modo sobrevivência com ondas infinitas e dificuldade crescente.
 			CUR_LEVEL = MAX_LEVEL;
+			instance.levelPlus += 1;
+			enterSurvivalMode();
+			// O progresso de fase encerra a loja aberta (ou level up) para seguir.
+			if (ShopManager.isOpen()) {
+				ShopManager.close();
+			}
+			if (LevelUpManager.isShowingLevelUp()) {
+				LevelUpManager.dismiss();
+			}
+			applyProgressBonuses();
+			showLevelTransition = 180;
+			return;
 		}
 		// O progresso de fase encerra a loja aberta (ou level up) para seguir.
 		if (ShopManager.isOpen()) {
@@ -951,7 +1008,17 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		showLevelTransition = 150;
 	}
 
-                private static void applyProgressBonuses() {
+	/**
+	 * Ativa o modo sobrevivência: ondas infinitas na Torre do Supervisor,
+	 * com a profundidade do modo (levelPlus) escalando a dificuldade.
+	 */
+	public static void enterSurvivalMode() {
+		QuestManager.prepareForLevel(MAX_LEVEL + 1);
+		WaveManager.startArena();
+		showLevelTransition = 180;
+	}
+
+	private static void applyProgressBonuses() {
                 applyDifficultyScalingForCurrentLevel();
                 if (instance != null && instance.levelPlus >= 1) {
                         Player.mana = Player.maxMana;
@@ -977,9 +1044,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 double baseCapacityMultiplier;
 
                 if (CUR_LEVEL == MAX_LEVEL) {
-                        baseMaxLife = 1000;
-                        baseMaxMana = 1500;
-                        baseMaxShield = 600;
+                        // Fase final: a cada ciclo de sobrevivência (levelPlus),
+                        // os recursos máximos do piloto crescem para compensar
+                        // as ondas cada vez mais agressivas.
+                        int survivalDepth = Math.max(0, instance != null ? instance.levelPlus - 1 : 0);
+                        baseMaxLife = 1000 + 200 * survivalDepth;
+                        baseMaxMana = 1500 + 300 * survivalDepth;
+                        baseMaxShield = 600 + 100 * survivalDepth;
                         baseCapacityMultiplier = 4.0;
                 } else {
                         baseMaxLife = 100;
@@ -1019,7 +1090,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
         }
 
-        private void clampPlayerResources() {
+        public void clampPlayerResources() {
                 if (Player.life <= 0) {
                         Player.life = Player.maxLife;
                 } else if (Player.life > Player.maxLife) {
@@ -1059,7 +1130,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 gameState = "NORMAL";
         }
 
-	private void resetGameOverState() {
+	public void resetGameOverState() {
 		this.framesGameOver = 0;
 		this.showMessageGameOver = true;
 		this.menuReturnTimer = 300;
