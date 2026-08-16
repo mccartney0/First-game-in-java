@@ -20,7 +20,8 @@ public class Menu {
 		PAUSE,
 		OPTIONS,
 		LOAD,
-		HOW_TO_PLAY
+		HOW_TO_PLAY,
+		EXIT_CONFIRM
 	}
 
 	private static final int OPTION_NEW_GAME = 0;
@@ -72,6 +73,7 @@ public class Menu {
 
 	private Screen currentScreen = Screen.MAIN;
 	private int currentOption = 0;
+	private int exitConfirmSelection = 0; // 0 = Não, 1 = Sim
 
 	public boolean up, down, enter;
 
@@ -119,8 +121,10 @@ public class Menu {
 				handleLoadSelection();
 				break;
 			case HOW_TO_PLAY:
-				currentScreen = Screen.MAIN;
 				currentOption = 0;
+				break;
+			case EXIT_CONFIRM:
+				handleExitConfirmSelection();
 				break;
 			default:
 				break;
@@ -129,6 +133,12 @@ public class Menu {
 	}
 
 	private void moveSelection(int delta) {
+		if (currentScreen == Screen.EXIT_CONFIRM) {
+			exitConfirmSelection += delta;
+			if (exitConfirmSelection < 0) exitConfirmSelection = 1;
+			if (exitConfirmSelection > 1) exitConfirmSelection = 0;
+			return;
+		}
 		int count = getCurrentOptionCount();
 		if (count <= 0) {
 			currentOption = 0;
@@ -150,6 +160,8 @@ public class Menu {
 			return OPTIONS_LABELS.length;
 		case LOAD:
 			return LOAD_SLOT_LABELS.length + 1;
+		case EXIT_CONFIRM:
+			return 2;
 		default:
 			return 0;
 		}
@@ -214,9 +226,8 @@ public class Menu {
 			currentOption = 0;
 			break;
 		case OPTION_EXIT:
-			if (askExit()) {
-				System.exit(0);
-			}
+			currentScreen = Screen.EXIT_CONFIRM;
+			exitConfirmSelection = 0;
 			break;
 		default:
 			break;
@@ -245,9 +256,8 @@ public class Menu {
 			currentOption = 0;
 			break;
 		case PAUSE_EXIT:
-			closePauseScreen();
-			currentScreen = Screen.MAIN;
-			currentOption = 0;
+			currentScreen = Screen.EXIT_CONFIRM;
+			exitConfirmSelection = 0;
 			break;
 		default:
 			break;
@@ -298,6 +308,44 @@ public class Menu {
 		currentOption = 0;
 	}
 
+
+	private void renderExitConfirm(Graphics g) {
+		int screenWidth = Game.WIDTH * Game.SCALE;
+		int screenHeight = Game.HEIGHT * Game.SCALE;
+		Font headerFont = new Font("arial", Font.BOLD, 28);
+		Font optionFont = new Font("arial", Font.BOLD, 22);
+		g.setFont(headerFont);
+		String header = "Deseja realmente sair?";
+		int headerWidth = g.getFontMetrics().stringWidth(header);
+		int textX = (screenWidth - headerWidth) / 2;
+		int headerBaseline = screenHeight / 2 - 30;
+		g.setColor(Color.white);
+		g.setFont(headerFont);
+		g.drawString(header, textX, headerBaseline);
+		g.setFont(optionFont);
+		String[] options = { "Não", "Sim" };
+		for (int i = 0; i < options.length; i++) {
+			int optionY = headerBaseline + 40 * (i + 1);
+			if (exitConfirmSelection == i) {
+				g.setColor(Color.yellow);
+				g.drawString(">", textX - 20, optionY);
+				g.setColor(Color.white);
+			}
+			g.drawString(options[i], textX, optionY);
+		}
+	}
+
+	private void handleExitConfirmSelection() {
+		if (exitConfirmSelection == 1) {
+			// Sim: sair do jogo
+			System.exit(0);
+		} else {
+			// Não: voltar ao menu anterior
+			currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
+			currentOption = 0;
+		}
+	}
+
 	private static boolean askExit() {
 		int result = JOptionPane.showConfirmDialog(
 				null,
@@ -306,6 +354,13 @@ public class Menu {
 				JOptionPane.YES_NO_OPTION,
 				JOptionPane.QUESTION_MESSAGE);
 		return result == JOptionPane.YES_OPTION;
+	}
+
+	/** Reseta o menu para a tela principal (usado ao voltar ao menu do jogo). */
+	public void resetToMain() {
+		currentScreen = Screen.MAIN;
+		currentOption = 0;
+		pause = false;
 	}
 
 	public void render(Graphics g) {
@@ -336,6 +391,16 @@ public class Menu {
 			g.drawString(title, titleX, titleBaseline);
 		}
 
+		// Consistência: se o jogo está em MENU sem pausa e não está em nenhuma
+		// tela de overlay, forçar a tela principal. As telas de overlay (PAUSE,
+		// LOAD, OPTIONS, HOW_TO_PLAY, EXIT_CONFIRM) são válidas no estado MENU.
+		boolean isOverlay = (currentScreen == Screen.PAUSE || currentScreen == Screen.LOAD
+				|| currentScreen == Screen.OPTIONS || currentScreen == Screen.HOW_TO_PLAY
+				|| currentScreen == Screen.EXIT_CONFIRM);
+		if (!pause && currentScreen != Screen.MAIN && !isOverlay) {
+			currentScreen = Screen.MAIN;
+			currentOption = 0;
+		}
 		switch (currentScreen) {
 		case PAUSE:
 			renderPauseMenu(g);
@@ -348,6 +413,9 @@ public class Menu {
 			break;
 		case HOW_TO_PLAY:
 			renderHowToPlay(g);
+			break;
+		case EXIT_CONFIRM:
+			renderExitConfirm(g);
 			break;
 		default:
 			renderMainMenu(g);

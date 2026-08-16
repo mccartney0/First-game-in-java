@@ -763,6 +763,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 			if ("NORMAL".equals(gameState)) {
 				Menu.openPauseScreen();
+			} else if ("MENU".equals(gameState) && Menu.pause) {
+				// ESC na tela de pausa: voltar ao jogo (fecha a pausa)
+				Menu.closePauseScreen();
+				gameState = "NORMAL";
 			} else if ("SHOP".equals(gameState)) {
 				if (ShopManager.isOpen()) {
 					ShopManager.close();
@@ -1141,6 +1145,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();
+		if (this.menu != null) {
+			this.menu.resetToMain();
+		}
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
