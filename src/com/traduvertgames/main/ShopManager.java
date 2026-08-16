@@ -11,14 +11,17 @@ import com.traduvertgames.entities.Player;
  */
 public final class ShopManager {
 
-	public enum ShopItem {
-		CURAR("Recuperar 60 de vida", 800),
-		ESCUDO("Recarregar 60 de escudo", 600),
-		MANA("Recarregar 150 de mana", 700),
-		ENERGIA("Recarregar 80 de energia", 500),
-		VIDA_MAXIMA("+20 vida máxima", 1500),
-		ESCUDO_MAXIMO("+25 escudo máximo", 1200),
-		ARMA("Desbloquear a próxima arma", 2500);
+		public enum ShopItem {
+			CURAR("Recuperar 60 de vida", 800),
+			ESCUDO("Recarregar 60 de escudo", 600),
+			MANA("Recarregar 150 de mana", 700),
+			ENERGIA("Recarregar 80 de energia", 500),
+			VIDA_MAXIMA("+20 vida máxima", 1500),
+			ESCUDO_MAXIMO("+25 escudo máximo", 1200),
+			ARMA("Desbloquear a próxima arma", 2500),
+			DRONE_SCOUT("Drone batedor (atira sozinho)", 3200),
+			SHIELD_BOT("Drone de escudo (+2 escudo/s)", 2600),
+			FAIRY("Fada curadora (+1 vida/s)", 2800);
 
 		public final String label;
 		public final int price;
@@ -160,6 +163,24 @@ public final class ShopManager {
 				purchaseSucceeded = false;
 				purchaseFeedback = "Todas as armas já desbloqueadas!";
 			}
+			break;
+		case DRONE_SCOUT:
+			Game.addScore(-item.price);
+			com.traduvertgames.entities.Companion.spawn(
+					com.traduvertgames.entities.Companion.CompanionType.SCOUT, -1);
+			purchaseFeedback = "Drone batedor acoplado!";
+			break;
+		case SHIELD_BOT:
+			Game.addScore(-item.price);
+			com.traduvertgames.entities.Companion.spawn(
+					com.traduvertgames.entities.Companion.CompanionType.SHIELD_BOT, -1);
+			purchaseFeedback = "Drone de escudo acoplado!";
+			break;
+		case FAIRY:
+			Game.addScore(-item.price);
+			com.traduvertgames.entities.Companion.spawn(
+					com.traduvertgames.entities.Companion.CompanionType.FAIRY, -1);
+			purchaseFeedback = "Fada curadora acoplada!";
 			break;
 		default:
 			purchaseSucceeded = false;

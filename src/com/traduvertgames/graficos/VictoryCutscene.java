@@ -129,6 +129,16 @@ public final class VictoryCutscene {
 			String detailLine = String.format("Última fase: %d kills — Tempo: %s — Combo máximo: x%d",
 					Game.getKillsThisLevel(), Game.formatLevelTime(Game.getLevelTimeMs()), Game.getBestComboThisRun());
 			g.drawString(detailLine, (screenWidth - g.getFontMetrics().stringWidth(detailLine)) / 2, y);
+			// Melhor partida acumulada do save (bestRun v3).
+			if (com.traduvertgames.main.SaveManager.hasBestRun()) {
+				String bestRunLine = String.format("Melhor partida: %d kills — %s — combo x%d",
+						com.traduvertgames.main.SaveManager.getBestRunKills(),
+						Game.formatLevelTime(com.traduvertgames.main.SaveManager.getBestRunTimeMs()),
+						com.traduvertgames.main.SaveManager.getBestRunCombo());
+				y += 18 * scale / 4;
+				g.setColor(new Color(255, 214, 0, alpha));
+				g.drawString(bestRunLine, (screenWidth - g.getFontMetrics().stringWidth(bestRunLine)) / 2, y);
+			}
 
 		if (framesElapsed > FADE_TOTAL) {
 			y += 34 * scale / 4;

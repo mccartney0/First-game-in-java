@@ -12,8 +12,9 @@ import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.quest.RPGObjective;
 
 /**
- * Teste do ciclo save/load do SaveManager v2 sem iniciar o jogo:
- * valida formato v2, migração v1→v2, progresso de missão e gravação atômica.
+ * Teste do ciclo save/load do SaveManager v3 sem iniciar o jogo:
+ * valida formato v3, migração v1→v2→v3, bestRun global, flags de diálogos
+ * por NPC, companion persistido, progresso de missão e gravação atômica.
  */
 public class SaveLoadLogicTest {
 
@@ -94,24 +95,56 @@ public class SaveLoadLogicTest {
 		check("migração: getSlotScore(1)==7000", SaveManager.getSlotScore(1) == 7000);
 		check("migração: hasSlotSave(2) falso", !SaveManager.hasSlotSave(2));
 
-		// --- 4. Escrita v2 ---
+		// --- 4. Escrita v3 ---
 		setActiveSlot(1);
 		QuestManager.prepareForLevel(2);
 		boolean wrote = SaveManager.saveCurrentGame();
-		check("escrita v2", wrote);
+		check("escrita v3", wrote);
 		String written = new String(Files.readAllBytes(saveFile.toPath()));
-		check("v2 tem version", written.contains("\"version\":2"));
-		check("v2 tem session", written.contains("\"session\""));
-		check("v2 tem progress", written.contains("\"progress\""));
-		check("v2 tem objectiveState", written.contains("\"objectiveState\""));
-		check("v2 tem campaign", written.contains("\"campaign\""));
-		check("v2 tem timestamp", written.contains("\"timestamp\""));
+		check("v3 tem version", written.contains("\"version\":3"));
+		check("v3 tem session", written.contains("\"session\""));
+		check("v3 tem progress", written.contains("\"progress\""));
+		check("v3 tem objectiveState", written.contains("\"objectiveState\""));
+		check("v3 tem campaign", written.contains("\"campaign\""));
+		check("v3 tem timestamp", written.contains("\"timestamp\""));
+
+		// bestRun e diálogos vazios antes de gameplay real (a seção bestRun só
+		// é gravada quando há recorde e npcDialogues só quando há flag marcada).
+		check("bestRunKills inicial = 0", SaveManager.getBestRunKills() == 0);
+		check("bestRunCombo inicial = 0", SaveManager.getBestRunCombo() == 0);
+		check("hasBestRun inicial falso", !SaveManager.hasBestRun());
+		check("npcDialogue Ava_1 inicial falso", !SaveManager.hasNpcDialogue("Ava", 1));
+		check("v3 sem bestRun sem recorde", !written.contains("\"bestRun\""));
+		check("v3 sem npcDialogues sem marcação", !written.contains("\"npcDialogues\""));
 
 		// --- 5. Progresso restaurado via getSlotObjectiveText ---
-		QuestManager.prepareForLevel(3); // muda objetivo; texto do slot 1 ainda aponta fase 1
+		QuestManager.prepareForLevel(3); // muda objetivo; texto do slot 1 ainda aponta a fase salva
 		String objectiveText = SaveManager.getSlotObjectiveText(1);
 		check("texto de progresso não vazio", !objectiveText.isEmpty());
-		check("texto de progresso contém 'Fase 1'", objectiveText.contains("Fase 1"));
+		// O slot foi salvo na fase em que a sessão estava (fases estáticas
+		// começam em 1): o texto reflete a fase salva e o título da missão.
+		check("texto de progresso contém 'Fase '", objectiveText.contains("Fase "));
+		check("texto de progresso tem título da fase", objectiveText.contains("Setor Alpha"));
+
+		// --- 5b. Flags de diálogos por NPC: marcar Ava na fase 2 e validar ---
+		SaveManager.markNpcDialogue("Ava", 2);
+		check("npcDialogue Ava_2 marcado", SaveManager.hasNpcDialogue("Ava", 2));
+		check("npcDialogue Hélio_7 não marcado", !SaveManager.hasNpcDialogue("Hélio", 7));
+		// Persistência: regravar e conferir que a flag sobrevive no JSON.
+		SaveManager.saveCurrentGame();
+		String regravado = new String(Files.readAllBytes(saveFile.toPath()));
+		check("v3 tem npcDialogues após marcação", regravado.contains("\"npcDialogues\""));
+		check("npcDialogue Ava_2 persiste no JSON", regravado.contains("\"Ava_2\""));
+
+		// --- 5c. BestRun atualizado por captura e persistido no JSON ---
+		setKills(99);
+		SaveManager.captureBestRun();
+		check("captureBestRun atualiza recorde", SaveManager.getBestRunKills() == 99);
+		check("hasBestRun verdadeiro após captura", SaveManager.hasBestRun());
+		SaveManager.saveCurrentGame();
+		String comRecorde = new String(Files.readAllBytes(saveFile.toPath()));
+		check("v3 tem bestRun após recorde", comRecorde.contains("\"bestRun\""));
+		check("bestRun persiste bestKills=99", comRecorde.contains("\"bestKills\":99"));
 
 		// --- 6. Gravação atômica: não sobrou saves.tmp ---
 		check("gravação atômica: tmp removido", !new File("saves.tmp").exists());
@@ -144,5 +177,11 @@ public class SaveLoadLogicTest {
 		Field f = SaveManager.class.getDeclaredField("activeSlot");
 		f.setAccessible(true);
 		f.set(null, slot);
+	}
+
+	private static void setKills(int value) throws Exception {
+		Field f = Game.class.getDeclaredField("killsThisLevel");
+		f.setAccessible(true);
+		f.set(null, value);
 	}
 }

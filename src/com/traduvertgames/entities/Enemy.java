@@ -320,8 +320,10 @@ public class Enemy extends Entity {
                 break;
         }
         Enemy boss = new Enemy(x, y, 20, 20, ENEMY_EN, variant, true);
-        // Escala por profundidade: +40% de vida e +20% de dano por bloco de 5 ondas.
-        boss.boost(1.0 + depth * 0.4, 1.0 + depth * 0.2);
+        // Escala por profundidade suavizada: +25% de vida e +10% de dano por
+        // bloco de 5 ondas, mantendo os chefes profundos desafiadores porém
+        // vencíveis no ritmo do modo infinito.
+        boss.boost(1.0 + depth * 0.25, 1.0 + depth * 0.1);
         return boss;
     }
 
@@ -992,6 +994,10 @@ public class Enemy extends Entity {
         com.traduvertgames.main.SoundManager.play(boss
                         ? com.traduvertgames.main.SoundManager.Event.BOSS_DEFEAT
                         : com.traduvertgames.main.SoundManager.Event.KILL);
+        // Chefe derrotado no modo infinito: solta suprimentos garantidos.
+        if (boss && com.traduvertgames.main.WaveManager.isArenaMode()) {
+            com.traduvertgames.main.WaveManager.onArenaBossDefeated();
+        }
         Game.registerEnemyKill();
         maybeDropPickup();
         com.traduvertgames.main.LootGuarantee.dropForVariant(this);

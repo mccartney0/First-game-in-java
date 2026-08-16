@@ -535,9 +535,20 @@ public class Menu {
 			}
 			lines[i] = LOAD_SLOT_LABELS[i] + detail;
 		}
-		lines[LOAD_SLOT_LABELS.length] = "Voltar";
+			lines[LOAD_SLOT_LABELS.length] = "Voltar";
 
-		int maxWidth = headerWidth;
+			// Rodapé: melhor partida acumulada do save (bestRun v3).
+			// Atualiza o recorde acumulado a partir do disco antes de exibir.
+			SaveManager.refreshBestRun();
+			String bestRunLine = "";
+			if (SaveManager.hasBestRun()) {
+				bestRunLine = String.format("Melhor partida: %d kills — %s — combo x%d",
+						SaveManager.getBestRunKills(),
+						Game.formatLevelTime(SaveManager.getBestRunTimeMs()),
+						SaveManager.getBestRunCombo());
+			}
+
+			int maxWidth = headerWidth;
 		for (String line : lines) {
 			maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(line));
 		}
@@ -552,19 +563,29 @@ public class Menu {
 		g.drawString(header, (screenWidth - headerWidth) / 2, headerBaseline);
 
 		g.setFont(optionFont);
-		int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
-		for (int i = 0; i < lines.length; i++) {
-			int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
-			if (currentOption == i) {
-				g.setColor(Color.yellow);
-				g.drawString(">", arrowX, baselineY);
-				g.setColor(Color.white);
+			int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
+			for (int i = 0; i < lines.length; i++) {
+				int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
+				if (currentOption == i) {
+					g.setColor(Color.yellow);
+					g.drawString(">", arrowX, baselineY);
+					g.setColor(Color.white);
+				}
+				if (i < LOAD_SLOT_LABELS.length && !SaveManager.hasSlotSave(i + 1)) {
+					g.setColor(Color.LIGHT_GRAY);
+				}
+				g.drawString(lines[i], textX, baselineY);
 			}
-			if (i < LOAD_SLOT_LABELS.length && !SaveManager.hasSlotSave(i + 1)) {
-				g.setColor(Color.LIGHT_GRAY);
+
+			// Rodapé dourado com a melhor partida do save, alinhado abaixo dos slots.
+			if (!bestRunLine.isEmpty()) {
+				Font bestFont = new Font("arial", Font.BOLD, 15);
+				g.setFont(bestFont);
+				g.setColor(new Color(255, 214, 0));
+				int bestWidth = g.getFontMetrics().stringWidth(bestRunLine);
+				g.drawString(bestRunLine, (screenWidth - bestWidth) / 2,
+						headerBaseline + OPTIONS_LINE_HEIGHT * (lines.length + 1) + 6);
 			}
-			g.drawString(lines[i], textX, baselineY);
-		}
 
 		// Progresso de missão de cada slot abaixo do rótulo, com quebra de linha
 		// para caber na largura do card e sem sobrepor a opção seguinte.

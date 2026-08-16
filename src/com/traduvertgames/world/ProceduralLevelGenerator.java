@@ -18,12 +18,18 @@ import javax.imageio.ImageIO;
  *
  * Estrutura do mapa gerado:
  * - borda de paredes com chão preto interno;
- * - sala de entrada com o spawn do jogador (tile 0,38,255);
- * - salas secundárias conectadas por corredores (drunkard's walk);
+ * - sala de entrada com o spawn do jogador fixo no tile (3,3) (tile 0,38,255);
+ * - salas secundárias conectadas por corredores (drunkard's walk), com 3
+ *   templates de layout rotativos por profundidade (aberta, corredores,
+ *   câmaras) que variam abertura das salas e pilares;
  * - inimigos aleatórios (255,0,0) e variantes coloridas proporcionalmente
- *   à profundidade;
+ *   à profundidade, com cap de densidade ({@value MAX_ENEMY_TARGET});
  * - um chefe fixo (GUARDIAN/WARBRINGER/OVERSEER_PRIME em rotação) por ciclo;
  * - itens de suprimento (LifePack/NanoMedkit) para manter o arco justo.
+ *
+ * A geração usa {@link #validate(BufferedImage)} ao final: se a estrutura
+ * falhar (spawn ocupado, sem chefe ou pouco chão), o mapa é regenerado uma
+ * vez com semente alternativa para nunca entregar um layout injogável.
  *
  * O PNG é gravado em {@code bin/proc_level_N.png} e carregado pela World
  * como qualquer outro nível.
@@ -50,6 +56,13 @@ public final class ProceduralLevelGenerator {
 	/** Altura padrão dos mapas procedurais (tiles). */
 	public static final int MAP_HEIGHT = 30;
 
+	/** Cap da densidade de inimigos: impede mapas injogáveis em profundidades altas. */
+	public static final int MAX_ENEMY_TARGET = 20;
+
+	/** Tile fixo de spawn do jogador (consistência entre ciclos). */
+	private static final int PLAYER_SPAWN_X = 3;
+	private static final int PLAYER_SPAWN_Y = 3;
+
 	private ProceduralLevelGenerator() {
 	}
 
@@ -73,6 +86,18 @@ public final class ProceduralLevelGenerator {
 		placeEntities(map, w, h, rng, depth);
 		placeBoss(map, w, h, rng, depth);
 
+		// Verificação estrutural: um mapa inválido é regenerado uma vez com
+		// semente alternativa para nunca entregar um layout injogável.
+		if (!validate(map)) {
+			fill(map, w, h, WALL);
+			Random altRng = new Random(depth * 53L + 77L);
+			carveRooms(map, w, h, altRng, depth);
+			carveCorridors(map, w, h, altRng);
+			border(map, w, h);
+			placeEntities(map, w, h, altRng, depth);
+			placeBoss(map, w, h, altRng, depth);
+		}
+
 		File file = new File("bin/proc_level_" + depth + ".png");
 		ImageIO.write(map, "png", file);
 		return file;
@@ -83,18 +108,30 @@ public final class ProceduralLevelGenerator {
 		// Sala de entrada (superior esquerda) — sempre livre para o jogador.
 		carveBox(map, w, h, 2, 2, 9, 7);
 
+		// 3 templates de layout rotativos por profundidade (depth % 3):
+		// 0 = sala aberta (grandes salas, poucas barreiras),
+		// 1 = corredores (salas menores e mais estreitas),
+		// 2 = câmaras (salas grandes separadas por paredes).
+		int layout = depth % 3;
 		int rooms = 2 + (depth % 3); // 2 a 4 salas por profundidade
+		int roomMinW = layout == 1 ? 4 : 6;
+		int roomMinH = layout == 1 ? 3 : 5;
 		int rx = 14, ry = 2;
 		for (int i = 0; i < rooms; i++) {
-			int rw = 5 + rng.nextInt(4);
-			int rh = 5 + rng.nextInt(4);
+			int rw = roomMinW + rng.nextInt(4);
+			int rh = roomMinH + rng.nextInt(4);
+			if (layout == 2 && rng.nextBoolean()) {
+				rw += 2; // câmaras tendem a ser maiores
+			}
 			// Desloca a sala para dentro do mapa, evitando a borda.
 			rx = Math.max(4, Math.min(w - rw - 3, rx + 6 + rng.nextInt(5)));
 			ry = Math.max(2, Math.min(h - rh - 3, ry + (rng.nextBoolean() ? 6 : -6)));
 			carveBox(map, w, h, rx, ry, rw, rh);
 		}
-		// Pilares decorativos (paredes destrutíveis isoladas no chão).
-		for (int i = 0; i < 5; i++) {
+		// Pilares decorativos (paredes destrutíveis isoladas no chão):
+		// câmaras ganham mais barreiras; salas abertas quase nenhum.
+		int pillars = layout == 2 ? 9 : (layout == 1 ? 5 : 2);
+		for (int i = 0; i < pillars; i++) {
 			int px = 4 + rng.nextInt(w - 8);
 			int py = 2 + rng.nextInt(h - 6);
 			if (isFloor(map, w, px, py)) {
@@ -175,11 +212,13 @@ public final class ProceduralLevelGenerator {
 
 	/** Distribui inimigos e itens no chão livre. */
 	private static void placeEntities(BufferedImage map, int w, int h, Random rng, int depth) {
-		// Spawn do jogador na sala de entrada.
-		map.setRGB(3, 3, PLAYER.getRGB());
+		// Spawn do jogador fixo no tile (3,3) da sala de entrada — sempre
+		// livre e longe de inimigos (consistência entre ciclos do modo infinito).
+		map.setRGB(PLAYER_SPAWN_X, PLAYER_SPAWN_Y, PLAYER.getRGB());
 
-		// Densidade escala com a profundidade: mais inimigos e itens.
-		int enemyTarget = 6 + depth * 2;
+		// Densidade escala com a profundidade, com cap para nunca virar
+		// carnificina: min(20, 6 + depth * 2).
+		int enemyTarget = Math.min(MAX_ENEMY_TARGET, 6 + depth * 2);
 		int placed = 0;
 		int attempts = 0;
 		while (placed < enemyTarget && attempts < 4000) {
@@ -189,8 +228,8 @@ public final class ProceduralLevelGenerator {
 			if (!isFloor(map, w, x, y)) {
 				continue;
 			}
-			// Zona segura do spawn do jogador.
-			if (Math.hypot(x - 3, y - 3) < 6) {
+			// Zona segura do spawn fixo do jogador.
+			if (Math.hypot(x - PLAYER_SPAWN_X, y - PLAYER_SPAWN_Y) < 6) {
 				continue;
 			}
 			if (map.getRGB(x, y) != BLACK.getRGB()) {

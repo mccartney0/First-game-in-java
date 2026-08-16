@@ -47,6 +47,17 @@ public class BulletShoot extends Entity {
         }
 
         if (fromEnemy) {
+            // O companion ativo intercepta o projétil antes do jogador: absorve
+            // o impacto (com dano parcial ao próprio) salvando o piloto.
+            com.traduvertgames.entities.Companion companion = com.traduvertgames.entities.Companion.getActive();
+            if (companion != null && Entity.isColliding(this, companion)) {
+                companion.applyDamage(this.damage * 0.75);
+                com.traduvertgames.graficos.ParticleSystem.spark(
+                        (int) (companion.getX() + 6), (int) (companion.getY() + 6),
+                        new Color(255, 255, 200));
+                Game.bullets.remove(this);
+                return;
+            }
             if (Entity.isColliding(this, Game.player)) {
                 double scaledDamage = damage * Game.getDamageTakenMultiplier();
                 Game.player.applyDamage(scaledDamage);

@@ -90,6 +90,15 @@ public class InteractiveNpc extends Entity {
 		}
 	}
 
+	/**
+	 * @return true se esta conversa já foi concluída e está persistida no save
+	 *         (v3) — usado pelo indicador visual "✓ conversado".
+	 */
+	private boolean isDialogueSaved() {
+		return com.traduvertgames.main.SaveManager.hasNpcDialogue(name,
+				com.traduvertgames.quest.QuestManager.getCurrentLevel());
+	}
+
 	@Override
 	public void render(Graphics g) {
 		if (finished) {
@@ -106,16 +115,32 @@ public class InteractiveNpc extends Entity {
 		// Cabelo/capuz escuro
 		g.setColor(new Color(30, 30, 30));
 		g.fillRect(screenX + 6, screenY + 2, 4, 4);
+		// Indicador "✓ conversado": conversa já concluída nesta sessão/save
+		// e jogador próximo o suficiente para ver o status.
+		if (isDialogueSaved() && isWithinReach()) {
+			String check = "✓";
+			g.setFont(new Font("arial", Font.BOLD, 7 * Game.SCALE / 4 + 2));
+			int w = g.getFontMetrics().stringWidth(check);
+			g.setColor(new Color(0, 0, 0, 180));
+			g.fillOval(screenX + 6 - w / 2 - 2, screenY - 10, w + 4, 9);
+			g.setColor(new Color(110, 255, 130));
+			g.drawString(check, screenX + 6 - w / 2, screenY - 2);
+		}
 	}
 
 	/**
 	 * Chamado pelo DialogueManager quando a conversa com este NPC termina.
+	 * A marcação de diálogo concluído é persistida no save (v3) e refletida
+	 * no indicador visual "✓ conversado" mesmo sem recarregar.
 	 */
 	public void finishInteraction() {
 		if (finished) {
 			return;
 		}
 		finished = true;
+		// Save v3: registra a conversa concluída por NPC/fase.
+		com.traduvertgames.main.SaveManager.markNpcDialogue(name,
+				com.traduvertgames.quest.QuestManager.getCurrentLevel());
 		if (listener != null) {
 			listener.onInteractionEnd(this);
 		}

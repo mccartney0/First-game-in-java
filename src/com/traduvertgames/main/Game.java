@@ -260,6 +260,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
         /** Zera kills e timer ao iniciar uma nova fase (inclui ciclos do modo infinito). */
         public static void resetLevelStats() {
+                // Antes de zerar os contadores da fase, captura a melhor partida
+                // (bestRun global do save) com base na fase que acabou de terminar.
+                com.traduvertgames.main.SaveManager.captureBestRun();
                 killsThisLevel = 0;
                 bestComboThisRun = 1;
                 comboMultiplier = 1;
@@ -1080,9 +1083,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 return false;
         }
 
-		public void startNewGame() {
-			resetGameOverState();
-			this.levelPlus = 0;
+	public void startNewGame() {
+		resetGameOverState();
+		// Novo jogo: remove o companion ativo (persistência apenas por save).
+		com.traduvertgames.entities.Companion.clear();
+		this.levelPlus = 0;
 		CUR_LEVEL = 1;
 		questCompletedPending = false;
 		shopPendingOpened = false;

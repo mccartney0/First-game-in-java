@@ -7,6 +7,7 @@ import java.awt.Graphics;
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.main.Menu;
+import com.traduvertgames.main.SaveManager;
 import com.traduvertgames.main.WaveManager;
 
 /**
@@ -132,6 +133,24 @@ public final class PhaseStatsScreen {
 			g.drawString(totalLine, centerX - g.getFontMetrics().stringWidth(totalLine) / 2, panelY + 114 * unit / 4);
 		}
 
+		// Melhor partida acumulada do save (bestRun v3): destaque dourado quando
+		// a fase atual quebrou o recorde global.
+		String bestLine = "Melhor partida: " + SaveManager.getBestRunKills() + " kills — "
+				+ Game.formatLevelTime(SaveManager.getBestRunTimeMs()) + " — combo x"
+				+ SaveManager.getBestRunCombo();
+			g.drawString(bestLine, centerX - g.getFontMetrics().stringWidth(bestLine) / 2,
+					panelY + 132 * unit / 4);
+		if (isRecordBreaking()) {
+			g.setFont(new Font("arial", Font.BOLD, 12 * unit / 4));
+			g.setColor(new Color(255, 214, 0, alpha));
+			String recordLine = "★ NOVO RECORDE GLOBAL ★";
+			g.drawString(recordLine, centerX - g.getFontMetrics().stringWidth(recordLine) / 2,
+					panelY + 148 * unit / 4);
+		} else {
+			g.setFont(new Font("arial", Font.PLAIN, 12 * unit / 4));
+			g.setColor(new Color(235, 235, 235, alpha));
+		}
+
 		if (framesElapsed > FADE_TOTAL) {
 			g.setFont(new Font("arial", Font.BOLD, 10 * unit / 4));
 			g.setColor(new Color(255, 255, 255, (int) (alpha * blink())));
@@ -156,6 +175,17 @@ public final class PhaseStatsScreen {
 	private static int survivalDepth() {
 		Game game = Game.getInstance();
 		return game != null ? Math.max(1, game.getLevelPlus()) : 1;
+	}
+
+	/** True quando os stats da fase atual superam o bestRun salvo do save. */
+	private static boolean isRecordBreaking() {
+		if (SaveManager.getBestRunKills() <= 0) {
+			return false;
+		}
+		boolean faster = capturedTimeMs > 0 && capturedTimeMs < SaveManager.getBestRunTimeMs();
+		return capturedKills > SaveManager.getBestRunKills() || faster
+				|| capturedBestCombo > SaveManager.getBestRunCombo()
+				|| Game.getScore() > SaveManager.getBestRunScore();
 	}
 
 	private static double blink() {

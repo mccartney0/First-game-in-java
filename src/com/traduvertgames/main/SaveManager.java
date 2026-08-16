@@ -25,24 +25,32 @@ import com.traduvertgames.world.World;
  * escapam do intervalo codificável.
  *
  * Arquivo: saves.json
- * Estrutura (v2):
+ * Estrutura (v3):
  * {
- *   "version": 2,
+ *   "version": 3,
  *   "activeSlot": 1,
+ *   "bestRun": { "bestKills": 57, "bestTimeMs": 243000, "bestCombo": 5, "bestScore": 98400 },
  *   "campaign": { "completedLevels": [1,2], "maxLevelReached": 3 },
  *   "slots": [
  *     {
  *       "id": 1,
  *       "session": { "vida": 100, "level": 3, "levelPlus": 1, ... },
- *       "progress": { "objectiveState": { "1": "COMPLETE", "2": "TALKED=..." } },
+ *       "progress": {
+ *         "objectiveState": { "1": "COMPLETE", "2": "TALKED=..." },
+ *         "npcDialogues": { "Ava_1": true, "Hélio_7": true }
+ *       },
  *       "timestamp": "2026-08-16T14:30:00"
  *     },
  *     ...
  *   ]
  * }
  *
- * Saves v1 (sem version/session) são migrados automaticamente na leitura.
- * A gravação é atômica (tmp + rename) para evitar corrupção por travamento.
+ * Saves v1 (sem version/session) e v2 (sem bestRun/npcDialogues) são migrados
+ * automaticamente na leitura. A gravação é atômica (tmp + rename) para evitar
+ * corrupção por travamento. O {@code bestRun} é global ao arquivo de save
+ * (não por slot) e captura a melhor partida já registrada: um snapshot
+ * completo é gravado sempre que qualquer métrica (kills, tempo, combo ou
+ * pontuação) supera o recorde anterior.
  */
 public final class SaveManager {
 
@@ -53,7 +61,26 @@ public final class SaveManager {
 	private static final File SAVE_TMP = new File("saves.tmp");
 
 	/** Versão atual do esquema de save emitida na escrita. */
-	public static final int SCHEMA_VERSION = 2;
+	public static final int SCHEMA_VERSION = 3;
+
+	/** Chave do snapshot da melhor partida no root do save (global, não por slot). */
+	private static final String BEST_RUN_KEY = "bestRun";
+	/** Chave do recorde de kills da melhor partida. */
+	private static final String BEST_KILLS_KEY = "bestKills";
+	/** Chave do tempo (ms) da melhor partida. */
+	private static final String BEST_TIME_KEY = "bestTimeMs";
+	/** Chave do melhor combo da melhor partida. */
+	private static final String BEST_COMBO_KEY = "bestCombo";
+	/** Chave da pontuação da melhor partida. */
+	private static final String BEST_SCORE_KEY = "bestScore";
+	/** Chave do mapa de flags de diálogos por NPC/fase no progress do slot. */
+	private static final String NPC_DIALOGUES_KEY = "npcDialogues";
+
+	/** Snapshot da melhor partida carregado do arquivo (em memória). */
+	private static int bestRunKills = 0;
+	private static long bestRunTimeMs = 0;
+	private static int bestRunCombo = 0;
+	private static int bestRunScore = 0;
 
 	/** Número de slots disponíveis. */
 	public static final int SLOT_COUNT = 3;
@@ -94,8 +121,27 @@ public final class SaveManager {
 		slot.put("armasDesbloqueadas", Player.getWeaponUnlockMask());
 		slot.put("survivalRecord", com.traduvertgames.main.WaveManager.getSurvivalRecord());
 
+		// Atualiza o recorde global da melhor partida: se qualquer métrica da
+		// fase que acabou de terminar superar o snapshot anterior, o bestRun
+		// é regravado como um snapshot completo desta partida.
+		captureBestRun();
+
 		for (WeaponType type : WeaponType.values()) {
 			slot.put("energiaArma_" + type.name(), clampDouble(Player.getStoredEnergyForType(type)));
+		}
+
+		// Companion ativo persistido na sessão (v3): tipo e HP para restaurar
+		// a criatura na posição do jogador ao carregar.
+		try {
+			com.traduvertgames.entities.Companion activeCompanion = com.traduvertgames.entities.Companion.getActive();
+			if (activeCompanion != null) {
+				slot.put("companionType", activeCompanion.getType().name());
+				slot.put("companionHp", clampDouble(activeCompanion.getHp()));
+			} else {
+				slot.put("companionType", "");
+			}
+		} catch (Throwable ignored) {
+			slot.put("companionType", "");
 		}
 
 		Map<String, Object> session = new HashMap<String, Object>();
@@ -106,6 +152,12 @@ public final class SaveManager {
 			}
 		}
 		Map<String, Object> progress = buildProgressMap(game);
+		// As flags de diálogos por NPC/fase são persistidas em memória e
+		// refletidas no progress a cada gravação (a migração v2→v3 inicia
+		// o mapa a partir do disco, então ele precisa ser reescrito aqui).
+		if (!npcDialogues.isEmpty()) {
+			progress.put(NPC_DIALOGUES_KEY, npcDialogues);
+		}
 		slot.put("session", session);
 		slot.put("progress", progress);
 		// O recorde de sobrevivência também fica em session para exibição rápida
@@ -120,6 +172,7 @@ public final class SaveManager {
 		updateCampaign(root, game);
 
 		root.put("activeSlot", activeSlot);
+		writeBestRun(root);
 		root.put("slots", slots);
 
 		return writeRoot(root);
@@ -146,6 +199,103 @@ public final class SaveManager {
 		// Flags narrativas da campanha (ex.: desertor do subsolo da fase 7).
 		progress.put("traitorTalked", Game.isTraitorTalked());
 		return progress;
+	}
+
+	// ---------- BestRun (melhor partida acumulada por save) ----------
+
+	/**
+	 * Captura a melhor partida em memória a partir dos stats da fase atual:
+	 * se qualquer métrica (kills, tempo, combo ou pontuação) superar o snapshot
+	 * anterior, o bestRun é reescrito com os valores atuais da partida.
+	 * Chamado automaticamente por {@link #saveCurrentGame()} e por
+	 * {@link Game#resetLevelStats()} antes de zerar os contadores da fase.
+	 */
+	public static void captureBestRun() {
+		int kills = Game.getKillsThisLevel();
+		long timeMs = Game.getLevelTimeMs();
+		int combo = Game.getBestComboThisRun();
+		int score = Game.getScore();
+		// Fase ainda em andamento ou sem stats válidos: nada a capturar.
+		if (kills <= 0 || timeMs <= 0) {
+			return;
+		}
+		// Regra do snapshot: qualquer métrica acima do recorde anterior
+		// reescreve o bestRun com os valores atuais da partida.
+		boolean faster = bestRunTimeMs > 0 && timeMs < bestRunTimeMs;
+		if (kills > bestRunKills || faster || combo > bestRunCombo || score > bestRunScore) {
+			bestRunKills = kills;
+			bestRunTimeMs = timeMs;
+			bestRunCombo = combo;
+			bestRunScore = score;
+		}
+	}
+
+	/** Grava a seção bestRun no root do save (vazio quando não há recorde). */
+	private static void writeBestRun(Map<String, Object> root) {
+		if (bestRunKills <= 0 && bestRunCombo <= 0) {
+			root.remove(BEST_RUN_KEY);
+			return;
+		}
+		Map<String, Object> bestRun = new HashMap<String, Object>();
+		bestRun.put(BEST_KILLS_KEY, bestRunKills);
+		bestRun.put(BEST_TIME_KEY, bestRunTimeMs);
+		bestRun.put(BEST_COMBO_KEY, bestRunCombo);
+		bestRun.put(BEST_SCORE_KEY, bestRunScore);
+		root.put(BEST_RUN_KEY, bestRun);
+	}
+
+	/** @return kills da melhor partida (0 se ainda não há recorde). */
+	public static int getBestRunKills() {
+		return bestRunKills;
+	}
+
+	/** @return tempo (ms) da melhor partida (0 se ainda não há recorde). */
+	public static long getBestRunTimeMs() {
+		return bestRunTimeMs;
+	}
+
+	/** @return melhor combo da melhor partida (0 se ainda não há recorde). */
+	public static int getBestRunCombo() {
+		return bestRunCombo;
+	}
+
+	/** @return pontuação da melhor partida (0 se ainda não há recorde). */
+	public static int getBestRunScore() {
+		return bestRunScore;
+	}
+
+	/** @return true se existe ao menos um recorde registrado no save. */
+	public static boolean hasBestRun() {
+		return bestRunKills > 0 || bestRunCombo > 0;
+	}
+
+	/**
+	 * Recarrega o snapshot da melhor partida a partir do disco, para que as
+	 * telas de menu exibam o recorde acumulado mesmo antes de um loadSlot.
+	 */
+	public static void refreshBestRun() {
+		restoreBestRun(loadRoot());
+	}
+
+	// ---------- Flags de diálogos por NPC/fase ----------
+
+	/** Flags de diálogos concluídos, carregadas do disco e mantidas em memória. */
+	private static final Map<String, Boolean> npcDialogues = new HashMap<String, Boolean>();
+
+	/**
+	 * Registra que o jogador concluiu uma conversa com o NPC informado na fase
+	 * atual. A chave persistida é {@code nomeNpc_fase} (ex.: {@code Ava_1}).
+	 */
+	public static void markNpcDialogue(String npcName, int level) {
+		if (npcName == null || npcName.isEmpty()) {
+			return;
+		}
+		npcDialogues.put(npcName + "_" + level, true);
+	}
+
+	/** @return true se a conversa com o NPC já foi concluída na fase. */
+	public static boolean hasNpcDialogue(String npcName, int level) {
+		return npcDialogues.get(npcName + "_" + level) == Boolean.TRUE;
 	}
 
 	/** Atualiza a seção de campanha global (fases concluídas e fase máxima). */
@@ -197,6 +347,10 @@ public final class SaveManager {
 		}
 
 		Game game = Game.getInstance();
+
+		// Migração v2→v3: snapshot da melhor partida (root) e flags de diálogos.
+		restoreBestRun(root);
+		restoreNpcDialogues(slot);
 
 		// Migração v1→v2: se o slot é flat (v1), a sessão é o próprio slot.
 		Map<String, Object> session = getSession(slot);
@@ -271,6 +425,8 @@ public final class SaveManager {
 			Menu.pause = false;
 			activeSlot = slotId;
 			restoreObjectiveState(slot, savedLevel);
+			restoreNarrativeFlags(slot);
+			restoreCompanion(session);
 			return true;
 		}
 
@@ -288,8 +444,62 @@ public final class SaveManager {
 		activeSlot = slotId;
 		restoreObjectiveState(slot, savedLevel);
 		restoreNarrativeFlags(slot);
+		restoreCompanion(session);
 		return true;
 	}
+
+	/** Restaura o snapshot da melhor partida do root do save (migração v2→v3). */
+	@SuppressWarnings("unchecked")
+	private static void restoreBestRun(Map<String, Object> root) {
+		Object raw = root.get(BEST_RUN_KEY);
+		if (!(raw instanceof Map)) {
+			return;
+		}
+		Map<String, Object> bestRun = (Map<String, Object>) raw;
+		bestRunKills = toInt(bestRun.get(BEST_KILLS_KEY));
+		bestRunTimeMs = bestRun.get(BEST_TIME_KEY) instanceof Number
+				? ((Number) bestRun.get(BEST_TIME_KEY)).longValue() : 0;
+		bestRunCombo = toInt(bestRun.get(BEST_COMBO_KEY));
+		bestRunScore = toInt(bestRun.get(BEST_SCORE_KEY));
+	}
+
+	/** Restaura as flags de diálogos por NPC/fase do slot (migração v2→v3). */
+	@SuppressWarnings("unchecked")
+	private static void restoreNpcDialogues(Map<String, Object> slot) {
+		Object raw = slot.get("progress");
+		if (!(raw instanceof Map)) {
+			return;
+		}
+		Map<String, Object> progress = (Map<String, Object>) raw;
+		Object dialoguesRaw = progress.get(NPC_DIALOGUES_KEY);
+		if (!(dialoguesRaw instanceof Map)) {
+			return;
+		}
+		Map<String, Object> dialogues = (Map<String, Object>) dialoguesRaw;
+		for (Map.Entry<String, Object> entry : dialogues.entrySet()) {
+			if ("true".equalsIgnoreCase(String.valueOf(entry.getValue()))) {
+				npcDialogues.put(entry.getKey(), true);
+			}
+		}
+	}
+
+	/** Restaura o companion ativo do slot na posição do jogador (v3). */
+	private static void restoreCompanion(Map<String, Object> session) {
+		try {
+			com.traduvertgames.entities.Companion.clear();
+			Object raw = session.get("companionType");
+			String type = raw instanceof String ? (String) raw : "";
+			if (type.isEmpty()) {
+				return;
+			}
+			com.traduvertgames.entities.Companion.CompanionType companionType =
+					com.traduvertgames.entities.Companion.CompanionType.valueOf(type);
+			double savedHp = toDouble(session.get("companionHp"));
+			com.traduvertgames.entities.Companion.spawn(companionType, savedHp);
+		} catch (Throwable ignored) {
+			// Save sem companion (v2 ou campo ausente): segue sem criatura.
+		}
+}
 
 	/** Restaura as flags narrativas salvas (ex.: TraitorNpc da fase 7). */
 	@SuppressWarnings("unchecked")
