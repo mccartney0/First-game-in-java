@@ -5,6 +5,11 @@ build/
 
 # Generated RPG maps
 res/level*.png
+!res/level1.png
+!res/level2.png
+!res/level3.png
+!res/level4.png
+!res/level5.png
 !res/level6.png
 !res/level7.png
 !res/level8.png
@@ -12,3 +17,4 @@ saves.json
 bin/*.class
 bin/AutoValidate.class
 bin/TeleportTest*.class
+bin/
