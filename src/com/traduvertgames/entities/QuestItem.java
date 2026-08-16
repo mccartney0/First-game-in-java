@@ -29,6 +29,7 @@ public class QuestItem extends Entity {
         }
         if (Entity.isColliding(this, Game.player)) {
             collected = true;
+            com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
             QuestManager.collectQuestItem(this);
         }
     }

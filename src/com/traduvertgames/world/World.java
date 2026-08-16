@@ -37,9 +37,18 @@ public class World {
                                         } else if (pixelAtual == 0xFFFFFFFF) {
                                                 // Parede
                                                 tiles[xx + (yy * map.getWidth())] = new WallTile(xx * 16, yy * 16, Tile.TILE_WALL);
-                                        } else if (pixelAtual == 0xFF808080) {
-                                                tiles[xx + (yy * map.getWidth())] = new DestructibleWallTile(xx * 16, yy * 16,
-                                                                Tile.TILE_WALL);
+					} else if (pixelAtual == 0xFF808080) {
+						tiles[xx + (yy * map.getWidth())] = new DestructibleWallTile(xx * 16, yy * 16,
+								Tile.TILE_WALL);
+					} else if (pixelAtual == 0xFF7CB342) {
+						// Grama: terreno rápido (+20% velocidade)
+						tiles[xx + (yy * WIDTH)] = new GrassTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+					} else if (pixelAtual == 0xFF6D4C41) {
+						// Lama: terreno lento (-30% velocidade)
+						tiles[xx + (yy * WIDTH)] = new MudTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
+					} else if (pixelAtual == 0xFFB0BEC5) {
+						// Gelo: terreno escorregadio (inércia)
+						tiles[xx + (yy * WIDTH)] = new IceTile(xx * 16, yy * 16, Tile.TILE_FLOOR);
 					} else if (pixelAtual == 0xFF0026FF) {
 						// Player
 						Game.player.setX(xx * 16);
@@ -118,6 +127,18 @@ Game.enemies.add(en);
                                                                 Enemy.Variant.OVERSEER, true);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFF81C784) {
+                                                // Phantom: caçador furtivo que drena escudo e mana
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+                                                                Enemy.Variant.PHANTOM);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
+                                        } else if (pixelAtual == 0xFFFF5722) {
+                                                // Guardian: tanque robusto que regenera vida
+                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+                                                                Enemy.Variant.GUARDIAN);
+                                                Game.entities.add(en);
+                                                Game.enemies.add(en);
                                         } else if (pixelAtual == 0xFF673AB7) {
                                                 Game.entities.add(new TeleportPad(xx * 16, yy * 16));
                                         }
@@ -127,6 +148,8 @@ Game.enemies.add(en);
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
+		// Emparelha os teletransportadores do mapa recém-carregado.
+		TeleportPad.linkPairs();
 	}
 
 	public static boolean isFree(int xNext,int yNext, int zplayer) {
@@ -171,6 +194,7 @@ Game.enemies.add(en);
         public static void restartGame(String level) {
                 int levelNumber = parseLevelNumber(level);
                 QuestManager.prepareForLevel(levelNumber);
+                TeleportPad.reset();
                 Game.entities.clear();
                 Game.enemies.clear();
                 Game.entities = new ArrayList<Entity>();
@@ -184,12 +208,60 @@ Game.enemies.add(en);
                 Game.entities.add(Game.player);
                 Game.world = new World("/"+level);
                 QuestManager.onLevelLoaded();
+                // Garante o chefe da fase: níveis a partir do 2 têm a missão de
+                // neutralizar o comandante; se o mapa não tiver um boss fixo,
+                // um WARBRINGER é posicionado em um local válido distante do spawn.
+                ensurePhaseBoss(levelNumber);
                 return;
+        }
+
+        private static boolean mapHasBoss() {
+                for (Entity e : Game.entities) {
+                        if (e instanceof com.traduvertgames.entities.Enemy && ((com.traduvertgames.entities.Enemy) e).isBoss()) {
+                                return true;
+                        }
+                }
+                return false;
+        }
+
+        private static void ensurePhaseBoss(int levelNumber) {
+                if (levelNumber < 2 || mapHasBoss()) {
+                        return;
+                }
+                int playerX = (int) (Game.player != null ? Game.player.getX() : 0);
+                int playerY = (int) (Game.player != null ? Game.player.getY() : 0);
+                int tries = 0;
+                while (tries < 400) {
+                        int tx = Game.rand.nextInt(WIDTH);
+                        int ty = Game.rand.nextInt(HEIGHT);
+                        if (!isValidTile(tx, ty)) {
+                                tries++;
+                                continue;
+                        }
+                        int fx = tx * 16;
+                        int fy = ty * 16;
+                        double dx = fx - playerX;
+                        double dy = fy - playerY;
+                        if (dx * dx + dy * dy < 200 * 200) {
+                                tries++;
+                                continue;
+                        }
+                        Enemy boss = new Enemy(fx, fy, 16, 16, Entity.ENEMY_EN,
+                                        levelNumber == 6 ? Enemy.Variant.OVERSEER : Enemy.Variant.WARBRINGER, true);
+                        Game.entities.add(boss);
+                        Game.enemies.add(boss);
+                        return;
+                }
         }
 
         private static int parseLevelNumber(String level) {
                 if (level == null) {
                         return QuestManager.getCurrentLevel();
+                }
+                // A arena de treino do onboarding não é uma fase real: não ganha
+                // chefe de fase nem o escalonamento de dificuldade de campanha.
+                if (level.startsWith("training")) {
+                        return 0;
                 }
                 int value = 0;
                 boolean foundDigit = false;

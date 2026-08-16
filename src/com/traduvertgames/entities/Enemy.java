@@ -2,9 +2,12 @@ package com.traduvertgames.entities;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
+import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.world.AStar;
@@ -39,7 +42,11 @@ public class Enemy extends Entity {
         SENTINEL(14.0, 0.85, 1.3, 4.2, 3.0, 6, 85, 180, 96, new Color(0, 150, 136)),
         RAVAGER(16.5, 1.25, 1.05, 4.8, 4.1, 6, 70, 150, 160, new Color(244, 81, 30)),
         WARBRINGER(18.0, 0.95, 1.1, 4.2, 6.5, 7, 90, 160, 140, new Color(233, 30, 99)),
-        OVERSEER(28.0, 1.1, 1.2, 4.6, 5.2, 7, 80, 240, 160, new Color(121, 134, 203));
+        OVERSEER(28.0, 1.1, 1.2, 4.6, 5.2, 7, 80, 240, 160, new Color(121, 134, 203)),
+        // Caçador furtivo: esquivo e letal, drena escudo e mana do piloto.
+        PHANTOM(6.5, 1.45, 1.6, 4.4, 2.6, 5, 80, 140, 120, new Color(129, 199, 132)),
+        // Tanque de bloqueio: lento, robusto e regenera escudo com o tempo.
+        GUARDIAN(20.0, 0.6, 0.5, 3.4, 2.2, 6, 110, 200, 0, new Color(255, 87, 34));
 
         private final double maxLife;
         private final double speedMultiplier;
@@ -110,6 +117,14 @@ public class Enemy extends Entity {
         Color getAuraColor() {
             return color;
         }
+
+        boolean isPhantom() {
+            return this == PHANTOM;
+        }
+
+        boolean isGuardian() {
+            return this == GUARDIAN;
+        }
     }
 
     private EnemyState state = EnemyState.PATROLLING;
@@ -161,8 +176,16 @@ public class Enemy extends Entity {
         this.maxLife = variant.getMaxLife();
         this.life = this.maxLife;
         sprites = new BufferedImage[2];
-        sprites[0] = Game.spritesheet.getSprite(112, 16, 16, 16);
-        sprites[1] = Game.spritesheet.getSprite(112 + 16, 16, 16, 16);
+        if (variant == Variant.PHANTOM) {
+            sprites[0] = buildPhantomSprite(false);
+            sprites[1] = buildPhantomSprite(true);
+        } else if (variant == Variant.GUARDIAN) {
+            sprites[0] = buildGuardianSprite(false);
+            sprites[1] = buildGuardianSprite(true);
+        } else {
+            sprites[0] = Game.spritesheet.getSprite(112, 16, 16, 16);
+            sprites[1] = Game.spritesheet.getSprite(112 + 16, 16, 16, 16);
+        }
         spawnTile = new Vector2i(x / 16, y / 16);
         this.patrolSpeed = BASE_PATROL_SPEED * variant.getSpeedMultiplier();
         this.chaseSpeed = BASE_CHASE_SPEED * variant.getSpeedMultiplier();
@@ -180,7 +203,66 @@ public class Enemy extends Entity {
         }
         if (boss) {
             QuestManager.notifyBossSpotted();
+            com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.BOSS_ALERT);
         }
+    }
+
+    /**
+     * Boss em fases: o chefe muda de comportamento conforme sua vida.
+     * Warbringer abaixo de 50% ataca o dobro e persegue agressivamente;
+     * Overseer abaixo de 40% invoca reforços esporadicamente.
+     */
+    private void applyBossPhaseBehavior(double distanceToPlayer, boolean canSeePlayer) {
+        if (!boss) {
+            return;
+        }
+        double ratio = getLifePercentage();
+        if (variant == Variant.WARBRINGER && ratio < 0.5) {
+            // Fase furiosa: persegue sempre (mesmo longe) e atira mais rápido.
+            if (distanceToPlayer > LOSE_INTEREST_RADIUS * 2) {
+                state = EnemyState.CHASING;
+                path = null;
+            }
+            if (attackCooldown == 0) {
+                attemptShootAtPlayer(distanceToPlayer);
+                attackCooldown = attackCooldownBase / 2;
+            }
+        } else if (variant == Variant.OVERSEER && ratio < 0.4) {
+            // Fase desesperada: invoca um reforço ocasionalmente.
+            if (specialCooldown == 0 && distanceToPlayer < 200 && Game.enemies.size() < 10) {
+                int roll = Game.rand.nextInt(120);
+                if (roll == 0) {
+                    int rx = (int) x + (Game.rand.nextInt(3) - 1) * 16;
+                    int ry = (int) y + (Game.rand.nextInt(3) - 1) * 16;
+                    if (World.isFree(rx, ry, 0)) {
+                        Enemy support = Enemy.spawnRandomVariant(rx, ry);
+                        Game.entities.add(support);
+                        Game.enemies.add(support);
+                    }
+                }
+            }
+        }
+    }
+
+    private void attemptShootAtPlayer(double distanceToPlayer) {
+        if (distanceToPlayer > 220) {
+            return;
+        }
+        if (attackCooldown > 0 || projectileSize <= 0) {
+            return;
+        }
+        double dirX = Game.player.getX() - this.getX();
+        double dirY = Game.player.getY() - this.getY();
+        double length = Math.hypot(dirX, dirY);
+        if (length == 0) {
+            return;
+        }
+        double bulletDx = dirX / length;
+        double bulletDy = dirY / length;
+        BulletShoot bullet = new BulletShoot((int) this.getX() + 6, (int) this.getY() + 6, projectileSize,
+                projectileSize, getSprite(), bulletDx, bulletDy, projectileSpeed, projectileDamage, true,
+                projectileColor);
+        Game.bullets.add(bullet);
     }
 
     public static Enemy spawnRandomVariant(int x, int y) {
@@ -188,6 +270,9 @@ public class Enemy extends Entity {
     }
 
     private static Variant pickRandomVariant() {
+        // O Phantom (que drena escudo/mana) só aparece a partir da fase 2,
+        // para não sobrecarregar o jogador novato já na primeira fase.
+        boolean phantomAllowed = Game.getCurrentLevel() >= 2;
         int roll = Game.rand.nextInt(100);
         if (roll < 35) {
             return Variant.SCOUT;
@@ -197,10 +282,12 @@ public class Enemy extends Entity {
             return Variant.ARTILLERY;
         } else if (roll < 90) {
             return Variant.WARDEN;
-        } else if (roll < 96) {
+        } else if (roll < 94) {
             return Variant.SENTINEL;
+        } else if (phantomAllowed && roll < 97) {
+            return Variant.PHANTOM;
         } else {
-            return Variant.RAVAGER;
+            return Variant.GUARDIAN;
         }
     }
 
@@ -245,6 +332,8 @@ public class Enemy extends Entity {
         updateVariantAbilities(distanceToPlayer, canSeePlayer);
 
         animate();
+
+        applyBossPhaseBehavior(distanceToPlayer, canSeePlayer);
 
         collidingBullet();
         if (life <= 0) {
@@ -299,8 +388,87 @@ public class Enemy extends Entity {
         case OVERSEER:
             handleOverseerAbility(distanceToPlayer, canSeePlayer);
             break;
+        case PHANTOM:
+            handlePhantomAbility(distanceToPlayer, canSeePlayer);
+            break;
+        case GUARDIAN:
+            handleGuardianAbility();
+            break;
         default:
             break;
+        }
+    }
+
+    /** Caçador furtivo: avança em rajadas, fica camuflado longe e drena escudo e mana do piloto ao se aproximar. */
+    private void handlePhantomAbility(double distanceToPlayer, boolean canSeePlayer) {
+        if (specialCooldown > 0) {
+            specialCooldown--;
+        }
+        // Furtividade: longe do piloto, fica camuflado e avança em rajadas rápidas.
+        if (distanceToPlayer > specialRange) {
+            if (frames % 6 == 0 && pathCooldown <= 0) {
+                burstStepTowardPlayer();
+                pathCooldown = 14;
+            }
+            // Rastro de fumaça ao se mover camuflado.
+            if (frames % 8 == 0) {
+                ParticleSystem.trail((int) x + 8, (int) y + 8, new Color(129, 199, 132, 90));
+            }
+            return;
+        }
+        if (!canSeePlayer) {
+            return;
+        }
+        // Ao ficar próximo do piloto, drena parte do escudo e da mana.
+        if (distanceToPlayer < 96 && Game.player != null) {
+            double drainAmount = 2.0;
+            if (Game.player.shield > 0) {
+                Game.player.shield = Math.max(0, Game.player.shield - drainAmount);
+                // Feedback visual: texto flutuante e partículas indicando o dreno de escudo.
+                if (frames % 12 == 0) {
+                    FloatingText.show("-ESCUDO", (int) Game.player.getX() + 8, (int) Game.player.getY(), new Color(121, 134, 203));
+                }
+            } else if (Game.player.mana > 0) {
+                Game.player.mana = Math.max(0, Game.player.mana - drainAmount);
+                // Feedback visual: texto flutuante e partículas indicando o dreno de mana.
+                if (frames % 12 == 0) {
+                    FloatingText.show("-MANA", (int) Game.player.getX() + 8, (int) Game.player.getY(), new Color(33, 150, 243));
+                }
+            }
+            ParticleSystem.burst((int) x, (int) y, variant.getAuraColor(), 4, 1.2);
+        }
+    }
+
+    /** Passo em rajada em direção ao jogador (movimento furtivo do Phantom). */
+    private void burstStepTowardPlayer() {
+        if (Game.player == null) {
+            return;
+        }
+        double dirX = Game.player.getX() - this.getX();
+        double dirY = Game.player.getY() - this.getY();
+        double length = Math.hypot(dirX, dirY);
+        if (length == 0) {
+            return;
+        }
+        double stepX = (dirX / length) * 24;
+        double stepY = (dirY / length) * 24;
+        int targetX = (int) (this.getX() + stepX);
+        int targetY = (int) (this.getY() + stepY);
+        if (World.isFree(targetX, targetY, 0)) {
+            this.setX(targetX);
+            this.setY(targetY);
+            path = null;
+        }
+    }
+
+    /** Tanque de bloqueio: regenera vida lentamente enquanto persegue o piloto. */
+    private void handleGuardianAbility() {
+        if (state != EnemyState.CHASING) {
+            return;
+        }
+        if (frames % 60 == 0 && life > 0 && life < maxLife) {
+            life = Math.min(maxLife, life + 0.5);
+            ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(255, 87, 34, 120), 3, 0.8);
         }
     }
 
@@ -724,8 +892,14 @@ public class Enemy extends Entity {
     }
 
     public void destroySelf() {
+        // Som de morte do inimigo; chefes ganham um efeito de derrota especial.
+        com.traduvertgames.main.SoundManager.play(boss
+                        ? com.traduvertgames.main.SoundManager.Event.BOSS_DEFEAT
+                        : com.traduvertgames.main.SoundManager.Event.KILL);
         Game.registerEnemyKill();
         maybeDropPickup();
+        com.traduvertgames.main.LootGuarantee.dropForVariant(this);
+        com.traduvertgames.graficos.ParticleSystem.explode(this.getX() + 8, this.getY() + 8, auraColor);
         Game.enemies.remove(this);
         Game.entities.remove(this);
         QuestManager.notifyEnemyKilled(this);
@@ -754,6 +928,29 @@ public class Enemy extends Entity {
             OverclockModule module = new OverclockModule(spawnX, spawnY);
             Game.entities.add(module);
         }
+    }
+
+    /**
+     * Aplica dano direto (ex.: habilidade especial) sem depender de projéteis.
+     */
+    public void takeDamageDirect(double amount) {
+        if (amount <= 0) {
+            return;
+        }
+        life -= amount;
+        isDamaged = true;
+        damageCurrent = 0;
+    }
+
+    public Variant getVariant() {
+        return variant;
+    }
+
+    public double getLifePercentage() {
+        if (maxLife <= 0) {
+            return 0;
+        }
+        return Math.max(0, Math.min(1, life / maxLife));
     }
 
     public void collidingBullet() {
@@ -802,10 +999,79 @@ public class Enemy extends Entity {
             g.drawImage(Entity.ENEMY_FEEDBACK, this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
         }
 
+        // Aura distinta por variante, mais evidente para os novos mobs.
+        int auraSize = (variant == Variant.GUARDIAN) ? 14 : 12;
         if (variant != Variant.SCOUT) {
             Color aura = new Color(auraColor.getRed(), auraColor.getGreen(), auraColor.getBlue(), 120);
             g.setColor(aura);
-            g.drawOval(this.getX() + 2 - Camera.x, this.getY() + 2 - Camera.y, 12, 12);
+            g.drawOval(this.getX() + 1 - Camera.x, this.getY() + 1 - Camera.y, auraSize, auraSize);
         }
+        if (variant == Variant.GUARDIAN && state == EnemyState.CHASING && life < maxLife) {
+            // Indicador de regeneração: contorno verde pulsante.
+            if (frames % 60 < 30) {
+                g.setColor(new Color(100, 255, 100, 140));
+                g.drawOval(this.getX() - 1 - Camera.x, this.getY() - 1 - Camera.y, 18, 18);
+            }
+        }
+    }
+
+    /**
+     * Sprite procedural do Phantom: silhueta translúcida esverdeada com olhos
+     * brilhantes e véu de fumaça, distinto do sprite genérico de inimigo.
+     */
+    private static BufferedImage buildPhantomSprite(boolean secondFrame) {
+        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Véu de fumaça na base (ondulante entre frames).
+        g2.setColor(new Color(90, 160, 110, 110));
+        int wave = secondFrame ? 2 : 0;
+        for (int i = 0; i < 12; i += 3) {
+            g2.fillOval(i - 1 + wave, 11 - (i % 6) / 2, 5, 5);
+        }
+
+        // Corpo translúcido.
+        g2.setColor(new Color(129, 199, 132, 200));
+        g2.fillOval(3, 3, 10, 10);
+        g2.setColor(new Color(165, 214, 167, 230));
+        g2.fillOval(4, 4, 8, 7);
+
+        // Olhos esverdeados brilhantes.
+        g2.setColor(new Color(200, 255, 200, 255));
+        g2.fillOval(5, 6, 2, 2);
+        g2.fillOval(9, 6, 2, 2);
+
+        g2.dispose();
+        return image;
+    }
+
+    /**
+     * Sprite procedural do Guardian: tanque blindado laranja com carapaça de
+     * metal e núcleo energético, distinto do sprite genérico de inimigo.
+     */
+    private static BufferedImage buildGuardianSprite(boolean secondFrame) {
+        BufferedImage image = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+        // Carapaça externa (armadura).
+        g2.setColor(new Color(90, 45, 20));
+        g2.fillOval(1, 2, 14, 12);
+        g2.setColor(new Color(255, 87, 34));
+        g2.fillOval(2, 3, 12, 10);
+
+        // Placas de metal (brilho alternado entre frames).
+        g2.setColor(secondFrame ? new Color(255, 150, 90) : new Color(176, 69, 26));
+        g2.fillOval(3, 4, 4, 4);
+        g2.fillOval(9, 4, 4, 4);
+        g2.fillOval(6, 9, 4, 4);
+
+        // Núcleo energético central.
+        g2.setColor(new Color(255, 230, 150));
+        g2.fillOval(6, 6, 4, 4);
+
+        g2.dispose();
+        return image;
     }
 }

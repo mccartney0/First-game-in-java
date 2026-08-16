@@ -50,6 +50,9 @@ public final class OptionsConfig {
     }
 
     private static boolean musicEnabled = true;
+    private static boolean soundEnabled = true;
+    /** Ganho master dos efeitos em dB (0 = normal; cada passo = 2 dB). */
+    private static int soundVolumeDb = 0;
     private static Difficulty difficulty = Difficulty.NORMAL;
 
     private OptionsConfig() {
@@ -73,6 +76,24 @@ public final class OptionsConfig {
         } else {
             Sound.music.stop();
         }
+    }
+
+    public static boolean isSoundEnabled() {
+        return soundEnabled;
+    }
+
+    public static void toggleSound() {
+        soundEnabled = !soundEnabled;
+    }
+
+    /** Ganho em dB para os efeitos sonoros. */
+    public static float getSoundVolume() {
+        return soundVolumeDb * 2.0f;
+    }
+
+    /** Aumenta/diminui o volume dos efeitos (delta dB, passos de 2). */
+    public static void adjustSoundVolume(int deltaDb) {
+        soundVolumeDb = Math.max(-20, Math.min(10, soundVolumeDb + deltaDb));
     }
 
     public static Difficulty getDifficulty() {

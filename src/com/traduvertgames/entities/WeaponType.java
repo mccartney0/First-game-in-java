@@ -24,7 +24,12 @@ public enum WeaponType {
         ARC_DISRUPTOR("Disruptor de arco", "Rajadas elétricas que saturam corredores estreitos.", new Color(126, 87, 194),
                         10, 1.6, 0.7, 5.8, 3, 18.0, 1.2, 3, 280, 85, false),
         SOLAR_CANNON("Canhão solar", "Explosões lentas que derretem escudos inimigos.", new Color(255, 183, 77),
-                        22, 3.6, 1.5, 6.6, 1, 0.0, 3.1, 5, 320, 100, false);
+                        22, 3.6, 1.5, 6.6, 1, 0.0, 3.1, 5, 320, 100, false),
+        PLASMA_CUTTER("Cortador de plasma", "Feixe contínuo de altíssima cadência com penetração.", new Color(0, 230, 118),
+                        5, 0.5, 0.3, 8.0, 1, 0.0, 1.4, 2, 200, 55, false),
+        VOID_MORTAR("Morteiro do vazio", "Granadas pesadas que explodem em área e destroem paredes.",
+                        new Color(179, 136, 255),
+                        42, 5.0, 2.2, 5.0, 1, 0.0, 6.0, 6, 360, 120, false);
 
         private final String displayName;
         private final String description;
@@ -61,9 +66,33 @@ public enum WeaponType {
                 this.unlockedByDefault = unlockedByDefault;
         }
 
-        public String getDisplayName() {
-                return displayName;
-        }
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	/** Nome curto para o HUD in-game. */
+	public String getShortName() {
+		switch (this) {
+		case BLASTER:
+			return "PADRÃO";
+		case ION_RIFLE:
+			return "ÍONS";
+		case SCATTER_CANNON:
+			return "DISPERSOR";
+		case FUSION_LANCE:
+			return "FUSÃO";
+		case ARC_DISRUPTOR:
+			return "ARCO";
+		case SOLAR_CANNON:
+			return "SOLAR";
+		case PLASMA_CUTTER:
+			return "PLASMA";
+		case VOID_MORTAR:
+			return "VAZIO";
+		default:
+			return displayName.toUpperCase();
+		}
+	}
 
         public String getDescription() {
                 return description;

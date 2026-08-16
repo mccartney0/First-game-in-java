@@ -10,7 +10,7 @@ public final class RescueObjective extends BaseObjective {
     private int rescued = 0;
 
     public RescueObjective() {
-        super("Evacuar sobreviventes", "Localize os pesquisadores e conduza-os para um ponto seguro.");
+        super("Evacuar sobreviventes", "Sobreviventes estão presos no Núcleo da Colônia. Resgate os pesquisadores e conduza-os para um ponto seguro.");
     }
 
     @Override
