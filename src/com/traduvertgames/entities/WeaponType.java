@@ -24,7 +24,20 @@ public enum WeaponType {
         ARC_DISRUPTOR("Disruptor de arco", "Rajadas elétricas que saturam corredores estreitos.", new Color(126, 87, 194),
                         10, 1.6, 0.7, 5.8, 3, 18.0, 1.2, 3, 280, 85, false),
         SOLAR_CANNON("Canhão solar", "Explosões lentas que derretem escudos inimigos.", new Color(255, 183, 77),
-                        22, 3.6, 1.5, 6.6, 1, 0.0, 3.1, 5, 320, 100, false);
+                        22, 3.6, 1.5, 6.6, 1, 0.0, 3.1, 5, 320, 100, false),
+        PLASMA_CUTTER("Cortador de plasma", "Feixe contínuo de altíssima cadência com penetração.", new Color(0, 230, 118),
+                        5, 0.5, 0.3, 8.0, 1, 0.0, 1.4, 2, 200, 55, false),
+	VOID_MORTAR("Morteiro do vazio", "Granadas pesadas que explodem em área e destroem paredes.",
+			new Color(179, 136, 255),
+			42, 5.0, 2.2, 5.0, 1, 0.0, 6.0, 6, 360, 120, false),
+	BOOMERANG_ARCANO("Bumerangue arcano", "Lâmina que retorna ao jogador: dano na ida e na volta e recarga parcial no retorno.",
+			new Color(0, 188, 212),
+			18, 1.8, 1.2, 6.0, 1, 0.0, 7.0, 8, 260, 14, false),
+	CHAIN_ARC("Arco em cadeia", "Relâmpago que salta entre até 3 inimigos próximos com dano decrescente.", new Color(63, 81, 181),
+			22, 2.2, 1.4, 5.4, 1, 14.0, 7.0, 4, 290, 12, false),
+	DRONE_SENTINEL("Drone sentinela", "Drone autônomo que orbita e atira automaticamente nos inimigos por tempo limitado.",
+			new Color(255, 203, 5),
+			28, 2.4, 1.8, 4.8, 1, 0.0, 4.5, 6, 300, 20, false);
 
         private final String displayName;
         private final String description;
@@ -61,9 +74,39 @@ public enum WeaponType {
                 this.unlockedByDefault = unlockedByDefault;
         }
 
-        public String getDisplayName() {
-                return displayName;
-        }
+	public String getDisplayName() {
+		return displayName;
+	}
+
+	/** Nome curto para o HUD in-game. */
+	public String getShortName() {
+		switch (this) {
+		case BLASTER:
+			return "PADRÃO";
+		case ION_RIFLE:
+			return "ÍONS";
+		case SCATTER_CANNON:
+			return "DISPERSOR";
+		case FUSION_LANCE:
+			return "FUSÃO";
+		case ARC_DISRUPTOR:
+			return "ARCO";
+		case SOLAR_CANNON:
+			return "SOLAR";
+		case PLASMA_CUTTER:
+			return "PLASMA";
+		case VOID_MORTAR:
+			return "VAZIO";
+		case BOOMERANG_ARCANO:
+			return "BUMERANGUE";
+		case CHAIN_ARC:
+			return "CADEIA";
+		case DRONE_SENTINEL:
+			return "DRONE";
+		default:
+			return displayName.toUpperCase();
+		}
+	}
 
         public String getDescription() {
                 return description;

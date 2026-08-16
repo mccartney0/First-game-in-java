@@ -99,27 +99,95 @@ public class Player extends Entity {
                 initializeArsenalState();
         }
 
+        /** Inércia para terreno escorregadio (gelo). */
+        private double inertiaDx = 0;
+        private double inertiaDy = 0;
+        private static double moveTowards(double current, double target) {
+                if (current < target) {
+                        return Math.min(current + 0.06, target);
+                }
+                if (current > target) {
+                        return Math.max(current - 0.06, target);
+                }
+                return target;
+        }
+
         public void update() {
                 handleJump();
+                if (com.traduvertgames.entities.DashAbility.isDashing()) {
+                        return;
+                }
                 moved = false;
-                if (right && World.isFree((int) (x + speed), this.getY(), z)) {
+
+                // Terreno afeta a velocidade: grama (+20%), lama (-30%), gelo (inércia).
+                double terrainMultiplier = 1.0;
+                boolean onIce = false;
+                int tileX = this.getX() / World.TILE_SIZE;
+                int tileY = this.getY() / World.TILE_SIZE;
+                if (World.isValidTile(tileX, tileY) && World.tiles != null) {
+                        com.traduvertgames.world.Tile center = World.tiles[tileX + (tileY * World.WIDTH)];
+                        if (center instanceof com.traduvertgames.world.GrassTile) {
+                                terrainMultiplier = 1.2;
+                        } else if (center instanceof com.traduvertgames.world.MudTile) {
+                                terrainMultiplier = 0.7;
+                        } else if (center instanceof com.traduvertgames.world.IceTile) {
+                                onIce = true;
+                        }
+                }
+                double effectiveSpeed = speed * terrainMultiplier;
+
+                if (right && World.isFree((int) (x + effectiveSpeed), this.getY(), z)) {
                         moved = true;
                         dir = right_dir;
-                        x += speed;
-                } else if (left && World.isFree((int) (x - speed), this.getY(), z)) {
+                        x += effectiveSpeed;
+                } else if (left && World.isFree((int) (x - effectiveSpeed), this.getY(), z)) {
                         moved = true;
                         dir = left_dir;
-                        x -= speed;
+                        x -= effectiveSpeed;
                 }
-                if (up && World.isFree(this.getX(), (int) (y - speed), z)) {
+                if (up && World.isFree(this.getX(), (int) (y - effectiveSpeed), z)) {
                         moved = true;
                         dir = up_dir;
-                        y -= speed;
-                } else if (down && World.isFree(this.getX(), (int) (y + speed), z)) {
+                        y -= effectiveSpeed;
+                } else if (down && World.isFree(this.getX(), (int) (y + effectiveSpeed), z)) {
 
                         moved = true;
                         dir = down_dir;
-                        y += speed;
+                        y += effectiveSpeed;
+                }
+                if (onIce) {
+                        // Sem comando: desliza até parar.
+                        if (!moved && (Math.abs(inertiaDx) > 0.05 || Math.abs(inertiaDy) > 0.05)) {
+                                double nextX = x + inertiaDx;
+                                double nextY = y + inertiaDy;
+                                if (Math.abs(inertiaDx) > 0.05 && World.isFree((int) nextX, this.getY(), z)) {
+                                        x += inertiaDx;
+                                }
+                                if (Math.abs(inertiaDy) > 0.05 && World.isFree(this.getX(), (int) nextY, z)) {
+                                        y += inertiaDy;
+                                }
+                        }
+                        inertiaDx = moveTowards(inertiaDx, 0);
+                        inertiaDy = moveTowards(inertiaDy, 0);
+                        if (moved) {
+                                if (right) {
+                                        inertiaDx = Math.min(inertiaDx + 0.06, speed);
+                                } else if (left) {
+                                        inertiaDx = Math.max(inertiaDx - 0.06, -speed);
+                                } else {
+                                        inertiaDx = moveTowards(inertiaDx, 0);
+                                }
+                                if (up) {
+                                        inertiaDy = Math.max(inertiaDy - 0.06, -speed);
+                                } else if (down) {
+                                        inertiaDy = Math.min(inertiaDy + 0.06, speed);
+                                } else {
+                                        inertiaDy = moveTowards(inertiaDy, 0);
+                                }
+                        }
+                } else {
+                        inertiaDx = 0;
+                        inertiaDy = 0;
                 }
                 if (moved) {
                         frames++;
@@ -267,18 +335,36 @@ public class Player extends Entity {
                 return mana >= currentWeapon.getManaCost();
         }
 
-        private void fireWeapon(double angle) {
-                if (currentWeapon == null) {
+	private void fireWeapon(double angle) {
+		if (currentWeapon == null) {
                         return;
                 }
                 if (!consumeResourcesForShot(currentWeapon)) {
                         return;
                 }
+                // Efeito sonoro coerente com a arma usada: armas de energia
+                // ganham o tom agudo de laser; as demais, o pulso de tiro.
+                if (currentWeapon.getDisplayName().toLowerCase().contains("plasma")
+                                || currentWeapon.getDisplayName().toLowerCase().contains("vazio")
+                                || currentWeapon.getDisplayName().toLowerCase().contains("íons")
+                                || currentWeapon.getDisplayName().toLowerCase().contains("laser")
+                                || currentWeapon.getDisplayName().toLowerCase().contains("disruptor")) {
+                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LASER);
+                } else {
+                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.SHOT);
+                }
+
+                if (currentWeapon == WeaponType.DRONE_SENTINEL) {
+                        // O drone é uma entidade autônoma que orbita e atira sozinho.
+                        Game.entities.add(new DroneSentinel((int) originX() - 5, (int) originY() - 5));
+                        fireCooldown = Math.max(0, currentWeapon.getFireDelayFrames());
+                        return;
+                }
 
                 int projectiles = Math.max(1, currentWeapon.getProjectilesPerShot());
                 double spreadRadians = Math.toRadians(currentWeapon.getSpreadDegrees());
-                double originX = this.getX() + 8;
-                double originY = this.getY() + 8 - z;
+                double originX = originX();
+                double originY = originY();
                 for (int i = 0; i < projectiles; i++) {
                         double offset = 0;
                         if (projectiles > 1) {
@@ -291,12 +377,32 @@ public class Player extends Entity {
                         double dx = Math.cos(finalAngle);
                         double dy = Math.sin(finalAngle);
                         int size = currentWeapon.getProjectileSize();
-                        BulletShoot bullet = new BulletShoot((int) originX, (int) originY, size, size, null, dx, dy,
-                                        currentWeapon.getProjectileSpeed(), currentWeapon.getDamage(), false);
-                        bullet.setMask(0, 0, size, size);
-                        Game.bullets.add(bullet);
+                        if (currentWeapon == WeaponType.BOOMERANG_ARCANO) {
+                                BoomerangProjectile boomerang = new BoomerangProjectile((int) originX, (int) originY, size, dx, dy,
+                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage());
+                                boomerang.setMask(0, 0, size, size);
+                                Game.bullets.add(boomerang);
+                        } else if (currentWeapon == WeaponType.CHAIN_ARC) {
+                                ChainArcProjectile arc = new ChainArcProjectile((int) originX, (int) originY, size, dx, dy,
+                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage());
+                                arc.setMask(0, 0, size, size);
+                                Game.bullets.add(arc);
+                        } else {
+                                BulletShoot bullet = new BulletShoot((int) originX, (int) originY, size, size, null, dx, dy,
+                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage(), false);
+                                bullet.setMask(0, 0, size, size);
+                                Game.bullets.add(bullet);
+                        }
                 }
                 fireCooldown = Math.max(0, currentWeapon.getFireDelayFrames());
+        }
+
+        private double originX() {
+                return this.getX() + 8;
+        }
+
+        private double originY() {
+                return this.getY() + 8 - z;
         }
 
         private boolean consumeResourcesForShot(WeaponType weaponType) {
@@ -344,12 +450,18 @@ public class Player extends Entity {
                 return false;
         }
 
-        public double applyDamage(double amount) {
+                public double applyDamage(double amount) {
                 if (amount <= 0) {
                         return 0;
                 }
-
-                double remaining = amount;
+                com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.DAMAGE);
+                // A primeira fase é mais permissiva: o dano recebido é reduzido
+                // para o jogador novato ter tempo de aprender os controles.
+                double effectiveAmount = amount;
+                if (Game.getCurrentLevel() == 1) {
+                        effectiveAmount = amount * 0.7;
+                }
+                double remaining = effectiveAmount;
                 if (shield > 0) {
                         double absorbed = Math.min(shield, remaining);
                         shield -= absorbed;
@@ -434,6 +546,7 @@ public class Player extends Entity {
                         if (current instanceof ShieldOrb) {
                                 ShieldOrb orb = (ShieldOrb) current;
                                 if (Entity.isColliding(this, orb)) {
+                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
                                         addShield(orb.getShieldValue());
                                         Game.entities.remove(i);
                                         i--;
@@ -464,6 +577,7 @@ public class Player extends Entity {
                         if (current instanceof NanoMedkit) {
                                 NanoMedkit kit = (NanoMedkit) current;
                                 if (Entity.isColliding(this, kit)) {
+                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
                                         heal(kit.getHealAmount());
                                         addShield(kit.getShieldAmount());
                                         Game.entities.remove(i);
@@ -479,6 +593,7 @@ public class Player extends Entity {
                         if (current instanceof OverclockModule) {
                                 OverclockModule module = (OverclockModule) current;
                                 if (Entity.isColliding(this, module)) {
+                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
                                         manaContinue = true;
                                         addMana(module.getManaBoost());
                                         addWeaponEnergy(module.getWeaponBoost());
@@ -597,8 +712,22 @@ public class Player extends Entity {
                 return currentWeapon;
         }
 
-        public boolean hasWeaponUnlocked(WeaponType type) {
-                return type != null && unlockedWeapons.contains(type);
+	public boolean hasWeaponUnlocked(WeaponType type) {
+		return type != null && unlockedWeapons.contains(type);
+	}
+
+	/** Versão estática usada fora do ciclo de instância (ex.: tela de arma inicial). */
+	public static boolean isWeaponUnlocked(WeaponType type) {
+		return type != null && persistentUnlockedWeapons != null
+				&& persistentUnlockedWeapons.contains(type);
+	}
+
+        public void unlockWeapon(WeaponType type) {
+                if (type != null && !unlockedWeapons.contains(type)) {
+                        unlockedWeapons.add(type);
+                        weaponEnergy.put(type, type.getMaxDurability() * weaponCapacityMultiplier);
+                        savePersistentArsenal();
+                }
         }
 
         public Set<WeaponType> getUnlockedWeapons() {
@@ -760,11 +889,19 @@ public class Player extends Entity {
                 }
         }
 
-        public static void resetPersistentArsenal() {
-                persistentInitialized = false;
-                ensurePersistentDefaults();
-                syncActivePlayer();
-        }
+	public static void resetPersistentArsenal() {
+		persistentInitialized = false;
+		ensurePersistentDefaults();
+		syncActivePlayer();
+	}
+
+	/** Define a arma inicial persistente (usado pela seleção de arma no novo jogo).
+	 *  A arma só é aplicada se estiver desbloqueada; caso contrário vira BLASTER. */
+	public static void setPersistentCurrentWeapon(WeaponType type) {
+		persistentCurrentWeapon = (persistentUnlockedWeapons != null && persistentUnlockedWeapons.contains(type)) ? type
+				: WeaponType.BLASTER;
+		syncActivePlayer();
+	}
 
         public static void resetBaseStats() {
                 maxLife = 100;

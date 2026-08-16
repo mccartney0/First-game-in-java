@@ -55,7 +55,8 @@ public class ShieldOrb extends Entity {
 
                 float alpha = (float) (0.45 + 0.35 * pulse);
                 Color base = new Color(63, 81, 181);
-                g2.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), (int) (alpha * 255)));
+                int orbAlpha = Math.min(255, Math.max(0, (int) (alpha * 255)));
+		g2.setColor(new Color(base.getRed(), base.getGreen(), base.getBlue(), orbAlpha));
                 g2.fillOval(2, 2, width - 4, height - 4);
 
                 g2.setStroke(new BasicStroke(1.4f));
