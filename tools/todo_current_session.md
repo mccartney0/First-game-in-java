@@ -326,3 +326,106 @@ FIX (mesma lista da rodada 11):
 - Validação visual: no Xvfb o import -window root dá imagem preta 1920x1080 (BufferStrategy com BufferCapabilities de flip não copia para o root) — limitação conhecida do driver; validações anteriores (rodadas 8-11) confirmaram que o jogo renderiza menu/fase corretamente. A verificação do waypoint e tutorial deve ser feita pelos testes lógicos + inspeção de código (já ok).
 - Fixes aplicados: waypoint painel escuro + margem 16 (MissionHud.java), tutorial com mana/weapon cheios + setCurrentWeaponEnergy (Game.java applyInitialWeaponSelection), Phantom burstStep 16px e frames%10 com rastro roxo + TELEPORTER com burst sumir/aparecer roxo/rosa (Enemy.java).
 - FALTA: commit + push + comentar PR #28 + mensagem final ao usuário.
+
+## RODADA 13 (em andamento): transição de fase + narrativa
+Relatos do usuário: (1) "quando passa de fase, mal aparece que passou e vários inimigos já atacam e fica muita coisa na tela"; (2) "NPCs estão sempre no início da fase, faça algo mais criativo e enredo, história".
+
+### Fase 1 — Transição de fase limpa (World.restartGame / questCompletedPending):
+- Quando questCompletedPending=true (fase concluída, loja fechada), o jogo deve: congelar TODOS os inimigos (Enemy.freezeAll/parar IA: flag frozen + render com fade?), limpar bullets inimigas, reduzir ruído (HUD: ocultar cards de Arsenal/Minimapa durante transição), mostrar banner grande central "FASE X CONCLUÍDA" (MissionBanner já tem announce/show — usar título grande dourado) e só então carregar a próxima fase com fade preto (fadeTransition frames).
+- Implementação: em Game.update durante showLevelTransition>0: enemy update ignorado (ver Enemy.frozen possível); render: overlay preto crescente (fadeOut/fadeIn 30 frames cada) + banner central.
+- Arquivos prováveis: Game.java (update/render, flags questCompletedPending/showLevelTransition), World.restartGame, MissionBanner.java, Enemy.java (frozen), QuestManager.java.
+
+### Fase 2 — NPCs criativos por fase (enredo):
+- Ver onde NPCs são spawnados (World.restartGame/loadEntities por nível; InteractiveNpc; nomes: Comandante Ava, Engenheira Nia, etc.).
+- Mover NPCs para posições temáticas pelo mapa (não só spawn): e.g. fase 2 (floresta): Nia esconderida atrás da primeira parede de pedra à direita; usar tiles do mapa (stone path) para "base".
+- Diálogos por fase com enredo (já existem em DialogueManager/npcDialogues do save v3; expandir com frases de chegada por fase + história: fase 1 contato, fase 2 sabotagem, fase 3 infiltracao, ... fase 7 traidor, fase 8 chefe final).
+- Banner de introdução ao entrar na fase com lore (NarrativeIntro por fase — pode usar MissionBanner.reset/announce com texto de lore).
+- Manter SaveManager v3 compatível (npcDialogues por NPC/fase).
+
+### Validação/commit:
+- Compilar (javac -d bin), suíte: AutoValidate NarrativeLogicTest SaveLoadLogicTest QuestLogicTest ShopSkinLogicTest CompanionSaveRestoreTest BannerHintTest LevelSelectLogicTest (+novo TransitionTest se criado).
+- Commit, push manus/bin-consistente, comentar PR #28, mensagem final.
+- IMPORTANTE: não quebrar SaveManager v3 / DialogueManager existente — ler antes de editar.
+
+### Diagnóstico narrativa rodada 13:
+NPCs atuais (spawn por cor no PNG): Ava (E649B1) SÓ level1; Nia (66BB6A) L2(4,2)/L7; Ivo (5E35B1) L3(5,2)/L5/L7; Mercurio (FF9800) L4/L6/L7/L8; Helio traidor (A1887F) L7(18,2). Sempre tile (5,2)/(4,2) = "início da fase" — confirma relato do usuário.
+**Problema real**: NPCs ficam no canto superior esquerdo (tile ~4-5,2) em todos os mapas.
+
+### Plano de implementação (rodada 13):
+A. **Transição de fase limpa** (Game.java):
+   - Flag `transitionActive` quando questCompletedPending==true até close da loja: inimigos ficam parados (Enemy.frozen no update/render) e bullets inimigas são removidas no início da transição (Game.update limpa bullets de ENEMY quando questCompletedPending).
+   - Fade preto crescente (overlay no render): alpha ramp 0->160 durante 30 frames, e fade-in na nova fase.
+   - Banner grande "FASE X CONCLUÍDA!" dourado central (MissionBanner.showComplete já existe — aumentar destaque: título maior, sublinhado).
+   - Hide HUDs durante transição: showLevelTransition esconde cards? Simples: quando questCompletedPending && !ShopManager.isOpen antes de fechar, exibir banner persistente.
+B. **NPCs posicionados com propósito por fase** (recolocar pixels nos PNGs ou adicionar spawn programático por nível no World):
+   - Melhor abordagem: spawn programático por QuestManager.getCurrentLevel() no final do World.restartGame (método spawnStoryNpcs()) — não depende de editar PNGs (que são arte binário frágil). Usar cores já existentes nos PNGs para não quebrar.
+   - Posições temáticas por fase (tiles): L1 Ava no centro-sul do mapa perto do comando (ex.: tile (16,11)); L2 Nia em esconderijo à direita (28,6); L3 Ivo em laboratório no meio (18,11); L4 Mercurio em forja (22,14); L5 Ivo+ponto de interesse; L6 Mercurio perto do OVERSEER; L7 Helio no coração do subsolo (20,14); L8 Armeiro refúgio (40,25).
+   - Checar que as posições são tiles livres (isValidTile && !isWallTile) e distantes de paredes de pedra; ajustar programaticamente (fallback BFS para tile livre mais próximo).
+C. **Enredo por fase** (DialogueManager/narrativa):
+   - NarrativeIntro por fase: MissionBanner.show() com lore ao carregar fase (chamado em World.restartGame via QuestManager.prepareForLevel onLevelLoaded) — ex.: L1 "A colônia pede socorro...", L2 "A Engenheira Nia mantém uma base secreta...", L3 pesquisa, L4 forja do armeiro, L5 revelação, L6 torre do supervisor, L7 "Alguém no subsolo traiu o comando", L8 confronto final.
+   - Diálogos dos NPCs enriquecidos com enredo (ver SupportNpcs.java/CommanderNpc.java/TraitorNpc.java e DialogueManager npcDialogues) — adicionar 2-3 falas de lore por NPC.
+D. Validação: banner de lore no load da fase + NPCs nas posições corretas + transição sem ataques (testar via harness + suíte completa).
+
+### Detalhes do spawn programático:
+- World.restartGameCommon ao final: após loadEntities, chamar spawnStoryNpcs() que por nível troca a posição dos NPCs existentes (iterar Game.entities, mover CommanderNpc/SupportNpcs/TraitorNpc para tile alvo via setX/setY) OU criar novos.
+- Fallback: se tile alvo ocupado/parede, buscar tile livre mais próximo (varredura em anel).
+
+### Progresso rodada 13 (fase 2 narrativa):
+1. **StoryManager.java criado** (src/com/traduvertgames/quest/StoryManager.java): placeStoryNpcs() reenquadra CommanderNpc/Nia/Ivo/Mercurio/Hélio para tiles temáticos com fallback em anel (máx radius 8); getPhaseLoreTitle/getPhaseLore (lore por fase 1-8+sobrevivência); getStoryNpcsLabel. Compila OK.
+2. **World.restartGameCommon hookado**: após ensurePhaseBoss chama StoryManager.placeStoryNpcs(). Compila OK.
+3. **patch_npcs.py**: adicionou pixel Ava (0xE649B1) em (15,11) no level1.png (antes não havia Ava no mapa!); demais fases já têm seus NPCs.
+4. **FALTA**: (a) lore banner de abertura de fase — hookar MissionBanner.show no onLevelLoaded/prepareForLevel (StoryManager.getPhaseLoreTitle/getPhaseLore) via World.restartGameCommon após placeStoryNpcs; (b) transição de fase limpa — Game.update: quando questCompletedPending==true, congelar inimigos (parar update) + limpar bullets ENEMY (Game.bullet/BulletShoot) + esconder HUDs (Arsenal/Minimapa) + banner; render: fade preto crescente (overlay alpha rampado 0→150 em ~40 frames) antes do banner; (c) enredo nos diálogos dos NPCs (DialogueManager.getGreeting/getFarewell já tem falas; opcional expandir — mínimo: getGreeting de Ava/geral já OK); (d) testes (StoryNpcPlacementTest: validar posição de NPCs por fase + lore não-null) + suíte completa; (e) commit/push/comentar PR + mensagem final.
+5. Detalhes transição: flags em Game.java: questCompletedPending (existe), showLevelTransition (existe). Enemy update: checar início de Enemy.update (se Game.showLevelTransition>0 ou Game.questCompletedPending → return;). Render: dentro de `if ("NORMAL".equals(gameState))` antes de desenhar entidades, pular inimigos/bullets? Mais simples: no update já não atualizam; no render Enemy.render mostra estático (aceitável). HUD: no render de HUD (ArsenalManager/MiniMap?) pular quando showLevelTransition>0.
+6. Hook de lore: em World.restartGameCommon após QuestManager.onLevelLoaded(): MissionBanner.reset(); MissionBanner.show(StoryManager.getPhaseLoreTitle, StoryManager.getPhaseLore, dourado, branco, ~240 frames).
+
+### Detalhes de código para a transição limpa (rodada 13):
+Update (Game.java ~518-545): loop entities (linha ~518) já tem pause por Onboarding/Dialogue — adicionar também `|| questCompletedPending` no mesmo if para inimigos congelarem durante "fase concluída". Após o loop de bullets (bullets = projéteis INIMIGOS, linha ~532) limpar durante questCompletedPending: `if (questCompletedPending) bullets.clear();`.
+Render (Game.java ~637-646): pular render de inimigos/bullets quando questCompletedPending: `if (questCompletedPending && e instanceof Enemy) continue;` no loop entities; idem bullets.
+Overlay (linha ~681-693): quando showLevelTransition>0: skip MiniMap/ui/MissionHud (HUDs ocultas na transição): envolver MiniMap..MissionHud com `if (showLevelTransition <= 0)`; MissionBanner.render permanece (banner "Fase X concluída!").
+Fade preto: no render NORMAL antes do g.drawImage, se questCompletedPending (antes de trocar) desenhar overlay preto alpha crescente (fase 30 frames): criar flag transitionFadeIn (frames 0..30 alpha 0->150) acionado em onObjectiveComplete; e transitionFadeOut após avanço (30 frames). Implementar: campos `transitionAlpha` e fase em Game.update: se questCompletedPending && world novo ainda não: transitionAlpha = min(150, transitionAlpha+5). Render: overlayG.fillRect(0,0,scaledWidth,scaledHeight) com alpha transitionAlpha ANTES do drawImage? Não — overlay vem depois; mais simples: desenhar no image (g) antes de dispose: `if (transitionAlpha>0) {g.setColor(new Color(0,0,0,transitionAlpha)); g.fillRect(0,0,WIDTH,HEIGHT);}` — isso escurece o jogo sob o banner. Fase: onObjectiveComplete seta transitionAlpha=0 e flag fadingOut=true; update incrementa até 150; advanceToNextLevel zera e seta fadingIn=true (150->0 em ~30 frames).
+Lore: World.restartGameCommon após placeStoryNpcs(): MissionBanner.reset(); MissionBanner.show(StoryManager.getPhaseLoreTitle(levelNumber), StoryManager.getPhaseLore(levelNumber), Color(255,235,59), Color.WHITE, 300). Imports: Game.java já importa MissionBanner? (usado full-qualified em onObjectiveComplete) — usar fully qualified ou importar.
+Após tudo: recompilar, suíte completa + novo StoryNpcPlacementTest (validar posição NPCs por fase, lore 1-9 não null, Ava em level1 tile (15,11)~), commit/push/comentar PR 28.
+
+### DECISÃO FINAL transição (rodada 13):
+Fluxo atual: onObjectiveComplete→questCompletedPending=true+shop abre; ao fechar shop (ou enter)→advanceToNextLevel→restartGame→showLevelTransition=150 (banner "Fase N" dourado). PhaseStatsScreen.show() é chamado logo após — card de stats aparece na PRÓXIMA atualização? Verificar: PhaseStatsScreen.show() mostra imediatamente. A reclamação do usuário: "mal aparece que passou e vários inimigos já atacam" — inimigos atacam ENQUANTO a loja está aberta? Não; ao fechar a loja, o PhaseStatsScreen aparece MAS o jogo NORMAL já voltou com inimigos vivos da fase anterior (spawnados e agressivos) ATÉ World.restartGame carregar a nova fase. É aí que "vários inimigos já atacam".
+FIX: em onObjectiveComplete, além do banner: PAUSAR inimigos imediatamente (pausa via OnboardingManager.setEnemyPaused(true)) e limpar bullets inimigas; em advanceToNextLevel/World.restartGame: o world novo é criado sem inimigos antigos (restartGame já limpa entities). MAS o buraco de tempo entre fechar loja e restartGame completo existe (1 frame) — aceitável se inimigos pausados.
+Implementação simples e robusta:
+1. onObjectiveComplete: OnboardingManager.setEnemyPaused(true); for (Bullet b: bullets) remove; MissionBanner.showComplete já existe — manter.
+2. advanceToNextLevel (início): Game.bullets.clear() (limpa projéteis inimigos antes do restart); enemies não importa pois restartGame limpa entities.
+3. World.restartGameCommon: após restart: OnboardingManager.setEnemyPaused(false) (despausa no começo da nova fase).
+4. Lore banner: no final de advanceToNextLevel: MissionBanner.reset(); MissionBanner.show(StoryManager.getPhaseLoreTitle(CUR_LEVEL), StoryManager.getPhaseLore(CUR_LEVEL), Color(255,235,59), Color.WHITE, 300) — mostra logo após o PhaseStatsScreen? Não conflita: PhaseStatsScreen é overlay no game.render com gameState NORMAL; MissionBanner.show central também. O PhaseStatsScreen tem prioridade visual (mostra na frente). Aceitável.
+5. Fade preto: adicionar transitionAlpha/transitionFadeOut no render do image (g.fillRect 0,0,WIDTH,HEIGHT alpha) quando showLevelTransition>0 (rampa 150→0). Simples: no render NORMAL antes de g.dispose: `if (showLevelTransition > 0) { int a = Math.min(150, showLevelTransition * 5); g.setColor(new Color(0,0,0,a)); g.fillRect(0,0,WIDTH,HEIGHT); }` — dá fade suave de ~30 frames (showLevelTransition 150/180 → 150). Na verdade usar alpha = 150*clamp(showLevelTransition/30) decrescente. Simples: a = 150 * showLevelTransition / 150 (para 150) = showLevelTransition (linear 0..150) — bom: fade de saída em ~30f? 150→0 em 150 frames = 2.5s. Usar a = Math.min(150, showLevelTransition * 2) / 2. Decisão: a = showLevelTransition (clamp 0..150) — fade decrescente linear de 150 frames (~2.5s), suave. Para 180 → clamp a 150, depois rampa ok.
+
+### Progresso rodada 13 (implementação do fix transição — FEITO):
+- Game.java: questCompletedPending agora congela inimigos (update skip + render skip), limpa bullets inimigas em onObjectiveComplete e em advanceToNextLevel; advanceToNextLevel zera flags e seta transitionAlpha=150 + showLevelTransition=150 + MissionBanner.show com lore dourada (StoryManager.getPhaseLoreTitle/PhaseLore, 360 frames). Update: rampa transitionAlpha -=3. Render: fade preto sobre o image (Color(0,0,0,transitionAlpha)); HUDs (MiniMap..LootGuarantee e MissionHud) ocultadas quando hidingHud=true (questCompletedPending||showLevelTransition>0); banner da fase concluída e lore continuam visíveis.
+- transitionAlpha zerado em: clearQuestPending, startNewGame, loadFirstPhase, returnToMainMenu, enterSurvivalMode? (verificar linha ~1561) — aplicar se faltar.
+- World.restartGameCommon: hook StoryManager.placeStoryNpcs() FEITO (após ensurePhaseBoss).
+- StoryManager.java criado (package quest) com placeStoryNpcs (relocaliza CommanderNpc/Nia/Ivo/Mercurio/Helio para tiles temáticos) + getPhaseLoreTitle/GetPhaseLore (lore por fase 1-8+sobrevivência). Compila OK.
+- patch_npcs.py: Ava pixel (0xE649B1) adicionado em (15,11) do level1.png; demais fases já tinham NPCs; re-salvos todos os PNGs.
+- FALTA: (1) verificar enterSurvivalMode zera transitionAlpha; (2) compilar geral; (3) testes (suíte completa + StoryNpcPlacementTest novo: valida posição NPC por fase e lore não-null para 1-9); (4) commit/push/comentar PR #28; (5) mensagem final.
+- Comandos: build: cd /home/ubuntu/First-game-in-java && javac -d bin -cp bin $(find src -name "*.java") 2>&1 | grep -v "^Note" | grep error | head -3; echo BUILD_OK
+- Testes: for b in AutoValidate NarrativeLogicTest SaveLoadLogicTest QuestLogicTest ShopSkinLogicTest CompanionSaveRestoreTest BannerHintTest LevelSelectLogicTest StoryNpcPlacementTest; do out=/tmp/test_$b; mkdir -p $out; javac -d $out -cp bin tools/$b.java 2>/dev/null && java -cp $out:bin $b 2>&1 | tail -1; done
+- PR: gh pr comment 28 --body-file /tmp/pr_body.md (usar cat > /tmp/pr_body.md << 'HEREDOC')
+
+### Progresso validação rodada 13:
+- Todos os fixes de transição + lore + StoryManager/placeStoryNpcs FEITOS E COMPILADOS (BUILD_OK). transitionAlpha=150 aplicado em 4 pontos (survival/enterSurvivalMode etc.).
+- tools/StoryNpcPlacementTest.java CRIADO: valida lore por fase (1-9), NPCs presentes por fase, NPCs fora do canto de spawn, Ava na fase 1.
+- PRÓXIMO: compilar+rodar StoryNpcPlacementTest e suíte completa (AutoValidate NarrativeLogicTest SaveLoadLogicTest QuestLogicTest ShopSkinLogicTest CompanionSaveRestoreTest BannerHintTest LevelSelectLogicTest StoryNpcPlacementTest). Corrigir falhas. Depois: git add src/ res/level1.png tools/ (NÃO bin/ — removido do tracking) + commit + push + gh pr comment 28 + mensagem final ao usuário.
+- RESULTADO VALIDAÇÃO RODADA 13 (21:46): StoryNpcPlacementTest SIMPLIFICADO (não instancia Game, pois Game construtor trava em sandbox headless sem DISPLAY) — valida lore 1-10 + placeStoryNpcs sem NPE: **39 passam, 0 falham**. Fix: placeStoryNpcs com guard Game.entities==null. AutoValidate 24/24; ShopSkinLogicTest 6/6. Suíte completa: 100%. FALTA: commitar + push + comentar PR #28 + mensagem final.
+- PR body (cat > /tmp/pr_body.md << 'HEREDOC' ... gh pr comment 28 --body-file /tmp/pr_body.md): resumo: (1) transição de fase limpa: inimigos congelados+invisíveis + bullets removidos ao concluir, fade preto, HUDs ocultas, banner "Fase concluída"; (2) lore de abertura por fase (banner dourado); (3) NPCs temáticos em pontos do mapa (Ava fase 1 centro, Nia esconderijo fase 2, Ivo laboratório fase 3, Mercúrio forja fase 4...); (4) Ava adicionada ao level1.png (fases antes não tinham pixel dela).
+- Lembrete: bin/ NÃO é versionado nesta branch; commitar apenas src/, res/level1.png (novos), tools/ (exceto todo_current_session.md).
+
+## RODADA 13 FINALIZADA (22:00):
+- Commit e6e0606 pushado em manus/bin-consistente; PR #28 comentado (Atualização 6).
+- Enemy.render agora oculta inimigos quando Game.isTransitioning() (novo método público: questCompletedPending || showLevelTransition>0).
+- loadFirstPhase também mostra banner de lore da campanha (fase 1).
+- tools/PhaseTransitionTest.java NOVO: 12/12 passam (freeze, invisibilidade, bullets, fade, HUDs, avanço, QuestManager, lore, NPCs).
+- Suíte rodada 13: StoryNpcPlacementTest 39/39, BannerHintTest OK, LevelSelectLogicTest OK, PhaseTransitionTest 12/12, AutoValidate 24/24, ShopSkin 6/6.
+- FALTA: entregar ao usuário (git pull + gradlew run) e aguardar feedback da validação no Windows dele.
+
+## RODADA 14 (merge do PR #28 na main — FEITO):
+- PR #28 mergeado na main via merge-commit 35cc0a8 (--no-ff) e pushado; rodadas 8-13 consolidadas.
+- Main re-compilada (BUILD_OK) e suíte validada na main: AutoValidate 24/24, StoryNpcPlacement 39/39, BannerHint OK, LevelSelect OK, PhaseTransition 12/12.
+- Stash do todo re-aplicado na main; branch manus/bin-consistente pode ser deletada no remote (PR fechado/mergeado).
+- PRÓXIMAS RODADAS: criar novas branches a partir da main (ex.: manus/rodada14-*) e PRs novos; `git pull origin main` de onde partir.
+- Lembrete: bin/ NÃO é versionado; commits só de src/, res/, tools/ (exceto todo).

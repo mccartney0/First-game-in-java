@@ -300,7 +300,39 @@ public class Enemy extends Entity {
     }
 
     public static Enemy spawnRandomVariant(int x, int y) {
-        return new Enemy(x, y, 16, 16, Entity.ENEMY_EN, pickRandomVariant());
+        Enemy enemy = new Enemy(x, y, 16, 16, Entity.ENEMY_EN, pickRandomVariant());
+        // Rodada 15: inimigos das fases iniciais são mais frágeis e causam
+        // menos dano — a dificuldade cresce com a fase em vez de começar alta.
+        scaleForPhase(enemy, Game.getCurrentLevel());
+        return enemy;
+    }
+
+    /**
+     * Suaviza vida e dano de um inimigo conforme a fase da campanha (1-8).
+     * Fase 1: 55% dos atributos; fase 2: 72%; fase 3: 85%; fase 4+: 100%.
+     */
+    public static void scaleForPhase(Enemy enemy, int level) {
+        if (enemy == null || level > Game.MAX_LEVEL || level < 1) {
+            return;
+        }
+        if (enemy.isBoss()) {
+            // Chefes mantêm a escala própria da fase.
+            return;
+        }
+        double factor;
+        if (level == 1) {
+            factor = 0.55;
+        } else if (level == 2) {
+            factor = 0.72;
+        } else if (level == 3) {
+            factor = 0.85;
+        } else {
+            return;
+        }
+        // Fator < 1: reduz a vida efetiva (via lifeBoost negativo) e o dano.
+        enemy.life = Math.min(enemy.life, enemy.maxLife * factor);
+        enemy.lifeBoost = Math.min(0.0, enemy.lifeBoost - enemy.maxLife * (1.0 - factor));
+        enemy.damageBoost = Math.min(1.0, factor);
     }
 
     /** Chefe do modo sobrevivência: WARBRINGER ou GUARDIAN escalados pela onda.
@@ -328,7 +360,7 @@ public class Enemy extends Entity {
     }
 
     /** Multiplica a vida atual/máxima e o dano de projétil deste inimigo.
-     *  Usado pelo modo sobrevivência para escalar dificuldade. */
+     *  Usado pelo modo sobrevivência para escalar dificuldade (mult > 1). */
     public void boost(double lifeMultiplier, double damageMultiplier) {
         if (lifeMultiplier > 1.0) {
             double boosted = this.maxLife * lifeMultiplier;
@@ -1062,7 +1094,9 @@ public class Enemy extends Entity {
         damageCurrent = 0;
     }
 
-    /** Aplica dano consumindo primeiro o reforço de vida (boost do modo sobrevivência). */
+    /** Aplica dano consumindo primeiro o reforço de vida (boost do modo sobrevivência).
+     *  lifeBoost negativo representa a redução de vida das fases iniciais (rodada 15):
+     *  nesse caso o dano é consumido diretamente da vida proporcional já reduzida. */
     private void applyDamage(double amount) {
         if (this.lifeBoost > 0) {
             double remaining = this.lifeBoost - amount;

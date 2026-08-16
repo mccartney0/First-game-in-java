@@ -14,7 +14,7 @@ import com.traduvertgames.quest.QuestManager;
  * - as falas avançam com Enter/Space até a última linha;
  * - ao concluir, o NPC é marcado como finalizado e o DialogueEventListener
  *   da missão recebe o evento de conclusão;
- * - sons de tutorial são reaproveitados para passo/fim de diálogo.
+ * - sons próprios: DIALOGUE_START ao abrir, TUTORIAL_STEP ao avançar a fala.
  *
  * O diálogo não afeta o tutorial/onboarding e vice-versa: durante o
  * onboarding o diálogo não pode ser aberto.
@@ -75,7 +75,9 @@ public final class DialogueManager {
 		currentLine = 0;
 		active = true;
 		target.startInteraction();
-		SoundManager.play(SoundManager.Event.TUTORIAL_STEP);
+		// Início de diálogo com NPC (rodada 15): antes usava TUTORIAL_STEP,
+		// que é reservado aos passos do onboarding.
+		SoundManager.play(SoundManager.Event.DIALOGUE_START);
 		QuestManager.notifyDialogueStarted(target);
 		return target;
 	}

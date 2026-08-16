@@ -633,7 +633,8 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// Feedback narrativo: banner central de missão concluída com o título da fase.
 		com.traduvertgames.graficos.MissionBanner.reset();
 		com.traduvertgames.graficos.MissionBanner.showComplete(QuestManager.getPhaseTitle(CUR_LEVEL));
-		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LEVELUP);
+		// Fanfarra de fase concluída (rodada 15): antes reutilizava o level-up.
+		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LEVEL_COMPLETE);
 		// O level-up tem prioridade sobre a loja: se o jogador subiu de nível
 		// no mesmo instante em que concluiu a fase, a loja aguarda o level-up
 		// ser resolvido antes de abrir (evita oscilação entre as telas).
@@ -886,11 +887,19 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			player.jump = true;
 		}
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
-			// execute tal ação!
-			player.right = true;
-
+			if ("MENU".equals(gameState)) {
+				// Navegação horizontal do menu por A/D e seta direita (rodada 15):
+				// evita mover o personagem pelos itens do menu.
+				menu.right = true;
+			} else {
+				player.right = true;
+			}
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
-			player.left = true;
+			if ("MENU".equals(gameState)) {
+				menu.left = true;
+			} else {
+				player.left = true;
+			}
 		}
 
 		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
@@ -973,6 +982,18 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			}
 		}
 
+		// Seleção direta de upgrade por tecla 1/2/3 na tela de level up (rodada 15):
+		// escolhe o card correspondente sem precisar navegar com as setas.
+		if ("LEVELUP".equals(gameState)) {
+			if (e.getKeyCode() == KeyEvent.VK_1 || e.getKeyCode() == KeyEvent.VK_NUMPAD1) {
+				LevelUpManager.selectAndConfirm(0);
+			} else if (e.getKeyCode() == KeyEvent.VK_2 || e.getKeyCode() == KeyEvent.VK_NUMPAD2) {
+				LevelUpManager.selectAndConfirm(1);
+			} else if (e.getKeyCode() == KeyEvent.VK_3 || e.getKeyCode() == KeyEvent.VK_NUMPAD3) {
+				LevelUpManager.selectAndConfirm(2);
+			}
+		}
+
 		if (e.getKeyCode() == KeyEvent.VK_ESCAPE && VictoryCutscene.isShowing()) {
 			this.escape = true;
 		}
@@ -981,6 +1002,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
 			// do menu de pausa ao segurar a tecla).
 			if (ShopManager.isEscOnCooldown()) {
+				return;
+			}
+			if ("MENU".equals(gameState)) {
+				// ESC nas telas do menu fecha a tela atual voltando ao nível
+				// anterior (pausa, opções, carregar, confirmação de saída).
+				menu.escape = true;
 				return;
 			}
 			// ESC na tela de escolha de arma inicial: cancela e volta ao menu
@@ -1484,30 +1511,33 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 int baseMaxMana;
                 int baseMaxShield;
                 double baseCapacityMultiplier;
-                if (CUR_LEVEL > MAX_LEVEL) {
-                        // Fase final: a cada ciclo de sobrevivência (levelPlus),
-                        // os recursos máximos do piloto crescem para compensar
-                        // as ondas cada vez mais agressivas.
-                        int survivalDepth = Math.max(0, instance != null ? instance.levelPlus - 1 : 0);
-                        baseMaxLife = 1000 + 200 * survivalDepth;
-                        baseMaxMana = 1500 + 300 * survivalDepth;
-                        baseMaxShield = 600 + 100 * survivalDepth;
-                        baseCapacityMultiplier = 4.0;
-                                } else {
-                        baseMaxLife = 100;
-                        baseMaxMana = 500;
-                        baseMaxShield = 150;
-                        baseCapacityMultiplier = 1.0;
-                }
-                // Agressividade e recursos do piloto crescem no arco final da campanha
-                // (fases 7 e 8), refletindo o esforço da colônia para deter a IA.
-                if (CUR_LEVEL >= 7 && CUR_LEVEL <= MAX_LEVEL) {
-                        int finalStretch = CUR_LEVEL - 6;
-                        baseMaxLife += 10 * finalStretch;          // piloto mais resiliente
-                        baseMaxMana += 50 * finalStretch;
-                        baseMaxShield += 15 * finalStretch;
-                        baseCapacityMultiplier += 0.25 * finalStretch;
-                }
+		if (CUR_LEVEL > MAX_LEVEL) {
+			// Fase final: a cada ciclo de sobrevivência (levelPlus),
+			// os recursos máximos do piloto crescem para compensar
+			// as ondas cada vez mais agressivas.
+			int survivalDepth = Math.max(0, instance != null ? instance.levelPlus - 1 : 0);
+			baseMaxLife = 1000 + 200 * survivalDepth;
+			baseMaxMana = 1500 + 300 * survivalDepth;
+			baseMaxShield = 600 + 100 * survivalDepth;
+			baseCapacityMultiplier = 4.0;
+				} else {
+			// Rodada 15: a vida base do piloto cresce suavemente com a fase
+			// (120 na fase 1 até 176 na fase 8) em vez de ficar travada em
+			// 100 — o piloto precisa de folga para aprender as fases iniciais.
+			baseMaxLife = 120 + (CUR_LEVEL - 1) * 8;
+			baseMaxMana = 500;
+			baseMaxShield = 150;
+			baseCapacityMultiplier = 1.0;
+		}
+		// Agressividade e recursos do piloto crescem no arco final da campanha
+		// (fases 7 e 8), refletindo o esforço da colônia para deter a IA.
+		if (CUR_LEVEL >= 7 && CUR_LEVEL <= MAX_LEVEL) {
+			int finalStretch = CUR_LEVEL - 6;
+			baseMaxLife += 10 * finalStretch;          // piloto mais resiliente
+			baseMaxMana += 50 * finalStretch;
+			baseMaxShield += 15 * finalStretch;
+			baseCapacityMultiplier += 0.25 * finalStretch;
+		}
                 applyDifficultyScaling(baseMaxLife, baseMaxMana, baseMaxShield, baseCapacityMultiplier);
         }
 

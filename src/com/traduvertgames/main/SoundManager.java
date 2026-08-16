@@ -35,7 +35,12 @@ public final class SoundManager {
 		TUTORIAL_STEP,
 		TUTORIAL_DONE,
 		COMPANION_SHOT,
-		COMPANION_PURCHASE
+		COMPANION_PURCHASE,
+		LEVEL_COMPLETE,
+		VICTORY,
+		DIALOGUE_START,
+		PURCHASE,
+		MENU_SELECT
 	}
 
 	private static final Map<Event, String> FILES = new HashMap<>();
@@ -57,6 +62,13 @@ public final class SoundManager {
 		FILES.put(Event.TUTORIAL_DONE, "/sounds/tutorial_done.wav");
 		FILES.put(Event.COMPANION_SHOT, "/sounds/laser.wav");
 		FILES.put(Event.COMPANION_PURCHASE, "/sounds/levelup.wav");
+		// Sons novos (rodada 15): fase concluída, vitória da campanha, início
+		// de diálogo, compra na loja e seleção de item de menu.
+		FILES.put(Event.LEVEL_COMPLETE, "/sounds/level_complete.wav");
+		FILES.put(Event.VICTORY, "/sounds/victory.wav");
+		FILES.put(Event.DIALOGUE_START, "/sounds/dialogue_start.wav");
+		FILES.put(Event.PURCHASE, "/sounds/purchase.wav");
+		FILES.put(Event.MENU_SELECT, "/sounds/menu_select.wav");
 	}
 
 	/** Pool de clips por evento: cada chamada play() devolve o clip ao pool. */
