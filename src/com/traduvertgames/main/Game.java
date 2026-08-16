@@ -391,31 +391,17 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	 * centralizado (letterboxing preto) para preservar a nitidez da pixel art
 	 * e a escala correta da HUD. */
 	public static void toggleFullscreen() {
+		// O modo de tela cheia usa maximização nativa da janela (MAXIMIZED_BOTH),
+		// e NAO o modo exclusivo do GraphicsDevice: o modo exclusivo exige
+		// dispose/setUndecorated, que no Windows gera janelas "fantasmas", deixa o
+		// estado de maximizado corrompido ao sair (janela gigante que não volta
+		// ao tamanho normal) e é bloqueado por alguns drivers/composicao DWM.
 		if (!fullscreen) {
-			java.awt.GraphicsEnvironment ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
-			java.awt.GraphicsDevice device = ge.getDefaultScreenDevice();
-			if (device.isFullScreenSupported()) {
-				frame.dispose();
-				frame.setUndecorated(true);
-				device.setFullScreenWindow(frame);
-				frame.setVisible(true);
-				fullscreen = true;
-				frame.setResizable(true);
-			} else {
-				frame.setExtendedState(javax.swing.JFrame.MAXIMIZED_BOTH);
-				fullscreen = true;
-				frame.setResizable(true);
-			}
+			frame.setExtendedState(javax.swing.JFrame.MAXIMIZED_BOTH);
+			fullscreen = true;
 		} else {
-			java.awt.GraphicsEnvironment ge = java.awt.GraphicsEnvironment.getLocalGraphicsEnvironment();
-			java.awt.GraphicsDevice device = ge.getDefaultScreenDevice();
-			device.setFullScreenWindow(null);
-			frame.dispose();
-			frame.setUndecorated(false);
 			frame.setExtendedState(javax.swing.JFrame.NORMAL);
-			frame.setResizable(false);
-			frame.pack();
-			frame.setVisible(true);
+			frame.setSize(WIDTH * SCALE, HEIGHT * SCALE);
 			frame.setLocationRelativeTo(null);
 			fullscreen = false;
 		}
