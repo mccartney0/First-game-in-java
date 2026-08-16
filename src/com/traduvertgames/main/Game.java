@@ -365,19 +365,23 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         }
 
 	/** Recalcula o SCALE para que o buffer (384x216) caiba na área útil atual. */
-	public static void recomputeScale() {
+		public static void recomputeScale() {
 		int width = Math.max(1, frame.getContentPane().getWidth());
 		int height = Math.max(1, frame.getContentPane().getHeight());
 		SCALE = Math.max(1, Math.min(width / WIDTH, height / HEIGHT));
 	}
-
 	/** Registra um listener que recompõe o SCALE sempre que a janela muda de
 	 * tamanho (incluindo a alternância de tela cheia com F11). */
 	public static void installResizeListener() {
 		frame.addComponentListener(new java.awt.event.ComponentAdapter() {
 			@Override
 			public void componentResized(java.awt.event.ComponentEvent e) {
-				recomputeScale();
+				// Fora do modo de tela cheia a janela é fixa (não redimensionável),
+				// então a recomposição do SCALE só ocorre durante o fullscreen,
+				// quando o monitor/redimensionamento da janela fullscreen muda.
+				if (fullscreen) {
+					recomputeScale();
+				}
 			}
 		});
 	}
@@ -1057,8 +1061,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 	@Override
 	public void mousePressed(MouseEvent e) {
 		player.mouseShoot = true;
-		player.mx = (e.getX() / SCALE);
-		player.my = (e.getY() / SCALE);
+		// A posição do clique é convertida do espaço da janela para o espaço do
+		// buffer do jogo, desconsiderando o deslocamento do letterboxing
+		// (drawOffsetX/Y — jogo centralizado em fullscreen ou redimensionamento)
+		// e o SCALE atual da renderização.
+		player.mx = Math.max(0, Math.min(WIDTH - 1, (e.getX() - drawOffsetX) / SCALE));
+		player.my = Math.max(0, Math.min(HEIGHT - 1, (e.getY() - drawOffsetY) / SCALE));
 
 		if ("GAMEOVER".equals(gameState)) {
 			this.restartGame = true;

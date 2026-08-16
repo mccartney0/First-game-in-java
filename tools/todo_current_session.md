@@ -164,3 +164,8 @@ DESPACHO DA MISSÃO (rodada 8, branch manus/bin-consistente a partir da main):
 - [ ] commit + push + abrir PR NOVO (novo número — main já é igual à branch manus/todas-melhorias, PR 27 fechado; criar PR da manus/bin-consistente)
 - [ ] instruir usuário: git stash/checkout da branch nova, DELETAR saves.json antigo (saves v3 compatíveis mas level1-5 ausentes causavam crash no load), git pull
 NOTAS TÉCNICAS: World.java main já tem null check + IOException claro (mapa não encontrado no classpath). Aplicar mapPixels defensivo (clamp) já está. Fullscreen letterboxing + overlayG já está na main.
+
+## RODADA 9 (usuário aplicou PR #28, novo problema):
+Menu ">Traduvert<" aparece (correção dispose funcionou). NOVO BUG: janela redimensionada manualmente → recomputeScale recalcula SCALE para qualquer tamanho de janela (installResizeListener), quebrando letterbox e o mapeamento da mira (mouse). Captura 1919x1079: jogo com tiles gigantes e cortado, mira desalinhada.
+FIX PLANEJADO: travar redimensionamento (frame.setResizable(false) exceto fullscreen); F11 = maximizar com SCALE floor + centralizar (drawOffset); mapear mouse com (mx-drawOffsetX)/SCALE clampado. Verificar handlers de mouse no Game (mousemove, mouseClicked) — procurar getMouseX/mouseX e escala usada.
+Rodada 9: commit + push na manus/bin-consistente + comentar PR #28 + entregar.
