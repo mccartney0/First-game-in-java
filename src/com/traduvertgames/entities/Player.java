@@ -354,10 +354,17 @@ public class Player extends Entity {
                         com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.SHOT);
                 }
 
+                if (currentWeapon == WeaponType.DRONE_SENTINEL) {
+                        // O drone é uma entidade autônoma que orbita e atira sozinho.
+                        Game.entities.add(new DroneSentinel((int) originX() - 5, (int) originY() - 5));
+                        fireCooldown = Math.max(0, currentWeapon.getFireDelayFrames());
+                        return;
+                }
+
                 int projectiles = Math.max(1, currentWeapon.getProjectilesPerShot());
                 double spreadRadians = Math.toRadians(currentWeapon.getSpreadDegrees());
-                double originX = this.getX() + 8;
-                double originY = this.getY() + 8 - z;
+                double originX = originX();
+                double originY = originY();
                 for (int i = 0; i < projectiles; i++) {
                         double offset = 0;
                         if (projectiles > 1) {
@@ -370,12 +377,32 @@ public class Player extends Entity {
                         double dx = Math.cos(finalAngle);
                         double dy = Math.sin(finalAngle);
                         int size = currentWeapon.getProjectileSize();
-                        BulletShoot bullet = new BulletShoot((int) originX, (int) originY, size, size, null, dx, dy,
-                                        currentWeapon.getProjectileSpeed(), currentWeapon.getDamage(), false);
-                        bullet.setMask(0, 0, size, size);
-                        Game.bullets.add(bullet);
+                        if (currentWeapon == WeaponType.BOOMERANG_ARCANO) {
+                                BoomerangProjectile boomerang = new BoomerangProjectile((int) originX, (int) originY, size, dx, dy,
+                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage());
+                                boomerang.setMask(0, 0, size, size);
+                                Game.bullets.add(boomerang);
+                        } else if (currentWeapon == WeaponType.CHAIN_ARC) {
+                                ChainArcProjectile arc = new ChainArcProjectile((int) originX, (int) originY, size, dx, dy,
+                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage());
+                                arc.setMask(0, 0, size, size);
+                                Game.bullets.add(arc);
+                        } else {
+                                BulletShoot bullet = new BulletShoot((int) originX, (int) originY, size, size, null, dx, dy,
+                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage(), false);
+                                bullet.setMask(0, 0, size, size);
+                                Game.bullets.add(bullet);
+                        }
                 }
                 fireCooldown = Math.max(0, currentWeapon.getFireDelayFrames());
+        }
+
+        private double originX() {
+                return this.getX() + 8;
+        }
+
+        private double originY() {
+                return this.getY() + 8 - z;
         }
 
         private boolean consumeResourcesForShot(WeaponType weaponType) {

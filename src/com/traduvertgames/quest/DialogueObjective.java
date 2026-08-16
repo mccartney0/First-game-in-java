@@ -1,6 +1,7 @@
 package com.traduvertgames.quest;
 
 import com.traduvertgames.dialogue.InteractiveNpc;
+import com.traduvertgames.main.SoundManager;
 
 /**
  * Objetivo que combina a lógica de uma missão base (delegada) com a
@@ -30,6 +31,10 @@ public class DialogueObjective implements RPGObjective {
 		delegate.onDialogueFinished(npc);
 		if (npc != null && dialogueTarget.equals(npc.getName())) {
 			talkedToTarget = true;
+			// Concluir a etapa de diálogo que completa a missão: som de recompensa.
+			if (isComplete()) {
+				SoundManager.play(SoundManager.Event.LEVELUP);
+			}
 		}
 	}
 
@@ -55,7 +60,12 @@ public class DialogueObjective implements RPGObjective {
 
 	@Override
 	public void onQuestItemCollected(com.traduvertgames.entities.QuestItem item) {
+		boolean wasComplete = isComplete();
 		delegate.onQuestItemCollected(item);
+		if (!wasComplete && isComplete()) {
+			// Coleta que completa a missão da fase: som de recompensa.
+			SoundManager.play(SoundManager.Event.LEVELUP);
+		}
 	}
 
 	@Override

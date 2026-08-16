@@ -2,6 +2,7 @@ package com.traduvertgames.quest;
 
 import com.traduvertgames.dialogue.CommanderNpc;
 import com.traduvertgames.dialogue.InteractiveNpc;
+import com.traduvertgames.main.SoundManager;
 
 /**
  * Objetivo composto da fase 1: conversar com a Comandante Ava e coletar os
@@ -35,13 +36,24 @@ public class ContactObjective implements RPGObjective {
 
 	@Override
 	public void onQuestItemCollected(com.traduvertgames.entities.QuestItem item) {
+		boolean wasComplete = isComplete();
 		artifactsCollected++;
+		if (!wasComplete && isComplete()) {
+			// Missão da fase concluída: som de recompensa.
+			SoundManager.play(SoundManager.Event.LEVELUP);
+		} else {
+			SoundManager.play(SoundManager.Event.PICKUP);
+		}
 	}
 
 	@Override
 	public void onDialogueFinished(InteractiveNpc npc) {
 		if (npc instanceof CommanderNpc && !talkedToCommander) {
 			talkedToCommander = true;
+			if (isComplete()) {
+				// Fase 1 concluída apenas com a conversa (2 artefatos já coletados).
+				SoundManager.play(SoundManager.Event.LEVELUP);
+			}
 		}
 	}
 

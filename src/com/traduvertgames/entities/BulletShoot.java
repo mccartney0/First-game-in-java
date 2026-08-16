@@ -10,8 +10,8 @@ import com.traduvertgames.world.World;
 
 public class BulletShoot extends Entity {
 
-    private final double dx;
-    private final double dy;
+    public final double dx;
+    public final double dy;
     private final double speed;
     private final Color overrideColor;
 
@@ -67,7 +67,15 @@ public class BulletShoot extends Entity {
         g.fillOval(this.getX() - Camera.x, this.getY() - Camera.y, width, height);
     }
 
-    private boolean hitWall() {
+    /**
+     * Projéteis persistentes (ex.: bumerangue, relâmpago em cadeia) não são
+     * consumidos no primeiro impacto e continuam existindo para novas colisões.
+     */
+    public boolean isPersistent() {
+        return false;
+    }
+
+    public boolean hitWall() {
         int centerX = this.getX() + width / 2;
         int centerY = this.getY() + height / 2;
         if (World.damageDestructibleWallByPixel(centerX, centerY, damage)) {

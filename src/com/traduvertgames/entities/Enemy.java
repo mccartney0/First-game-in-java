@@ -966,13 +966,17 @@ public class Enemy extends Entity {
             if (Entity.isColliding(this, e)) {
                 isDamaged = true;
                 double takenDamage = 1.0;
+                boolean persistent = false;
                 if (e instanceof BulletShoot) {
                     BulletShoot projectile = (BulletShoot) e;
                     takenDamage = projectile.getDamage();
+                    persistent = projectile.isPersistent();
                 }
                 life -= takenDamage;
-                Game.bullets.remove(i);
-                i--;
+                if (!persistent) {
+                    Game.bullets.remove(i);
+                    i--;
+                }
                 return;
             }
         }

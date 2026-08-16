@@ -211,15 +211,6 @@ public final class SaveManager {
 		int savedWeaponOrdinal = toInt(session.get("armaAtual"));
 		int savedWeaponMask = toInt(session.get("armasDesbloqueadas"));
 
-		Player.loadCurrentWeaponFromSave(savedWeaponOrdinal);
-		Player.loadUnlockedWeaponsFromSave(savedWeaponMask);
-		for (WeaponType type : WeaponType.values()) {
-			Object raw = session.get("energiaArma_" + type.name());
-			if (raw != null) {
-				Player.loadWeaponEnergyFromSave(type, toDouble(raw));
-			}
-		}
-
 		Enemy.enemies = savedEnemies;
 		Game.setScore(savedScore);
 		Game.setHighScore(Math.max(savedScore, savedHighScore));
@@ -252,6 +243,21 @@ public final class SaveManager {
 			if (game.player != null) {
 				game.player.syncFromPersistentState();
 				game.player.updateCamera();
+			}
+			// Arsenal salvo é aplicado DEPOIS do restart: o World.restartGame
+			// recria o Player (construtor sincroniza o arsenal persistente),
+			// então a restauração aqui garante que a arma e as energias do
+			// save prevaleçam sobre o estado recém-inicializado.
+			Player.loadCurrentWeaponFromSave(savedWeaponOrdinal);
+			Player.loadUnlockedWeaponsFromSave(savedWeaponMask);
+			for (WeaponType type : WeaponType.values()) {
+				Object raw = session.get("energiaArma_" + type.name());
+				if (raw != null) {
+					Player.loadWeaponEnergyFromSave(type, toDouble(raw));
+				}
+			}
+			if (game.player != null) {
+				game.player.syncFromPersistentState();
 			}
 			Game.gameState = "NORMAL";
 			Menu.pause = false;

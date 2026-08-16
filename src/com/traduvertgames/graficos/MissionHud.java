@@ -65,14 +65,22 @@ public final class MissionHud {
 		g2.setFont(titleFont);
 		g2.drawString("Missão", margin + 8, margin + 12 * s / 4 + 2);
 
-		// Título da missão truncado ao tamanho do card
-		String shortTitle = title.length() > 34 ? title.substring(0, 31) + "..." : title;
+		// Largura disponível para o título (respeita o espaço do progresso)
+		int maxTitleChars = Math.max(5, (cardWidth - 64) / g2.getFontMetrics(smallFont).stringWidth("m"));
+		String shortTitle = title.length() > maxTitleChars ? title.substring(0, maxTitleChars - 3) + "..." : title;
 		g2.setColor(Color.WHITE);
 		g2.setFont(smallFont);
 		g2.drawString(shortTitle, margin + 8, margin + cardHeight - 6);
 
-		// Progresso no lado direito do card
-		String shortProgress = progress.length() > 20 ? progress.substring(0, 17) + "..." : progress;
+		// Progresso no lado direito do card, medido pela largura real da fonte
+		String shortProgress = progress;
+		int progMaxWidth = cardWidth / 2 - 24;
+		while (shortProgress.length() > 3 && g2.getFontMetrics().stringWidth(shortProgress) > progMaxWidth) {
+			shortProgress = shortProgress.substring(0, shortProgress.length() - 1);
+		}
+		if (shortProgress.length() < progress.length()) {
+			shortProgress = shortProgress.substring(0, Math.max(1, shortProgress.length() - 3)) + "\u2026";
+		}
 		int progW = g2.getFontMetrics().stringWidth(shortProgress);
 		g2.setColor(new Color(129, 199, 132));
 		g2.drawString(shortProgress, margin + cardWidth - progW - 8, margin + cardHeight - 6);
