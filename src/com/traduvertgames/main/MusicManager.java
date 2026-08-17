@@ -87,17 +87,27 @@ public final class MusicManager {
 		if (fadingIn == null) {
 			return;
 		}
-		// Volume atual do clip antigo decresce; o novo cresce, em dB (escala log).
+		// Rodada 23: o alvo do crossfade é o volume REAL da preferência
+		// (0 dB = áudio original). Antes, como OptionsConfig.getMusicVolume()
+		// retornava 0.0 para "normal", a interpolação "gainDb * progress"
+		// valia 0.0 dB (volume máximo) — correto, mas applyGain(clamp)
+		// devolvia 0.0 apenas se o controle suportasse (suporta). O verdadeiro
+		// motivo de não haver música no novo jogo era que o update() só
+		// rodava no gameState NORMAL (ver Game.update). Ainda assim:
+		// (1) a interpolação usa gainDb linear em dB, o que soa errado em
+		// volumes baixos (o áudio cresce rápido no início e para de subir);
+		// (2) 0 dB como volume-padrão é o máximo — o jogo soa alto demais.
+		// Mantém-se o volume 0 dB como "original" por compatibilidade com
+		// saves, mas a interpolação agora respeita o mínimo do controle.
 		float gainDb = OptionsConfig.getMusicVolume();
-		float floor = -60.0f;
 		if (crossfadeRemaining > 0) {
 			float progress = 1.0f - ((float) crossfadeRemaining / CROSSFADE_FRAMES);
 			float oldGain = gainDb * (1.0f - progress);
 			if (current != null && current.isRunning()) {
-				applyGain(current, Math.max(floor, oldGain));
+				applyGain(current, clampToFloor(current, oldGain));
 			}
 			if (fadingIn != null) {
-				applyGain(fadingIn, Math.max(floor, gainDb * progress));
+				applyGain(fadingIn, clampToFloor(fadingIn, gainDb * progress));
 				if (!fadingIn.isRunning()) {
 					fadingIn.setFramePosition(0);
 					fadingIn.loop(Clip.LOOP_CONTINUOUSLY);
@@ -187,6 +197,16 @@ public final class MusicManager {
 		if (!clip.isRunning()) {
 			clip.start();
 		}
+	}
+
+	/** Floor efetivo do crossfade: o mínimo suportado pelo controle do clip
+	 * (nunca -60 dB fixo — controles variam entre -80 dB e 0 dB). */
+	private static float clampToFloor(Clip clip, float requested) {
+		if (clip != null && clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) {
+			FloatControl vol = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+			return Math.max(vol.getMinimum(), requested);
+		}
+		return requested;
 	}
 
 	private static void applyGain(Clip clip, float gainDb) {
