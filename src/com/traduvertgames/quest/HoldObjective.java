@@ -81,10 +81,17 @@ public class HoldObjective extends BaseObjective {
 		// deserializeState (onBeaconSpawned no construtor) ou guardado como
 		// posição pendente (onLevelStart limpa o registro). Reconecta os beacons
 		// restaurados ao objetivo em vez de criar um segundo beacon em cima deles.
-		if (reconnectRestoredBeacons()) {
-			return;
+		boolean wasReconnected = reconnectRestoredBeacons();
+		// Fase 2: o ponto de defesa precisa SEMPRE existir enquanto o jogador
+		// estiver na fase — se o beacon foi perdido em qualquer cenário
+		// (troca de estágio da sequência, recarga com estado antigo, mapa sem
+		// tile), recriá-lo aqui impede a missão de travar em
+		// "Localize o beacon do setor" (bug reportado: "matei e limpei tudo,
+		// falei com todos e o card não avança").
+		if (QuestManager.getCurrentLevel() == 2 && (trackedBeacons.isEmpty() || !spawned)) {
+			wasReconnected = false;
 		}
-		if (QuestManager.getCurrentLevel() != 2) {
+		if (wasReconnected || QuestManager.getCurrentLevel() != 2) {
 			return;
 		}
 		// Ponto designado do beacon da fase 2. O mapa nem sempre tem um tile
