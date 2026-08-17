@@ -174,8 +174,14 @@ public final class SaveManager {
 		slot.put("survivalRecord", com.traduvertgames.main.WaveManager.getSurvivalRecord());
 		slot.put("timestamp", currentTimestamp());
 		// Remove as chaves antigas agora duplicadas dentro de session.
+		// A própria chave "session" (de uma gravação anterior do mesmo slot)
+		// também sai do nível superior, pois o conteúdo dela é recriado
+		// na sessão nova — ignorar as chaves estruturais evita apagar a
+		// sessão recém-instalada.
 		for (String key : session.keySet()) {
-			slot.remove(key);
+			if (!"session".equals(key)) {
+				slot.remove(key);
+			}
 		}
 
 		updateCampaign(root, game);
