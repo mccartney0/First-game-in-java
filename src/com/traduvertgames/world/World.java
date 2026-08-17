@@ -21,6 +21,9 @@ public class World {
 	public static Tile[] tiles;
 	public static int WIDTH, HEIGHT;
 	public static final int TILE_SIZE = 16;
+	private static int deferredBossX = -1;
+	private static int deferredBossY = -1;
+	private static Enemy.Variant deferredBossVariant;
 	
 	public World(String path) {
 		// Caminhos absolutos (mapas procedurais do modo infinito) são carregados
@@ -193,18 +196,10 @@ Game.enemies.add(en);
 						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.RAVAGER);
 						Game.entities.add(en);
 						Game.enemies.add(en);
-					} else if (pixelAtual == 0xFFE91E63
-							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
-						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
-								Enemy.Variant.WARBRINGER, true);
-						Game.entities.add(en);
-						Game.enemies.add(en);
-					} else if (pixelAtual == 0xFF7986CB
-							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
-						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
-								Enemy.Variant.OVERSEER, true);
-						Game.entities.add(en);
-						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFFE91E63) {
+						spawnOrDeferPhaseBoss(xx, yy, Enemy.Variant.WARBRINGER);
+					} else if (pixelAtual == 0xFF7986CB) {
+						spawnOrDeferPhaseBoss(xx, yy, Enemy.Variant.OVERSEER);
 					} else if (pixelAtual == 0xFF81C784
 							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
 						// Phantom: caçador furtivo que drena escudo e mana
@@ -336,6 +331,9 @@ Game.enemies.add(en);
         /** Núcleo comum de reinício: limpa entidades e carrega o mapa informado. */
         private static void restartGameCommon(int levelNumber, String mapSource) {
                 TeleportPad.reset();
+		deferredBossX = -1;
+		deferredBossY = -1;
+		deferredBossVariant = null;
                 Game.entities.clear();
                 Game.enemies.clear();
                 Game.entities = new ArrayList<Entity>();
@@ -381,6 +379,18 @@ Game.enemies.add(en);
                 if (levelNumber == 7 || levelNumber == 8 || levelNumber < 2 || mapHasBoss()) {
                         return;
                 }
+		// Fases encadeadas: o chefe só entra quando a etapa de caça começa.
+		if (isDeferredBossLevel(levelNumber) && !QuestManager.isBossHuntActive()) {
+			return;
+		}
+		if (deferredBossVariant != null && deferredBossX >= 0 && deferredBossY >= 0) {
+			Enemy boss = new Enemy(deferredBossX, deferredBossY, 16, 16, Entity.ENEMY_EN,
+					deferredBossVariant, true);
+			Game.entities.add(boss);
+			Game.enemies.add(boss);
+			deferredBossVariant = null;
+			return;
+		}
                 int playerX = (int) (Game.player != null ? Game.player.getX() : 0);
                 int playerY = (int) (Game.player != null ? Game.player.getY() : 0);
                 int tries = 0;
@@ -406,6 +416,35 @@ Game.enemies.add(en);
                         return;
                 }
         }
+
+	/** Garante o chefe assim que o objetivo encadeado de caça se torna ativo. */
+	public static void ensureActivePhaseBoss() {
+		int levelNumber = QuestManager.getCurrentLevel();
+		if (isDeferredBossLevel(levelNumber) && QuestManager.isBossHuntActive()) {
+			ensurePhaseBoss(levelNumber);
+		}
+	}
+
+	private static boolean isDeferredBossLevel(int levelNumber) {
+		return levelNumber == 2 || levelNumber == 5 || levelNumber == 6;
+	}
+
+	private static void spawnOrDeferPhaseBoss(int tileX, int tileY, Enemy.Variant variant) {
+		if (isDeferredBossLevel(QuestManager.getCurrentLevel())
+				&& !QuestManager.isBossHuntActive()) {
+			deferredBossX = tileX * TILE_SIZE;
+			deferredBossY = tileY * TILE_SIZE;
+			deferredBossVariant = variant;
+			return;
+		}
+		if (com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(tileX, tileY, true)) {
+			return;
+		}
+		Enemy boss = new Enemy(tileX * TILE_SIZE, tileY * TILE_SIZE, 16, 16,
+				Entity.ENEMY_EN, variant, true);
+		Game.entities.add(boss);
+		Game.enemies.add(boss);
+	}
 
         private static int parseLevelNumber(String level) {
                 if (level == null) {

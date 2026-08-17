@@ -26,6 +26,11 @@ public class DialogueObjective implements RPGObjective {
 		return delegate;
 	}
 
+	/** @return true depois que o jogador concluiu o diálogo que inicia a missão. */
+	public boolean hasTalkedToTarget() {
+		return talkedToTarget;
+	}
+
 	@Override
 	public void onDialogueStarted(InteractiveNpc npc) {
 		delegate.onDialogueStarted(npc);

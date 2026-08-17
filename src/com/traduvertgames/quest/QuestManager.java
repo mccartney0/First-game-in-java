@@ -242,6 +242,24 @@ public final class QuestManager {
         return currentObjective.isComplete();
     }
 
+    /** Retorna true quando a etapa jogável atual é uma caça a chefe. */
+    public static boolean isBossHuntActive() {
+        RPGObjective objective = currentObjective;
+        while (true) {
+            if (objective instanceof DialogueObjective) {
+                DialogueObjective dialogue = (DialogueObjective) objective;
+                if (!dialogue.hasTalkedToTarget()) {
+                    return false;
+                }
+                objective = dialogue.getDelegate();
+            } else if (objective instanceof SequenceObjective) {
+                objective = ((SequenceObjective) objective).getActive();
+            } else {
+                return objective instanceof BossHuntObjective;
+            }
+        }
+    }
+
     /**
      * Estado lógico da missão da fase atual, para o save.
      * O formato é opaco e definido por cada objetivo ({@link RPGObjective#serializeState()}).
@@ -260,6 +278,8 @@ public final class QuestManager {
 
     public static void update() {
         currentObjective.update();
+        // A sequência pode ter acabado de liberar a etapa do chefe neste frame.
+        World.ensureActivePhaseBoss();
         // Rodada 22: missões de coleta acompanham o inventário a cada frame.
         SideQuestManager.refreshCollectibles();
         processPendingRemovals();
