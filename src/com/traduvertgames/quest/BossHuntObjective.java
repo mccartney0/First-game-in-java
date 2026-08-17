@@ -42,6 +42,11 @@ public final class BossHuntObjective extends BaseObjective {
         bossPresent = true;
     }
 
+    @Override
+    public void onBossSpotted() {
+        registerBossPresence();
+    }
+
 
     @Override
     public boolean isComplete() {

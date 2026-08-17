@@ -85,11 +85,87 @@ public final class MissionHud {
 		g2.setColor(new Color(129, 199, 132));
 		g2.drawString(shortProgress, margin + cardWidth - progW - 8, margin + cardHeight - 6);
 
+		// --- Barra de canal (objetivo de defesa) e timer (sobrevivência) ---
+		drawObjectiveWidgets(g2, s, screenWidth);
+
 		// --- Waypoint apontando para o alvo da missão ---
 		drawWaypoint(g2, s, screenWidth);
 
 		// --- Prompt de interação (R) para NPC próximo ---
 		drawInteractionPrompts(g2, s);
+	}
+
+	/**
+	 * Desembrulha o objetivo ativo de um possível DialogueObjective/SequenceObjective,
+	 * retornando o estágio atualmente em andamento (ou o próprio objetivo).
+	 */
+	private static com.traduvertgames.quest.RPGObjective unwrapObjective() {
+		com.traduvertgames.quest.RPGObjective o = QuestManager.getCurrentObjective();
+		int guard = 0;
+		while (o != null && guard < 8) {
+			if (o instanceof com.traduvertgames.quest.DialogueObjective) {
+				o = ((com.traduvertgames.quest.DialogueObjective) o).getDelegate();
+			} else if (o instanceof com.traduvertgames.quest.SequenceObjective) {
+				o = ((com.traduvertgames.quest.SequenceObjective) o).getActive();
+			} else {
+				break;
+			}
+			guard++;
+		}
+		return o;
+	}
+
+	/**
+	 * Widgets de acompanhamento de objetivos variados: barra de canalização
+	 * (objetivos de defesa) e timer grande centralizado no topo (sobrevivência).
+	 */
+	private static void drawObjectiveWidgets(Graphics2D g2, int s, int screenWidth) {
+		com.traduvertgames.quest.RPGObjective o = unwrapObjective();
+		if (o == null) {
+			return;
+		}
+		if (o instanceof com.traduvertgames.quest.HoldObjective) {
+			com.traduvertgames.quest.HoldObjective hold = (com.traduvertgames.quest.HoldObjective) o;
+			if (!hold.isActive()) {
+				return;
+			}
+			int barY = 18 * s / 4 + 10;
+			int barW = 120 * s / 4 + 20;
+			int barH = 6 * s / 4 + 2;
+			int barX = (screenWidth - barW) / 2;
+			g2.setColor(new Color(6, 9, 16, 190));
+			g2.fillRoundRect(barX - 4, barY - 4, barW + 8, barH + 8, 6, 6);
+			g2.setColor(new Color(66, 66, 66));
+			g2.fillRoundRect(barX, barY, barW, barH, 3, 3);
+			double fill = hold.getChannelProgress();
+			int filled = (int) (barW * Math.min(1.0, Math.max(0.0, fill)));
+			Color barColor = hold.isUnderAttack() ? new Color(244, 67, 54) : new Color(76, 175, 80);
+			if (filled > 0) {
+				g2.setColor(barColor);
+				g2.fillRoundRect(barX, barY, filled, barH, 3, 3);
+			}
+			g2.setColor(Color.WHITE);
+			g2.setFont(new Font("SansSerif", Font.BOLD, 8 * s / 4 + 2));
+			String label = hold.isUnderAttack() ? "DEFESA SOB ATAQUE!" : "Defendendo... " + hold.getPercentText();
+			int labelW = g2.getFontMetrics().stringWidth(label);
+			g2.drawString(label, (screenWidth - labelW) / 2, barY - 6);
+		} else if (o instanceof com.traduvertgames.quest.SurviveObjective) {
+			com.traduvertgames.quest.SurviveObjective surv = (com.traduvertgames.quest.SurviveObjective) o;
+			if (surv.isComplete()) {
+				return;
+			}
+			int seconds = surv.getRemainingSeconds();
+			Font timerFont = new Font("SansSerif", Font.BOLD, 14 * s / 4 + 2);
+			g2.setFont(timerFont);
+			String timerText = seconds + "s";
+			int timerW = g2.getFontMetrics().stringWidth(timerText);
+			int timerX = (screenWidth - timerW) / 2;
+			int timerY = 26 * s / 4 + 12;
+			g2.setColor(new Color(6, 9, 16, 180));
+			g2.fillRoundRect(timerX - 8, timerY - 12, timerW + 16, 18, 6, 6);
+			g2.setColor(seconds <= 10 ? new Color(255, 82, 82) : new Color(129, 199, 132));
+			g2.drawString(timerText, timerX, timerY);
+		}
 	}
 
 	private static void drawWaypoint(Graphics2D g2, int s, int screenWidth) {

@@ -10,6 +10,7 @@ import com.traduvertgames.entities.QuestBeacon;
 import com.traduvertgames.entities.QuestItem;
 import com.traduvertgames.entities.QuestNPC;
 import com.traduvertgames.main.Game;
+import com.traduvertgames.world.World;
 
 public final class QuestManager {
     private static final RPGObjective NULL_OBJECTIVE = new NullObjective();
@@ -85,8 +86,11 @@ public final class QuestManager {
             // Fase 1: conversar com a Comandante Ava e coletar os artefatos.
             return new ContactObjective();
         case 2:
-            // Fase 2: falar com a Engenheira Nia antes de caçar o Warbringer.
-            return new DialogueObjective(new BossHuntObjective(), "Engenheira Nia");
+            // Fase 2: falar com a Engenheira Nia, defender o ponto de
+            // estabilização e então caçar o Warbringer.
+            return new DialogueObjective(
+                    new SequenceObjective(new HoldObjective(), new BossHuntObjective()),
+                    "Engenheira Nia");
         case 3:
             // Fase 3: pesquisar com Ivo antes de ativar o ritual.
             return new DialogueObjective(new RitualObjective(), "Pesquisador Ivo");
@@ -97,18 +101,21 @@ public final class QuestManager {
             // Fase 5: recuperar os dados com ajuda do Ivo.
             return new DialogueObjective(new DataRecoveryObjective(), "Pesquisador Ivo");
         case 6:
-            // Fase 6: falar com Ava antes de derrubar o OVERSEER, o chefe supervisor.
+            // Fase 6: falar com Ava, resistir às ondas do perímetro e então
+            // derrubar o OVERSEER, o chefe supervisor.
             return new DialogueObjective(
-                    new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor"),
+                    new SequenceObjective(
+                            new SurviveObjective("Resistir no perímetro", "A torre do Supervisor só abre após o perímetro ser liberado. Resista às ondas até a evacuação ser autorizada.", 45),
+                            new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor")),
                     "Comandante Ava");
         case 7:
             // Fase 7: falar com Ava, ouvir o desertor do subsolo, sabotar os
             // geradores e então destruir o Guardião do Subsolo.
             return new DialogueObjective(new SabotageObjective(), "Comandante Ava");
         case 8:
-            // Fase final da campanha: o briefing final da Ava e a destruição
-            // do OVERSEER PRIME, a mente que comanda todas as máquinas.
-            return new InfiltratorObjective();
+            // Fase final da campanha: o briefing da Ava, a escolta do
+            // informante até o núcleo e a destruição do OVERSEER PRIME.
+            return new SequenceObjective(new InfiltratorObjective(), new EscortObjective());
         case 9:
             // Modo sobrevivência pós-campanha: ondas infinitas.
             return new NullObjective();
@@ -147,6 +154,38 @@ public final class QuestManager {
         currentObjective.onEnemyKilled(enemy);
     }
 
+    /** Registro de um NPC de escolta (usado pelo {@link EscortObjective}). */
+    public static void registerEscort(com.traduvertgames.entities.EscortNpc npc) {
+        if (currentObjective instanceof EscortObjective) {
+            ((EscortObjective) currentObjective).onEscortSpawned(npc);
+        } else if (currentObjective instanceof SequenceObjective) {
+            ((SequenceObjective) currentObjective).onEscortEvent(stage -> stage.onEscortSpawned(npc));
+        }
+    }
+
+    /** O escoltado foi atingido até a morte: a escolta falha e a fase recomeça. */
+    public static void escortFailed(com.traduvertgames.entities.EscortNpc npc) {
+        if (currentObjective instanceof EscortObjective) {
+            ((EscortObjective) currentObjective).onEscortFailed(npc);
+        } else if (currentObjective instanceof SequenceObjective) {
+            ((SequenceObjective) currentObjective).onEscortEvent(stage -> stage.onEscortFailed(npc));
+        }
+    }
+
+    /** O escoltado chegou ao ponto de fuga: a etapa de escolta conclui. */
+    public static void escortArrived(com.traduvertgames.entities.EscortNpc npc) {
+        if (currentObjective instanceof EscortObjective) {
+            ((EscortObjective) currentObjective).onEscortArrived(npc);
+        } else if (currentObjective instanceof SequenceObjective) {
+            ((SequenceObjective) currentObjective).onEscortEvent(stage -> stage.onEscortArrived(npc));
+        }
+    }
+
+    /** Objetivo em andamento (expõe o ativo de sequências para a HUD). */
+    public static RPGObjective getCurrentObjective() {
+        return currentObjective;
+    }
+
     /** Notifica a missão ativa que o jogador iniciou uma conversa. */
     public static void notifyDialogueStarted(InteractiveNpc npc) {
         currentObjective.onDialogueStarted(npc);
@@ -157,10 +196,12 @@ public final class QuestManager {
         currentObjective.onDialogueFinished(npc);
     }
 
+    /**
+     * Um chefe de fase foi detectado no mapa: registra a presença nos
+     * objetivos de caça, atravessando wrappers (Dialogue/Sequence).
+     */
     public static void notifyBossSpotted() {
-        if (currentObjective instanceof BossHuntObjective) {
-            ((BossHuntObjective) currentObjective).registerBossPresence();
-        }
+        currentObjective.onBossSpotted();
     }
 
     public static String getObjectiveTitle() {
@@ -203,6 +244,15 @@ public final class QuestManager {
     public static void update() {
         currentObjective.update();
         processPendingRemovals();
+    }
+
+    /**
+     * Reinicia a fase atual do jogador (usado quando a escolta falha ou outro
+     * objetivo exige reintentar a fase). Recarrega o mapa preservando o
+     * progresso da campanha e reinicia a missão da fase.
+     */
+    public static void restartCurrentLevel() {
+        World.restartGame("level" + currentLevel + ".png");
     }
 
     private static void scheduleRemoval(Entity entity) {
