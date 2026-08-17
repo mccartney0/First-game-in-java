@@ -203,31 +203,31 @@ public final class ShopManager {
 			purchaseFeedback = "Fada curadora acoplada!";
 			break;
 		case SKIN_DOURADO:
-			if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.DOURADO)) {
-				Game.addScore(-item.price);
-				purchaseFeedback = "Skin Dourado aplicada ao companion!";
-				SoundManager.play(SoundManager.Event.COMPANION_PURCHASE);
-			} else {
+				if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.DOURADO)) {
+					Game.addScore(-item.price);
+					purchaseFeedback = "Skin Dourado aplicada ao companion!";
+					SoundManager.play(SoundManager.Event.SKIN_APPLY);
+				} else {
 				purchaseSucceeded = false;
 				purchaseFeedback = "Compre um companion antes da skin!";
 			}
 			break;
 		case SKIN_NEON:
-			if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.NEON)) {
-				Game.addScore(-item.price);
-				purchaseFeedback = "Skin Neon aplicada ao companion!";
-				SoundManager.play(SoundManager.Event.COMPANION_PURCHASE);
-			} else {
+				if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.NEON)) {
+					Game.addScore(-item.price);
+					purchaseFeedback = "Skin Neon aplicada ao companion!";
+					SoundManager.play(SoundManager.Event.SKIN_APPLY);
+				} else {
 				purchaseSucceeded = false;
 				purchaseFeedback = "Compre um companion antes da skin!";
 			}
 			break;
 		case SKIN_CARMESIM:
-			if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.CARMESIM)) {
-				Game.addScore(-item.price);
-				purchaseFeedback = "Skin Carmesim aplicada ao companion!";
-				SoundManager.play(SoundManager.Event.COMPANION_PURCHASE);
-			} else {
+				if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.CARMESIM)) {
+					Game.addScore(-item.price);
+					purchaseFeedback = "Skin Carmesim aplicada ao companion!";
+					SoundManager.play(SoundManager.Event.SKIN_APPLY);
+				} else {
 				purchaseSucceeded = false;
 				purchaseFeedback = "Compre um companion antes da skin!";
 			}
@@ -365,10 +365,91 @@ public final class ShopManager {
 					panelY + panelHeight + 26);
 		}
 
+		// Preview da skin de companion selecionada (rodada companions-ux):
+		// um mini orbe mostra a cor exata da skin antes de comprar.
+		renderSkinPreview(g, screenWidth, screenHeight);
+
 		g.setFont(hintFont);
 		g.setColor(new Color(200, 200, 200));
 			String hint = "Setas/A-D/W-S para navegar — Enter para comprar (Enter de novo fecha) — ESC para fechar";
 		g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2,
 				panelY + panelHeight + 56);
+	}
+
+	/** Preview da skin/companion selecionado (rodada 19): o orbe reutiliza a cor
+	 *  real do companion (com a skin, se já for dono dela; caso contrário,
+	 *  simula a cor da skin comprada) e um cartão mostra o nome do tipo. */
+	private static void renderSkinPreview(java.awt.Graphics g, int screenWidth,
+			int screenHeight) {
+		if (selection >= ITEMS.length) {
+			return;
+		}
+		ShopItem item = ITEMS[selection];
+		com.traduvertgames.entities.Companion.CompanionSkin skin = null;
+		String skinName = null;
+		switch (item) {
+		case SKIN_DOURADO:
+			skin = com.traduvertgames.entities.Companion.CompanionSkin.DOURADO;
+			skinName = "Pré-visualização: Dourado";
+			break;
+		case SKIN_NEON:
+			skin = com.traduvertgames.entities.Companion.CompanionSkin.NEON;
+			skinName = "Pré-visualização: Neon ciano";
+			break;
+		case SKIN_CARMESIM:
+			skin = com.traduvertgames.entities.Companion.CompanionSkin.CARMESIM;
+			skinName = "Pré-visualização: Carmesim";
+			break;
+		default:
+			// Companions e demais itens também mostram o pet atual: se já houver
+			// um companion ativo, o orbe reflete a cor dele em tempo real.
+			com.traduvertgames.entities.Companion active =
+					com.traduvertgames.entities.Companion.getActive();
+			if (active == null) {
+				return;
+			}
+			skin = null;
+			skinName = "Ativo: " + active.typeLabel();
+			break;
+		}
+		Color preview;
+		if (skin == null) {
+			com.traduvertgames.entities.Companion active =
+					com.traduvertgames.entities.Companion.getActive();
+			preview = active != null ? active.colorForHud() : new Color(255, 203, 5);
+		} else {
+			// Simula a cor da skin antes de comprar (sem alterar o pet ativo).
+			com.traduvertgames.entities.Companion active =
+					com.traduvertgames.entities.Companion.getActive();
+			com.traduvertgames.entities.Companion.CompanionSkin previous =
+					active != null ? active.getSkin() : null;
+			if (active != null) {
+				active.setSkin(skin);
+			}
+			preview = active != null ? active.colorForHud() : new Color(255, 203, 5);
+			if (active != null) {
+				active.setSkin(previous != null ? previous
+						: com.traduvertgames.entities.Companion.CompanionSkin.PADRAO);
+			}
+		}
+		int orbX = screenWidth / 2 + 220;
+		int orbY = 200;
+		int orbSize = 36;
+		// Aura e anel pulsante imitando o estilo do companion no jogo.
+		g.setColor(new Color(preview.getRed(), preview.getGreen(), preview.getBlue(), 80));
+		g.fillOval(orbX - 8, orbY - 8, orbSize + 16, orbSize + 16);
+		g.setColor(new Color(preview.getRed(), preview.getGreen(), preview.getBlue(), 120));
+		g.drawOval(orbX - 5, orbY - 5, orbSize + 10, orbSize + 10);
+		g.setColor(preview);
+		g.fillOval(orbX + 4, orbY + 4, orbSize - 8, orbSize - 8);
+		g.setColor(Color.WHITE);
+		g.fillOval(orbX + 8, orbY + 7, 6, 6);
+		// Painel de apoio atrás da amostra.
+		g.setFont(new Font("arial", Font.PLAIN, 13));
+		int w = g.getFontMetrics().stringWidth(skinName);
+		g.setColor(new Color(14, 18, 28, 220));
+		g.fillRoundRect(orbX - w / 2 - 14, orbY + orbSize + 6, w + 28, 24, 10, 10);
+		g.setColor(Color.yellow);
+		g.drawString(skinName, orbX - w / 2, orbY + orbSize + 22);
 	}
 }

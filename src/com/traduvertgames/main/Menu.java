@@ -238,10 +238,16 @@ public class Menu {
 		currentScreenStatic = Screen.PAUSE;
 	}
 
-	/** Volta da tela de pausa para o jogo. */
+	/** Volta da tela de pausa para o jogo.
+	 *  Só altera o estado para NORMAL quando a tela aberta do menu era a tela
+	 *  de pausa (currentScreenStatic==PAUSE); voltar de outra tela (game
+	 *  over, loja, seleção de fase) para o menu não deve despausar o jogo. */
 	public static void closePauseScreen() {
 		pause = false;
-		Game.gameState = "NORMAL";
+		if (currentScreenStatic == Screen.PAUSE) {
+			Game.gameState = "NORMAL";
+			currentScreenStatic = Screen.MAIN;
+		}
 	}
 
 	private static Screen currentScreenStatic = Screen.MAIN;
