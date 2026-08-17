@@ -729,7 +729,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
 					java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
 			g2.drawImage(image, offsetX, offsetY, offsetX + scaledWidth, offsetY + scaledHeight, null);
-			g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, null);
+			// O g2 é descartado logo após (fim do frame); não é necessário resetar
+			// o hint — e passar null não é compatível com o JDK do Windows
+			// (IllegalArgumentException: null is not compatible with Image
+			// interpolation method key).
 		} else {
 			g.drawImage(image, offsetX, offsetY, offsetX + scaledWidth, offsetY + scaledHeight, null);
 		}
