@@ -98,8 +98,9 @@ public final class MissionHud {
 	/**
 	 * Desembrulha o objetivo ativo de um possível DialogueObjective/SequenceObjective,
 	 * retornando o estágio atualmente em andamento (ou o próprio objetivo).
+	 * Visível no pacote para o marcador do alvo no minimapa.
 	 */
-	private static com.traduvertgames.quest.RPGObjective unwrapObjective() {
+	static com.traduvertgames.quest.RPGObjective findActiveObjective() {
 		com.traduvertgames.quest.RPGObjective o = QuestManager.getCurrentObjective();
 		int guard = 0;
 		while (o != null && guard < 8) {
@@ -113,6 +114,13 @@ public final class MissionHud {
 			guard++;
 		}
 		return o;
+	}
+
+	/**
+	 * Alias público do desembrulhamento para uso do {@link MiniMap}.
+	 */
+	static com.traduvertgames.quest.RPGObjective unwrapObjective() {
+		return findActiveObjective();
 	}
 
 	/**
@@ -212,12 +220,24 @@ public final class MissionHud {
 			double arrowDist = Math.min(WAYPOINT_DISTANCE * 0.85, distance);
 			double arrowX = centerX + Math.cos(angle) * arrowDist;
 			double arrowY = centerY + Math.sin(angle) * arrowDist;
-			// Clampa à área visível, com margem de segurança da borda
+			// Clampa à área visível, com margem de segurança da borda.
 			int visibleW = Game.WIDTH * s;
 			int visibleH = Game.HEIGHT * s;
 			int margin = 16;
 			arrowX = Math.max(margin, Math.min(visibleW - margin, arrowX));
 			arrowY = Math.max(margin, Math.min(visibleH - margin, arrowY));
+			// A seta não deve ficar sobre o card da missão (canto superior
+			// esquerdo): quando o clamp a empurra para a área do card, ela é
+			// deslocada para baixo do card, mantendo a direção do alvo.
+			int cardWidth = Math.min(visibleW - margin * 2, 250 * s / 4 + 40);
+			int cardHeight = 26 * s / 4 + 6;
+			if (arrowX <= margin + cardWidth && arrowY <= margin + cardHeight + 20) {
+				arrowX = Math.min(visibleW - margin, Math.max(margin, arrowX));
+				arrowY = Math.min(visibleH - margin, arrowY);
+				if (arrowY <= margin + cardHeight + 20) {
+					arrowY = Math.min(visibleH - margin, margin + cardHeight + 30);
+				}
+			}
 			Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
 			g2.setFont(smallFont);
 			String distLabel = String.format("%dm", (int) (distance / 16));
@@ -247,9 +267,10 @@ public final class MissionHud {
 	/**
 	 * Localiza a entidade (NPC interativo, beacon ou similar) cujo nome
 	 * corresponde ao hint do objetivo. Usa o nome dos NPCs interativos e
-	 * a cor como critério para beacons.
+	 * a cor como critério para beacons. Visível no pacote para o
+	 * marcador do alvo no minimapa.
 	 */
-	private static Entity findTargetEntity(String targetName) {
+	static Entity findTargetEntity(String targetName) {
 		for (int i = 0; i < Game.entities.size(); i++) {
 			Entity e = Game.entities.get(i);
 			if (e instanceof InteractiveNpc && targetName.equals(((InteractiveNpc) e).getName())) {

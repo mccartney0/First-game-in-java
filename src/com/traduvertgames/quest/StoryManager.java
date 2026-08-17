@@ -89,6 +89,33 @@ public final class StoryManager {
 				}
 			}
 		}
+		// O tile preferido e o anel de raio 8 falharam (mapa cercado de paredes,
+		// como o nível 1): varre o mapa inteiro por ordem de distância do tile
+		// preferido e escolhe o primeiro chão válido — assim o NPC nunca fica
+		// grudado no canto de spawn, que era a reclamação do jogador.
+		int bestTx = -1;
+		int bestTy = -1;
+		int bestDist = Integer.MAX_VALUE;
+		for (int ty = 0; ty < World.HEIGHT; ty++) {
+			for (int tx = 0; tx < World.WIDTH; tx++) {
+				// Chão válido: o World aplica FloorTile em todos os pixels sem
+				// caso específico, então tile null não persiste — basta rejeitar
+				// paredes (inclui tiles fora dos limites do mapa).
+				if (World.isWallTile(tx, ty)) {
+					continue;
+				}
+				int dist = Math.abs(tx - preferred[0]) + Math.abs(ty - preferred[1]);
+				if (dist < bestDist) {
+					bestDist = dist;
+					bestTx = tx;
+					bestTy = ty;
+				}
+			}
+		}
+		if (bestTx >= 0) {
+			e.setX(bestTx * 16);
+			e.setY(bestTy * 16);
+		}
 		// Sem alternativa válida: mantém a posição original (seguro).
 	}
 

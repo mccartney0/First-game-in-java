@@ -60,6 +60,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         public static int MAX_LEVEL = 8;
 	private BufferedImage image;
 
+	/** Exibe o buffer interno para diagnóstico de HUD em testes automatizados. */
+	public static BufferedImage getBufferImage() {
+		return instance != null ? instance.image : null;
+	}
+
 	public static List<Entity> entities;
 	public static List<Enemy> enemies;
 	public static List<Bullet> bullet;

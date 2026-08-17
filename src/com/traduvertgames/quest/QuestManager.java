@@ -92,14 +92,25 @@ public final class QuestManager {
                     new SequenceObjective(new HoldObjective(), new BossHuntObjective()),
                     "Engenheira Nia");
         case 3:
-            // Fase 3: pesquisar com Ivo antes de ativar o ritual.
-            return new DialogueObjective(new RitualObjective(), "Pesquisador Ivo");
+            // Fase 3: conversar com Ivo no laboratório, resistir à invasão das
+            // máquinas que tentam completar o ritual e então desativar os três
+            // obeliscos do Círculo do Ritual.
+            return new DialogueObjective(
+                    new SequenceObjective(
+                            new SurviveObjective("O laboratório sob cerco", "O Ivo ativa o scanner de obeliscos, mas as máquinas detectam a operação. Resista até o perímetro ser seguro.", 30),
+                            new RitualObjective()),
+                    "Pesquisador Ivo");
         case 4:
-            // Fase 4: missão de resgate com apoio do Armeiro.
+            // Fase 4: com o apoio do Armeiro, evacuar os sobreviventes presos
+            // no Núcleo da Colônia e garantir a extração.
             return new DialogueObjective(new RescueObjective(), "Armeiro Mercúrio");
         case 5:
-            // Fase 5: recuperar os dados com ajuda do Ivo.
-            return new DialogueObjective(new DataRecoveryObjective(), "Pesquisador Ivo");
+            // Fase 5: recuperar os núcleos de dados do Datacenter Nexus com
+            // ajuda do Ivo e então derrubar o Warbringer que guarda o servidor.
+            return new DialogueObjective(
+                    new SequenceObjective(new DataRecoveryObjective(),
+                            new BossHuntObjective("Derrubar o Warbringer", "O Warbringer protege o servidor central. Neutralize a máquina para finalizar a recuperação dos dados.", "o Warbringer")),
+                    "Pesquisador Ivo");
         case 6:
             // Fase 6: falar com Ava, resistir às ondas do perímetro e então
             // derrubar o OVERSEER, o chefe supervisor.
@@ -110,8 +121,12 @@ public final class QuestManager {
                     "Comandante Ava");
         case 7:
             // Fase 7: falar com Ava, ouvir o desertor do subsolo, sabotar os
-            // geradores e então destruir o Guardião do Subsolo.
-            return new DialogueObjective(new SabotageObjective(), "Comandante Ava");
+            // geradores com a estabilização do beacon do setor e então destruir
+            // o Guardião do Subsolo.
+            return new DialogueObjective(
+                    new SequenceObjective(new SabotageObjective(),
+                            new HoldObjective("Isolar o núcleo do Guardião", "O beacon de contenção precisa de energia estável. Defenda-o até a estabilização permitir o acesso à câmara do chefe.")),
+                    "Comandante Ava");
         case 8:
             // Fase final da campanha: o briefing da Ava, a escolta do
             // informante até o núcleo e a destruição do OVERSEER PRIME.
