@@ -29,6 +29,23 @@ public class Rodada22bTest {
 	}
 
 	public static void main(String[] args) throws Exception {
+		// Este teste altera maxLevelReached. Preserva o save real mesmo quando
+		// termina por System.exit, evitando apagar o progresso do jogador.
+		final java.nio.file.Path savePath = SaveManager.SAVE_FILE.toPath();
+		final boolean saveExisted = java.nio.file.Files.exists(savePath);
+		final byte[] originalSave = saveExisted ? java.nio.file.Files.readAllBytes(savePath) : null;
+		Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+			try {
+				if (saveExisted) {
+					java.nio.file.Files.write(savePath, originalSave);
+				} else {
+					java.nio.file.Files.deleteIfExists(savePath);
+				}
+			} catch (java.io.IOException ex) {
+				System.err.println("Nao foi possivel restaurar o save do teste: " + ex.getMessage());
+			}
+		}, "restore-save-after-test"));
+
 		// Desativar audio: remover pools de clips para nao travar sem dispositivo.
 		com.traduvertgames.main.SoundManager.unload();
 		Game g = new Game();

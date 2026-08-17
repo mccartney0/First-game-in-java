@@ -374,9 +374,10 @@ Game.enemies.add(en);
         }
 
         private static void ensurePhaseBoss(int levelNumber) {
-                // Fases 7 (Subsolo) e 8 (Núcleo Central) já carregam o chefe
-                // fixo diretamente do mapa (GUARDIAN e OVERSEER-PRIME).
-                if (levelNumber == 7 || levelNumber == 8 || levelNumber < 2 || mapHasBoss()) {
+		// Apenas as fases 2, 5 e 6 usam BossHuntObjective com spawn
+		// controlado. As fases 7 e 8 têm chefe fixo no mapa; as demais não
+		// possuem etapa de chefe e não devem receber um boss aleatório.
+		if (!isDeferredBossLevel(levelNumber) || mapHasBoss()) {
                         return;
                 }
 		// Fases encadeadas: o chefe só entra quando a etapa de caça começa.

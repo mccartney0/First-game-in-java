@@ -72,9 +72,10 @@ public class SequenceObjective implements RPGObjective {
 
 	@Override
 	public void onLevelLoaded() {
-		for (RPGObjective stage : stages) {
-			stage.onLevelLoaded();
-		}
+		// Recursos programáticos (como o NPC de escolta) só podem nascer na
+		// etapa em que serão usados. Criar todas as etapas antecipadamente fazia
+		// o NPC da fase 8 ser registrado enquanto Infiltrator ainda estava ativo.
+		getActive().onLevelLoaded();
 	}
 
 	@Override
@@ -83,6 +84,7 @@ public class SequenceObjective implements RPGObjective {
 		// Avança para o próximo estágio quando o atual conclui.
 		while (activeIndex < stages.size() - 1 && getActive().isComplete()) {
 			activeIndex++;
+			getActive().onLevelLoaded();
 			SoundManager.play(SoundManager.Event.LEVELUP);
 		}
 	}
@@ -99,12 +101,21 @@ public class SequenceObjective implements RPGObjective {
 
 	@Override
 	public void onBeaconSpawned(QuestBeacon beacon) {
-		getActive().onBeaconSpawned(beacon);
+		// Beacons pertencem ao mapa inteiro e podem ser usados por uma etapa
+		// posterior. Registrar apenas no estágio ativo fazia a fase 3 chegar ao
+		// ritual sem conhecer os obeliscos carregados durante a sobrevivência.
+		for (RPGObjective stage : stages) {
+			stage.onBeaconSpawned(beacon);
+		}
 	}
 
 	@Override
 	public void onBeaconActivated(QuestBeacon beacon) {
-		getActive().onBeaconActivated(beacon);
+		// A ativação também precisa alcançar a etapa futura: se o jogador
+		// interagir antes da troca de objetivo, esse progresso continua válido.
+		for (RPGObjective stage : stages) {
+			stage.onBeaconActivated(beacon);
+		}
 	}
 
 	@Override
@@ -210,6 +221,9 @@ public class SequenceObjective implements RPGObjective {
 		if (activeIndex >= stages.size()) {
 			activeIndex = stages.size() - 1;
 		}
+		// O mundo já foi carregado quando o SaveManager restaura a missão.
+		// Inicializa os recursos da etapa recuperada (ex.: escolta da fase 8).
+		getActive().onLevelLoaded();
 	}
 
 	/** Placeholder usado quando a sequência está vazia (nunca deve acontecer). */
