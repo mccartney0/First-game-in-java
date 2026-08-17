@@ -226,6 +226,29 @@ Game.enemies.add(en);
 									Enemy.Variant.GUARDIAN, false);
 							Game.entities.add(en);
 							Game.enemies.add(en);
+						} else if (pixelAtual == 0xFFFFC800) {
+							// Tropas de elite procedurais (rodada 24b): variante sólida
+							// determinada deterministicamente pela posição, com aura
+							// dourada e vida/dano +30% — nunca conta como chefe.
+							Enemy.Variant eliteVariant;
+							switch ((xx + yy) % 4) {
+								case 0:
+									eliteVariant = Enemy.Variant.WARDEN;
+									break;
+								case 1:
+									eliteVariant = Enemy.Variant.SENTINEL;
+									break;
+								case 2:
+									eliteVariant = Enemy.Variant.RAVAGER;
+									break;
+								default:
+									eliteVariant = Enemy.Variant.SCOUT;
+									break;
+							}
+							Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+									eliteVariant, false, true);
+							Game.entities.add(en);
+							Game.enemies.add(en);
 						} else if (pixelAtual == 0xFFD01937) {
 						// Supervisor-Prime: a mente da colônia, chefe final da campanha (fase 8).
 						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,

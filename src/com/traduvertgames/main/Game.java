@@ -1507,6 +1507,9 @@ if (!hidingHud) {
 		com.traduvertgames.entities.Companion.clear();
 		this.levelPlus = 0;
 		CUR_LEVEL = 1;
+		// Recorde de profundidade (rodada 24b): novo jogo reseta o recorde em memória;
+		// o recorde gravado no save persiste — ao carregar um slot ele é restaurado.
+		com.traduvertgames.main.SaveManager.resetDeepRecord();
 		questCompletedPending = false;
 		shopPendingOpened = false;
 		showLevelTransition = 0;
@@ -1784,6 +1787,9 @@ if (!hidingHud) {
 		if (instance != null) {
 			instance.levelPlus = 1;
 		}
+		// Recorde de profundidade (rodada 24b): registrar a profundidade 1 ao
+		// entrar no modo infinito — persiste no slot e aparece no menu principal.
+		com.traduvertgames.main.SaveManager.setDeepRecord(1);
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		startProceduralLevel(1);
 		WaveManager.startArena();
@@ -1814,6 +1820,9 @@ if (!hidingHud) {
 		}
 		instance.levelPlus += 1;
 		int depth = instance.levelPlus;
+		// Recorde de profundidade (rodada 24b): o avanço de ciclo atualiza o
+		// recorde do slot (só grava se for maior que o anterior).
+		com.traduvertgames.main.SaveManager.setDeepRecord(depth);
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		applyProgressBonuses();
 		// Card de estatísticas do ciclo que acabou de terminar.

@@ -162,6 +162,7 @@ public class Enemy extends Entity {
     private final Color projectileColor;
     private final Color auraColor;
     private final boolean boss;
+    private final boolean elite;
     private boolean furyAnnounced = false;
     private int furySpreadCooldown = 0;
 
@@ -184,10 +185,20 @@ public class Enemy extends Entity {
     }
 
     public Enemy(int x, int y, int width, int height, BufferedImage sprite, Variant variant, boolean boss) {
+        this(x, y, width, height, sprite, variant, boss, false);
+    }
+
+    /**
+     * Construtor com status de elite (rodada 24b): tropas de choque do modo
+     * infinito, com vida e dano de projétil 30% maiores e aura dourada
+     * pulsante. Nunca conta como chefe — é um multiplicador de variante.
+     */
+    public Enemy(int x, int y, int width, int height, BufferedImage sprite, Variant variant, boolean boss, boolean elite) {
         super(x, y, width, height, null);
         this.variant = variant;
         this.boss = boss;
-        this.maxLife = variant.getMaxLife();
+        this.elite = elite;
+        this.maxLife = variant.getMaxLife() * (elite ? 1.3 : 1.0);
         this.life = this.maxLife;
         sprites = new BufferedImage[2];
         if (variant == Variant.PHANTOM) {
@@ -205,13 +216,14 @@ public class Enemy extends Entity {
         this.chaseSpeed = BASE_CHASE_SPEED * variant.getSpeedMultiplier();
         this.strafeSpeed = BASE_STRAFE_SPEED * variant.getStrafeMultiplier();
         this.projectileSpeed = variant.getProjectileSpeed();
-        this.projectileDamage = variant.getProjectileDamage();
         this.projectileSize = variant.getProjectileSize();
-        this.attackCooldownBase = Math.max(variant.getAttackCooldown(), 30);
+        this.projectileDamage = variant.getProjectileDamage();
+        this.damageMultiplierElite = elite ? 1.3 : 1.0;
+        this.attackCooldownBase = Math.max((int) Math.round(variant.getAttackCooldown() * (elite ? 0.9 : 1.0)), 30);
         this.specialCooldownBase = Math.max(0, variant.getSpecialCooldown());
         this.specialRange = variant.getSpecialRange();
         this.projectileColor = variant.getProjectileColor();
-        this.auraColor = variant.getAuraColor();
+        this.auraColor = elite ? new Color(255, 200, 0) : variant.getAuraColor();
         if (this.specialCooldownBase > 0) {
             specialCooldown = Game.rand.nextInt(this.specialCooldownBase);
         }
@@ -386,6 +398,7 @@ public class Enemy extends Entity {
 
     private double lifeBoost = 0.0;
     private double damageBoost = 1.0;
+    private double damageMultiplierElite;
 
     /** @return vida total considerando o reforço de vida do modo sobrevivência. */
     public double getTotalLife() {
@@ -398,14 +411,14 @@ public class Enemy extends Entity {
 
 	/** @return dano efetivo de projétil considerando o reforço do modo sobrevivência. */
 	public double getEffectiveProjectileDamage() {
-		return this.projectileDamage * this.damageBoost;
+		return this.projectileDamage * this.damageBoost * this.damageMultiplierElite;
 	}
 
 	/** XP base concedido ao derrotar este inimigo (bônus para chefes e reforçados). */
 	private int calculateXpGain() {
 		int base = this.boss ? 100 : 10;
 		int combo = com.traduvertgames.main.Game.getComboMultiplier();
-		return Math.max(1, (int) ((base + this.lifeBoost * 0.5)) * Math.min(combo, 5));
+        return Math.max(1, (int) ((base + this.lifeBoost * 0.5) * this.damageMultiplierElite) * Math.min(combo, 5));
 	}
 
     private static Variant pickRandomVariant() {
@@ -1233,6 +1246,11 @@ public class Enemy extends Entity {
         return boss;
     }
 
+    /** Status de elite (rodada 24b): tropas de choque procedurais do modo infinito. */
+    public boolean isElite() {
+        return elite;
+    }
+
     public void render(Graphics g) {
         // Transição de fase: inimigos ficam invisíveis para limpar a tela
         // enquanto o banner de conclusão e o fade preto substituem a cena.
@@ -1258,6 +1276,14 @@ public class Enemy extends Entity {
                 g.setColor(new Color(100, 255, 100, 140));
                 g.drawOval(this.getX() - 1 - Camera.x, this.getY() - 1 - Camera.y, 18, 18);
             }
+        }
+        if (elite) {
+            // Tropas de choque procedurais (rodada 24b): aura dourada pulsante,
+            // sinal visual de que é um inimigo com vida e dano +30%.
+            int pulse = (frames % 40 < 20) ? 190 : 130;
+            int expand = (frames % 40 < 20) ? 2 : 0;
+            g.setColor(new Color(255, 200, 0, pulse));
+            g.drawOval(this.getX() - 1 - expand - Camera.x, this.getY() - 1 - expand - Camera.y, 18 + expand * 2, 18 + expand * 2);
         }
     }
 

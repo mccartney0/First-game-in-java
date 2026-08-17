@@ -61,7 +61,10 @@ public final class SaveManager {
 	private static final File SAVE_TMP = new File("saves.tmp");
 
 	/** Versão atual do esquema de save emitida na escrita. */
-	public static final int SCHEMA_VERSION = 3;
+	public static final int SCHEMA_VERSION = 4;
+
+	/** Chave do recorde de profundidade do modo infinito por slot (rodada 24b). */
+	private static final String DEEP_RECORD_KEY = "deepRecord";
 
 	/** Chave do snapshot da melhor partida no root do save (global, não por slot). */
 	private static final String BEST_RUN_KEY = "bestRun";
@@ -76,7 +79,8 @@ public final class SaveManager {
 	/** Chave do mapa de flags de diálogos por NPC/fase no progress do slot. */
 	private static final String NPC_DIALOGUES_KEY = "npcDialogues";
 
-	/** Snapshot da melhor partida carregado do arquivo (em memória). */
+	/** Recorde de profundidade carregado do slot ativo (rodada 24b). */
+	private static int deepRecord = 0;
 	private static int bestRunKills = 0;
 	private static long bestRunTimeMs = 0;
 	private static int bestRunCombo = 0;
@@ -120,6 +124,10 @@ public final class SaveManager {
 		slot.put("armaAtual", Player.getCurrentWeaponOrdinal());
 		slot.put("armasDesbloqueadas", Player.getWeaponUnlockMask());
 		slot.put("survivalRecord", com.traduvertgames.main.WaveManager.getSurvivalRecord());
+		// Recorde de profundidade (rodada 24b): a maior profundidade alcançada
+		// no modo infinito deste slot — gravado no nível superior do slot e
+		// herdado pela sessão (construída logo abaixo).
+		slot.put(DEEP_RECORD_KEY, Math.max(toInt(slot.get(DEEP_RECORD_KEY)), deepRecord));
 
 		// Atualiza o recorde global da melhor partida: se qualquer métrica da
 		// fase que acabou de terminar superar o snapshot anterior, o bestRun
@@ -173,6 +181,7 @@ public final class SaveManager {
 		// no menu de carregar sem precisar desaninhar o mapa.
 		slot.put("survivalRecord", com.traduvertgames.main.WaveManager.getSurvivalRecord());
 		slot.put("timestamp", currentTimestamp());
+
 		// Remove as chaves antigas agora duplicadas dentro de session.
 		// A própria chave "session" (de uma gravação anterior do mesmo slot)
 		// também sai do nível superior, pois o conteúdo dela é recriado
@@ -343,6 +352,52 @@ public final class SaveManager {
 		}
 	}
 
+	/** ---------- Recorde de profundidade (rodada 24b) ---------- */
+
+	/** @return maior profundidade do modo infinito já alcançada no slot ativo. */
+	public static int getDeepRecord() {
+		return deepRecord;
+	}
+
+	/** @return recorde de profundidade gravado no slot informado (sem carregar). */
+	public static int getSlotDeepRecord(int slotId) {
+		if (slotId < 1 || slotId > SLOT_COUNT) {
+			return 0;
+		}
+		Map<String, Object> root = loadRoot();
+		List<Map<String, Object>> slots = getSlots(root);
+		Map<String, Object> slot = findSlot(slots, slotId);
+		if (slot == null) {
+			return 0;
+		}
+		int fromSlot = toInt(slot.get(DEEP_RECORD_KEY));
+		int fromSession = toInt(getSession(slot).get(DEEP_RECORD_KEY));
+		return Math.max(fromSlot, fromSession);
+	}
+
+	/** Registra um novo recorde de profundidade do slot ativo (e grava). */
+	public static void setDeepRecord(int depth) {
+		if (depth <= deepRecord) {
+			return;
+		}
+		deepRecord = depth;
+		saveCurrentGame();
+	}
+
+	/** Zera o recorde de profundidade em memória (novo jogo). */
+	public static void resetDeepRecord() {
+		deepRecord = 0;
+	}
+
+	private static void restoreDeepRecord(Map<String, Object> slot) {
+		if (slot == null) {
+			return;
+		}
+		int fromSlot = toInt(slot.get(DEEP_RECORD_KEY));
+		int fromSession = toInt(getSession(slot).get(DEEP_RECORD_KEY));
+		deepRecord = Math.max(fromSlot, fromSession);
+	}
+
 	/** ---------- Leitura ---------- */
 
 	/**
@@ -366,6 +421,9 @@ public final class SaveManager {
 		// Migração v2→v3: snapshot da melhor partida (root) e flags de diálogos.
 		restoreBestRun(root);
 		restoreNpcDialogues(slot);
+
+		// Recorde de profundidade (rodada 24b): maior profundidade do infinito neste slot.
+		restoreDeepRecord(slot);
 
 		// Migração v1→v2: se o slot é flat (v1), a sessão é o próprio slot.
 		Map<String, Object> session = getSession(slot);

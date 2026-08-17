@@ -599,15 +599,20 @@ public class Menu {
 		for (int i = 0; i < LOAD_SLOT_LABELS.length; i++) {
 			int slotId = i + 1;
 			String detail = "";
-			if (SaveManager.hasSlotSave(slotId)) {
-				int level = SaveManager.getSlotLevel(slotId);
-				int slotScore = SaveManager.getSlotScore(slotId);
-				int slotSurvival = SaveManager.getSlotSurvivalRecord(slotId);
-				detail = String.format("  (Fase %d — Pontuação %d", level, slotScore);
-				if (slotSurvival > 0) {
-					detail += String.format(" — Sobrevivência: %d ondas", slotSurvival);
-				}
-				detail += ")";
+				if (SaveManager.hasSlotSave(slotId)) {
+					int level = SaveManager.getSlotLevel(slotId);
+					int slotScore = SaveManager.getSlotScore(slotId);
+					int slotSurvival = SaveManager.getSlotSurvivalRecord(slotId);
+					detail = String.format("  (Fase %d — Pontuação %d", level, slotScore);
+					if (slotSurvival > 0) {
+						detail += String.format(" — Sobrevivência: %d ondas", slotSurvival);
+					}
+					// Recorde de profundidade (rodada 24b): maior ciclo do infinito.
+					int slotDeep = SaveManager.getSlotDeepRecord(slotId);
+					if (slotDeep > 0) {
+						detail += String.format(" — Profundidades: %d", slotDeep);
+					}
+					detail += ")";
 			} else {
 				detail = "  (vazio)";
 			}

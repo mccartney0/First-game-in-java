@@ -24,6 +24,9 @@ import javax.imageio.ImageIO;
  *   câmaras) que variam abertura das salas e pilares;
  * - inimigos aleatórios (255,0,0) e variantes coloridas proporcionalmente
  *   à profundidade, com cap de densidade ({@value MAX_ENEMY_TARGET});
+ * - tropas de elite (amarelo-dourado, {@value ELITE}) a partir da profundidade
+ *   3, com cap progressivo — viram inimigos de variante sólida com aura
+ *   dourada e vida/dano +30% (rodada 24b);
  * - um chefe fixo (GUARDIAN/WARBRINGER/OVERSEER_PRIME em rotação) por ciclo;
  * - itens de suprimento (LifePack/NanoMedkit) para manter o arco justo.
  *
@@ -47,6 +50,8 @@ public final class ProceduralLevelGenerator {
 	private static final Color GUARDIAN = new Color(255, 87, 34, 255);
 	private static final Color WARBRINGER = new Color(233, 30, 99, 255);
 	private static final Color OVERSEER_PRIME = new Color(208, 25, 55, 255);
+	/** Pixel de tropas de elite procedurais (rodada 24b): amarelo-dourado. */
+	private static final Color ELITE = new Color(255, 200, 0, 255);
 	private static final Color LIFEPACK = new Color(76, 255, 0, 255);
 	private static final Color NANO = new Color(255, 82, 82, 255);
 	private static final Color PLAYER = new Color(0, 38, 255, 255);
@@ -232,25 +237,43 @@ public final class ProceduralLevelGenerator {
 			if (Math.hypot(x - PLAYER_SPAWN_X, y - PLAYER_SPAWN_Y) < 6) {
 				continue;
 			}
-			if (map.getRGB(x, y) != BLACK.getRGB()) {
-				continue;
+				if (map.getRGB(x, y) != BLACK.getRGB()) {
+					continue;
+				}
+				// Rolagem da ocupação: a maioria inimigos, alguns itens.
+				// Rodada 24b: tropas de elite (amarelo-dourado) entram a partir da
+				// profundidade 3, com cap progressivo de 1 + depth/3 por mapa.
+				int eliteCount = countColor(map, w, h, ELITE.getRGB());
+				int eliteCap = 1 + depth / 3;
+				int roll = rng.nextInt(100);
+				Color color;
+				if (roll < 70) {
+					// Inimigo: genérico ou variante conforme a profundidade.
+					color = depth >= 3 && eliteCount < eliteCap && rng.nextInt(4) == 0 ? ELITE
+							: depth >= 3 && rng.nextInt(3) == 0 ? WARDEN
+									: depth >= 2 && rng.nextInt(4) == 0 ? SENTINEL
+											: rng.nextInt(6) == 0 ? RAVAGER : ENEMY;
+				} else if (roll < 88) {
+					color = rng.nextBoolean() ? LIFEPACK : NANO;
+				} else {
+					continue; // célula vazia (chão)
+				}
+				map.setRGB(x, y, color.getRGB());
+				placed++;
 			}
-			// Rolagem da ocupação: a maioria inimigos, alguns itens.
-			int roll = rng.nextInt(100);
-			Color color;
-			if (roll < 70) {
-				// Inimigo: genérico ou variante conforme a profundidade.
-				color = depth >= 3 && rng.nextInt(3) == 0 ? WARDEN
-						: depth >= 2 && rng.nextInt(4) == 0 ? SENTINEL
-								: rng.nextInt(6) == 0 ? RAVAGER : ENEMY;
-			} else if (roll < 88) {
-				color = rng.nextBoolean() ? LIFEPACK : NANO;
-			} else {
-				continue; // célula vazia (chão)
-			}
-			map.setRGB(x, y, color.getRGB());
-			placed++;
 		}
+
+	/** @return número de ocorrências do pixel rgb no mapa (rodada 24b). */
+	private static int countColor(BufferedImage map, int w, int h, int rgb) {
+		int count = 0;
+		for (int y = 0; y < h; y++) {
+			for (int x = 0; x < w; x++) {
+				if (map.getRGB(x, y) == rgb) {
+					count++;
+				}
+			}
+		}
+		return count;
 	}
 
 	/** Posiciona o chefe fixo do ciclo (rotação WARBRINGER → GUARDIAN → OVERSEER_PRIME). */
@@ -318,7 +341,7 @@ public final class ProceduralLevelGenerator {
 					bossCount++;
 				} else if (rgb == BLACK.getRGB() || rgb == WALL.getRGB() || rgb == DESTRUCT.getRGB()
 						|| rgb == ENEMY.getRGB() || rgb == WARDEN.getRGB() || rgb == SENTINEL.getRGB()
-						|| rgb == RAVAGER.getRGB() || rgb == LIFEPACK.getRGB() || rgb == NANO.getRGB()) {
+						|| rgb == RAVAGER.getRGB() || rgb == ELITE.getRGB() || rgb == LIFEPACK.getRGB() || rgb == NANO.getRGB()) {
 					if (rgb == BLACK.getRGB()) {
 						floorCount++;
 					}
