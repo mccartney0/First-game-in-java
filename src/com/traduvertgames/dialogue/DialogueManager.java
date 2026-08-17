@@ -75,8 +75,10 @@ public final class DialogueManager {
 		currentLine = 0;
 		active = true;
 		target.startInteraction();
-		// Início de diálogo com NPC (rodada 15): antes usava TUTORIAL_STEP,
-		// que é reservado aos passos do onboarding.
+		// Início de diálogo com NPC: som curto de confirmação no momento em
+		// que o jogador aperta R (follow-up rodada 20), seguido do som de
+		// diálogo da rodada 15.
+		SoundManager.play(SoundManager.Event.NPC_INTERACT);
 		SoundManager.play(SoundManager.Event.DIALOGUE_START);
 		QuestManager.notifyDialogueStarted(target);
 		return target;

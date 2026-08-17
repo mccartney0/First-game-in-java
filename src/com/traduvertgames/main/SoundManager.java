@@ -46,7 +46,8 @@ public final class SoundManager {
 		VICTORY,
 		DIALOGUE_START,
 		PURCHASE,
-		MENU_SELECT
+		MENU_SELECT,
+		NPC_INTERACT
 	}
 
 	private static final Map<Event, String> FILES = new HashMap<>();
@@ -83,6 +84,9 @@ public final class SoundManager {
 		FILES.put(Event.DIALOGUE_START, "/sounds/dialogue_start.wav");
 		FILES.put(Event.PURCHASE, "/sounds/purchase.wav");
 		FILES.put(Event.MENU_SELECT, "/sounds/menu_select.wav");
+		// Som de interação com NPC ao pressionar R (follow-up rodada 20):
+		// tom curto de confirmação que avisa que a conversa abriu.
+		FILES.put(Event.NPC_INTERACT, "/sounds/npc_interact.wav");
 	}
 
 	/** Pool de clips por evento: cada chamada play() devolve o clip ao pool. */

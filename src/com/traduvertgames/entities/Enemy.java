@@ -47,6 +47,9 @@ public class Enemy extends Entity {
         // Supervisor-Prime: a mente da colônia — chefe final da campanha,
         // com mais vida, dano e alcance que o OVERSEER comum.
         OVERSEER_PRIME(52.0, 1.15, 1.3, 5.4, 5.8, 8, 70, 240, 160, new Color(208, 25, 55)),
+        // Infiltrador (rodada 20): frágil e incômodo — salta para a retaguarda do
+        // piloto em intervalos curtos, forçando atenção constante às costas.
+        SAPPER(3.0, 1.5, 1.8, 3.2, 1.8, 4, 60, 55, 88, new Color(0, 128, 64)),
         // Caçador furtivo: esquivo e letal, drena escudo e mana do piloto.
         PHANTOM(6.5, 1.45, 1.6, 4.4, 2.6, 5, 80, 140, 120, new Color(129, 199, 132)),
         // Tanque de bloqueio: lento, robusto e regenera escudo com o tempo.
@@ -352,10 +355,12 @@ public class Enemy extends Entity {
                 break;
         }
         Enemy boss = new Enemy(x, y, 20, 20, ENEMY_EN, variant, true);
-        // Escala por profundidade suavizada: +25% de vida e +10% de dano por
-        // bloco de 5 ondas, mantendo os chefes profundos desafiadores porém
-        // vencíveis no ritmo do modo infinito.
-        boss.boost(1.0 + depth * 0.25, 1.0 + depth * 0.1);
+        // Rodada 20: escala sub-linear por profundidade (raiz quadrada das ondas
+        // concluídas) — a linear (+25% de vida por bloco de 5 ondas) tornava os
+        // chefes profundos impossíveis; agora o desafio cresce firme no início
+        // e desacelera, sem teto artificial de dificuldade.
+        double bossDepth = Math.sqrt(Math.max(1, depth));
+        boss.boost(1.0 + bossDepth * 0.22, 1.0 + bossDepth * 0.08);
         return boss;
     }
 
@@ -399,9 +404,11 @@ public class Enemy extends Entity {
 	}
 
     private static Variant pickRandomVariant() {
-        // O Phantom (que drena escudo/mana) só aparece a partir da fase 2,
-        // para não sobrecarregar o jogador novato já na primeira fase.
+        // O Phantom (que drena escudo/mana) só aparece a partir da fase 2 e o
+        // Sapper (que pressiona a retaguarda) a partir da fase 3, para não
+        // sobrecarregar o jogador novato nas primeiras fases.
         boolean phantomAllowed = Game.getCurrentLevel() >= 2;
+        boolean sapperAllowed = Game.getCurrentLevel() >= 3;
         int roll = Game.rand.nextInt(100);
         if (roll < 35) {
             return Variant.SCOUT;
@@ -409,11 +416,13 @@ public class Enemy extends Entity {
             return Variant.TELEPORTER;
         } else if (roll < 75) {
             return Variant.ARTILLERY;
-        } else if (roll < 90) {
+        } else if (roll < 88) {
             return Variant.WARDEN;
-        } else if (roll < 94) {
+        } else if (roll < 93) {
             return Variant.SENTINEL;
-        } else if (phantomAllowed && roll < 97) {
+        } else if (sapperAllowed && roll < 96) {
+            return Variant.SAPPER;
+        } else if (phantomAllowed && roll < 98) {
             return Variant.PHANTOM;
         } else {
             return Variant.GUARDIAN;
@@ -521,6 +530,9 @@ public class Enemy extends Entity {
         case PHANTOM:
             handlePhantomAbility(distanceToPlayer, canSeePlayer);
             break;
+        case SAPPER:
+            handleSapperAbility(distanceToPlayer, canSeePlayer);
+            break;
         case GUARDIAN:
             handleGuardianAbility();
             break;
@@ -567,6 +579,55 @@ public class Enemy extends Entity {
             }
             ParticleSystem.burst((int) x, (int) y, variant.getAuraColor(), 4, 1.2);
         }
+    }
+
+    /** Habilidade do Infiltrador (rodada 20): salta para a retaguarda do piloto
+     *  em intervalos curtos quando perto (mecânica de pressão às costas). */
+    private void handleSapperAbility(double distanceToPlayer, boolean canSeePlayer) {
+        if (specialCooldown > 0) {
+            specialCooldown--;
+            return;
+        }
+        // Só infiltra quando perto e enxerga o piloto — de longe ele persegue
+        // normalmente, como o Scout.
+        if (distanceToPlayer > specialRange || !canSeePlayer) {
+            return;
+        }
+        if (attemptTeleportBehindPlayer()) {
+            specialCooldown = specialCooldownBase;
+            path = null;
+            state = EnemyState.CHASING;
+        }
+    }
+
+    /** Teleporta o Sapper para um tile livre atrás do jogador. */
+    private boolean attemptTeleportBehindPlayer() {
+        if (Game.player == null) {
+            return false;
+        }
+        double angle = Math.atan2(Game.player.getY() - this.getY(), Game.player.getX() - this.getX());
+        // Destino na direção oposta ao piloto (retaguarda), a uma distância curta.
+        double backAngle = angle + Math.PI + (Game.rand.nextDouble() - 0.5) * 0.8;
+        double distance = 40 + Game.rand.nextDouble() * 48;
+        for (int attempt = 0; attempt < 8; attempt++) {
+            int targetX = Game.player.getX() + (int) Math.round(Math.cos(backAngle) * distance);
+            int targetY = Game.player.getY() + (int) Math.round(Math.sin(backAngle) * distance);
+            targetX = (targetX / 16) * 16;
+            targetY = (targetY / 16) * 16;
+            if (!World.isFree(targetX, targetY, 0)) {
+                continue;
+            }
+            if (this.calculateDistance(targetX, targetY, Game.player.getX(), Game.player.getY()) < 28) {
+                continue;
+            }
+            ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(0, 128, 64, 180), 6, 0.9);
+            this.x = targetX;
+            this.y = targetY;
+            ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(0, 200, 83, 180), 6, 0.9);
+            strafeTimer = 0;
+            return true;
+        }
+        return false;
     }
 
     /** Passo em rajada em direção ao jogador (movimento furtivo do Phantom). */

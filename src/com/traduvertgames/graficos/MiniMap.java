@@ -37,12 +37,16 @@ public final class MiniMap {
 			return;
 		}
 
-		int panelX = Game.WIDTH - MAP_WIDTH - 8;
-		int panelY = 8;
+		// Espaço escalado (buffer * SCALE): o minimapa acompanha a escala da
+		// janela mesmo quando ela não bate exatamente com buffer*SCALE.
+		int s = Game.SCALE;
+		int panelX = (Game.WIDTH - MAP_WIDTH - 8) * s;
+		int panelY = 8 * s;
+		int tileDraw = TILE_DRAW * s;
 
 		Graphics2D g2 = (Graphics2D) g;
 		g2.setColor(new Color(8, 12, 20, 200));
-		g2.fillRoundRect(panelX - 4, panelY - 4, MAP_WIDTH + 8, MAP_HEIGHT + 8, 8, 8);
+		g2.fillRoundRect(panelX - 4 * s, panelY - 4 * s, MAP_WIDTH * s + 8 * s, MAP_HEIGHT * s + 8 * s, 8 * s, 8 * s);
 
 		for (int yy = 0; yy < World.HEIGHT; yy++) {
 			for (int xx = 0; xx < World.WIDTH; xx++) {
@@ -52,7 +56,7 @@ public final class MiniMap {
 				} else {
 					g2.setColor(COLOR_FLOOR);
 				}
-				g2.fillRect(panelX + xx * TILE_DRAW, panelY + yy * TILE_DRAW, TILE_DRAW, TILE_DRAW);
+				g2.fillRect(panelX + xx * tileDraw, panelY + yy * tileDraw, tileDraw, tileDraw);
 			}
 		}
 
@@ -64,17 +68,17 @@ public final class MiniMap {
 				continue;
 			}
 			Enemy enemy = (Enemy) obj;
-			int mapX = panelX + (enemy.getX() / 16) * TILE_DRAW;
-			int mapY = panelY + (enemy.getY() / 16) * TILE_DRAW;
+			int mapX = panelX + (enemy.getX() / 16) * tileDraw;
+			int mapY = panelY + (enemy.getY() / 16) * tileDraw;
 			g2.setColor(COLOR_ENEMY);
-			g2.fillRect(mapX, mapY, TILE_DRAW, TILE_DRAW);
+			g2.fillRect(mapX, mapY, tileDraw, tileDraw);
 		}
 
 		if (Player.life > 0) {
-			int mapX = panelX + (Player.life > 0 ? Game.player.getX() / 16 : 0) * TILE_DRAW;
-			int mapY = panelY + (Game.player.getY() / 16) * TILE_DRAW;
+			int mapX = panelX + (Player.life > 0 ? Game.player.getX() / 16 : 0) * tileDraw;
+			int mapY = panelY + (Game.player.getY() / 16) * tileDraw;
 			g2.setColor(COLOR_PLAYER);
-			g2.fillRect(mapX, mapY, TILE_DRAW, TILE_DRAW);
+			g2.fillRect(mapX, mapY, tileDraw, tileDraw);
 		}
 
 		// Marcador do alvo da missão: o jogador sempre sabe onde ir, mesmo
@@ -88,11 +92,11 @@ public final class MiniMap {
 						* (System.currentTimeMillis() % 960) / 960.0);
 				int alpha = 140 + (int) (80 * pulse);
 				g2.setColor(new Color(255, 235, 59, alpha));
-				int mapX = panelX + (target.getX() / 16) * TILE_DRAW;
-				int mapY = panelY + (target.getY() / 16) * TILE_DRAW;
-				g2.fillRect(mapX, mapY, TILE_DRAW, TILE_DRAW);
+				int mapX = panelX + (target.getX() / 16) * tileDraw;
+				int mapY = panelY + (target.getY() / 16) * tileDraw;
+				g2.fillRect(mapX, mapY, tileDraw, tileDraw);
 				g2.setColor(new Color(255, 235, 59, 90));
-				g2.drawRect(mapX - 1, mapY - 1, TILE_DRAW + 2, TILE_DRAW + 2);
+				g2.drawRect(mapX - s, mapY - s, tileDraw + 2 * s, tileDraw + 2 * s);
 			}
 		}
 	}
