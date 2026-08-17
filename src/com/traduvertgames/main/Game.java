@@ -440,6 +440,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				if (fullscreen || maximized) {
 					if (maximized) { fullscreen = true; }
 					recomputeScale();
+					// Rodada 26: a janela maximizada nem sempre tem o tamanho
+					// exato do canvas (buffer * SCALE) — a sobra deixava a HUD
+					// esticada de forma anisotrópica (visual "torto" na tela
+					// cheia) e o jogo deslocado no canto. Forçar a janela ao
+					// tamanho do canvas mantém tudo 1:1.
+					int targetW = WIDTH * SCALE;
+					int targetH = HEIGHT * SCALE;
+					java.awt.Dimension c = frame.getContentPane().getSize();
+					int curW = Math.max(1, c.width);
+					int curH = Math.max(1, c.height);
+					if (Math.abs(curW - targetW) > 4 || Math.abs(curH - targetH) > 4) {
+						frame.setSize(targetW, targetH);
+					}
 					return;
 				}
 				// Modo janela: o tamanho alvo do jogo é fixo (buffer * SCALE).

@@ -288,9 +288,14 @@ public class UI {
 		g2.setColor(new Color(200, 200, 200));
 		g2.drawString(hint, textX, textY + hintMetrics.getHeight() + 4);
 
-		// Habilidades ficam visíveis mesmo com o painel minimizado.
+		// Habilidades ficam visíveis mesmo com o painel minimizado. No modo
+		// minimizado elas iam parar no topo esquerdo (18, 44) — exatamente onde
+		// o card compacto da missão é desenhado (margin=10, altura 32),
+		// sobrepondo "[SHIFT] Dash" ao card (bug reportado na rodada 26). Agora
+		// ficam no topo direito, logo abaixo do card de pontuação, igual ao
+		// modo expandido.
 		drawXpHud(g2, screenWidth);
-		drawAbilityHud(g2, 18, 44);
+		drawAbilityHud(g2, screenWidth - 264 - 20, 20 + 200 + 16);
 	}
 
 	private int drawParagraph(Graphics2D g2, String text, int x, int y, int maxWidth, int lineHeight, Color color) {

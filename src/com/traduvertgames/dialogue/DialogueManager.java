@@ -314,8 +314,9 @@ public final class DialogueManager {
 
 		int footerHeight = hintFont.getSize() + 8;
 		// Altura: nome + margem, linhas de texto, espaço das escolhas, rodapé.
-		int neededHeight = headerY + bodyLines * lineStep + choiceLines * lineStep
-				+ footerHeight + 16;
+		// Espaço do cabeçalho: margem + linha do nome + respiro até o corpo.
+		int neededHeight = headerY + nameFont.getSize() + 4 + bodyLines * lineStep
+				+ choiceLines * lineStep + footerHeight + 16;
 		panelHeight = Math.max(108 * scale / 4 + 20, Math.min(neededHeight, screenHeight - 32));
 		panelY = screenHeight - panelHeight - 16;
 		int footerY = panelY + panelHeight - 12;
@@ -335,7 +336,10 @@ public final class DialogueManager {
 		// Texto quebrado em linhas dentro do painel
 		g.setFont(bodyFont);
 		g.setColor(Color.WHITE);
-		int lineY = panelY + headerY;
+		// O corpo começa ABAIXO do nome do falante — antes o nome (panelY + 26)
+		// e a primeira linha do texto usavam a mesma baseline, sobrepondo a
+		// mensagem ao nome (bug reportado na rodada 26).
+		int lineY = panelY + headerY + nameFont.getSize() + 4;
 		drawWrappedLines(text, lineX, lineY, maxLineW, lineStep, g);
 		int contentBottom = lineY + bodyLines * lineStep;
 
