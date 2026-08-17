@@ -157,8 +157,24 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
          * somar esses valores às próprias coordenadas. */
         public static int drawOffsetX = 0;
         public static int drawOffsetY = 0;
-        /** Frames restantes de exibição do aviso "Fase X concluída — próxima fase". */
+	/** Frames restantes de exibição do aviso "Fase X concluída — próxima fase". */
         private static int showLevelTransition = 0;
+        /** Cooldown de respiro pós-transição (rodada 21): enquanto > 0, inimigos
+         * ficam congelados e o WaveManager não spawna, dando ao jogador ~2,5s
+         * para se orientar na nova fase. O aviso de transição também fica
+         * fixo durante o cooldown (não decresce). */
+        private static final int RESPIRO_FRAMES = 150;
+        private static int transitionCooldown = 0;
+
+        /** Inicia o cooldown de respiro após a tela de estatísticas fechar. */
+        public static void startTransitionCooldown() {
+                transitionCooldown = RESPIRO_FRAMES;
+        }
+
+        /** True enquanto o cooldown pós-transição estiver ativo. */
+        public static boolean isTransitionCooldown() {
+                return transitionCooldown > 0;
+        }
         /** Opacidade do fade preto da transição de fase (150 = totalmente escuro). */
         private static int transitionAlpha = 0;
 
@@ -541,20 +557,38 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
                         DashAbility.update();
                         UltimateAbility.update();
-                        WaveManager.update();
+                        // Respiro pós-transição (rodada 21): durante o cooldown o
+                        // WaveManager não spawna novos lotes — a próxima fase abre
+                        // calma, sem mobs surgindo de imediato.
+                        if (!isTransitionCooldown()) {
+                                WaveManager.update();
+                        }
                         LevelUpManager.update();
                         LootGuarantee.update();
 
-			for (int i = 0; i < entities.size(); i++) {
-				Entity e = entities.get(i);
-				// Durante o onboarding, inimigos ficam paralisados para o novato
-				// praticar sem risco (Player continua atualizando normalmente).
-if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused())) {
+				for (int i = 0; i < entities.size(); i++) {
+					Entity e = entities.get(i);
+					// Durante o onboarding, inimigos ficam paralisados para o novato
+					// praticar sem risco (Player continua atualizando normalmente).
+					// Cooldown pós-transição (rodada 21): inimigos também ficam
+					// congelados até o jogador se orientar na nova fase.
+if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused() || isTransitionCooldown())) {
 						continue;
 					}
-				e.update();
-			}
-			OnboardingManager.update();
+					e.update();
+				}
+				OnboardingManager.update();
+
+				// Cooldown de respiro: decai apenas durante o estado NORMAL (a
+				// contagem não corre enquanto a tela de estatísticas estiver aberta).
+				if (transitionCooldown > 0) {
+					transitionCooldown--;
+					if (transitionCooldown == 0) {
+						// Inimigos voltam a agir; projéteis antigos já foram
+						// removidos na conclusão da fase anterior.
+						showLevelTransition = 0;
+					}
+				}
 
                         for (int i = 0; i < bullets.size(); i++) {
                                 bullets.get(i).update();
@@ -618,12 +652,15 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			LevelSelectScreen.update();
 	}
 
-		if (showLevelTransition > 0) {
+		// showLevelTransition decai apenas fora do cooldown pós-transição
+		// (rodada 21): o aviso de transição permanece na tela até o fim do
+		// respiro, evitando que a mensagem suma com o jogo já em combate.
+		if (showLevelTransition > 0 && transitionCooldown <= 0) {
 			showLevelTransition--;
 		}
-		// Fade preto da transição de fase: escurece a fase antiga e some
-		// suavemente para revelar a nova (fade de ~50 frames).
-		if (transitionAlpha > 0) {
+		// Fade preto da transição não decai durante o cooldown: a nova fase
+		// só é revelada quando o jogador está pronto.
+		if (transitionAlpha > 0 && transitionCooldown <= 0) {
 			transitionAlpha = Math.max(0, transitionAlpha - 3);
 		}
 	}
@@ -674,15 +711,17 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 
 // Renderizar jogo //
 		world.render(g);
-		// Fase concluída: inimigos e seus projéteis ficam invisíveis — a
-		// próxima fase carrega limpa, sem "ruído" herdado da anterior.
-		for (int i = 0; i < entities.size(); i++) {
-			Entity e = entities.get(i);
-			if (questCompletedPending && e instanceof Enemy) {
-				continue;
+			// Fase concluída: inimigos e seus projéteis ficam invisíveis — a
+			// próxima fase carrega limpa, sem "ruído" herdado da anterior.
+			// Cooldown pós-transição (rodada 21): inimigos também permanecem
+			// invisíveis durante o respiro inicial da nova fase.
+			for (int i = 0; i < entities.size(); i++) {
+				Entity e = entities.get(i);
+				if ((questCompletedPending || isTransitionCooldown()) && e instanceof Enemy) {
+					continue;
+				}
+				e.render(g);
 			}
-			e.render(g);
-		}
 		for (int i = 0; i < bullets.size(); i++) {
 			bullets.get(i).render(g);
 		}
@@ -760,7 +799,9 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				java.awt.RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 		// Durante a transição de fase (banner de conclusão / lore) as HUDs
 		// de combate ficam escondidas para deixar o momento mais limpo.
-		boolean hidingHud = questCompletedPending || showLevelTransition > 0;
+		// Rodada 21: o card de estatísticas também conta como transição.
+		boolean hidingHud = questCompletedPending || showLevelTransition > 0
+				|| com.traduvertgames.graficos.PhaseStatsScreen.isShowing();
 if (!hidingHud) {
 	MiniMap.render(overlayG);
 	// Texto do banner central renderizado no overlay (espaço escalado): letras
@@ -833,13 +874,17 @@ if (!hidingHud) {
                         drawCenteredString(overlayG, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 82);
                         drawCenteredString(overlayG, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 112);
 
-                } else if ("MENU".equals(gameState)) {
-                        if (!showInitialWeaponSelect) {
-			menu.render(overlayG);
-                        }
-                        // Durante a seleção de arma inicial o menu não deve
-                        // desenhar nada: o overlay da própria tela de arma
-                        // escurece o fundo e desenha a lista por cima.
+                		} else if ("MENU".equals(gameState)) {
+				// Rodada 21: durante a transição de fase (card de estatísticas
+				// ou aviso de conclusão) o menu principal não é desenhado —
+				// antes ele aparecia por trás do aviso, com textos sobrepostos.
+				if (!showInitialWeaponSelect && showLevelTransition <= 0
+						&& !com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
+					menu.render(overlayG);
+				}
+				// Durante a seleção de arma inicial o menu não deve
+				// desenhar nada: o overlay da própria tela de arma
+				// escurece o fundo e desenha a lista por cima.
 		} else if ("SHOP".equals(gameState)) {
 				// Painel único da loja (fundo escuro + lista + feedback + dica).
 				// Sem Menu.renderPauseScreen atrás: o overlay do menu de pausa
@@ -1520,7 +1565,10 @@ if (!hidingHud) {
 				LevelUpManager.dismiss();
 			}
 			applyProgressBonuses();
-			showLevelTransition = 180;
+			// Cooldown de respiro (rodada 21) mesmo na entrada do modo
+			// sobrevivência: inimigos não atacam de imediato.
+			transitionCooldown = RESPIRO_FRAMES;
+			showLevelTransition = 180 + RESPIRO_FRAMES;
 		transitionAlpha = 150;
 			return;
 		}
@@ -1541,17 +1589,22 @@ if (!hidingHud) {
 		String newWorld = "level" + CUR_LEVEL + ".png";
 		World.restartGame(newWorld);
 		// Card de estatísticas da fase que acabou de terminar (kills, tempo, combo).
+		// Rodada 21: o card fica pausado na frente do jogo e só fecha por Enter
+		// (sem auto-dismiss na campanha) — a tela não é arremessada ao combate.
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
 		// Transição de fase limpa: fade preto suave para "apagar" a fase
 		// antiga antes de revelar a nova, com HUDs escondidas no meio tempo.
+		// O fade decai apenas quando o cooldown pós-transição terminar.
 		transitionAlpha = 150;
-		showLevelTransition = 150;
+		showLevelTransition = 150 + RESPIRO_FRAMES;
 		// Lore da nova fase: título e texto de ambientação em destaque dourado.
+		// Rodada 21: o banner de lore é adiado para o fim do respiro — antes
+		// ele competia com o card de estatísticas e com o aviso de conclusão.
 		com.traduvertgames.graficos.MissionBanner.reset();
-		com.traduvertgames.graficos.MissionBanner.show(
+		com.traduvertgames.graficos.MissionBanner.scheduleLore(
 			com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(CUR_LEVEL),
 			com.traduvertgames.quest.StoryManager.getPhaseLore(CUR_LEVEL),
-			new Color(255, 235, 59), Color.WHITE, 360);
+			RESPIRO_FRAMES);
 	}
 
 	/**
@@ -1561,8 +1614,9 @@ if (!hidingHud) {
 	public static void enterSurvivalMode() {
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		WaveManager.startArena();
-		showLevelTransition = 180;
+		showLevelTransition = 180 + RESPIRO_FRAMES;
 		transitionAlpha = 150;
+		transitionCooldown = RESPIRO_FRAMES;
 		// Card de estatísticas do ciclo anterior do modo infinito (se não for a
 		// primeira entrada, que já ganha a cutscene de vitória da campanha).
 		if (instance != null && instance.levelPlus > 1) {
@@ -1581,7 +1635,9 @@ if (!hidingHud) {
 		}
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		startProceduralLevel(1);
-		showLevelTransition = 180;
+		// Cooldown de respiro (rodada 21): inimigos não atacam de imediato.
+		transitionCooldown = RESPIRO_FRAMES;
+		showLevelTransition = 180 + RESPIRO_FRAMES;
 		transitionAlpha = 150;
 	}
 
@@ -1600,9 +1656,12 @@ if (!hidingHud) {
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		applyProgressBonuses();
 		// Card de estatísticas do ciclo que acabou de terminar.
+		// Rodada 21: no modo infinito o card fecha sozinho (auto-dismiss), e o
+		// cooldown de respiro impede que os mobs ataquem de imediato.
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
 		startProceduralLevel(depth);
-		showLevelTransition = 180;
+		transitionCooldown = RESPIRO_FRAMES;
+		showLevelTransition = 180 + RESPIRO_FRAMES;
 		transitionAlpha = 150;
 	}
 
