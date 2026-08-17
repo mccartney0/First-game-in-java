@@ -477,6 +477,9 @@ public final class SaveManager {
 			restoreObjectiveState(slot, savedLevel);
 			restoreNarrativeFlags(slot);
 			restoreCompanion(session);
+			// Rodada 24: retomada da fase salva sem arremessar o piloto à
+			// tela de seleção de arma inicial (também neste caminho).
+			com.traduvertgames.main.Game.clearInitialWeaponSelect();
 			return true;
 		}
 
@@ -491,6 +494,10 @@ public final class SaveManager {
 		Player.shield = savedShield;
 		Game.gameState = "NORMAL";
 		Menu.pause = false;
+		// Rodada 24: o carregamento retoma a fase salva em vez de arremessar
+		// o piloto de volta à tela de seleção de arma inicial (que parecia um
+		// "tutorial" e travava o retorno ao combate após morrer).
+		com.traduvertgames.main.Game.clearInitialWeaponSelect();
 		activeSlot = slotId;
 		restoreObjectiveState(slot, savedLevel);
 		restoreNarrativeFlags(slot);
