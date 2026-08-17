@@ -274,6 +274,7 @@ public final class DialogueManager {
 		Font nameFont = new Font("arial", Font.BOLD, 16 * scale / 4 + 2);
 		Font bodyFont = new Font("arial", Font.PLAIN, 13 * scale / 4 + 2);
 		Font hintFont = new Font("arial", Font.PLAIN, 10 * scale / 4 + 1);
+		int lineStep = bodyFont.getSize() + 2;
 
 		String text = getCurrentLine();
 		String speaker = getSpeakerName();
@@ -286,7 +287,41 @@ public final class DialogueManager {
 		int panelX = (screenWidth - panelWidth) / 2;
 		int panelY = screenHeight - panelHeight - 16;
 
-		// Fundo escuro com borda amarela (mesma identidade do onboarding)
+		int lineX = panelX + 16;
+		int maxLineW = panelWidth - 32;
+		int headerY = 26; // espaço até a primeira linha de texto (nome + margem)
+
+		// 1) Primeiro passe: contar quantas linhas o texto ocupa (sem desenhar),
+		// para dimensionar o painel à necessidade real do conteúdo — evita que
+		// falas longas ou escolhas extensas escrevam por cima do rodapé ou
+		// fiquem cortadas fora do painel (bug reportado na rodada 25).
+		g.setFont(bodyFont);
+		int bodyLines = countWrapLines(text, maxLineW, g);
+
+		// Escolhas numeradas do diálogo ramificado (rodada 22) — linha extra cada.
+		String[] choices = getBranchChoices();
+		int choiceLines = 0;
+		int[] choiceLineCounts = new int[choices.length];
+		for (int i = 0; i < choices.length; i++) {
+			if (choices[i] == null || choices[i].isEmpty()) {
+				continue;
+			}
+			String choiceText = (i + 1) + ". " + choices[i];
+			int n = countWrapLines(choiceText, maxLineW - 14, g);
+			choiceLineCounts[i] = n;
+			choiceLines += n;
+		}
+
+		int footerHeight = hintFont.getSize() + 8;
+		// Altura: nome + margem, linhas de texto, espaço das escolhas, rodapé.
+		int neededHeight = headerY + bodyLines * lineStep + choiceLines * lineStep
+				+ footerHeight + 16;
+		panelHeight = Math.max(108 * scale / 4 + 20, Math.min(neededHeight, screenHeight - 32));
+		panelY = screenHeight - panelHeight - 16;
+		int footerY = panelY + panelHeight - 12;
+
+		// 2) Segundo passe: desenhar o painel e todo o conteúdo com as posições
+		// já calculadas. O rodapé é desenhado por último, sempre dentro do painel.
 		g.setColor(new Color(0, 0, 0, 235));
 		g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 14, 14);
 		g.setColor(new Color(255, 235, 59));
@@ -300,10 +335,67 @@ public final class DialogueManager {
 		// Texto quebrado em linhas dentro do painel
 		g.setFont(bodyFont);
 		g.setColor(Color.WHITE);
+		int lineY = panelY + headerY;
+		drawWrappedLines(text, lineX, lineY, maxLineW, lineStep, g);
+		int contentBottom = lineY + bodyLines * lineStep;
+
+		// Escolhas numeradas dentro do painel (limitadas ao espaço disponível)
+		int choicesLineY = contentBottom;
+		for (int i = 0; i < choices.length; i++) {
+			if (choices[i] == null || choices[i].isEmpty()) {
+				continue;
+			}
+			// Espaço de escolhas: não invadir a área reservada ao rodapé.
+			if (choicesLineY + lineStep > footerY - 10) {
+				break;
+			}
+			String choiceText = (i + 1) + ". " + choices[i];
+			int n = choiceLineCounts[i];
+			if (g.getFontMetrics().stringWidth(choiceText) > maxLineW) {
+				wrapText(choiceText, lineX + 14, choicesLineY, maxLineW - 14, lineStep,
+						Math.min(n, (footerY - 10 - choicesLineY) / lineStep), g);
+			} else {
+				g.drawString(choiceText, lineX, choicesLineY);
+				choicesLineY += lineStep;
+			}
+		}
+
+		// Rodapé com progresso e dica de avanço (por último — nunca sobreposto)
+		g.setFont(hintFont);
+		g.setColor(new Color(176, 190, 197));
+		String footerHint = choices.length > 0 ? "Digite 1-3 para escolher, Enter para a primeira" : hint;
+		g.drawString(footerHint, panelX + 16, footerY);
+		int progW = g.getFontMetrics().stringWidth(progress);
+		g.drawString(progress, panelX + panelWidth - progW - 16, footerY);
+	}
+
+	/** Contagem de linhas que o texto ocupa quando quebrado na largura. */
+	private static int countWrapLines(String text, int maxLineW, Graphics g) {
+		if (text == null || text.isEmpty()) {
+			return 0;
+		}
 		String[] words = text.split(" ");
-		int lineX = panelX + 16;
-		int lineY = panelY + 48;
-		int maxLineW = panelWidth - 32;
+		int lines = 1;
+		StringBuilder line = new StringBuilder();
+		for (String word : words) {
+			if (word.isEmpty()) {
+				continue;
+			}
+			String candidate = line.length() == 0 ? word : line + " " + word;
+			if (g.getFontMetrics().stringWidth(candidate) > maxLineW && line.length() > 0) {
+				lines++;
+				line = new StringBuilder(word);
+			} else {
+				line = new StringBuilder(candidate);
+			}
+		}
+		return lines;
+	}
+
+	/** Desenha o texto quebrado em linhas a partir da posição informada. */
+	private static void drawWrappedLines(String text, int lineX, int lineY,
+			int maxLineW, int lineStep, Graphics g) {
+		String[] words = text.split(" ");
 		StringBuilder line = new StringBuilder();
 		for (String word : words) {
 			if (word.isEmpty()) {
@@ -312,7 +404,7 @@ public final class DialogueManager {
 			String candidate = line.length() == 0 ? word : line + " " + word;
 			if (g.getFontMetrics().stringWidth(candidate) > maxLineW && line.length() > 0) {
 				g.drawString(line.toString(), lineX, lineY);
-				lineY += g.getFontMetrics().getHeight() + 2;
+				lineY += lineStep;
 				line = new StringBuilder(word);
 			} else {
 				line = new StringBuilder(candidate);
@@ -321,36 +413,38 @@ public final class DialogueManager {
 		if (line.length() > 0) {
 			g.drawString(line.toString(), lineX, lineY);
 		}
+	}
 
-		// Escolhas numeradas do diálogo ramificado (rodada 22)
-		String[] choices = getBranchChoices();
-		int choicesLineY = lineY;
-		for (int i = 0; i < choices.length; i++) {
-			if (choices[i] == null || choices[i].isEmpty()) {
+	/** Quebra o texto e desenha no máximo {@code maxLines} linhas (reticências se cortar). */
+	private static void wrapText(String text, int lineX, int lineY, int maxLineW,
+			int lineStep, int maxLines, Graphics g) {
+		String[] words = text.split(" ");
+		StringBuilder line = new StringBuilder();
+		int drawn = 0;
+		boolean cut = false;
+		for (String word : words) {
+			if (word.isEmpty()) {
 				continue;
 			}
-			String choiceText = (i + 1) + ". " + choices[i];
-			if (g.getFontMetrics().stringWidth(choiceText) > maxLineW) {
-				// Quebra da escolha em duas linhas quando exceder o painel.
-				g.drawString(choiceText.substring(0, Math.min(choiceText.length(), maxLineW / 7)),
-						lineX, choicesLineY);
-				choicesLineY += g.getFontMetrics().getHeight() + 2;
-				String rest = choiceText.substring(Math.min(choiceText.length(), maxLineW / 7));
-				g.drawString(rest, lineX + 14, choicesLineY);
-				choicesLineY += g.getFontMetrics().getHeight() + 2;
+			String candidate = line.length() == 0 ? word : line + " " + word;
+			if (g.getFontMetrics().stringWidth(candidate) > maxLineW && line.length() > 0) {
+				if (drawn < maxLines) {
+					g.drawString(line.toString(), lineX, lineY);
+					lineY += lineStep;
+					drawn++;
+				} else {
+					cut = true;
+				}
+				line = new StringBuilder(word);
 			} else {
-				g.drawString(choiceText, lineX, choicesLineY);
-				choicesLineY += g.getFontMetrics().getHeight() + 2;
+				line = new StringBuilder(candidate);
 			}
 		}
-
-		// Rodapé com progresso e dica de avanço
-		g.setFont(hintFont);
-		g.setColor(new Color(176, 190, 197));
-		String footerHint = choices.length > 0 ? "Digite 1-3 para escolher, Enter para a primeira" : hint;
-		g.drawString(footerHint, panelX + 16, panelY + panelHeight - 12);
-		int progW = g.getFontMetrics().stringWidth(progress);
-		g.drawString(progress, panelX + panelWidth - progW - 16, panelY + panelHeight - 12);
+		if (line.length() > 0 && drawn < maxLines) {
+			String last = cut && g.getFontMetrics().stringWidth(line + "...") > maxLineW
+					? line.substring(0, Math.max(1, maxLineW / g.getFontMetrics().stringWidth("a"))) : line.toString();
+			g.drawString(last + (cut ? "..." : ""), lineX, lineY);
+		}
 	}
 
 	/**

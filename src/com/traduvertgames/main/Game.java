@@ -80,6 +80,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         public UI ui;
 
         public static String gameState = "MENU";
+	// Rodada 25: a restauração de um save recarrega a mesma fase — o tracker de mortos não deve ser zerado nesse recarregamento, senão os mobs abatidos ressuscitam.
+	public static boolean restorePhase = false;
         private boolean showMessageGameOver = true;
         private int framesGameOver = 0;
         private boolean restartGame = false;
@@ -301,12 +303,21 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return Math.max(0, elapsed);
         }
 
-        /** Zera kills e timer ao iniciar uma nova fase (inclui ciclos do modo infinito). */
-        public static void resetLevelStats() {
-                // Antes de zerar os contadores da fase, captura a melhor partida
-                // (bestRun global do save) com base na fase que acabou de terminar.
-                com.traduvertgames.main.SaveManager.captureBestRun();
-                killsThisLevel = 0;
+	/** Zera kills e timer ao iniciar uma nova fase (inclui ciclos do modo infinito). */
+	public static void resetLevelStats() {
+		// Antes de zerar os contadores da fase, captura a melhor partida
+		// (bestRun global do save) com base na fase que acabou de terminar.
+		com.traduvertgames.main.SaveManager.captureBestRun();
+		// Rodada 25: os mortos de outra fase não valem para esta — o mapa
+		// recria todos os inimigos e o tracker recomeça vazio por fase.
+		// Exceção: durante a restauração de um save (restorePhase), a mesma
+		// fase é recarregada e os abatidos devem ser preservados para o
+		// applyMapPixels não ressuscitar os mobs já derrotados.
+		if (!restorePhase) {
+			com.traduvertgames.main.EnemyKillTracker.reset();
+		}
+		com.traduvertgames.main.EnemyKillTracker.setCurrentLevel(CUR_LEVEL);
+		killsThisLevel = 0;
                 bestComboThisRun = 1;
                 comboMultiplier = 1;
                 comboTimer = 0;

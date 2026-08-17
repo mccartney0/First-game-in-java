@@ -87,11 +87,20 @@ public class HoldObjective extends BaseObjective {
 		if (QuestManager.getCurrentLevel() != 2) {
 			return;
 		}
+		// Ponto designado do beacon da fase 2. O mapa nem sempre tem um tile
+		// de chão livre exatamente nessa posição (o pixel branco é parede),
+		// então o beacon procura o chão válido mais próximo em raio crescente
+		// — sem isso, a missão travava em "Localize o beacon do setor".
 		int tx = 17;
 		int ty = 11;
 		if (!com.traduvertgames.world.World.isValidTile(tx, ty)
 				|| com.traduvertgames.world.World.isWallTile(tx, ty)) {
-			return;
+			int[] floor = findNearestFloorTile(tx, ty);
+			if (floor == null) {
+				return;
+			}
+			tx = floor[0];
+			ty = floor[1];
 		}
 		int px = tx * com.traduvertgames.world.World.TILE_SIZE;
 		int py = ty * com.traduvertgames.world.World.TILE_SIZE;
@@ -288,10 +297,66 @@ public class HoldObjective extends BaseObjective {
 	}
 
 	/**
-		 * Reconecta os beacons restaurados do save: devolve os que ainda estão no
-		 * mundo ao objetivo e recria os que já se perderam. O retorno indica se o
-		 * objetivo já foi reconectado (para não criar um beacon duplicado).
-		 */
+	 * Busca o tile de chão válido mais próximo de (tx, ty) em raio crescente
+	 * (chão = tile existente no mundo que não é parede). Retorna null se nenhum
+	 * chão for encontrado no mapa inteiro.
+	 */
+	private int[] findNearestFloorTile(int tx, int ty) {
+		int radius = 1;
+		int[] fallback = null;
+		// Limite do raio de busca: o beacon não deve fugir do ponto
+		// designado (o jogador espera a missão no centro da fase). Se não
+		// houver chão livre perto, usa o chão mais próximo encontrado.
+		int maxRadius = 12;
+		while (radius <= maxRadius) {
+			for (int dy = -radius; dy <= radius; dy++) {
+				for (int dx = -radius; dx <= radius; dx++) {
+					int x = tx + dx;
+					int y = ty + dy;
+					if (!com.traduvertgames.world.World.isValidTile(x, y)
+							|| com.traduvertgames.world.World.isWallTile(x, y)) {
+						continue;
+					}
+					// Chão válido encontrado. Se nenhum invasor vivo estiver
+					// dentro do raio de defesa do beacon, usa este tile — caso
+					// contrário, os invasores bloqueariam a zona de defesa o
+					// tempo todo e o canal nunca avançaria. Guarda o primeiro
+					// chão como fallback caso todo o mapa tenha ameaça perto.
+					if (fallback == null) {
+						fallback = new int[] { x, y };
+					}
+					if (!isEnemyInsideDefenseRadius(x, y)) {
+						return new int[] { x, y };
+					}
+				}
+			}
+			radius++;
+		}
+		return fallback;
+	}
+
+	/** @return true se algum inimigo vivo está dentro do raio de defesa de (tx, ty). */
+	private static boolean isEnemyInsideDefenseRadius(int tx, int ty) {
+		int px = tx * com.traduvertgames.world.World.TILE_SIZE
+				+ com.traduvertgames.world.World.TILE_SIZE / 2;
+		int py = ty * com.traduvertgames.world.World.TILE_SIZE
+				+ com.traduvertgames.world.World.TILE_SIZE / 2;
+		for (int i = 0; i < Game.enemies.size(); i++) {
+			com.traduvertgames.entities.Enemy enemy = Game.enemies.get(i);
+			double dx = enemy.getX() + 8 - px;
+			double dy = enemy.getY() + 8 - py;
+			if (dx * dx + dy * dy <= DEFENSE_RADIUS * DEFENSE_RADIUS) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Reconecta os beacons restaurados do save: devolve os que ainda estão no
+	 * mundo ao objetivo e recria os que já se perderam. O retorno indica se o
+	 * objetivo já foi reconectado (para não criar um beacon duplicado).
+	 */
 	private boolean reconnectRestoredBeacons() {
 		// Re-registra os beacons físicos que sobreviveram à recarga do mundo.
 		for (int i = 0; i < Game.entities.size(); i++) {
