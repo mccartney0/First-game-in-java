@@ -778,7 +778,12 @@ public final class SaveManager {
 			if (parsed instanceof Map) {
 				return (Map<String, Object>) parsed;
 			}
-		} catch (IOException ignored) {
+		} catch (Exception ignored) {
+			// Arquivo malformado (ex.: corrupção por queda de energia):
+			// tratar como ausência de save em vez de derrubar o jogo.
+			if (SAVE_FILE.exists()) {
+				SAVE_FILE.delete();
+			}
 		}
 		return emptyRoot();
 	}
