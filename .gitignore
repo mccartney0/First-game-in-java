@@ -14,6 +14,8 @@ res/level*.png
 !res/level7.png
 !res/level8.png
 saves.json
+saves.backup.json
+saves.tmp
 bin/*.class
 bin/AutoValidate.class
 bin/TeleportTest*.class

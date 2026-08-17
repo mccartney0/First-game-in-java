@@ -318,6 +318,15 @@ public class Menu {
 		case PAUSE_SAVE_GAME:
 			if (SaveManager.saveCurrentGame()) {
 				System.out.println("Jogo salvo no slot " + SaveManager.activeSlot + "!");
+				com.traduvertgames.graficos.MissionBanner.show(
+						"JOGO SALVO",
+						"Progresso gravado no slot " + SaveManager.activeSlot,
+						new Color(76, 175, 80), Color.WHITE, 180);
+			} else {
+				com.traduvertgames.graficos.MissionBanner.show(
+						"ERRO AO SALVAR",
+						"Não foi possível gravar o slot " + SaveManager.activeSlot,
+						new Color(244, 67, 54), Color.WHITE, 240);
 			}
 			closePauseScreen();
 			break;

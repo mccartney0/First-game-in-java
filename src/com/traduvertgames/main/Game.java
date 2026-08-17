@@ -587,9 +587,17 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 // Salvar o jogo (formato JSON correto com slots)
                         if (Game.saveGame) {
                                 Game.saveGame = false;
-                                levelPlus = 0;
                                 if (SaveManager.saveCurrentGame()) {
                                         System.out.println("Jogo salvo no slot " + SaveManager.activeSlot + "!");
+					com.traduvertgames.graficos.MissionBanner.show(
+							"JOGO SALVO",
+							"Progresso gravado no slot " + SaveManager.activeSlot,
+							new java.awt.Color(76, 175, 80), java.awt.Color.WHITE, 180);
+				} else {
+					com.traduvertgames.graficos.MissionBanner.show(
+							"ERRO AO SALVAR",
+							"Não foi possível gravar o slot " + SaveManager.activeSlot,
+							new java.awt.Color(244, 67, 54), java.awt.Color.WHITE, 240);
                                 }
                         }
 
@@ -682,8 +690,6 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 						returnToMainMenu();
 					}
 				}
-                        // Autosave ao morrer: preserva o progresso da partida.
-                        SaveManager.saveAutoSave();
 		}else if ("MENU".equals(gameState)) {
 				//Menu
 				//Iniciando a camera junto com o jogador
@@ -1072,7 +1078,7 @@ if (!hidingHud) {
 		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 			if ("GAMEOVER".equals(gameState)) {
 				// Navegação da tela de game over (rodada de UX): seleciona a ação
-				// — Reiniciar partida (0) ou Voltar ao menu (1).
+				// — Voltar ao último save (0) ou Voltar ao menu (1).
 				this.gameOverSelection = (this.gameOverSelection + 1) % 2;
 				SoundManager.play(SoundManager.Event.MENU_SELECT);
 				return;
@@ -1288,7 +1294,6 @@ if (!hidingHud) {
 		if (e.getKeyCode() == KeyEvent.VK_T) {
                         if ("NORMAL".equals(gameState)) {
                                 Game.saveGame = true;
-                                levelPlus=0;
                         }
                 }
 
@@ -1453,16 +1458,36 @@ if (!hidingHud) {
                 resetGameOverState();
                 this.restartGame = false;
                 if (!loadGameFromSave()) {
-                        startNewGame();
+			restartCurrentPhaseWithoutSave();
                 }
         }
 
+	/** Fallback seguro quando ainda não existe save: reinicia a fase, não o tutorial. */
+	private void restartCurrentPhaseWithoutSave() {
+		int phase = Math.max(1, CUR_LEVEL);
+		String objectiveState = QuestManager.serializeObjectiveState();
+		OnboardingManager.stop();
+		restorePhase = true;
+		try {
+			if (phase >= 9) {
+				startProceduralLevel(Math.max(1, levelPlus));
+			} else {
+				World.restartGame("level" + Math.min(phase, MAX_LEVEL) + ".png");
+			}
+		} finally {
+			restorePhase = false;
+		}
+		QuestManager.deserializeObjectiveState(objectiveState);
+		applyPostLoadAdjustments();
+		clearInitialWeaponSelect();
+	}
+
         // Desenha os botões de ação da tela de game over (rodada de UX):
-        // "Reiniciar partida" e "Voltar ao menu" lado a lado, com destaque
+        // "Voltar ao último save" e "Voltar ao menu" lado a lado, com destaque
         // no botão selecionado.
         private void drawGameOverActions(Graphics g, int scaledWidth,
                 int scaledHeight) {
-                String restartLabel = "[ Reiniciar partida ]";
+                String restartLabel = "[ Voltar ao último save ]";
                 String menuLabel = "[ Voltar ao menu ]";
                 Font buttonFont = new Font("arial", Font.BOLD, 20);
                 g.setFont(buttonFont);
@@ -1474,7 +1499,7 @@ if (!hidingHud) {
                 int baseX = (scaledWidth - totalWidth) / 2;
                 int buttonY = scaledHeight / 2 + 170;
                 int buttonHeight = 36;
-                // Botão: Reiniciar partida.
+                // Botão: restaurar exatamente o último save manual.
                 if (gameOverSelection == 0) {
                         g.setColor(new Color(76, 175, 80));
                         g.fillRoundRect(baseX - 10, buttonY - buttonHeight + 6,
@@ -1500,7 +1525,7 @@ if (!hidingHud) {
                 private boolean loadGameFromSave() {
                 // Rodada 24: o autosave moderno grava em saves.json — antes,
                 // este método exigia o antigo save.txt que nunca existe, e o
-                // "Reiniciar partida" caía direto em startNewGame (tutorial).
+                // o retorno após a morte caía direto em startNewGame (tutorial).
                 // Tentativa 1: autosave do SaveManager (saves.json).
                 if (SaveManager.hasAnySave()) {
                         if (SaveManager.loadSlot(SaveManager.activeSlot)) {

@@ -59,6 +59,8 @@ public final class SaveManager {
 
 	/** Arquivo temporário usado na gravação atômica. */
 	private static final File SAVE_TMP = new File("saves.tmp");
+	/** Última versão válida antes de uma nova gravação. */
+	public static final File SAVE_BACKUP = new File("saves.backup.json");
 
 	/** Versão atual do esquema de save emitida na escrita. */
 	public static final int SCHEMA_VERSION = 4;
@@ -161,7 +163,8 @@ public final class SaveManager {
 		Map<String, Object> session = new HashMap<String, Object>();
 		for (Map.Entry<String, Object> entry : slot.entrySet()) {
 			String key = entry.getKey();
-			if (!"id".equals(key) && !"progress".equals(key) && !"timestamp".equals(key)) {
+			if (!"id".equals(key) && !"session".equals(key)
+					&& !"progress".equals(key) && !"timestamp".equals(key)) {
 				session.put(key, entry.getValue());
 			}
 		}
@@ -207,7 +210,7 @@ public final class SaveManager {
 	}
 
 	/**
-	 * Salva automaticamente no slot ativo (usado ao morrer ou trocar de fase).
+	 * Salva automaticamente no slot ativo em checkpoints explícitos.
 	 */
 	public static boolean saveAutoSave() {
 		return saveCurrentGame();
@@ -945,9 +948,19 @@ public final class SaveManager {
 			writer.flush();
 			writer.close();
 			writer = null;
-			if (!SAVE_TMP.renameTo(SAVE_FILE)) {
-				SAVE_TMP.delete();
-				return false;
+			java.nio.file.Path target = SAVE_FILE.toPath();
+			java.nio.file.Path temporary = SAVE_TMP.toPath();
+			if (SAVE_FILE.exists()) {
+				java.nio.file.Files.copy(target, SAVE_BACKUP.toPath(),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			}
+			try {
+				java.nio.file.Files.move(temporary, target,
+						java.nio.file.StandardCopyOption.ATOMIC_MOVE,
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			} catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
+				java.nio.file.Files.move(temporary, target,
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 			}
 			return true;
 		} catch (IOException e) {
