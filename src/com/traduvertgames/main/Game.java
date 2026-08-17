@@ -1678,11 +1678,15 @@ if (!hidingHud) {
 	public static void advanceToNextLevel() {
 		CUR_LEVEL++;
 		if (CUR_LEVEL > MAX_LEVEL) {
-			// Pós-campanha: mantém a fase 8 (Núcleo Central) e entra no
-			// modo sobrevivência com ondas infinitas e dificuldade crescente.
+			// Pós-campanha: a conquista do Núcleo Central abre as Profundezas
+			// — o modo infinito procedurais (mapas gerados por semente, chefes
+			// rotativos e dificuldade sub-linear) em vez da arena fixa. A arena
+			// clássica continua acessível pelo seletor de fases (entrada "Modo
+			// Infinito") para quem preferir o desafio de ondas.
 			CUR_LEVEL = MAX_LEVEL;
-			instance.levelPlus += 1;
-			enterSurvivalMode();
+			enterInfiniteMode();
+			// Remove os projéteis inimigos em voo antes de carregar o mapa procedural.
+			bullets.clear();
 			// O progresso de fase encerra a loja aberta (ou level up) para seguir.
 			if (ShopManager.isOpen()) {
 				ShopManager.close();
@@ -1768,6 +1772,7 @@ if (!hidingHud) {
 		}
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		startProceduralLevel(1);
+		WaveManager.startArena();
 		// Cooldown de respiro (rodada 21): inimigos não atacam de imediato.
 		transitionCooldown = RESPIRO_FRAMES;
 		showLevelTransition = 90 + RESPIRO_FRAMES;
