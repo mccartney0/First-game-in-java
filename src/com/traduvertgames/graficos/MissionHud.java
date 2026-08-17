@@ -201,67 +201,80 @@ public final class MissionHud {
 			return;
 		}
 
-		if (distance <= WAYPOINT_DISTANCE) {
-			// Alvo na tela: sinal pulsante sobre ele
-			double pulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % (PULSE_PERIOD * 16))
-					/ (PULSE_PERIOD * 16));
-			int radius = 8 + (int) (2 * pulse);
-			g2.setColor(new Color(255, 235, 59, 120 + (int) (80 * pulse)));
-			g2.fillOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
-			g2.setColor(new Color(255, 235, 59, 200));
-			g2.setStroke(new java.awt.BasicStroke(1.5f));
-			g2.drawOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
-		} else {
-			// Alvo fora da tela: seta na borda na direção do alvo. A seta é
-			// sempre desenhada um pouco para dentro da borda (offset) e sobre um
-			// painel escuro contínuo com a distância — assim ela nunca fica
-			// grudada na borda nem é lida como "apontando para uma parede".
-			double angle = Math.atan2(dy, dx);
-			double arrowDist = Math.min(WAYPOINT_DISTANCE * 0.85, distance);
-			double arrowX = centerX + Math.cos(angle) * arrowDist;
-			double arrowY = centerY + Math.sin(angle) * arrowDist;
-			// Clampa à área visível, com margem de segurança da borda.
-			int visibleW = Game.WIDTH * s;
-			int visibleH = Game.HEIGHT * s;
-			int margin = 16;
-			arrowX = Math.max(margin, Math.min(visibleW - margin, arrowX));
-			arrowY = Math.max(margin, Math.min(visibleH - margin, arrowY));
-			// A seta não deve ficar sobre o card da missão (canto superior
-			// esquerdo): quando o clamp a empurra para a área do card, ela é
-			// deslocada para baixo do card, mantendo a direção do alvo.
-			int cardWidth = Math.min(visibleW - margin * 2, 250 * s / 4 + 40);
-			int cardHeight = 26 * s / 4 + 6;
-			if (arrowX <= margin + cardWidth && arrowY <= margin + cardHeight + 20) {
-				arrowX = Math.min(visibleW - margin, Math.max(margin, arrowX));
-				arrowY = Math.min(visibleH - margin, arrowY);
-				if (arrowY <= margin + cardHeight + 20) {
-					arrowY = Math.min(visibleH - margin, margin + cardHeight + 30);
-				}
+			// Alvo fora da tela (ou longe): indicador fixo PRÓXIMO do personagem,
+			// rodando ao redor dele na direção do alvo — assim o jogador sempre
+			// vê a direção sem tirar os olhos do personagem (relato: seta na borda
+			// ficava "nada a ver"). Rodada 20 (follow-up).
+			if (distance <= WAYPOINT_DISTANCE) {
+				// Alvo na tela: sinal pulsante sobre ele
+				double pulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % (PULSE_PERIOD * 16))
+						/ (PULSE_PERIOD * 16));
+				int radius = 8 + (int) (2 * pulse);
+				g2.setColor(new Color(255, 235, 59, 120 + (int) (80 * pulse)));
+				g2.fillOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
+				g2.setColor(new Color(255, 235, 59, 200));
+				g2.setStroke(new java.awt.BasicStroke(1.5f));
+				g2.drawOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
 			}
+			// Ponteiro de direção próximo ao personagem (companion radar):
+			// pequena seta a 34px do centro do player na direção do alvo, com a
+			// distância em metros logo abaixo — acompanha o personagem e mostra
+			// para onde ir mesmo com o alvo fora da tela.
+			double angle = Math.atan2(dy, dx);
+			int pointerRadius = 34;
+			// Se o alvo estiver visível, o ponteiro fica mais discreto (a 44px)
+			// para não brigar com o pulso sobre o alvo.
+			if (distance <= WAYPOINT_DISTANCE) {
+				pointerRadius = 44;
+			}
+			int pointerX = centerX + (int) Math.round(Math.cos(angle) * pointerRadius);
+			int pointerY = centerY + (int) Math.round(Math.sin(angle) * pointerRadius);
+			// Painel escuro compacto atrás do ponteiro
 			Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
 			g2.setFont(smallFont);
 			String distLabel = String.format("%dm", (int) (distance / 16));
 			int labelW = g2.getFontMetrics().stringWidth(distLabel);
 			int labelH = 11;
-			// Painel escuro único atrás do label e da flecha
-			int padX = 5, padY = 3;
-			int panelW = Math.max(labelW + padX * 2, 14);
-			int panelH = labelH + padY * 2 + 10;
-			g2.setColor(new Color(0, 0, 0, 200));
-			g2.fillRoundRect((int) arrowX - panelW / 2, (int) arrowY - 2 - padY, panelW, panelH, 6, 6);
+			int padX = 4, padY = 3;
+			int panelW = Math.max(labelW + padX * 2, 20);
+			int panelH = labelH + padY * 2 + 9;
+			g2.setColor(new Color(0, 0, 0, 190));
+			g2.fillRoundRect(pointerX - panelW / 2, pointerY - panelH / 2 + 2, panelW, panelH, 6, 6);
+			// Seta na direção do alvo (girada com o ângulo)
 			g2.setColor(new Color(255, 235, 59, 255));
 			int size = 7;
 			double headAngle1 = angle + Math.toRadians(150);
 			double headAngle2 = angle - Math.toRadians(150);
 			g2.fillPolygon(
-					new int[] { (int) arrowX, (int) (arrowX + size * Math.cos(headAngle1)),
-							(int) (arrowX + size * Math.cos(headAngle2)) },
-					new int[] { (int) arrowY, (int) (arrowY + size * Math.sin(headAngle1)),
-							(int) (arrowY + size * Math.sin(headAngle2)) },
-					3);
+					new int[] { pointerX, (int) (pointerX + size * Math.cos(headAngle1)),
+							(int) (pointerX + size * Math.cos(headAngle2)) },
+					new int[] { pointerY, (int) (pointerY + size * Math.sin(headAngle1)),
+							(int) (pointerY + size * Math.sin(headAngle2)) },
+				3);
 			g2.setColor(new Color(255, 235, 59, 245));
-			g2.drawString(distLabel, (int) arrowX - labelW / 2, (int) arrowY + 9 + labelH);
-		}
+			g2.drawString(distLabel, pointerX - labelW / 2, pointerY + 7 + labelH);
+			// Apoio secundário na borda (somente alvos bem distantes): seta na
+			// borda para o jogador perceber a direção sem olhar para o centro.
+			if (distance > WAYPOINT_DISTANCE * 2.5) {
+				double edgeArrowDist = distance;
+				double edgeX = centerX + Math.cos(angle) * edgeArrowDist;
+				double edgeY = centerY + Math.sin(angle) * edgeArrowDist;
+				int visibleW = Game.WIDTH * s;
+				int visibleH = Game.HEIGHT * s;
+				int margin = 12;
+				edgeX = Math.max(margin, Math.min(visibleW - margin, edgeX));
+				edgeY = Math.max(margin, Math.min(visibleH - margin, edgeY));
+				g2.setColor(new Color(255, 235, 59, 140));
+				int edgeSize = 6;
+				double eHead1 = angle + Math.toRadians(150);
+				double eHead2 = angle - Math.toRadians(150);
+				g2.fillPolygon(
+						new int[] { (int) edgeX, (int) (edgeX + edgeSize * Math.cos(eHead1)),
+								(int) (edgeX + edgeSize * Math.cos(eHead2)) },
+						new int[] { (int) edgeY, (int) (edgeY + edgeSize * Math.sin(eHead1)),
+								(int) (edgeY + edgeSize * Math.sin(eHead2)) },
+					3);
+			}
 	}
 
 	/**
