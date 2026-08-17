@@ -181,3 +181,35 @@ Ver: saveCurrentGame 155-190; Game.update saveAutoSave; e se o cenário 5 do tes
 - PR #36: https://github.com/mccartney0/First-game-in-java/pull/36
 
 ## 2026-08-17 ~10:55 — DECISIVO: no run real, 5 SAVE-START aparecem (chamadas da main do teste) e ZERO SAVE-END e ZERO SAVE-ERR. Impossível com o código atual, salvo se: (a) bin antigo em uso, ou (b) o método lança antes do END mas fora do try (entre START e try). Linhas entre START e try: Game.getInstance(), loadRoot(), getSlots(), findOrCreateSlot(), puts no slot, captureBestRun(), loop WeaponType, try companion. captureBestRun() chama Game.getKillsThisLevel() / getLevelTimeMs() — se lançam, caem FORA do try (o try começa no bloco session/progress). E NÃO são Throwable... RuntimeException cai no catch(Throwable __t)?? NÃO — o try cobre só "slot.put session...writeRoot"?? VERIFICAR: no código atual o try inicia ANTES do "slot.put("session", session)" — a exceção entre START e try não é capturada! Mas então o teste morreria com stacktrace em stderr... O stderr não mostra stacktrace porque System.err do teste principal é redirecionado (2>/tmp/e2e_err.txt) — grep SAVE-ERR vazio, mas stacktrace poderia estar lá sem o prefixo! Ver o e2e_err.txt completo.
+
+## Resultado final da rodada 22g (RESOLVIDO)
+
+### Causa raiz real do FAIL 1 (session some em saves repetidos)
+Com o bin corrigido, a instrumentação DBG-1..10 mostrou que `saveCurrentGame`
+executava completo — o problema estava no conteúdo gravado: ao **re-salvar** um
+slot que já tinha `"session"` gravada no disco, o loop de cópia
+`for (entry : slot.entrySet())` copiava a chave `"session"` antiga para dentro
+da sessão nova (só `id`/`progress`/`timestamp` eram excluídos). A sessão nova
+recebia referência circular (`session["session"] = sessão antiga`) e o loop
+`for (key : session.keySet()) { slot.remove(key); }` apagava a chave
+`"session"` recém-instalada do slot antes do `writeRoot` — o arquivo ficava
+sem sessão (sem vida/mana/level/sideQuestsDone), quebrando `hasSlotSave`
+(falha 1) e a restauração das missões secundárias (falha 2).
+
+### Correções aplicadas
+1. **SaveManager.saveCurrentGame**: excluir `"session"` das chaves removidas
+   do nível superior (`if (!"session".equals(key)) { slot.remove(key); }`).
+2. Removida toda a instrumentação de diagnóstico (SAVE-START/END/ERR, DBGs,
+   __caller).
+3. **FaseSaveE2ETest (cenário 7)**: `SideQuestManager.complete` era no-op
+   porque as quests só são registradas pelos NPCs da fase (que não spawnam no
+   teste); o teste agora registra manualmente a quest `rex_kills_1` (com
+   `SideQuestManager.Type.KILL_N`, target 1, recompensa zero) e ativa antes de
+   concluir, espelhando o fluxo do jogo.
+4. `bin/` adicionado ao `.gitignore`.
+
+### Resultado
+- FaseSaveE2ETest: **19/19 PASS**
+- MinimalSaveTest: PASS
+- Regressão completa (16 suítes): tudo verde
+- Commit `03b9e4e` na branch `manus/rodada22-trilha-npcs-inventario` (PR #36)
