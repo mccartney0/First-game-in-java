@@ -236,14 +236,9 @@ public final class MissionHud {
 		}
 		int pointerX = centerX + (int) Math.round(Math.cos(angle) * pointerRadius); // pointerRadius já em espaço escalado
 		int pointerY = centerY + (int) Math.round(Math.sin(angle) * pointerRadius);
-			// Pulsação sutil de brilho (ciclo de 1.6s, curva senoidal suave):
-			// o halo amarelo "respira" atrás da seta sem chamar atenção demais.
-			double glowPulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % 1600) / 1600.0);
-			int haloSize = (int) ((10 + glowPulse * 3) * s);
-			g2.setColor(new Color(255, 235, 59, 25 + (int) (20 * glowPulse)));
-			g2.fillOval(pointerX - haloSize, pointerY - haloSize, haloSize * 2, haloSize * 2);
-			int pointerAlpha = 220 + (int) (25 * glowPulse);
-			// Seta de cursor limpa na direção do alvo (sem painel preto):
+			// Seta com brilho sutil (ciclo de 1.6s, curva senoidal suave):
+			int pointerAlpha = 220 + (int) (25 * Math.abs(Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % 1600) / 1600.0)));
+			// Seta de cursor limpa na direção do alvo (sem painel preto),
 			// corpo pontiagudo + cauda curta, preenchida de amarelo com
 			// contorno escuro suave para leitura sobre qualquer fundo.
 			Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
