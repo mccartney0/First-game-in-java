@@ -717,10 +717,25 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 drawOffsetX = offsetX;
                 drawOffsetY = offsetY;
                 g.drawImage(image, offsetX, offsetY, offsetX + scaledWidth, offsetY + scaledHeight, null);
-                // Translada os overlays para o espaço do jogo centralizado
-                // (fullscreen com letterboxing), revertendo depois.
-                Graphics2D overlayG = (Graphics2D) g.create();
-                overlayG.translate(offsetX, offsetY);
+		// Translada os overlays para o espaço do jogo centralizado
+		// (fullscreen com letterboxing), revertendo depois.
+		Graphics2D overlayG = (Graphics2D) g.create();
+		overlayG.translate(offsetX, offsetY);
+		// Redimensionamento da janela/fullscreen parcial: quando a janela não
+		// bate exatamente com buffer*SCALE, os overlays (HUD, minimapa, textos
+		// centrais) ficavam deslocados e ilegíveis. A escala abaixo mapeia o
+		// espaço do jogo (buffer*SCALE) para a área visível da janela.
+		double overlayScaleX = Math.max(1.0, (double) windowWidth / scaledWidth);
+		double overlayScaleY = Math.max(1.0, (double) windowHeight / scaledHeight);
+		if (Math.abs(overlayScaleX - 1.0) > 0.001 || Math.abs(overlayScaleY - 1.0) > 0.001) {
+			overlayG.scale(overlayScaleX, overlayScaleY);
+		}
+		// Texto dos overlays (HUD, banner, game over) com antialiasing e
+		// métricas fracionárias: leitura nítida em qualquer resolução.
+		overlayG.setRenderingHint(java.awt.RenderingHints.KEY_TEXT_ANTIALIASING,
+				java.awt.RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+		overlayG.setRenderingHint(java.awt.RenderingHints.KEY_FRACTIONALMETRICS,
+				java.awt.RenderingHints.VALUE_FRACTIONALMETRICS_ON);
 		// Durante a transição de fase (banner de conclusão / lore) as HUDs
 		// de combate ficam escondidas para deixar o momento mais limpo.
 		boolean hidingHud = questCompletedPending || showLevelTransition > 0;
