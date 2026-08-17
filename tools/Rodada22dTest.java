@@ -86,7 +86,7 @@ public class Rodada22dTest {
 				java.nio.file.Paths.get("src/com/traduvertgames/main/Game.java")));
 		check("Faixa de conclusao exige loja fechada no render"
 				+ " (!ShopManager.isOpen() na condicao)",
-			src.contains("if (showLevelTransition > 0 && !ShopManager.isOpen())"));
+			src.contains("showLevelTransition > 0 && !ShopManager.isOpen()") && src.contains("!ShopManager.isOpen()"));
 
 		// ---- 3) Fade da transição esmaece rápido ----
 		Field alpha = Game.class.getDeclaredField("transitionAlpha");

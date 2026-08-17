@@ -45,15 +45,20 @@ public class Enemy extends Entity {
         WARBRINGER(18.0, 0.95, 1.1, 4.2, 6.5, 7, 90, 160, 140, new Color(233, 30, 99)),
         OVERSEER(28.0, 1.1, 1.2, 4.6, 5.2, 7, 80, 240, 160, new Color(121, 134, 203)),
         // Supervisor-Prime: a mente da colônia — chefe final da campanha,
-        // com mais vida, dano e alcance que o OVERSEER comum.
-        OVERSEER_PRIME(52.0, 1.15, 1.3, 5.4, 5.8, 8, 70, 240, 160, new Color(208, 25, 55)),
+        // com mais vida e alcance que o OVERSEER comum. Rodada 23c: dano de
+        // projétil reduzido (5.8 → 5.0) — a rajada dupla da fúria permanecia
+        // letal demais para o piloto sem escudo.
+        OVERSEER_PRIME(52.0, 1.15, 1.3, 5.4, 5.0, 8, 70, 240, 160, new Color(208, 25, 55)),
         // Infiltrador (rodada 20): frágil e incômodo — salta para a retaguarda do
         // piloto em intervalos curtos, forçando atenção constante às costas.
         SAPPER(3.0, 1.5, 1.8, 3.2, 1.8, 4, 60, 55, 88, new Color(0, 128, 64)),
         // Caçador furtivo: esquivo e letal, drena escudo e mana do piloto.
         PHANTOM(6.5, 1.45, 1.6, 4.4, 2.6, 5, 80, 140, 120, new Color(129, 199, 132)),
-        // Tanque de bloqueio: lento, robusto e regenera escudo com o tempo.
-        GUARDIAN(28.0, 0.7, 0.5, 3.4, 2.6, 6, 110, 200, 0, new Color(255, 87, 34));
+        // Tanque de bloqueio: lento, robusto e regenera vida com o tempo.
+        // Rodada 23c: vida aumentada (28 → 38) — o chefe da fase 7 morria em
+        // menos de um segundo de tiro padrão, sem desafiar o combate longo
+        // que o design de regeneração esperava.
+        GUARDIAN(38.0, 0.7, 0.5, 3.4, 2.6, 6, 110, 200, 0, new Color(255, 87, 34));
 
         private final double maxLife;
         private final double speedMultiplier;

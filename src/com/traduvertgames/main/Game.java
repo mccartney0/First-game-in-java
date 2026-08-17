@@ -552,7 +552,14 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 		}
 
-                if ("NORMAL".equals(gameState)) {
+			// Trilha sonora adaptativa (rodada 23): o crossfade da música é
+			// conduzido em QUALQUER gameState — no novo jogo o estado inicial
+			// é MENU (seleção de arma) e o update só rodava dentro do bloco
+			// NORMAL, o que deixava a música muda até o primeiro jogo
+			// carregado via loadSlot (que pula direto para NORMAL). Agora o
+			// tema da fase inicial entra em crossfade desde o menu.
+			MusicManager.update();
+			if ("NORMAL".equals(gameState)) {
 // Salvar o jogo (formato JSON correto com slots)
                         if (Game.saveGame) {
                                 Game.saveGame = false;
@@ -618,9 +625,9 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				ParticleSystem.update();
 				FloatingText.update();
 				MissionBanner.update();
-				// Trilha sonora adaptativa (rodada 22): conduz o crossfade.
-				MusicManager.update();
-				// Inventário (rodada 22): decai o cooldown de uso.
+				// O crossfade da música roda no topo do update() para todos os
+				// gameStates (ver linha acima do bloco NORMAL). Inventário
+				// (rodada 22): decai o cooldown de uso.
 				InventoryManager.update();
 
                         if (QuestManager.isObjectiveComplete()) {
@@ -740,9 +747,13 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			// invisíveis durante o respiro inicial da nova fase.
 			for (int i = 0; i < entities.size(); i++) {
 				Entity e = entities.get(i);
-				if ((questCompletedPending || isTransitionCooldown()) && e instanceof Enemy) {
-					continue;
-				}
+			// Rodada 23: no game over os inimigos também ficam ocultos —
+			// antes a tela de Game Over mostrava o cenário de combate com
+			// mobs por trás do overlay, poluindo a leitura.
+			if ((questCompletedPending || isTransitionCooldown()
+					|| "GAMEOVER".equals(gameState)) && e instanceof Enemy) {
+				continue;
+			}
 				e.render(g);
 			}
 		for (int i = 0; i < bullets.size(); i++) {
@@ -879,28 +890,33 @@ if (!hidingHud) {
                         Graphics2D g2 = overlayG;
                         g2.setColor(new Color(0, 0, 0, 120));
                         g2.fillRect(0, 0, scaledWidth, scaledHeight);
-                        g.setFont(new Font("arial", Font.BOLD, 36));
-                        g.setColor(Color.white);
-                        drawCenteredString(overlayG, "Game Over", scaledHeight / 2 - 50);
-                        			g.setFont(new Font("arial", Font.BOLD, 28));
+                        			// Rodada 23: fontes e posições proporcionais ao SCALE — antes os
+			// textos usavam fontes absolutas (36/28/24/16) e coordenadas de
+			// janela que não acompanhavam drawGameOverActions (botões com
+			// fonte 20 no espaço escalado), gerando telas desalinhadas em
+			// tela cheia.
+			int unit = SCALE / 4;
+			g.setFont(new Font("arial", Font.BOLD, 32 * unit));
+			g.setColor(Color.white);
+			drawCenteredString(overlayG, "Game Over", scaledHeight / 2 - 52 * unit);
+			g.setFont(new Font("arial", Font.BOLD, 14 * unit));
 			if (showMessageGameOver) {
-				drawCenteredString(overlayG, ">Setas/A-D para escolher — Enter para confirmar — ESC para o menu<",
-						scaledHeight / 2 + 4);
+				drawCenteredString(overlayG, "> Setas/A-D para escolher — Enter para confirmar — ESC para o menu <",
+						scaledHeight / 2 + 2 * unit);
 			}
-			g.setFont(new Font("arial", Font.PLAIN, 16));
+			g.setFont(new Font("arial", Font.PLAIN, 12 * unit));
 			g.setColor(new Color(200, 200, 200));
 			if (menuReturnTimer > 0) {
 				drawCenteredString(overlayG, "Voltando ao menu em " + ((menuReturnTimer + 29) / 30) + "s...",
-						scaledHeight / 2 + 142);
+						scaledHeight / 2 + 142 * unit);
 			}
 			// Botões de ação da tela de game over (rodada de UX) — o botão
 			// selecionado recebe um painel de destaque para leitura clara.
 			drawGameOverActions(overlayG, scaledWidth, scaledHeight);
-
-                        g.setFont(new Font("arial", Font.BOLD, 24));
-                        drawCenteredString(overlayG, "Pontuação final: " + Game.getScore(), scaledHeight / 2 + 52);
-                        drawCenteredString(overlayG, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 82);
-                        drawCenteredString(overlayG, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 112);
+			g.setFont(new Font("arial", Font.BOLD, 18 * unit));
+			drawCenteredString(overlayG, "Pontuação final: " + Game.getScore(), scaledHeight / 2 + 48 * unit);
+			drawCenteredString(overlayG, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 72 * unit);
+			drawCenteredString(overlayG, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 96 * unit);
 
                 		} else if ("MENU".equals(gameState)) {
 				// Rodada 21: durante a transição de fase (card de estatísticas
@@ -930,9 +946,13 @@ if (!hidingHud) {
                 // Durante a loja entre fases a faixa escura fica suprimida
                 // (rodada 22d) — antes ela escurecia o centro da tela por cima
                 // do painel da loja, deixando a tela "permanecendo escura".
-                if (showLevelTransition > 0 && !ShopManager.isOpen()) {
-                        Graphics2D g2 = overlayG;
-                        // Faixa de conclusão com alpha mais sutil (rodada 22d): a
+		// Rodada 23: a faixa de conclusão é suprimida enquanto o card de
+		// estatísticas estiver visível — antes os dois textos ("Fase X
+		// concluída!", próxima fase, missão) eram desenhados por cima do
+		// card, duplicando as mesmas informações.
+		if (showLevelTransition > 0 && !ShopManager.isOpen() && !com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
+			Graphics2D g2 = overlayG;
+			// Faixa de conclusão com alpha mais sutil (rodada 22d): a
                         // faixa escura pesada (190) sobre o jogo deixava a tela
                         // parecendo "presa no escuro" por 5 segundos.
                         g2.setColor(new Color(0, 0, 0, 120));
@@ -1658,11 +1678,15 @@ if (!hidingHud) {
 	public static void advanceToNextLevel() {
 		CUR_LEVEL++;
 		if (CUR_LEVEL > MAX_LEVEL) {
-			// Pós-campanha: mantém a fase 8 (Núcleo Central) e entra no
-			// modo sobrevivência com ondas infinitas e dificuldade crescente.
+			// Pós-campanha: a conquista do Núcleo Central abre as Profundezas
+			// — o modo infinito procedurais (mapas gerados por semente, chefes
+			// rotativos e dificuldade sub-linear) em vez da arena fixa. A arena
+			// clássica continua acessível pelo seletor de fases (entrada "Modo
+			// Infinito") para quem preferir o desafio de ondas.
 			CUR_LEVEL = MAX_LEVEL;
-			instance.levelPlus += 1;
-			enterSurvivalMode();
+			enterInfiniteMode();
+			// Remove os projéteis inimigos em voo antes de carregar o mapa procedural.
+			bullets.clear();
 			// O progresso de fase encerra a loja aberta (ou level up) para seguir.
 			if (ShopManager.isOpen()) {
 				ShopManager.close();
@@ -1748,6 +1772,7 @@ if (!hidingHud) {
 		}
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		startProceduralLevel(1);
+		WaveManager.startArena();
 		// Cooldown de respiro (rodada 21): inimigos não atacam de imediato.
 		transitionCooldown = RESPIRO_FRAMES;
 		showLevelTransition = 90 + RESPIRO_FRAMES;

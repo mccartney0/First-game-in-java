@@ -36,7 +36,11 @@ public final class InfiltratorObjective extends BaseObjective {
 
 	@Override
 	public void onEnemyKilled(Enemy enemy) {
-		if (!bossDefeated && enemy.isBoss() && enemy.getVariant() == Enemy.Variant.OVERSEER) {
+		// O chefe da fase 8 é o Supervisor-Prime; a verificação também
+		// aceita a variante OVERSEER por compatibilidade (rodada 23b).
+		if (!bossDefeated && enemy.isBoss()
+				&& (enemy.getVariant() == Enemy.Variant.OVERSEER
+					|| enemy.getVariant() == Enemy.Variant.OVERSEER_PRIME)) {
 			bossDefeated = true;
 		}
 	}
