@@ -249,7 +249,7 @@ public final class MissionHud {
 			Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
 			g2.setFont(smallFont);
 			String distLabel = String.format("%dm", (int) (distance / 16));
-			int size = 9 * s / 4 + 2;
+			int size = 14 * s / 4 + 2;
 			double tailAngle = angle + Math.PI; // direção oposta: cauda do cursor
 			double headAngle1 = angle + Math.toRadians(150);
 			double headAngle2 = angle - Math.toRadians(150);
