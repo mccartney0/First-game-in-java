@@ -153,6 +153,13 @@ public final class SaveManager {
 				session.put(key, entry.getValue());
 			}
 		}
+		// Inventário (rodada 22): quantidades persistidas na sessão.
+		session.put("inventario", new HashMap<String, Object>(InventoryManager.serialize()));
+		// Missões secundárias (rodada 22): progresso e concluídas persistidas.
+		session.put("sideQuests", new HashMap<String, Object>(
+				com.traduvertgames.quest.SideQuestManager.serialize()));
+		session.put("sideQuestsDone", new HashMap<String, Boolean>(
+				com.traduvertgames.quest.SideQuestManager.getCompleted()));
 		Map<String, Object> progress = buildProgressMap(game);
 		// As flags de diálogos por NPC/fase são persistidas em memória e
 		// refletidas no progress a cada gravação (a migração v2→v3 inicia
@@ -167,8 +174,14 @@ public final class SaveManager {
 		slot.put("survivalRecord", com.traduvertgames.main.WaveManager.getSurvivalRecord());
 		slot.put("timestamp", currentTimestamp());
 		// Remove as chaves antigas agora duplicadas dentro de session.
+		// A própria chave "session" (de uma gravação anterior do mesmo slot)
+		// também sai do nível superior, pois o conteúdo dela é recriado
+		// na sessão nova — ignorar as chaves estruturais evita apagar a
+		// sessão recém-instalada.
 		for (String key : session.keySet()) {
-			slot.remove(key);
+			if (!"session".equals(key)) {
+				slot.remove(key);
+			}
 		}
 
 		updateCampaign(root, game);
@@ -372,6 +385,41 @@ public final class SaveManager {
 		int savedBestComboSession = toInt(session.get("melhorComboSessao"));
 		int savedWeaponOrdinal = toInt(session.get("armaAtual"));
 		int savedWeaponMask = toInt(session.get("armasDesbloqueadas"));
+
+		// Inventário (rodada 22): restaura as quantidades salvas da sessão.
+		@SuppressWarnings("unchecked")
+		Map<String, Object> savedInventory = (Map<String, Object>) session.get("inventario");
+		if (savedInventory != null) {
+			Map<String, Integer> inventory = new HashMap<String, Integer>();
+			for (Map.Entry<String, Object> entry : savedInventory.entrySet()) {
+				if (entry.getValue() instanceof Number) {
+					inventory.put(entry.getKey(), ((Number) entry.getValue()).intValue());
+				}
+			}
+			InventoryManager.deserialize(inventory);
+		} else {
+			InventoryManager.reset();
+		}
+		// Missões secundárias (rodada 22): progresso e concluídas restaurados.
+		@SuppressWarnings("unchecked")
+		Map<String, Object> savedQuests = (Map<String, Object>) session.get("sideQuests");
+		@SuppressWarnings("unchecked")
+		Map<String, Boolean> savedDone = (Map<String, Boolean>) session.get("sideQuestsDone");
+		if (savedQuests != null || savedDone != null) {
+			Map<String, Integer> questsSnapshot = new HashMap<String, Integer>();
+			if (savedQuests != null) {
+				for (Map.Entry<String, Object> entry : savedQuests.entrySet()) {
+					if (entry.getValue() instanceof Number) {
+						questsSnapshot.put(entry.getKey(),
+								((Number) entry.getValue()).intValue());
+					}
+				}
+			}
+			com.traduvertgames.quest.SideQuestManager.deserialize(
+					questsSnapshot,
+					savedDone != null ? new HashMap<String, Boolean>(savedDone)
+							: new HashMap<String, Boolean>());
+		}
 
 		Enemy.enemies = savedEnemies;
 		Game.setScore(savedScore);
@@ -579,6 +627,22 @@ public final class SaveManager {
 		return slot != null && (getSession(slot).containsKey("vida") || getSession(slot).containsKey("level"));
 	}
 
+	/** Fase mais alta alcançada pela campanha no slot ativo: usada pela tela de
+	 *  seleção de fases para destravar apenas o progresso real do jogador
+	 *  (rodada 22b). Sem save válido, retorna 0. */
+	public static int getHighestUnlockedLevel() {
+		Map<String, Object> root = loadRoot();
+		if (root == null) {
+			return 0;
+		}
+		@SuppressWarnings("unchecked")
+		Map<String, Object> campaign = (Map<String, Object>) root.get("campaign");
+		if (campaign == null) {
+			return 0;
+		}
+		return toInt(campaign.get("maxLevelReached"));
+	}
+
 	/** Retorna a fase salva em um slot, ou -1 se vazio. */
 	public static int getSlotLevel(int slotId) {
 		Map<String, Object> root = loadRoot();
@@ -714,7 +778,12 @@ public final class SaveManager {
 			if (parsed instanceof Map) {
 				return (Map<String, Object>) parsed;
 			}
-		} catch (IOException ignored) {
+		} catch (Exception ignored) {
+			// Arquivo malformado (ex.: corrupção por queda de energia):
+			// tratar como ausência de save em vez de derrubar o jogo.
+			if (SAVE_FILE.exists()) {
+				SAVE_FILE.delete();
+			}
 		}
 		return emptyRoot();
 	}

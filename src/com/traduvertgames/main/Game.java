@@ -175,8 +175,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         public static boolean isTransitionCooldown() {
                 return transitionCooldown > 0;
         }
-        /** Opacidade do fade preto da transição de fase (150 = totalmente escuro). */
-        private static int transitionAlpha = 0;
+	/** Opacidade do fade preto da transição de fase (255 = totalmente escuro). */
+	private static int transitionAlpha = 0;
 
         public Game() throws IOException {
                 instance = this;
@@ -401,21 +401,33 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return OptionsConfig.getDamageTakenMultiplier();
         }
 
-	/** Recalcula o SCALE para que o buffer (384x216) caiba na área útil atual. */
+	/** Recalcula o SCALE para que o buffer (384x216) caiba na janela atual.
+	 * Rodada 22e: a escala usa o retângulo da JANELA inteira (nunca a área
+	 * útil do conteúdo) — a barra de tarefas do Windows e os insets do tema
+	 * deixam o content pane ~26-40px menor que a tela; calcular pela área
+	 * útil derrubava o SCALE (ex.: 4 → 3) e a tela ficava cercada de preto
+	 * como um "backdrop de modal". Com o tamanho da janela, o jogo mantém
+	 * o tamanho e o preenchimento preto do render cobre a sobra. */
 		public static void recomputeScale() {
-		int width = Math.max(1, frame.getContentPane().getWidth());
-		int height = Math.max(1, frame.getContentPane().getHeight());
+		java.awt.Rectangle b = frame.getBounds();
+		int width = Math.max(1, b.width);
+		int height = Math.max(1, b.height);
 		SCALE = Math.max(1, Math.min(width / WIDTH, height / HEIGHT));
 	}
 	/** Registra um listener que recompõe o SCALE sempre que a janela muda de
 	 * tamanho (incluindo a alternância de tela cheia com F11). */
 	public static void installResizeListener() {
-		frame.addComponentListener(new java.awt.event.ComponentAdapter() {
+			// Rodada 22e: maximização nativa pelo botão do Windows (sem F11)
+			// também é tela cheia: a janela ocupa o monitor e o SCALE deve
+			// preencher a tela, não encolher o jogo para caber na área útil.
+			frame.addComponentListener(new java.awt.event.ComponentAdapter() {
 			@Override
 			public void componentResized(java.awt.event.ComponentEvent e) {
+				boolean maximized = (frame.getExtendedState() & javax.swing.JFrame.MAXIMIZED_BOTH) != 0;
 				// Modo tela cheia (F11, maximização nativa): recalcula o SCALE
 				// para preencher o monitor mantendo a nitidez da pixel art.
-				if (fullscreen) {
+				if (fullscreen || maximized) {
+					if (maximized) { fullscreen = true; }
 					recomputeScale();
 					return;
 				}
@@ -454,7 +466,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			fullscreen = true;
 		} else {
 			frame.setExtendedState(javax.swing.JFrame.NORMAL);
-			frame.setSize(WIDTH * SCALE, HEIGHT * SCALE);
+			// O SCALE atual (tela cheia) vale para o tamanho alvo da janela —
+			// atualiza o tamanho ANTES de recomputeScale, senão a janela fica
+			// com o tamanho da tela inteira e o jogo encolhe na janela grande.
+			int targetW = WIDTH * SCALE;
+			int targetH = HEIGHT * SCALE;
+			frame.setSize(targetW, targetH);
 			frame.setLocationRelativeTo(null);
 			fullscreen = false;
 		}
@@ -572,7 +589,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 					// praticar sem risco (Player continua atualizando normalmente).
 					// Cooldown pós-transição (rodada 21): inimigos também ficam
 					// congelados até o jogador se orientar na nova fase.
-if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused() || isTransitionCooldown())) {
+if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused() || isTransitionCooldown() || isTransitioning())) {
 						continue;
 					}
 					e.update();
@@ -601,6 +618,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				ParticleSystem.update();
 				FloatingText.update();
 				MissionBanner.update();
+				// Trilha sonora adaptativa (rodada 22): conduz o crossfade.
+				MusicManager.update();
+				// Inventário (rodada 22): decai o cooldown de uso.
+				InventoryManager.update();
 
                         if (QuestManager.isObjectiveComplete()) {
                                 onObjectiveComplete();
@@ -658,10 +679,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		if (showLevelTransition > 0 && transitionCooldown <= 0) {
 			showLevelTransition--;
 		}
-		// Fade preto da transição não decai durante o cooldown: a nova fase
-		// só é revelada quando o jogador está pronto.
-		if (transitionAlpha > 0 && transitionCooldown <= 0) {
-			transitionAlpha = Math.max(0, transitionAlpha - 3);
+		// Fade preto da transição decai sempre, inclusive durante o cooldown
+		// (o cooldown congela apenas o aviso e o spawn de inimigos). O fade
+		// total "apaga" a fase antiga e a cena nova é revelada em seguida —
+		// sem escurecimento residual no meio da tela (rodada 22c).
+		if (transitionAlpha > 0) {
+			transitionAlpha = Math.max(0, transitionAlpha - 8);
 		}
 	}
 
@@ -800,8 +823,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// Durante a transição de fase (banner de conclusão / lore) as HUDs
 		// de combate ficam escondidas para deixar o momento mais limpo.
 		// Rodada 21: o card de estatísticas também conta como transição.
-		boolean hidingHud = questCompletedPending || showLevelTransition > 0
-				|| com.traduvertgames.graficos.PhaseStatsScreen.isShowing();
+		// Rodada 22: o inventário aberto também oculta a HUD de combate (o painel
+		// ocupa o centro inferior e o jogador não está em combate ativo).
+	boolean hidingHud = questCompletedPending || showLevelTransition > 0
+				|| com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
+				|| InventoryManager.isOpen();
 if (!hidingHud) {
 	MiniMap.render(overlayG);
 	// Texto do banner central renderizado no overlay (espaço escalado): letras
@@ -841,6 +867,8 @@ if (!hidingHud) {
 		damageOverlayFrames--;
 	}
 	DialogueManager.render(overlayG);
+	// Inventário (rodada 22): renderizado após o diálogo para ficar por cima.
+	InventoryManager.render(overlayG);
 	OnboardingManager.render(overlayG);
 	// A tela de escolha de arma inicial é desenhada por cima de tudo (inclusive
 	// do menu de pausa): durante a seleção o estado é MENU com pause=true, mas o
@@ -899,9 +927,15 @@ if (!hidingHud) {
 
                 // Aviso de transição de fase: a fase atual foi concluída e o jogo
                 // avança para a próxima assim que a loja/level up forem encerrados.
-                if (showLevelTransition > 0) {
+                // Durante a loja entre fases a faixa escura fica suprimida
+                // (rodada 22d) — antes ela escurecia o centro da tela por cima
+                // do painel da loja, deixando a tela "permanecendo escura".
+                if (showLevelTransition > 0 && !ShopManager.isOpen()) {
                         Graphics2D g2 = overlayG;
-                        g2.setColor(new Color(0, 0, 0, 190));
+                        // Faixa de conclusão com alpha mais sutil (rodada 22d): a
+                        // faixa escura pesada (190) sobre o jogo deixava a tela
+                        // parecendo "presa no escuro" por 5 segundos.
+                        g2.setColor(new Color(0, 0, 0, 120));
                         g2.fillRect(0, scaledHeight / 2 - 60, scaledWidth, 120);
                         g2.setColor(new Color(255, 235, 59));
                         g.setFont(new Font("arial", Font.BOLD, 26));
@@ -1003,9 +1037,14 @@ if (!hidingHud) {
 				// Navegação horizontal do menu por A/D e seta direita (rodada 15):
 				// evita mover o personagem pelos itens do menu.
 				menu.right = true;
-			} else {
-				player.right = true;
+				return;
 			}
+			if (InventoryManager.isOpen()) {
+				// Navegação do inventário por setas (inimigos congelados, sem movimento).
+				InventoryManager.navigateRight();
+				return;
+			}
+			player.right = true;
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			if ("GAMEOVER".equals(gameState)) {
 				this.gameOverSelection = (this.gameOverSelection + 1) % 2;
@@ -1014,12 +1053,22 @@ if (!hidingHud) {
 			}
 			if ("MENU".equals(gameState)) {
 				menu.left = true;
-			} else {
-				player.left = true;
+				return;
 			}
+			if (InventoryManager.isOpen()) {
+				InventoryManager.navigateLeft();
+				return;
+			}
+			player.left = true;
 		}
 
 		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+			if (InventoryManager.isOpen()) {
+				// Rodada 22: com o inventário aberto, as setas navegam a grade
+				// (sem mover o personagem nem ativar menus em cascata).
+				InventoryManager.navigateUp();
+				return;
+			}
 			if (showInitialWeaponSelect) {
 				initialWeaponSelection = Math.max(0, initialWeaponSelection - 1);
 				return;
@@ -1039,6 +1088,10 @@ if (!hidingHud) {
 			if (showInitialWeaponSelect) {
 				initialWeaponSelection = Math.min(getUnlockedInitialWeapons().length - 1,
 						initialWeaponSelection + 1);
+				return;
+			}
+			if (InventoryManager.isOpen()) {
+				InventoryManager.navigateDown();
 				return;
 			}
 			player.down = true;
@@ -1135,6 +1188,11 @@ if (!hidingHud) {
 			this.escape = true;
 		}
 
+		// Rodada 22: Shift modificador nas opções do menu (ex.: diminuir o volume da trilha).
+		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+			menu.shift = true;
+		}
+
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
 			// do menu de pausa ao segurar a tecla).
@@ -1154,6 +1212,13 @@ if (!hidingHud) {
 			if (showInitialWeaponSelect) {
 				showInitialWeaponSelect = false;
 				returnToMainMenu();
+				return;
+			}
+			if (InventoryManager.isOpen()) {
+				// Rodada 22b: o ESC fecha o inventário antes de abrir a pausa —
+				// sem isso o painel ficava preso aberto (tela escura e HUD
+				// oculta), como reportado pelo jogador.
+				InventoryManager.toggle();
 				return;
 			}
 			if ("NORMAL".equals(gameState)) {
@@ -1221,27 +1286,64 @@ if (!hidingHud) {
                         }
                 }
 
-                if (e.getKeyCode() == KeyEvent.VK_R) {
-                        if (DialogueManager.isActive()) {
-                                DialogueManager.advance();
-                        } else if ("NORMAL".equals(gameState)) {
-                                DialogueManager.startNearestDialogue();
-                        }
-                }
+		// Rodada 22: tecla I abre/fecha o inventário visual.
+		if (e.getKeyCode() == KeyEvent.VK_I) {
+			if (DialogueManager.isActive()) {
+				// Inventário acessível durante o diálogo (sem abrir dois overlays).
+				return;
+			}
+			InventoryManager.toggle();
+			return;
+		}
 
+		if (e.getKeyCode() == KeyEvent.VK_R) {
+			if (DialogueManager.isActive()) {
+				DialogueManager.advance();
+			} else if ("NORMAL".equals(gameState) && !InventoryManager.isOpen()) {
+				DialogueManager.startNearestDialogue();
+			}
+		}
+
+		// Rodada 22: teclas 1/2/3 escolhem opções do diálogo ramificado.
+		if (DialogueManager.isActive()) {
+			int choice = 0;
+			if (e.getKeyCode() == KeyEvent.VK_1 || e.getKeyCode() == KeyEvent.VK_NUMPAD1) {
+				choice = 1;
+			} else if (e.getKeyCode() == KeyEvent.VK_2 || e.getKeyCode() == KeyEvent.VK_NUMPAD2) {
+				choice = 2;
+			} else if (e.getKeyCode() == KeyEvent.VK_3 || e.getKeyCode() == KeyEvent.VK_NUMPAD3) {
+				choice = 3;
+			} else {
+				choice = 0;
+			}
+			if (choice > 0 && com.traduvertgames.dialogue.DialogueManager.getBranchChoices().length >= choice) {
+				com.traduvertgames.dialogue.DialogueManager.selectBranchChoice(choice - 1);
+			}
+		}
+
+		// Rodada 22f: o Enter agora levanta o flag genérico de confirmação
+		// (this.enter) para qualquer overlay que o consuma — antes o card de
+		// estatísticas pós-fase (PhaseStatsScreen) nunca recebia o Enter,
+		// porque o único else-if era a cutscene de vitória, e o jogador ficava
+		// preso no card sem como fechá-lo (só pelo menu de pausa).
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 				if (DialogueManager.isActive()) {
 					DialogueManager.advance();
-				} else if (VictoryCutscene.isShowing()) {
+				} else if (InventoryManager.isOpen()) {
+					// Enter usa o item selecionado no inventário.
+					InventoryManager.useSelected();
+				} else {
 					this.enter = true;
 				}
 			}
 
-                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                        if (DialogueManager.isActive()) {
-                                DialogueManager.advance();
-                        }
-                }
+		if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+				if (DialogueManager.isActive()) {
+					DialogueManager.advance();
+				} else if (InventoryManager.isOpen()) {
+					InventoryManager.useSelected();
+				}
+			}
         }
 
 
@@ -1393,6 +1495,10 @@ if (!hidingHud) {
 			World.restartGame("level1.png");
 			LevelUpManager.reset();
 			WaveManager.reset();
+			// Inventário (rodada 22): novo jogo limpa o inventário.
+			InventoryManager.reset();
+			// Trilha sonora adaptativa (rodada 22): tema da fase inicial.
+			MusicManager.setZone(MusicManager.Zone.forLevel(1));
 			DashAbility.reset();
 			UltimateAbility.reset();
 			LootGuarantee.reset();
@@ -1568,8 +1674,8 @@ if (!hidingHud) {
 			// Cooldown de respiro (rodada 21) mesmo na entrada do modo
 			// sobrevivência: inimigos não atacam de imediato.
 			transitionCooldown = RESPIRO_FRAMES;
-			showLevelTransition = 180 + RESPIRO_FRAMES;
-		transitionAlpha = 150;
+			showLevelTransition = 90 + RESPIRO_FRAMES;
+		transitionAlpha = 255;
 			return;
 		}
 		// O progresso de fase encerra a loja aberta (ou level up) para seguir.
@@ -1592,30 +1698,37 @@ if (!hidingHud) {
 		// Rodada 21: o card fica pausado na frente do jogo e só fecha por Enter
 		// (sem auto-dismiss na campanha) — a tela não é arremessada ao combate.
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
-		// Transição de fase limpa: fade preto suave para "apagar" a fase
-		// antiga antes de revelar a nova, com HUDs escondidas no meio tempo.
-		// O fade decai apenas quando o cooldown pós-transição terminar.
-		transitionAlpha = 150;
-		showLevelTransition = 150 + RESPIRO_FRAMES;
+		// Transição de fase limpa: fade preto total "apaga" a fase antiga
+		// e esmaece rapidamente, revelando a nova fase sem escurecimento
+		// residual (rodada 22c). O HUD fica escondido no meio tempo.
+		// Fade total (255) que esmaece rápido — a revelação não pode ficar
+		// escurecida por segundos inteiros (rodada 22d: o "permanece escuro"
+		// após fechar a loja vinha daqui + da faixa escura da conclusão).
+		transitionAlpha = 255;
+		showLevelTransition = 90 + RESPIRO_FRAMES;
 		// Lore da nova fase: título e texto de ambientação em destaque dourado.
 		// Rodada 21: o banner de lore é adiado para o fim do respiro — antes
 		// ele competia com o card de estatísticas e com o aviso de conclusão.
 		com.traduvertgames.graficos.MissionBanner.reset();
-		com.traduvertgames.graficos.MissionBanner.scheduleLore(
-			com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(CUR_LEVEL),
-			com.traduvertgames.quest.StoryManager.getPhaseLore(CUR_LEVEL),
-			RESPIRO_FRAMES);
-	}
+			com.traduvertgames.graficos.MissionBanner.scheduleLore(
+				com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(CUR_LEVEL),
+				com.traduvertgames.quest.StoryManager.getPhaseLore(CUR_LEVEL),
+				RESPIRO_FRAMES);
+			// Trilha sonora adaptativa (rodada 22): tema da nova fase da campanha.
+			MusicManager.setZone(MusicManager.Zone.forLevel(CUR_LEVEL));
+		}
 
 	/**
 	 * Ativa o modo sobrevivência: ondas infinitas na Torre do Supervisor,
 	 * com a profundidade do modo (levelPlus) escalando a dificuldade.
 	 */
-	public static void enterSurvivalMode() {
+		public static void enterSurvivalMode() {
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		WaveManager.startArena();
-		showLevelTransition = 180 + RESPIRO_FRAMES;
-		transitionAlpha = 150;
+		// Trilha sonora adaptativa (rodada 22): tema de arena no modo sobrevivência.
+		MusicManager.setZone(MusicManager.Zone.ARENA);
+		showLevelTransition = 90 + RESPIRO_FRAMES;
+		transitionAlpha = 255;
 		transitionCooldown = RESPIRO_FRAMES;
 		// Card de estatísticas do ciclo anterior do modo infinito (se não for a
 		// primeira entrada, que já ganha a cutscene de vitória da campanha).
@@ -1637,8 +1750,10 @@ if (!hidingHud) {
 		startProceduralLevel(1);
 		// Cooldown de respiro (rodada 21): inimigos não atacam de imediato.
 		transitionCooldown = RESPIRO_FRAMES;
-		showLevelTransition = 180 + RESPIRO_FRAMES;
-		transitionAlpha = 150;
+		showLevelTransition = 90 + RESPIRO_FRAMES;
+		transitionAlpha = 255;
+		// Trilha sonora adaptativa (rodada 22): tema de arena no modo infinito.
+		MusicManager.setZone(MusicManager.Zone.ARENA);
 	}
 
 	/**
@@ -1661,8 +1776,8 @@ if (!hidingHud) {
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
 		startProceduralLevel(depth);
 		transitionCooldown = RESPIRO_FRAMES;
-		showLevelTransition = 180 + RESPIRO_FRAMES;
-		transitionAlpha = 150;
+		showLevelTransition = 90 + RESPIRO_FRAMES;
+		transitionAlpha = 255;
 	}
 
 	/** Carrega o mapa procedural da profundidade informada. */
@@ -1818,6 +1933,9 @@ if (!hidingHud) {
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();
+		// Trilha sonora adaptativa (rodada 22): volta ao menu — pausar o tema
+		// (a música do menu é o Sound.music clássico, tratado pelo Menu).
+		MusicManager.pause();
 		damageOverlayFrames = 0;
 		showInitialWeaponSelect = false;
 		if (this.menu != null) {

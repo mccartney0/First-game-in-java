@@ -1,6 +1,8 @@
 package com.traduvertgames.quest;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.traduvertgames.entities.Enemy;
@@ -48,6 +50,9 @@ public class HoldObjective extends BaseObjective {
 		super(title, description);
 	}
 
+	/** Posições dos beacons não ativados recuperadas de um save (rodada 22b). */
+	private final List<int[]> restoredBeaconPositions = new ArrayList<int[]>();
+
 	@Override
 	public void onLevelStart() {
 		trackedBeacons.clear();
@@ -72,7 +77,14 @@ public class HoldObjective extends BaseObjective {
 	 */
 	@Override
 	public void onLevelLoaded() {
-		if (spawned || QuestManager.getCurrentLevel() != 2) {
+		// Após um recarregamento de save, o beacon pode ter sido recriado pelo
+		// deserializeState (onBeaconSpawned no construtor) ou guardado como
+		// posição pendente (onLevelStart limpa o registro). Reconecta os beacons
+		// restaurados ao objetivo em vez de criar um segundo beacon em cima deles.
+		if (reconnectRestoredBeacons()) {
+			return;
+		}
+		if (QuestManager.getCurrentLevel() != 2) {
 			return;
 		}
 		int tx = 17;
@@ -127,7 +139,8 @@ public class HoldObjective extends BaseObjective {
 				continue;
 			}
 			// Inimigos removidos já saem das listas (destroySelf), então
-			// quem estiver na lista está vivo.
+			// quem estiver na lista está vivo (e ainda não passou pela
+			// remoção de entidades do frame).
 			Enemy enemy = (Enemy) e;
 			for (QuestBeacon beacon : trackedBeacons) {
 				double dx = enemy.getX() - beacon.getX();
@@ -154,8 +167,19 @@ public class HoldObjective extends BaseObjective {
 		if (trackedBeacons.isEmpty() || !spawned) {
 			return lastProgress.isEmpty() ? "Localize o beacon do setor" : lastProgress;
 		}
+		boolean activated = true;
+		for (QuestBeacon beacon : trackedBeacons) {
+			if (!beacon.isActivated()) {
+				activated = false;
+				break;
+			}
+		}
 		String text;
-		if (invaders > 0) {
+		if (!activated) {
+			// Rodada 22b: enquanto o beacon não for ativado, a dica orienta o
+			// jogador a permanecer encostado nele (ele é pequeno e silencioso).
+			text = "Permaneça junto ao beacon para ativar";
+		} else if (invaders > 0) {
 			text = "Defenda! " + invaders + " invasor" + (invaders == 1 ? "" : "es") + " na zona";
 		} else {
 			int percent = (int) Math.round(100.0 * channel / CHANNEL_MAX);
@@ -175,9 +199,22 @@ public class HoldObjective extends BaseObjective {
 		return isComplete() ? null : "Beacon do setor";
 	}
 
+	/** Cor fixa do beacon programático da fase 2 (para restaurar no save). */
+	private static final java.awt.Color BEACON_COLOR = new java.awt.Color(0x4CAF50);
+
 	@Override
 	public String serializeState() {
-		return "SPAWNED=" + spawned + ";CHANNEL=" + channel;
+		StringBuilder positions = new StringBuilder();
+		for (QuestBeacon beacon : trackedBeacons) {
+			if (!beacon.isActivated()) {
+				if (positions.length() > 0) {
+					positions.append('|');
+				}
+				positions.append(beacon.getX()).append(',').append(beacon.getY());
+			}
+		}
+		return "SPAWNED=" + spawned + ";CHANNEL=" + channel
+				+ ";INVADERS=" + invaders + ";BEACONS=" + positions.toString();
 	}
 
 	@Override
@@ -185,6 +222,7 @@ public class HoldObjective extends BaseObjective {
 		if (state == null || state.isEmpty()) {
 			return;
 		}
+		List<int[]> beaconPositions = new ArrayList<int[]>();
 		for (String part : state.split(";")) {
 			if (part.startsWith("SPAWNED=")) {
 				spawned = "true".equalsIgnoreCase(part.substring("SPAWNED=".length()));
@@ -194,7 +232,94 @@ public class HoldObjective extends BaseObjective {
 				} catch (NumberFormatException ex) {
 					channel = 0;
 				}
+			} else if (part.startsWith("INVADERS=")) {
+				try {
+					invaders = Integer.parseInt(part.substring("INVADERS=".length()));
+				} catch (NumberFormatException ex) {
+					invaders = 0;
+				}
+			} else if (part.startsWith("BEACONS=")) {
+				// Rodada 22b: salva as posições dos beacons ainda não ativados —
+				// no recarregamento do save o mundo é recriado e o beacon
+				// físico não existe mais; ele é recriado aqui para a missão
+				// não travar em "Localize o beacon do setor".
+				String value = part.substring("BEACONS=".length());
+				if (!value.isEmpty()) {
+					for (String position : value.split("\\|")) {
+						int comma = position.indexOf(',');
+						if (comma < 0) {
+							continue;
+						}
+						int x = parseIntSafe(position.substring(0, comma), 0);
+						int y = parseIntSafe(position.substring(comma + 1), 0);
+						beaconPositions.add(new int[] { x, y });
+					}
+				}
 			}
+		}
+		// Guarda as posições dos beacons não ativados: os físicos são recriados
+		// abaixo (o mundo é refeito no carregamento e o beacon antigo não existe
+		// mais; no fluxo real do save, {@code prepareForLevel → restartGame →
+		// deserializeState} o mapa já está carregado quando o estado chega).
+		restoredBeaconPositions.addAll(beaconPositions);
+		recreateRestoredBeaconsNow();
+	}
+
+	/**
+	 * Recria imediatamente os beacons físicos pendentes do save. No fluxo real
+	 * do carregamento ({@code prepareForLevel → restartGame → deserializeState})
+	 * o mundo já existe quando o estado é restaurado — adiar a recriação para
+	 * {@link #onLevelLoaded()} deixaria a missão travada em
+	 * "Localize o beacon do setor" (o beacon só existiria em uma segunda
+	 * recarga do mapa). Retornar false indica que não havia beacons pendentes.
+	 */
+	private boolean recreateRestoredBeaconsNow() {
+		if (restoredBeaconPositions.isEmpty()) {
+			return false;
+		}
+		for (int[] position : restoredBeaconPositions) {
+			QuestBeacon beacon =
+					new QuestBeacon(position[0], position[1], BEACON_COLOR);
+			Game.entities.add(beacon);
+			onBeaconSpawned(beacon);
+		}
+		restoredBeaconPositions.clear();
+		return true;
+	}
+
+	/**
+		 * Reconecta os beacons restaurados do save: devolve os que ainda estão no
+		 * mundo ao objetivo e recria os que já se perderam. O retorno indica se o
+		 * objetivo já foi reconectado (para não criar um beacon duplicado).
+		 */
+	private boolean reconnectRestoredBeacons() {
+		// Re-registra os beacons físicos que sobreviveram à recarga do mundo.
+		for (int i = 0; i < Game.entities.size(); i++) {
+			if (Game.entities.get(i) instanceof QuestBeacon) {
+				QuestBeacon existing = (QuestBeacon) Game.entities.get(i);
+				if (!trackedBeacons.contains(existing)) {
+					onBeaconSpawned(existing);
+				}
+			}
+		}
+		if (!restoredBeaconPositions.isEmpty()) {
+			// Recria os beacons ainda não ativados na posição salva.
+			for (int[] position : restoredBeaconPositions) {
+				QuestBeacon beacon =
+						new QuestBeacon(position[0], position[1], BEACON_COLOR);
+				Game.entities.add(beacon);
+				onBeaconSpawned(beacon);
+			}
+			restoredBeaconPositions.clear();
+		}
+		return spawned && !trackedBeacons.isEmpty();
+	}
+
+	private static int parseIntSafe(String text, int defaultValue) {
+		try {
+			return Integer.parseInt(text);
+		} catch (NumberFormatException ex) {
+			return defaultValue;
 		}
 	}
 }

@@ -71,7 +71,13 @@ public final class DialogueManager {
 			return null;
 		}
 		target = nearest;
-		lines = buildLines(target);
+		// Rodada 22: diálogos ramificados definem a própria árvore de nós
+		// (BranchingNpc); falas lineares continuam via buildLines().
+		if (nearest instanceof BranchingNpc) {
+			lines = new String[] { ((BranchingNpc) nearest).getNodeText() };
+		} else {
+			lines = buildLines(target);
+		}
 		currentLine = 0;
 		active = true;
 		target.startInteraction();
@@ -88,8 +94,20 @@ public final class DialogueManager {
 	 * Avança a fala (Enter/Space). Na última linha, fecha o diálogo e entrega
 	 * a conclusão ao NPC e à missão ativa.
 	 */
-	public static void advance() {
+		public static void advance() {
 		if (!active || target == null) {
+			return;
+		}
+		// Rodada 22: diálogo ramificado — Enter avança no texto do nó ou
+		// conclui quando o nó é terminal.
+		if (target instanceof BranchingNpc) {
+			BranchingNpc branch = (BranchingNpc) target;
+			if (!branch.hasChoices()) {
+				close();
+				return;
+			}
+			// Sem escolha explícita digitada, escolhe a primeira opção.
+			selectBranchChoice(0);
 			return;
 		}
 		currentLine++;
@@ -97,6 +115,25 @@ public final class DialogueManager {
 			close();
 		} else {
 			SoundManager.play(SoundManager.Event.TUTORIAL_STEP);
+		}
+	}
+
+	/**
+	 * Aplica a escolha numerada (0..2) no nó atual de um BranchingNpc:
+	 * executa a ação da escolha, troca o nó de texto e toca o som de passo.
+	 */
+	public static void selectBranchChoice(int choiceIndex) {
+		if (!(target instanceof BranchingNpc)) {
+			return;
+		}
+		BranchingNpc branch = (BranchingNpc) target;
+		branch.selectChoice(choiceIndex);
+		SoundManager.play(SoundManager.Event.TUTORIAL_STEP);
+		if (branch.isTerminal()) {
+			close();
+		} else {
+			lines = new String[] { branch.getNodeText() };
+			currentLine = 0;
 		}
 	}
 
@@ -144,7 +181,24 @@ public final class DialogueManager {
 	}
 
 	public static boolean isLastLine() {
+		// Rodada 22: em nós ramificados, o último texto indica que existem
+		// escolhas numeradas (Enter conclui ou seleciona a primeira).
+		if (target instanceof BranchingNpc) {
+			return true;
+		}
 		return lines.length == 0 || currentLine >= lines.length - 1;
+	}
+
+	/** Escolhas do nó atual do diálogo ramificado (rodada 22). */
+	public static String[] getBranchChoices() {
+		if (target instanceof BranchingNpc) {
+			BranchingNpc branch = (BranchingNpc) target;
+			BranchingNpc.DialogueNode node = branch.getNode();
+			if (node != null && node.choiceTexts != null) {
+				return node.choiceTexts;
+			}
+		}
+		return new String[0];
 	}
 
 	private static double distanceToPlayer(InteractiveNpc npc) {
@@ -268,10 +322,33 @@ public final class DialogueManager {
 			g.drawString(line.toString(), lineX, lineY);
 		}
 
+		// Escolhas numeradas do diálogo ramificado (rodada 22)
+		String[] choices = getBranchChoices();
+		int choicesLineY = lineY;
+		for (int i = 0; i < choices.length; i++) {
+			if (choices[i] == null || choices[i].isEmpty()) {
+				continue;
+			}
+			String choiceText = (i + 1) + ". " + choices[i];
+			if (g.getFontMetrics().stringWidth(choiceText) > maxLineW) {
+				// Quebra da escolha em duas linhas quando exceder o painel.
+				g.drawString(choiceText.substring(0, Math.min(choiceText.length(), maxLineW / 7)),
+						lineX, choicesLineY);
+				choicesLineY += g.getFontMetrics().getHeight() + 2;
+				String rest = choiceText.substring(Math.min(choiceText.length(), maxLineW / 7));
+				g.drawString(rest, lineX + 14, choicesLineY);
+				choicesLineY += g.getFontMetrics().getHeight() + 2;
+			} else {
+				g.drawString(choiceText, lineX, choicesLineY);
+				choicesLineY += g.getFontMetrics().getHeight() + 2;
+			}
+		}
+
 		// Rodapé com progresso e dica de avanço
 		g.setFont(hintFont);
 		g.setColor(new Color(176, 190, 197));
-		g.drawString(hint, panelX + 16, panelY + panelHeight - 12);
+		String footerHint = choices.length > 0 ? "Digite 1-3 para escolher, Enter para a primeira" : hint;
+		g.drawString(footerHint, panelX + 16, panelY + panelHeight - 12);
 		int progW = g.getFontMetrics().stringWidth(progress);
 		g.drawString(progress, panelX + panelWidth - progW - 16, panelY + panelHeight - 12);
 	}

@@ -516,18 +516,22 @@ public class Player extends Entity {
                 savePersistentArsenal();
         }
 
-        public void checkCollisionLifePack() {
-                for (int i = 0; i < Game.entities.size(); i++) {
-                        Entity atual = Game.entities.get(i);
-                        if (atual instanceof LifePack) {
-                                if (Entity.isColliding(this, atual)) {
-                                        heal(40);
-                                        Game.entities.remove(i);
-                                        i--;
-                                }
-                        }
-                }
-        }
+	public void checkCollisionLifePack() {
+		for (int i = 0; i < Game.entities.size(); i++) {
+			Entity atual = Game.entities.get(i);
+			if (atual instanceof LifePack) {
+				if (Entity.isColliding(this, atual)) {
+					com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
+					// Rodada 22: kits de reparo vão para o inventário em vez de
+					// curar de imediato — o jogador escolhe o momento de usar (I).
+					com.traduvertgames.main.InventoryManager.addPickup(
+							com.traduvertgames.main.InventoryManager.ItemType.MEDKIT);
+					Game.entities.remove(i);
+					i--;
+				}
+			}
+		}
+	}
 
         public void checkCollisionAmmo() {
                 for (int i = 0; i < Game.entities.size(); i++) {
@@ -543,70 +547,72 @@ public class Player extends Entity {
                 }
         }
 
-        public void checkCollisionShieldOrb() {
-                for (int i = 0; i < Game.entities.size(); i++) {
-                        Entity current = Game.entities.get(i);
-                        if (current instanceof ShieldOrb) {
-                                ShieldOrb orb = (ShieldOrb) current;
-                                if (Entity.isColliding(this, orb)) {
-                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
-                                        addShield(orb.getShieldValue());
-                                        Game.entities.remove(i);
-                                        i--;
-                                }
-                        }
-                }
-        }
+	public void checkCollisionShieldOrb() {
+		for (int i = 0; i < Game.entities.size(); i++) {
+			Entity current = Game.entities.get(i);
+			if (current instanceof ShieldOrb) {
+				if (Entity.isColliding(this, current)) {
+					com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
+					// Rodada 22: órbitas de escudo vão para o inventário.
+					com.traduvertgames.main.InventoryManager.addPickup(
+							com.traduvertgames.main.InventoryManager.ItemType.SHIELD_ORB);
+					Game.entities.remove(i);
+					i--;
+				}
+			}
+		}
+	}
 
-        public void checkCollisionEnergyCell() {
-                for (int i = 0; i < Game.entities.size(); i++) {
-                        Entity current = Game.entities.get(i);
-                        if (current instanceof EnergyCell) {
-                                EnergyCell cell = (EnergyCell) current;
-                                if (Entity.isColliding(this, cell)) {
-                                        manaContinue = true;
-                                        addMana(cell.getManaRestore());
-                                        addWeaponEnergy(cell.getWeaponRestore());
-                                        Game.entities.remove(i);
-                                        i--;
-                                }
-                        }
-                }
-        }
+	public void checkCollisionEnergyCell() {
+		for (int i = 0; i < Game.entities.size(); i++) {
+			Entity current = Game.entities.get(i);
+			if (current instanceof EnergyCell) {
+				if (Entity.isColliding(this, current)) {
+					com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
+					// Rodada 22: células de energia vão para o inventário.
+					com.traduvertgames.main.InventoryManager.addPickup(
+							com.traduvertgames.main.InventoryManager.ItemType.ENERGY_CELL);
+					Game.entities.remove(i);
+					i--;
+				}
+			}
+		}
+	}
 
-        public void checkCollisionNanoMedkit() {
-                for (int i = 0; i < Game.entities.size(); i++) {
-                        Entity current = Game.entities.get(i);
-                        if (current instanceof NanoMedkit) {
-                                NanoMedkit kit = (NanoMedkit) current;
-                                if (Entity.isColliding(this, kit)) {
-                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
-                                        heal(kit.getHealAmount());
-                                        addShield(kit.getShieldAmount());
-                                        Game.entities.remove(i);
-                                        i--;
-                                }
-                        }
-                }
-        }
+	public void checkCollisionNanoMedkit() {
+		for (int i = 0; i < Game.entities.size(); i++) {
+			Entity current = Game.entities.get(i);
+			if (current instanceof NanoMedkit) {
+				if (Entity.isColliding(this, current)) {
+					com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
+					// Rodada 22: nanomedkits vão para o inventário.
+					com.traduvertgames.main.InventoryManager.addPickup(
+							com.traduvertgames.main.InventoryManager.ItemType.NANOMEDKIT);
+					Game.entities.remove(i);
+					i--;
+				}
+			}
+		}
+	}
 
-        public void checkCollisionOverclockModule() {
-                for (int i = 0; i < Game.entities.size(); i++) {
-                        Entity current = Game.entities.get(i);
-                        if (current instanceof OverclockModule) {
-                                OverclockModule module = (OverclockModule) current;
-                                if (Entity.isColliding(this, module)) {
-                                        com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
-                                        manaContinue = true;
-                                        addMana(module.getManaBoost());
-                                        addWeaponEnergy(module.getWeaponBoost());
-                                        Game.applyComboSurge(2, Game.getComboBaseDuration());
-                                        Game.entities.remove(i);
-                                        i--;
-                                }
-                        }
-                }
-        }
+	public void checkCollisionOverclockModule() {
+		for (int i = 0; i < Game.entities.size(); i++) {
+			Entity current = Game.entities.get(i);
+			if (current instanceof OverclockModule) {
+				if (Entity.isColliding(this, current)) {
+					com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
+					// Rodada 22: módulos de overclock vão para o inventário
+					// (o bônus de combo é aplicado na hora da coleta, pois o
+					// módulo também é equipamento passivo).
+					com.traduvertgames.main.InventoryManager.addPickup(
+							com.traduvertgames.main.InventoryManager.ItemType.OVERCLOCK);
+					Game.applyComboSurge(1, Game.getComboBaseDuration());
+					Game.entities.remove(i);
+					i--;
+				}
+			}
+		}
+	}
 
         public void heal(double amount) {
                 if (amount <= 0) {

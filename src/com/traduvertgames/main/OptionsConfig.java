@@ -53,6 +53,8 @@ public final class OptionsConfig {
     private static boolean soundEnabled = true;
     /** Ganho master dos efeitos em dB (0 = normal; cada passo = 2 dB). */
     private static int soundVolumeDb = 0;
+    /** Passos de 2 dB do ganho da trilha sonora (-10..+5 passos; 0 = normal). */
+    private static int musicVolumeDb = 0;
     private static Difficulty difficulty = Difficulty.NORMAL;
     private OptionsConfig() {
     }
@@ -75,6 +77,19 @@ public final class OptionsConfig {
         } else {
             Sound.music.stop();
         }
+        // Trilha adaptativa (rodada 22): volume separado da música do menu.
+        com.traduvertgames.main.MusicManager.applyMusicPreference();
+    }
+
+    /** Ganho da trilha sonora em dB (-20..+10, passos de 2). */
+    public static float getMusicVolume() {
+        return musicVolumeDb * 2.0f;
+    }
+
+    /** Aumenta/diminui o volume da trilha sonora (delta em passos de 2 dB). */
+    public static void adjustMusicVolume(int deltaDb) {
+        musicVolumeDb = Math.max(-10, Math.min(5, musicVolumeDb + deltaDb));
+        com.traduvertgames.main.MusicManager.applyMusicPreference();
     }
 
     public static boolean isSoundEnabled() {

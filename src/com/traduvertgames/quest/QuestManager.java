@@ -167,6 +167,8 @@ public final class QuestManager {
 
     public static void notifyEnemyKilled(Enemy enemy) {
         currentObjective.onEnemyKilled(enemy);
+        // Rodada 22: missões secundárias acompanham os kills da fase.
+        SideQuestManager.onEnemyKilled(enemy);
     }
 
     /** Registro de um NPC de escolta (usado pelo {@link EscortObjective}). */
@@ -258,6 +260,8 @@ public final class QuestManager {
 
     public static void update() {
         currentObjective.update();
+        // Rodada 22: missões de coleta acompanham o inventário a cada frame.
+        SideQuestManager.refreshCollectibles();
         processPendingRemovals();
     }
 
