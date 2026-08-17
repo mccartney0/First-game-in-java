@@ -100,7 +100,7 @@ public class Companion extends Entity {
 		companion.x = Game.player.getX();
 		companion.y = Game.player.getY();
 		Game.entities.add(companion);
-		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
+		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.COMPANION_SPAWN);
 	}
 
 	/** @return HP atual do companion (persistido no save). */
@@ -132,6 +132,8 @@ public class Companion extends Entity {
 				active = null;
 				ParticleSystem.explode((int) (this.x + width / 2.0), (int) (this.y + height / 2.0),
 						colorForType());
+			com.traduvertgames.main.SoundManager.play(
+					com.traduvertgames.main.SoundManager.Event.COMPANION_DEATH);
 			}
 			return;
 		}
@@ -215,9 +217,9 @@ public class Companion extends Entity {
 		Game.bullets.add(bullet);
 		fireCooldown = SCOUT_FIRE_INTERVAL_FRAMES;
 		// Faísca visual no disparo do scout.
-		ParticleSystem.spark((int) originX, (int) originY, colorForType());
+			ParticleSystem.spark((int) originX, (int) originY, colorForType());
 		com.traduvertgames.main.SoundManager.play(
-				com.traduvertgames.main.SoundManager.Event.COMPANION_SHOT);
+				com.traduvertgames.main.SoundManager.Event.SCOUT_SHOT);
 	}
 
 	private void updateShieldBot() {
@@ -230,6 +232,8 @@ public class Companion extends Entity {
 			// Pulso de escudo ao regenerar.
 			ParticleSystem.pulse((int) (x + width / 2.0), (int) (y + height / 2.0),
 					colorForType());
+			com.traduvertgames.main.SoundManager.play(
+					com.traduvertgames.main.SoundManager.Event.SHIELD_PULSE);
 		}
 		supportCooldown = SUPPORT_INTERVAL_FRAMES;
 	}
@@ -244,6 +248,8 @@ public class Companion extends Entity {
 			// Brilho de cura ao regenerar.
 			ParticleSystem.spark((int) (x + width / 2.0), (int) (y + height / 2.0),
 					colorForType());
+			com.traduvertgames.main.SoundManager.play(
+					com.traduvertgames.main.SoundManager.Event.FAIRY_HEAL);
 		}
 		supportCooldown = SUPPORT_INTERVAL_FRAMES;
 	}
