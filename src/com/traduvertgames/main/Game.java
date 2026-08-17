@@ -530,6 +530,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         }
 
                         this.restartGame = false; // Prevenção
+                        // Pausa real durante a conversa com NPC (tecla R): nada se move,
+                        // atira ou é coletado enquanto o diálogo estiver aberto. Somente o
+                        // DialogueManager avança (linhas da conversa, timer de fim).
+                        if (DialogueManager.isActive()) {
+                                ParticleSystem.update();
+                                return;
+                        }
                         updateComboTimer();
 
                         DashAbility.update();
@@ -723,10 +730,13 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		overlayG.translate(offsetX, offsetY);
 		// Redimensionamento da janela/fullscreen parcial: quando a janela não
 		// bate exatamente com buffer*SCALE, os overlays (HUD, minimapa, textos
-		// centrais) ficavam deslocados e ilegíveis. A escala abaixo mapeia o
-		// espaço do jogo (buffer*SCALE) para a área visível da janela.
-		double overlayScaleX = Math.max(1.0, (double) windowWidth / scaledWidth);
-		double overlayScaleY = Math.max(1.0, (double) windowHeight / scaledHeight);
+		// centrais) ficavam deslocados e cortados. A escala abaixo mapeia o
+		// espaço do jogo (buffer*SCALE) para a área visível da janela, tanto
+		// quando a janela é maior quanto quando é menor que o tamanho alvo.
+		double overlayScaleX = (double) windowWidth / scaledWidth;
+		double overlayScaleY = (double) windowHeight / scaledHeight;
+		drawOffsetX = offsetX;
+		drawOffsetY = offsetY;
 		if (Math.abs(overlayScaleX - 1.0) > 0.001 || Math.abs(overlayScaleY - 1.0) > 0.001) {
 			overlayG.scale(overlayScaleX, overlayScaleY);
 		}

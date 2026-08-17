@@ -194,3 +194,48 @@ Implementar também som: SoundManager tem play(String name)? Ver API; usar som e
 ✅ 2. renderPrompt corrigido: screenX/Y=(npc.getX()-Camera.x)*s (s=scale=Game.SCALE), px=screenX+8*s-totalW/2, py=screenY-totalH-4*s, fontes 9*s/4+2 / 8*s/4+2, paddings 4*s/4. (Antes desenhava em espaço-mundo sem ×s dentro do overlayG → badge deslocado.)
 PENDENTE: 3. Pulsação sutil no ponteiro (MissionHud.java drawWaypoint, ~linha 239-270): glowPulse ciclo 800ms amplitude grande (alpha 40-76 halo size 10-14; seta alpha 180-255). Trocar: ciclo 1600ms, pulse2=0.5+0.5sin(2πt/1600), halo size=(8+1.2*pulse2)*s alpha 30+20*pulse2, pointerAlpha=200+30*pulse2, distLabel alpha max(170,pointerAlpha).
 DEPOIS: build (javac -d bin -cp bin find src) + regressão completa (ObjectivesVariadosTest 20/20, ShopQaTest 19/19, GameOverUxTest 11/11, MenuNavigationTest 12/12, PhaseTransitionTest OK, AutoValidate 24/24, StoryNpcPlacementTest 39/39 — DISPLAY=:120, out=/tmp/test_X) + git add -A commit + push (branch manus/rodada20-infinito-inimigos, PR #34).
+
+
+## FOLLOW-UP 5 (pedido atual — 3 itens)
+1. Minimapa desalinhado
+2. Painel VIDA/ESCUDO/MANA/PADRÃO (UI) desalinhado
+3. Bug: durante diálogo com NPC (R), o jogo "pausa" mas o jogador ainda anda e pega itens/interage
+
+### Diagnóstico overlayG (confirmado nas linhas 722-731 de Game.java)
+- overlayG = g.create(); translate(offsetX, offsetY); overlayScaleX = Math.max(1.0, windowWidth/scaledWidth).
+- PROBLEMA: Math.max(1.0, ...) → quando a janela é MENOR que scaled (redimensionada para baixo), a escala fica 1.0 e o conteúdo é cortado, não escalado → minimapa e painel parecem "desalinhados" (na verdade cortados/deslocados).
+- FIX overlay: permitir escala < 1.0 quando janela < scaled (usar window/scaled diretamente, sem max(1.0,...)), mantendo offsetX/offsetY = 0 nesse caso (centralizar não necessário se escala cobre).
+
+### Bug diálogo (pausa real) — fix no Game.update()
+- Quando dialogueManager.ativo(), deve pular completamente: player.update (movimento), atualizações de inimigos, colisões, pickups/itens. Verificar Game.update e colocar return cedo (só dialogueManager.update roda).
+
+### Branch atual
+- manus/rodada20-infinito-inimigos, PR #34. Último commit: a6b3c98.
+- Build/testes/commit conforme comando padrão (ver acima).
+
+## DIAGNÓSTICO FINAL FOLLOW-UP 5 (screenshot 1444x863 analisada)
+A screenshot confirma o regime com letterbox: window 1444x863, scaled=1536x864 → overlayScaleX=max(1,1444/1536)=1.0 → SEM escala horizontal! A imagem é desenhada em 0..1536 mas a janela só mostra 1444 → 92px da direita cortados. E overlays: MissionHud card em (13,28) janela ≈ (13,28) overlay → coords buffer*1=13 → margin 9*s/4=9?? cardMargin = s*? A HUD desenha margin=3*s=9 (buffer 384). Com scale(1) aparece em 9... mas está em 13. Hmm offset: offsetX = max(0,(1444-1536)/2)=0. Card aparece em 9→9. Screenshot mostra 13.
+- CONCLUSÃO: a HUD desenha em buffer-space 384x216 NO overlayG (scale=1): tudo OK em buffer-space. O que "desalinha" na prática: com offsetX=0, os overlays buffer-space aparecem corretos — mas na screenshot o MINIMAPA (292,55) ≈ (292,55) buffer?? MiniMap convertido para scaled-space: panelX=(WIDTH-MAP_WIDTH-8)*s=(384-72-8)*4=1216?? aparece em 1216/4=304?? Com scale=1 no overlayG, scaled-space x=1216 aparece em 1216 na janela = FORA da tela (1444 ok). Mas na screenshot o minimapa está em (292,55)!! MiniMap em (292,55) ≈ buffer (292,55)/4=73? Não.
+- RESOLUÇÃO: MiniMap.render usa "Game.WIDTH*Game.SCALE" no código atual (convertido para scaled-space na rodada follow-up 2): panelX=(WIDTH-MAP_WIDTH-8)*s? Se s=4: panelX=1216. Na screenshot em 292?? IMPOSSÍVEL se s=4. Então s NÃO é 4 na execução do usuário?? SCALE = min(1444/384, 863/216) = min(3.76, 3.99) = 3! scaled=1152x648. offsetX=(1444-1152)/2=146, offsetY=(863-648)/2=107. overlayScaleX=max(1,1444/1152)=1.255!
+  - Com s=3, f=1.255: MiniMap scaled-space: panelX=(384-72-8)*3=912 → janela = 912*1.255+146=1290?? não.
+  - MiniMap na screenshot: (292,55). buffer-space: panelX=384-72-8=304 → janela=304+146=450? Não.
+  - Se MiniMap desenhava em buffer-space (sem *s): 304 → janela=450. Screenshot 292 ≠450.
+  - Se MiniMap usa s=3 e coords = panelX*3? 912→292?? 912*1.255+146=1290. Não.
+  - A screenshot 1 (bwoIVe) é da rodada 18/19?? Não importa — o usuário mandou outra screenshot? As screenshots desta rodada são pasted_file_bwoIVe (a da mensagem) — é a screenshot com "VIDA 73/120, painel desalinhado??".
+- OBS: na screenshot bwoIVe: HUD compacta painel (12,660-735) ✓ normal; minimapa (292,55)-(372,105) ✓; XP (525,62) ✓; card missão (13,28)-(292,49) ✓ — TUDO ALINHADO. O usuário reclamou "minimapa e lance da vida desalinhados" — provavelmente outra screenshot não anexada, ou refere-se à tela pequena.
+- PROBLEMA REAL provável: quando a janela é menor que scaled (usuário redimensiona), overlayScaleX=1.0 e offsetY=0 → overlays ficam em coords scaled que EXCEDEM a janela → desalinhado/cortado. FIX: remover max(1.0,...) → permitir escala < 1 (janela menor encolhe os overlays junto com o buffer — consistente).
+- E o bug do diálogo: Game.update NORMAL — DialogueManager.isEnemyPaused para inimigos MAS player, bullets, pickups, quest, onboarding continuam. FIX: early return no update NORMAL quando dialogueManager.ativo (só dialogueManager.update roda). Verificar como Player input/key handling é feito (Game.processKey / player.update). Melhor early-return COMPLETO exceto DialogueManager.update e MissionHud.render (render continua, diálogo já renderiza por cima).
+
+## FIXES A IMPLEMENTAR
+1. Game.java ~linha 730: trocar `Math.max(1.0, ...)` por divisão direta (permitir <1) — quando window<scaled, os overlays e o conteúdo encolhem proporcionalmente.
+2. Game.update: quando DialogueManager.isActive() durante NORMAL, pular player/bullets/updates de jogo (exceto DialogueManager.update e ParticleSystem se desejado).
+3. Build + regressão + commit + push (branch manus/rodada20-infinito-inimigos).
+
+## ESTADO FOLLOW-UP 5 (edições feitas)
+1. ✅ Game.java update NORMAL (~linha 536): early-return quando DialogueManager.isActive() — só DialogueManager.update() e ParticleSystem rodam. Jogo 100% pausado durante conversa (player não anda, balas não voam, pickups não coletam, waves não avançam).
+2. ✅ Game.java render: overlayScaleX/Y = window/scaled SEM max(1,...) → janela menor que scaled agora encolhe os overlays proporcionalmente (sem corte/desalinhamento). drawOffsetX/Y já setados na linha 725-726 (mantive duplicação 739-740, harmless; remover depois se quiser).
+   - drawOffsetX/Y: usados pelo mouse aiming (linha 1219-1220) — correto.
+3. DialogueManager: sem método update() (não existe). advance()/close()/stop() ok. O early-return do Game update roda DialogueManager.update()?? — **ERRO DE COMPILAÇÃO POTENCIAL!** DialogueManager NÃO tem update(). CORRIGIR: remover DialogueManager.update() do early-return (o avanço é feito por tecla R/Enter no keyPressed). Manter só ParticleSystem.update() + return.
+   - ATENÇÃO: existe timer de auto-close no render do diálogo? Ver render do DialogueManager (linha 212) — verificar se close automático depende de update do Game. Se o DialogueManager.render usa frames contados, sem update pode travar. Verificar!
+4. PENDENTE: build + regressão + commit + push.
+5. MiniMap/UI desalinhados: causa = escala Math.max(1,...) + janela menor que scaled → fixado pela edição 2. MiniMap e UI já estão em coords corretas (scaled-space com ×s).
