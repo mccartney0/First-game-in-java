@@ -279,13 +279,19 @@ public final class InventoryManager {
 				int c = count(item);
 				if (c > 0) {
 					g.setFont(new Font("arial", Font.BOLD, 11));
+					String label = item.displayName + " x" + c;
+					// Chip com largura proporcional ao texto (antes a largura
+					// fixa de 88px era menor que rótulos como "Overclock x1",
+					// fazendo um chip desenhar por cima do próximo — bug
+					// reportado na rodada 26).
+					int chipWidth = Math.max(88, g.getFontMetrics().stringWidth(label) + 24);
 					g.setColor(new Color(0, 0, 0, 200));
-					g.fillRoundRect(x - 2, y - 10, 88, 18, 6, 6);
+					g.fillRoundRect(x - 2, y - 10, chipWidth, 18, 6, 6);
 					g.setColor(item.color);
 					g.fillRect(x, y - 7, 8, 8);
 					g.setColor(Color.white);
-					g.drawString(item.displayName + " x" + c, x + 12, y);
-					x += g.getFontMetrics().stringWidth(item.displayName + " x" + c) + 22;
+					g.drawString(label, x + 12, y);
+					x += chipWidth + 8;
 					if (x > windowWidth - 120) {
 						break;
 					}
