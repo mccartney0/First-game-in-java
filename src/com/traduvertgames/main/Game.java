@@ -1321,13 +1321,18 @@ if (!hidingHud) {
 			}
 		}
 
+		// Rodada 22f: o Enter agora levanta o flag genérico de confirmação
+		// (this.enter) para qualquer overlay que o consuma — antes o card de
+		// estatísticas pós-fase (PhaseStatsScreen) nunca recebia o Enter,
+		// porque o único else-if era a cutscene de vitória, e o jogador ficava
+		// preso no card sem como fechá-lo (só pelo menu de pausa).
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 				if (DialogueManager.isActive()) {
 					DialogueManager.advance();
 				} else if (InventoryManager.isOpen()) {
 					// Enter usa o item selecionado no inventário.
 					InventoryManager.useSelected();
-				} else if (VictoryCutscene.isShowing()) {
+				} else {
 					this.enter = true;
 				}
 			}

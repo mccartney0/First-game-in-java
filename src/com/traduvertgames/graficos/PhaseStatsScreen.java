@@ -110,8 +110,11 @@ public final class PhaseStatsScreen {
 		int screenHeight = Game.HEIGHT * scale;
 		int unit = scale / 4;
 
-		int panelW = 300 * unit / 4;
-		int panelH = 150 * unit / 4;
+		// Rodada 22f: o "/4" extra esmagava o card para 75x37px e o texto para
+		// 4px de altura (ilegível) na escala padrão 4. O tamanho correto é
+		// proporcional à escala: 300px-base-4 → 300*unit px reais.
+		int panelW = 300 * unit;
+		int panelH = 152 * unit;
 		int panelX = (screenWidth - panelW) / 2;
 		int panelY = (screenHeight - panelH) / 2;
 
@@ -124,26 +127,26 @@ public final class PhaseStatsScreen {
 		g.drawRect(panelX, panelY, panelW - 1, panelH - 1);
 
 		int centerX = screenWidth / 2;
-		g.setFont(new Font("arial", Font.BOLD, 16 * unit / 4));
+		g.setFont(new Font("arial", Font.BOLD, 16 * unit));
 		String title = QuestTitle();
 		g.setColor(new Color(255, 214, 0, alpha));
-		g.drawString(title, centerX - g.getFontMetrics().stringWidth(title) / 2, panelY + 28 * unit / 4);
+		g.drawString(title, centerX - g.getFontMetrics().stringWidth(title) / 2, panelY + 28 * unit);
 
-		g.setFont(new Font("arial", Font.PLAIN, 12 * unit / 4));
+		g.setFont(new Font("arial", Font.PLAIN, 12 * unit));
 		g.setColor(new Color(235, 235, 235, alpha));
 		String timeLine = "Tempo: " + Game.formatLevelTime(capturedTimeMs);
-		g.drawString(timeLine, centerX - g.getFontMetrics().stringWidth(timeLine) / 2, panelY + 54 * unit / 4);
+		g.drawString(timeLine, centerX - g.getFontMetrics().stringWidth(timeLine) / 2, panelY + 54 * unit);
 		String killsLine = "Inimigos derrotados: " + capturedKills;
-		g.drawString(killsLine, centerX - g.getFontMetrics().stringWidth(killsLine) / 2, panelY + 72 * unit / 4);
+		g.drawString(killsLine, centerX - g.getFontMetrics().stringWidth(killsLine) / 2, panelY + 72 * unit);
 		String comboLine = "Combo máximo da fase: x" + capturedBestCombo;
-		g.drawString(comboLine, centerX - g.getFontMetrics().stringWidth(comboLine) / 2, panelY + 90 * unit / 4);
+		g.drawString(comboLine, centerX - g.getFontMetrics().stringWidth(comboLine) / 2, panelY + 90 * unit);
 
 		if (WaveManager.isArenaMode()) {
 			String waveLine = "Ondas sobrevividas: " + capturedWaves + " — Recorde: " + WaveManager.getSurvivalRecord();
-			g.drawString(waveLine, centerX - g.getFontMetrics().stringWidth(waveLine) / 2, panelY + 114 * unit / 4);
+			g.drawString(waveLine, centerX - g.getFontMetrics().stringWidth(waveLine) / 2, panelY + 112 * unit);
 		} else if (Enemy.enemies > 0) {
 			String totalLine = "Total acumulado na campanha: " + Enemy.enemies;
-			g.drawString(totalLine, centerX - g.getFontMetrics().stringWidth(totalLine) / 2, panelY + 114 * unit / 4);
+			g.drawString(totalLine, centerX - g.getFontMetrics().stringWidth(totalLine) / 2, panelY + 112 * unit);
 		}
 
 		// Melhor partida acumulada do save (bestRun v3): destaque dourado quando
@@ -152,23 +155,23 @@ public final class PhaseStatsScreen {
 				+ Game.formatLevelTime(SaveManager.getBestRunTimeMs()) + " — combo x"
 				+ SaveManager.getBestRunCombo();
 			g.drawString(bestLine, centerX - g.getFontMetrics().stringWidth(bestLine) / 2,
-					panelY + 132 * unit / 4);
+					panelY + 132 * unit);
 		if (isRecordBreaking()) {
-			g.setFont(new Font("arial", Font.BOLD, 12 * unit / 4));
+			g.setFont(new Font("arial", Font.BOLD, 12 * unit));
 			g.setColor(new Color(255, 214, 0, alpha));
 			String recordLine = "★ NOVO RECORDE GLOBAL ★";
 			g.drawString(recordLine, centerX - g.getFontMetrics().stringWidth(recordLine) / 2,
-					panelY + 148 * unit / 4);
+					panelY + 150 * unit);
 		} else {
-			g.setFont(new Font("arial", Font.PLAIN, 12 * unit / 4));
+			g.setFont(new Font("arial", Font.PLAIN, 12 * unit));
 			g.setColor(new Color(235, 235, 235, alpha));
 		}
 
 		if (framesElapsed > FADE_TOTAL) {
-			g.setFont(new Font("arial", Font.BOLD, 10 * unit / 4));
+			g.setFont(new Font("arial", Font.BOLD, 10 * unit));
 			g.setColor(new Color(255, 255, 255, (int) (alpha * blink())));
 			String hint = "ENTER: continuar";
-			g.drawString(hint, centerX - g.getFontMetrics().stringWidth(hint) / 2, panelY + panelH - 10);
+			g.drawString(hint, centerX - g.getFontMetrics().stringWidth(hint) / 2, panelY + panelH - 10 * unit);
 		}
 	}
 
