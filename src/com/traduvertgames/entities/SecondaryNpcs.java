@@ -30,7 +30,10 @@ public final class SecondaryNpcs {
 
 	/** Veterano Rex: missão de eliminações. */
 	public static InteractiveNpc createVeteranRex(int x, int y) {
-		final String questId = "rex_kills_" + com.traduvertgames.quest.QuestManager.getCurrentLevel();
+		int __level = com.traduvertgames.quest.QuestManager.getCurrentLevel();
+		final String questId = __level > com.traduvertgames.main.Game.MAX_LEVEL
+				? "rex_kills_deep"
+				: "rex_kills_" + __level;
 		final int targetKills = 10;
 		return new BranchingNpc(x, y, "Veterano Rex", new Color(120, 60, 40),
 				new Color(255, 224, 178)) {
@@ -47,7 +50,7 @@ public final class SecondaryNpcs {
 													SideQuestManager.Type.KILL_N, null, targetKills,
 													new Reward(60, 20, 0, 150));
 											SideQuestManager.register(quest);
-											SideQuestManager.activate(questId);
+											SideQuestManager.activateIfNeeded(questId);
 										},
 										null, null }),
 						new DialogueNode(
@@ -60,7 +63,7 @@ public final class SecondaryNpcs {
 													SideQuestManager.Type.KILL_N, null, targetKills,
 													new Reward(60, 20, 0, 150));
 											SideQuestManager.register(quest);
-											SideQuestManager.activate(questId);
+											SideQuestManager.activateIfNeeded(questId);
 										},
 										null, null }),
 						new DialogueNode(
@@ -73,7 +76,7 @@ public final class SecondaryNpcs {
 													SideQuestManager.Type.KILL_N, null, targetKills,
 													new Reward(60, 20, 0, 150));
 											SideQuestManager.register(quest);
-											SideQuestManager.activate(questId);
+											SideQuestManager.activateIfNeeded(questId);
 										},
 										null, null }),
 						// 3 — nó de progresso (usado após aceitar e conferir)
@@ -105,7 +108,10 @@ public final class SecondaryNpcs {
 
 	/** Pesquisadora Lila: missão de coleta no inventário. */
 	public static InteractiveNpc createResearcherLila(int x, int y) {
-		final String questId = "lila_collect_" + com.traduvertgames.quest.QuestManager.getCurrentLevel();
+		int __level = com.traduvertgames.quest.QuestManager.getCurrentLevel();
+		final String questId = __level > com.traduvertgames.main.Game.MAX_LEVEL
+				? "lila_collect_deep"
+				: "lila_collect_" + __level;
 		final int targetItems = 3;
 		return new BranchingNpc(x, y, "Pesquisadora Lila", new Color(40, 70, 140),
 				new Color(255, 224, 178)) {
@@ -123,7 +129,7 @@ public final class SecondaryNpcs {
 													InventoryManager.ItemType.ENERGY_CELL,
 													targetItems, new Reward(20, 30, 80, 100));
 											SideQuestManager.register(quest);
-											SideQuestManager.activate(questId);
+											SideQuestManager.activateIfNeeded(questId);
 										},
 										null, null, null }),
 						new DialogueNode(
@@ -141,7 +147,7 @@ public final class SecondaryNpcs {
 													InventoryManager.ItemType.ENERGY_CELL,
 													targetItems, new Reward(20, 30, 80, 100));
 											SideQuestManager.register(quest);
-											SideQuestManager.activate(questId);
+											SideQuestManager.activateIfNeeded(questId);
 										},
 										null, null }),
 						// 3 — recusa

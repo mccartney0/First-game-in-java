@@ -114,6 +114,19 @@ public final class SideQuestManager {
 		}
 	}
 
+	/**
+	 * Ativa a missão apenas se ela ainda não estiver ativa ou concluída.
+	 * Rodada 24: no modo infinito o NPC reaparece a cada profundidade, mas o
+	 * progresso da missão é global do ciclo — reativar apagaria o avanço do
+	 * piloto entre camadas.
+	 */
+	public static void activateIfNeeded(String id) {
+		if (!quests.containsKey(id) || isActive(id) || isCompleted(id)) {
+			return;
+		}
+		activate(id);
+	}
+
 	public static boolean isActive(String id) {
 		return quests.containsKey(id) && progress.containsKey(id) && !isCompleted(id);
 	}

@@ -1780,7 +1780,7 @@ if (!hidingHud) {
 	 * Gera o primeiro mapa procedural, entra no modo arena e exibe o banner de
 	 * transição do modo.
 	 */
-	public static void enterInfiniteMode() {
+		public static void enterInfiniteMode() {
 		if (instance != null) {
 			instance.levelPlus = 1;
 		}
@@ -1793,6 +1793,13 @@ if (!hidingHud) {
 		transitionAlpha = 255;
 		// Trilha sonora adaptativa (rodada 22): tema de arena no modo infinito.
 		MusicManager.setZone(MusicManager.Zone.ARENA);
+		// Rodada 24: a entrada nas Profundezas ganha o banner de lore da trama,
+		// com destaque dourado igual ao das fases de campanha.
+		com.traduvertgames.graficos.MissionBanner.reset();
+		com.traduvertgames.graficos.MissionBanner.scheduleLore(
+				com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(MAX_LEVEL + 1),
+				com.traduvertgames.quest.StoryManager.getPhaseLore(MAX_LEVEL + 1),
+				RESPIRO_FRAMES);
 	}
 
 	/**
@@ -1817,6 +1824,13 @@ if (!hidingHud) {
 		transitionCooldown = RESPIRO_FRAMES;
 		showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
+		// Rodada 24: cada nova profundidade exibe o banner de lore progressivo
+		// da trama das Profundezas (títulos de ciclo-chave em dourado).
+		com.traduvertgames.graficos.MissionBanner.reset();
+		com.traduvertgames.graficos.MissionBanner.scheduleLore(
+				com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(MAX_LEVEL + depth),
+				com.traduvertgames.quest.StoryManager.getPhaseLore(MAX_LEVEL + depth),
+				RESPIRO_FRAMES);
 	}
 
 	/** Carrega o mapa procedural da profundidade informada. */

@@ -57,14 +57,33 @@ public final class StoryManager {
 				return;
 			}
 		}
-		if (level >= 2 && level <= 8) {
+		// Rodada 24: as missões secundárias acompanham o piloto também nas
+		// Profundezas (modo infinito). Na campanha, os três NPCs aparecem entre
+		// as fases 2 e 8; no modo infinito, cada profundidade mantém um NPC
+		// rotativo (1 por ciclo), para as missões renderem recompensas sem
+		// poluir o layout procedural.
+		boolean inCampaign = level >= 2 && level <= 8;
+		if (inCampaign) {
+			// Campanha (fases 2-8): os três NPCs secundários presentes, cada
+			// um com seu tipo de missão.
 			Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createVeteranRex(0, 0));
-		}
-		if (level >= 3 && level <= 8) {
 			Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createResearcherLila(0, 0));
-		}
-		if (level >= 5 && level <= 8) {
 			Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createMerchantFinn(0, 0));
+		} else if (level > 8) {
+			// Modo infinito (Profundezas): um NPC rotativo por profundidade.
+			int depth = level - 8;
+			switch ((depth - 1) % 3) {
+			case 0:
+			default:
+				Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createVeteranRex(0, 0));
+				break;
+			case 1:
+				Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createResearcherLila(0, 0));
+				break;
+			case 2:
+				Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createMerchantFinn(0, 0));
+				break;
+			}
 		}
 		// Reposiciona os NPCs secundários recém-criados para chão válido,
 		// espalhados dos NPCs da campanha.
@@ -196,9 +215,31 @@ public final class StoryManager {
 		case 8:
 			return "O Núcleo Central";
 		default:
-			return "Sobrevivência — Camada " + (level - 8);
+			// Rodada 24a — narrativa das Profundezas: ciclos-chave a cada 3
+			// profundidades ganham título próprio (Camada Zero, Um, Dois,
+			// Três, Quatro), enquanto os níveis intermediários seguem dois
+			// estilos alternados ("Setor" e "Câmara de Contenção").
+			int depth = level - 8;
+			int keyIdx = (depth - 1) / 3;
+			if ((depth - 1) % 3 == 0) {
+				return DEEP_KEY_TITLES[keyIdx % DEEP_KEY_TITLES.length];
+			}
+			if (depth % 2 == 0) {
+				return "Profundidade " + depth + " — Câmara de Contenção "
+						+ DEEP_SECTION_LETTERS[(depth - 1) % DEEP_SECTION_LETTERS.length];
+			}
+			return "Profundidade " + depth + " — Setor "
+					+ DEEP_SECTION_LETTERS[(depth - 1) % DEEP_SECTION_LETTERS.length];
 		}
 	}
+
+	// Títulos rotativos dos ciclos-chave das Profundezas (trama progressiva).
+	private static final String[] DEEP_KEY_TITLES = { "Camada Zero — A Queda",
+			"Camada Um — O Abismo da IA", "Camada Dois — Ossuário de Ferro",
+			"Camada Três — A Mente Fragmentada",
+			"Camada Quatro — O Eco da Colônia" };
+	// Letras dos setores das profundezas intermediárias.
+	private static final String[] DEEP_SECTION_LETTERS = { "A", "B", "C" };
 
 	/** Linha de lore exibida ao entrar na fase (subtítulo do banner). */
 	public static String getPhaseLore(int level) {
@@ -220,9 +261,29 @@ public final class StoryManager {
 		case 8:
 			return "O Núcleo Central revela a mente por trás da colônia. Esta é a batalha final da campanha.";
 		default:
-			return "A profundidade aumenta. Quantas camadas você consegue sobreviver?";
+			// Rodada 24a — linhas de lore das Profundezas, coerentes com o
+			// título da profundidade correspondente.
+			int depth = level - 8;
+			int keyIdx = (depth - 1) / 3;
+			if ((depth - 1) % 3 == 0) {
+				return DEEP_KEY_LORE[keyIdx % DEEP_KEY_LORE.length];
+			}
+			if (depth % 2 == 0) {
+				return "Unidades de contenção patrulham esta câmara. O Supervisor"
+						+ " mantém reféns do passado da colônia trancados aqui.";
+			}
+			return "Um setor abandonado da colônia. Os sensores capturam"
+					+ " fragmentos de transmissão da mente artificial abaixo.";
 		}
 	}
+
+	// Lore rotativa dos ciclos-chave das Profundezas (subtítulo do banner).
+	private static final String[] DEEP_KEY_LORE = {
+			"A primeira queda. O que era a superfície virou ruína — e algo ainda responde aos nossos sinais.",
+			"Os restos da inteligência que governava a colônia se dissolvem neste abismo. Ela ainda ouve.",
+			"Guardiões de ferro guardam o que restou das tripulações anteriores. Nenhum piloto voltou.",
+			"A mente da colônia se despedaçou em ecos. Cada fragmento repete uma ordem que ninguém mais entende.",
+			"No fundo, o eco da colônia sussurra o nome de quem construiu tudo isso. Continue descendo." };
 
 	/** NPCs presentes na fase, para o HUD narrativo. */
 	public static String getStoryNpcsLabel(int level) {
