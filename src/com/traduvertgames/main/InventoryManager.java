@@ -268,8 +268,13 @@ public final class InventoryManager {
 		// 1) Barra de contadores na base da HUD (sempre visível no NORMAL,
 		//    mostrando os itens com quantidade > 0).
 		if ("NORMAL".equals(Game.gameState) && !open) {
+			// A barra de itens fica logo acima do painel da HUD compacta
+			// (rodada 22d): antes ela desenhava na base da tela e colidia com
+			// os contadores de VIDA/ESCUDO/MANA/ARMA do canto inferior
+			// esquerdo, deixando os textos sobrepostos.
+			int hudPanelHeight = (4 * 9 + 6) * Math.min(scale, 3);
 			int x = 16;
-			int y = windowHeight - 46;
+			int y = windowHeight - hudPanelHeight - 6 - 22;
 			for (ItemType item : SLOTS) {
 				int c = count(item);
 				if (c > 0) {
@@ -286,10 +291,10 @@ public final class InventoryManager {
 					}
 				}
 			}
-			// Dica do atalho I.
+			// Dica do atalho I, junto à barra de itens (sem colidir com a HUD).
 			g.setFont(new Font("arial", Font.BOLD, 10));
 			g.setColor(new Color(176, 190, 197));
-			g.drawString("I = inventario", 16, windowHeight - 16);
+			g.drawString("I = inventario", 16, y + 2);
 			return;
 		}
 

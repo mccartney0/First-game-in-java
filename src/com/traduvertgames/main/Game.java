@@ -910,9 +910,15 @@ if (!hidingHud) {
 
                 // Aviso de transição de fase: a fase atual foi concluída e o jogo
                 // avança para a próxima assim que a loja/level up forem encerrados.
-                if (showLevelTransition > 0) {
+                // Durante a loja entre fases a faixa escura fica suprimida
+                // (rodada 22d) — antes ela escurecia o centro da tela por cima
+                // do painel da loja, deixando a tela "permanecendo escura".
+                if (showLevelTransition > 0 && !ShopManager.isOpen()) {
                         Graphics2D g2 = overlayG;
-                        g2.setColor(new Color(0, 0, 0, 190));
+                        // Faixa de conclusão com alpha mais sutil (rodada 22d): a
+                        // faixa escura pesada (190) sobre o jogo deixava a tela
+                        // parecendo "presa no escuro" por 5 segundos.
+                        g2.setColor(new Color(0, 0, 0, 120));
                         g2.fillRect(0, scaledHeight / 2 - 60, scaledWidth, 120);
                         g2.setColor(new Color(255, 235, 59));
                         g.setFont(new Font("arial", Font.BOLD, 26));
@@ -1646,7 +1652,7 @@ if (!hidingHud) {
 			// Cooldown de respiro (rodada 21) mesmo na entrada do modo
 			// sobrevivência: inimigos não atacam de imediato.
 			transitionCooldown = RESPIRO_FRAMES;
-			showLevelTransition = 180 + RESPIRO_FRAMES;
+			showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
 			return;
 		}
@@ -1673,8 +1679,11 @@ if (!hidingHud) {
 		// Transição de fase limpa: fade preto total "apaga" a fase antiga
 		// e esmaece rapidamente, revelando a nova fase sem escurecimento
 		// residual (rodada 22c). O HUD fica escondido no meio tempo.
+		// Fade total (255) que esmaece rápido — a revelação não pode ficar
+		// escurecida por segundos inteiros (rodada 22d: o "permanece escuro"
+		// após fechar a loja vinha daqui + da faixa escura da conclusão).
 		transitionAlpha = 255;
-		showLevelTransition = 150 + RESPIRO_FRAMES;
+		showLevelTransition = 90 + RESPIRO_FRAMES;
 		// Lore da nova fase: título e texto de ambientação em destaque dourado.
 		// Rodada 21: o banner de lore é adiado para o fim do respiro — antes
 		// ele competia com o card de estatísticas e com o aviso de conclusão.
@@ -1696,7 +1705,7 @@ if (!hidingHud) {
 		WaveManager.startArena();
 		// Trilha sonora adaptativa (rodada 22): tema de arena no modo sobrevivência.
 		MusicManager.setZone(MusicManager.Zone.ARENA);
-		showLevelTransition = 180 + RESPIRO_FRAMES;
+		showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
 		transitionCooldown = RESPIRO_FRAMES;
 		// Card de estatísticas do ciclo anterior do modo infinito (se não for a
@@ -1719,7 +1728,7 @@ if (!hidingHud) {
 		startProceduralLevel(1);
 		// Cooldown de respiro (rodada 21): inimigos não atacam de imediato.
 		transitionCooldown = RESPIRO_FRAMES;
-		showLevelTransition = 180 + RESPIRO_FRAMES;
+		showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
 		// Trilha sonora adaptativa (rodada 22): tema de arena no modo infinito.
 		MusicManager.setZone(MusicManager.Zone.ARENA);
@@ -1745,7 +1754,7 @@ if (!hidingHud) {
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
 		startProceduralLevel(depth);
 		transitionCooldown = RESPIRO_FRAMES;
-		showLevelTransition = 180 + RESPIRO_FRAMES;
+		showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
 	}
 
