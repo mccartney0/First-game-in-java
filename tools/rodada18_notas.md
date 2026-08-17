@@ -1,4 +1,6 @@
-# Rodada 18 — Correção da seta, objetivos fases 3/4/5/7, HUD compacta
+# Rodada 18 — CONCLUÍDA (commit 4331e0a na branch manus/objetivos-fase, push feito; PR #32 aberto atualizado)
+
+Tudo aplicado e testado: reposicionamento dos NPCs (StoryManager fallback + pixel rosa do level1 removido), fases 3/5/7 redesenhadas, getTargetHint no BossHunt, seta sem sobrepor o card, marcador do alvo no MiniMap. Regressão completa verde: 20/20, 19/19, 12/12, transição OK, 24/24, 39/39. Commit message detalhado no histórico git.
 
 ## CONFIRMADO (teste via World.restartGame — fluxo real)
 

@@ -333,4 +333,27 @@ public class Companion extends Entity {
 	public void applyDamage(double amount) {
 		this.hp -= amount;
 	}
+
+	/** Cor da skin ativa, para o orbe do indicador da HUD e do preview da loja. */
+	public Color colorForHud() {
+		return colorForType();
+	}
+
+	/** Rótulo curto do tipo para a HUD (ex.: "DRONE", "ESCUDO", "FADA"). */
+	public String typeLabel() {
+		switch (type) {
+		case SHIELD_BOT:
+			return "ESCUDO";
+		case FAIRY:
+			return "FADA";
+		case SCOUT:
+		default:
+			return "DRONE";
+		}
+	}
+
+	/** Percentual de HP do companion (0..1) para a barra da HUD. */
+	public double hpRatio() {
+		return Math.max(0, Math.min(1, hp / BASE_HP));
+	}
 }

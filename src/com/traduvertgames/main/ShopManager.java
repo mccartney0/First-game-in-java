@@ -376,31 +376,62 @@ public final class ShopManager {
 				panelY + panelHeight + 56);
 	}
 
-	/** Mini preview da skin quando o item selecionado for uma skin de
-	 *  companion: mostra um orbe na cor exata que o companion terá. */
+	/** Preview da skin/companion selecionado (rodada 19): o orbe reutiliza a cor
+	 *  real do companion (com a skin, se já for dono dela; caso contrário,
+	 *  simula a cor da skin comprada) e um cartão mostra o nome do tipo. */
 	private static void renderSkinPreview(java.awt.Graphics g, int screenWidth,
 			int screenHeight) {
 		if (selection >= ITEMS.length) {
 			return;
 		}
 		ShopItem item = ITEMS[selection];
-		if (item != ShopItem.SKIN_DOURADO && item != ShopItem.SKIN_NEON
-				&& item != ShopItem.SKIN_CARMESIM) {
-			return;
-		}
-		com.traduvertgames.entities.Companion.CompanionSkin skin;
-		String skinName;
-		if (item == ShopItem.SKIN_DOURADO) {
+		com.traduvertgames.entities.Companion.CompanionSkin skin = null;
+		String skinName = null;
+		switch (item) {
+		case SKIN_DOURADO:
 			skin = com.traduvertgames.entities.Companion.CompanionSkin.DOURADO;
 			skinName = "Pré-visualização: Dourado";
-		} else if (item == ShopItem.SKIN_NEON) {
+			break;
+		case SKIN_NEON:
 			skin = com.traduvertgames.entities.Companion.CompanionSkin.NEON;
 			skinName = "Pré-visualização: Neon ciano";
-		} else {
+			break;
+		case SKIN_CARMESIM:
 			skin = com.traduvertgames.entities.Companion.CompanionSkin.CARMESIM;
 			skinName = "Pré-visualização: Carmesim";
+			break;
+		default:
+			// Companions e demais itens também mostram o pet atual: se já houver
+			// um companion ativo, o orbe reflete a cor dele em tempo real.
+			com.traduvertgames.entities.Companion active =
+					com.traduvertgames.entities.Companion.getActive();
+			if (active == null) {
+				return;
+			}
+			skin = null;
+			skinName = "Ativo: " + active.typeLabel();
+			break;
 		}
-		Color preview = colorOfSkin(skin);
+		Color preview;
+		if (skin == null) {
+			com.traduvertgames.entities.Companion active =
+					com.traduvertgames.entities.Companion.getActive();
+			preview = active != null ? active.colorForHud() : new Color(255, 203, 5);
+		} else {
+			// Simula a cor da skin antes de comprar (sem alterar o pet ativo).
+			com.traduvertgames.entities.Companion active =
+					com.traduvertgames.entities.Companion.getActive();
+			com.traduvertgames.entities.Companion.CompanionSkin previous =
+					active != null ? active.getSkin() : null;
+			if (active != null) {
+				active.setSkin(skin);
+			}
+			preview = active != null ? active.colorForHud() : new Color(255, 203, 5);
+			if (active != null) {
+				active.setSkin(previous != null ? previous
+						: com.traduvertgames.entities.Companion.CompanionSkin.PADRAO);
+			}
+		}
 		int orbX = screenWidth / 2 + 220;
 		int orbY = 200;
 		int orbSize = 36;
@@ -420,19 +451,5 @@ public final class ShopManager {
 		g.fillRoundRect(orbX - w / 2 - 14, orbY + orbSize + 6, w + 28, 24, 10, 10);
 		g.setColor(Color.yellow);
 		g.drawString(skinName, orbX - w / 2, orbY + orbSize + 22);
-	}
-
-	/** Cor exibida pelo companion conforme a skin (espelha o Companion). */
-	private static Color colorOfSkin(com.traduvertgames.entities.Companion.CompanionSkin skin) {
-		switch (skin) {
-		case DOURADO:
-			return new Color(255, 214, 10);
-		case NEON:
-			return new Color(0, 232, 255);
-		case CARMESIM:
-			return new Color(231, 76, 60);
-		default:
-			return new Color(255, 203, 5);
-		}
 	}
 }

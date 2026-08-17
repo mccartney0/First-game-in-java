@@ -186,6 +186,49 @@ public class UI {
 				: WeaponType.BLASTER;
 		drawScaledBar(g2, currentWeapon.getShortName().toUpperCase(), Player.weapon, Player.maxWeapon, barX,
 				barY, barWidth, barHeight, currentWeapon.getUiColor());
+
+		// Indicador do companion ativo: orbe do tipo com a skin aplicada e a
+		// barra de HP do pet ao lado (rodada 19 — o jogador precisa saber o
+		// estado do companion sem olhar para o campo de batalha).
+		drawCompanionHud(g2, panelX + panelWidth + 8 * s, panelY + panelHeight - 20 * s, s);
+	}
+
+	/** Orbe do companion ativo com barra de HP e rótulo do tipo, ao lado do painel de recursos. */
+	private void drawCompanionHud(Graphics2D g2, int x, int y, int s) {
+		com.traduvertgames.entities.Companion active = com.traduvertgames.entities.Companion.getActive();
+		if (active == null) {
+			return;
+		}
+		int size = 10 * s;
+		Color color = active.colorForHud();
+		// Fundo do indicador (mesma linguagem visual da HUD).
+		g2.setColor(new Color(6, 9, 16, 150));
+		g2.fillRoundRect(x - 2 * s, y - 12 * s, size + 4 * s + (70 * s), 20 * s + 12 * s, 8, 8);
+		// Aura e orbe conforme a skin.
+		g2.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 80));
+		g2.fillOval(x - 2 * s, y - 2 * s, size + 4 * s, size + 4 * s);
+		g2.setColor(color);
+		g2.fillOval(x, y, size, size);
+		g2.setColor(new Color(255, 255, 255, 200));
+		g2.fillOval(x + 2 * s, y + 2 * s, size / 2, size / 2);
+		// Rótulo do tipo.
+		int fontSize = Math.max(12, 6 * s);
+		g2.setFont(new Font("SansSerif", Font.BOLD, fontSize));
+		String label = active.typeLabel();
+		g2.setColor(new Color(255, 235, 59));
+		g2.drawString(label, x + size + 4 * s, y + size - 2 * s);
+		// Barra de HP do companion.
+		int barW = 60 * s;
+		int barH = 4 * s;
+		int barX = x + size + 4 * s;
+		int barY = y + size + 2 * s;
+		double hpRatio = active.hpRatio();
+		g2.setColor(new Color(20, 24, 34));
+		g2.fillRoundRect(barX, barY, barW, barH, 2 * s, 2 * s);
+		g2.setColor(hpRatio > 0.3 ? new Color(76, 175, 80) : new Color(244, 67, 54));
+		if (hpRatio > 0) {
+			g2.fillRoundRect(barX, barY, (int) (barW * hpRatio), barH, 2 * s, 2 * s);
+		}
 	}
 
 	private void drawScaledBar(Graphics2D g2, String label, double value, double max, int x, int y,
