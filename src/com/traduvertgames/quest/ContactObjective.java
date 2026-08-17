@@ -72,7 +72,8 @@ public class ContactObjective implements RPGObjective {
 		if (!talkedToCommander) {
 			return "Fale com a " + bossHint;
 		}
-		return "Artefatos: " + Math.min(artifactsCollected, REQUIRED_ARTIFACTS) + "/" + REQUIRED_ARTIFACTS;
+		return "Artefatos: " + Math.min(artifactsCollected, REQUIRED_ARTIFACTS) + "/" + REQUIRED_ARTIFACTS
+				+ " — explore o setor";
 	}
 
 	@Override
@@ -84,6 +85,9 @@ public class ContactObjective implements RPGObjective {
 	public String getTargetHint() {
 		if (!talkedToCommander) {
 			return bossHint;
+		}
+		if (artifactsCollected < REQUIRED_ARTIFACTS) {
+			return "Artefato de missão";
 		}
 		return null;
 	}

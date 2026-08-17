@@ -106,9 +106,10 @@ public final class OptionsConfig {
     }
 
     /** Aumenta/diminui o volume dos efeitos (delta dB, passos de 2). */
-    public static void adjustSoundVolume(int deltaDb) {
-        soundVolumeDb = Math.max(-20, Math.min(10, soundVolumeDb + deltaDb));
-    }
+	public static void adjustSoundVolume(int deltaDb) {
+		soundVolumeDb = Math.max(-20, Math.min(10, soundVolumeDb + deltaDb));
+		SoundManager.refreshVolume();
+	}
 
     public static Difficulty getDifficulty() {
         return difficulty;

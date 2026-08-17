@@ -171,6 +171,17 @@ public final class SoundManager {
 		}
 	}
 
+	/** Atualiza o ganho dos clips já carregados após uma alteração nas opções. */
+	public static synchronized void refreshVolume() {
+		for (Clip[] pool : pools.values()) {
+			for (Clip clip : pool) {
+				if (clip != null) {
+					applyVolume(clip);
+				}
+			}
+		}
+	}
+
 	/** Descarrega todos os clips (usado ao fechar o jogo ou trocar de save). */
 	public static void unload() {
 		pools.clear();

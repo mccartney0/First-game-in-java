@@ -116,7 +116,7 @@ public final class QuestManager {
             // derrubar o OVERSEER, o chefe supervisor.
             return new DialogueObjective(
                     new SequenceObjective(
-                            new SurviveObjective("Resistir no perímetro", "A torre do Supervisor só abre após o perímetro ser liberado. Resista às ondas até a evacuação ser autorizada.", 45),
+                            new SurviveObjective("Resistir no perímetro", "A torre do Supervisor só abre após o perímetro ser liberado. Resista por 35 segundos e mantenha-se em movimento.", 35),
                             new BossHuntObjective("Derrubar o Supervisor", "Localize e destrua o Supervisor, o cérebro da operação.", "o Supervisor")),
                     "Comandante Ava");
         case 7:
@@ -125,12 +125,12 @@ public final class QuestManager {
             // o Guardião do Subsolo.
             return new DialogueObjective(
                     new SequenceObjective(new SabotageObjective(),
-                            new HoldObjective("Isolar o núcleo do Guardião", "O beacon de contenção precisa de energia estável. Defenda-o até a estabilização permitir o acesso à câmara do chefe.")),
+                            new HoldObjective("Isolar o núcleo do Guardião", "Ative o beacon e mantenha a área segura até o canal atingir 100%. Depois, avance para a câmara do chefe.")),
                     "Comandante Ava");
         case 8:
             // Fase final da campanha: o briefing da Ava, a escolta do
             // informante até o núcleo e a destruição do OVERSEER PRIME.
-            return new SequenceObjective(new InfiltratorObjective(), new EscortObjective());
+            return new SequenceObjective(new InfiltratorObjective(), new EscortObjective("Escoltar o informante", "Proteja o informante até o ponto de fuga. Elimine os inimigos próximos para ele continuar avançando."));
         case 9:
             // Modo sobrevivência pós-campanha: ondas infinitas.
             return new NullObjective();

@@ -925,13 +925,13 @@ if (!hidingHud) {
 			drawCenteredString(overlayG, "Game Over", scaledHeight / 2 - 52 * unit);
 			g.setFont(new Font("arial", Font.BOLD, 14 * unit));
 			if (showMessageGameOver) {
-				drawCenteredString(overlayG, "> Setas/A-D para escolher — Enter para confirmar — ESC para o menu <",
+				drawCenteredString(overlayG, "Setas/A-D: escolher — ENTER: confirmar — ESC: voltar ao menu",
 						scaledHeight / 2 + 2 * unit);
 			}
 			g.setFont(new Font("arial", Font.PLAIN, 12 * unit));
 			g.setColor(new Color(200, 200, 200));
 			if (menuReturnTimer > 0) {
-				drawCenteredString(overlayG, "Voltando ao menu em " + ((menuReturnTimer + 29) / 30) + "s...",
+				drawCenteredString(overlayG, "Retorno automático ao menu em " + ((menuReturnTimer + 29) / 30) + "s",
 						scaledHeight / 2 + 142 * unit);
 			}
 			// Botões de ação da tela de game over (rodada de UX) — o botão
@@ -1066,6 +1066,7 @@ if (!hidingHud) {
 		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
 			if (OnboardingManager.isActive()) {
 				OnboardingManager.skip();
+				return;
 			}
 			player.jump = true;
 		}
@@ -1292,11 +1293,13 @@ if (!hidingHud) {
                         }
                 }
 
-                if (e.getKeyCode() == KeyEvent.VK_P) {
-                        if ("NORMAL".equals(gameState)) {
-                                Menu.openPauseScreen();
-                        }
-                }
+			if (e.getKeyCode() == KeyEvent.VK_P) {
+						if ("NORMAL".equals(gameState)) {
+							Menu.openPauseScreen();
+						} else if ("MENU".equals(gameState) && Menu.pause) {
+							Menu.closePauseScreen();
+						}
+					}
 
 		if (e.getKeyCode() == KeyEvent.VK_L) {
 			if ("NORMAL".equals(gameState)) {
@@ -1402,11 +1405,14 @@ if (!hidingHud) {
 
 		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
 			player.up = false;
-		} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
-			player.down = false;
-		}
+		} else 			if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+				player.down = false;
+			}
+			if (e.getKeyCode() == KeyEvent.VK_SHIFT && menu != null) {
+				menu.shift = false;
+			}
 
-	}
+		}
 
 	@Override
 	public void mouseClicked(MouseEvent e) {
@@ -2004,7 +2010,7 @@ if (!hidingHud) {
 	public void resetGameOverState() {
 		this.framesGameOver = 0;
 		this.showMessageGameOver = true;
-		this.menuReturnTimer = 300;
+		this.menuReturnTimer = 450;
 		this.gameOverSelection = 0;
 	}
 

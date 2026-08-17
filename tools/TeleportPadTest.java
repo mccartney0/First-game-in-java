@@ -4,7 +4,7 @@ import com.traduvertgames.graficos.Spritesheet;
 import java.lang.reflect.*;
 import java.awt.image.BufferedImage;
 
-public class TeleportTest3 {
+public class TeleportPadTest {
     static int passed = 0, failed = 0;
 
     static void check(String name, boolean ok) {

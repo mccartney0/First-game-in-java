@@ -28,12 +28,18 @@ public class HoldObjective extends BaseObjective {
 
 	/** Raio em pixels da zona de defesa do beacon. */
 	public static final double DEFENSE_RADIUS = 90;
-	/** Canal completo: objetivo concluído. */
+	/** Canal completo padrão: objetivo concluído em 10 segundos. */
 	private static final int CHANNEL_MAX = 600;
+	/** Fase 2 ensina a defesa com uma janela menor e menos punitiva. */
+	private static final int PHASE_2_CHANNEL_MAX = 480;
+	/** Fase 7 mantém uma defesa mais longa no arco final. */
+	private static final int PHASE_7_CHANNEL_MAX = 540;
 	/** Avanço do canal por frame quando a zona está limpa. */
 	private static final int CHANNEL_ADVANCE = 1;
-	/** Retrocesso por frame por invasor dentro da zona. */
+	/** Retrocesso padrão por frame por invasor dentro da zona. */
 	private static final int CHANNEL_REGRESS_PER_INVADER = 2;
+	/** Fase 2 não deve perder toda a aprendizagem por um invasor isolado. */
+	private static final int PHASE_2_REGRESS_PER_INVADER = 1;
 
 	private final Set<QuestBeacon> trackedBeacons = new HashSet<QuestBeacon>();
 	private int channel = 0;
@@ -122,14 +128,31 @@ public class HoldObjective extends BaseObjective {
 				300);
 	}
 
+	/** @return limite de frames do canal na fase atual. */
+	public int getChannelLimit() {
+		int level = QuestManager.getCurrentLevel();
+		if (level == 2) {
+			return PHASE_2_CHANNEL_MAX;
+		}
+		if (level == 7) {
+			return PHASE_7_CHANNEL_MAX;
+		}
+		return CHANNEL_MAX;
+	}
+
+	private int getRegressPerInvader() {
+		return QuestManager.getCurrentLevel() == 2
+				? PHASE_2_REGRESS_PER_INVADER : CHANNEL_REGRESS_PER_INVADER;
+	}
+
 	/** @return progresso atual do canal (0 a 1). Usado pela HUD. */
 	public double getChannelProgress() {
-		return Math.min(1.0, channel / (double) CHANNEL_MAX);
+		return Math.min(1.0, channel / (double) getChannelLimit());
 	}
 
 	/** @return true se o beacon foi criado e o canal está em andamento. */
 	public boolean isActive() {
-		return spawned && channel < CHANNEL_MAX;
+		return spawned && channel < getChannelLimit();
 	}
 
 	/** @return true se há invasores na zona de defesa neste frame. */
@@ -139,7 +162,7 @@ public class HoldObjective extends BaseObjective {
 
 	/** @return progresso do canal em texto de porcentagem (ex.: "73%"). */
 	public String getPercentText() {
-		return (int) Math.round(100.0 * channel / CHANNEL_MAX) + "%";
+		return (int) Math.round(100.0 * channel / getChannelLimit()) + "%";
 	}
 
 	@Override
@@ -167,12 +190,13 @@ public class HoldObjective extends BaseObjective {
 			}
 		}
 		invaders = nearby;
+		int limit = getChannelLimit();
 		if (invaders == 0) {
-			channel = Math.min(CHANNEL_MAX, channel + CHANNEL_ADVANCE);
+			channel = Math.min(limit, channel + CHANNEL_ADVANCE);
 		} else {
-			channel = Math.max(0, channel - CHANNEL_REGRESS_PER_INVADER * invaders);
+			channel = Math.max(0, channel - getRegressPerInvader() * invaders);
 		}
-		if (channel >= CHANNEL_MAX && !completionSoundPlayed) {
+		if (channel >= limit && !completionSoundPlayed) {
 			completionSoundPlayed = true;
 			SoundManager.play(SoundManager.Event.LEVELUP);
 		}
@@ -196,18 +220,18 @@ public class HoldObjective extends BaseObjective {
 			// jogador a permanecer encostado nele (ele é pequeno e silencioso).
 			text = "Permaneça junto ao beacon para ativar";
 		} else if (invaders > 0) {
-			text = "Defenda! " + invaders + " invasor" + (invaders == 1 ? "" : "es") + " na zona";
-		} else {
-			int percent = (int) Math.round(100.0 * channel / CHANNEL_MAX);
-			text = "Canal: " + percent + "%";
-		}
+							text = "Defenda! " + invaders + " invasor" + (invaders == 1 ? "" : "es") + " na zona";
+			} else {
+				int percent = (int) Math.round(100.0 * channel / getChannelLimit());
+				text = "Canal: " + percent + "% — área segura";
+			}
 		lastProgress = text;
 		return text;
 	}
 
 	@Override
 	public boolean isComplete() {
-		return spawned && channel >= CHANNEL_MAX;
+		return spawned && channel >= getChannelLimit();
 	}
 
 	@Override

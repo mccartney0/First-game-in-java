@@ -95,18 +95,18 @@ public class SaveLoadLogicTest {
 		check("migração: getSlotScore(1)==7000", SaveManager.getSlotScore(1) == 7000);
 		check("migração: hasSlotSave(2) falso", !SaveManager.hasSlotSave(2));
 
-		// --- 4. Escrita v3 ---
+		// --- 4. Escrita v4 ---
 		setActiveSlot(1);
 		QuestManager.prepareForLevel(2);
 		boolean wrote = SaveManager.saveCurrentGame();
-		check("escrita v3", wrote);
+		check("escrita v4", wrote);
 		String written = new String(Files.readAllBytes(saveFile.toPath()));
-		check("v3 tem version", written.contains("\"version\":3"));
-		check("v3 tem session", written.contains("\"session\""));
-		check("v3 tem progress", written.contains("\"progress\""));
-		check("v3 tem objectiveState", written.contains("\"objectiveState\""));
-		check("v3 tem campaign", written.contains("\"campaign\""));
-		check("v3 tem timestamp", written.contains("\"timestamp\""));
+		check("v4 tem version", written.contains("\"version\":4"));
+		check("v4 tem session", written.contains("\"session\""));
+		check("v4 tem progress", written.contains("\"progress\""));
+		check("v4 tem objectiveState", written.contains("\"objectiveState\""));
+		check("v4 tem campaign", written.contains("\"campaign\""));
+		check("v4 tem timestamp", written.contains("\"timestamp\""));
 
 		// bestRun e diálogos vazios antes de gameplay real (a seção bestRun só
 		// é gravada quando há recorde e npcDialogues só quando há flag marcada).
@@ -114,8 +114,8 @@ public class SaveLoadLogicTest {
 		check("bestRunCombo inicial = 0", SaveManager.getBestRunCombo() == 0);
 		check("hasBestRun inicial falso", !SaveManager.hasBestRun());
 		check("npcDialogue Ava_1 inicial falso", !SaveManager.hasNpcDialogue("Ava", 1));
-		check("v3 sem bestRun sem recorde", !written.contains("\"bestRun\""));
-		check("v3 sem npcDialogues sem marcação", !written.contains("\"npcDialogues\""));
+		check("v4 sem bestRun sem recorde", !written.contains("\"bestRun\""));
+		check("v4 sem npcDialogues sem marcação", !written.contains("\"npcDialogues\""));
 
 		// --- 5. Progresso restaurado via getSlotObjectiveText ---
 		QuestManager.prepareForLevel(3); // muda objetivo; texto do slot 1 ainda aponta a fase salva
