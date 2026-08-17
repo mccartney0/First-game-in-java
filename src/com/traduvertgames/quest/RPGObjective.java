@@ -45,6 +45,10 @@ public interface RPGObjective {
     default void onDialogueFinished(InteractiveNpc npc) {
     }
 
+    /** Um chefe de fase foi detectado no mapa (presença registrada). */
+    default void onBossSpotted() {
+    }
+
     String getTitle();
 
     String getDescription();

@@ -21,6 +21,11 @@ public class DialogueObjective implements RPGObjective {
 		this.dialogueTarget = dialogueTarget;
 	}
 
+	/** Objetivo interno da fase (depois do diálogo). Usado pela HUD para unwrap. */
+	public RPGObjective getDelegate() {
+		return delegate;
+	}
+
 	@Override
 	public void onDialogueStarted(InteractiveNpc npc) {
 		delegate.onDialogueStarted(npc);
@@ -92,6 +97,11 @@ public class DialogueObjective implements RPGObjective {
 	@Override
 	public void onNpcSpawned(com.traduvertgames.entities.QuestNPC npc) {
 		delegate.onNpcSpawned(npc);
+	}
+
+	@Override
+	public void onBossSpotted() {
+		delegate.onBossSpotted();
 	}
 
 	@Override

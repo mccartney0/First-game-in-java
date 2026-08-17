@@ -42,6 +42,22 @@ public final class BossHuntObjective extends BaseObjective {
         bossPresent = true;
     }
 
+    @Override
+    public void onBossSpotted() {
+        registerBossPresence();
+    }
+
+
+    /**
+     * Enquanto o chefe não é neutralizado, a seta do waypoint da HUD aponta
+     * para ele ({@code findTargetEntity} localiza o boss vivo pelo prefixo).*/
+    @Override
+    public String getTargetHint() {
+        if (bossDefeated) {
+            return null;
+        }
+        return bossName;
+    }
 
     @Override
     public boolean isComplete() {

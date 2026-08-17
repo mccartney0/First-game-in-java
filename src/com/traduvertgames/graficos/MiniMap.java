@@ -5,6 +5,7 @@ import java.awt.Graphics;
 import java.awt.Graphics2D;
 
 import com.traduvertgames.entities.Enemy;
+import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.Tile;
@@ -74,6 +75,25 @@ public final class MiniMap {
 			int mapY = panelY + (Game.player.getY() / 16) * TILE_DRAW;
 			g2.setColor(COLOR_PLAYER);
 			g2.fillRect(mapX, mapY, TILE_DRAW, TILE_DRAW);
+		}
+
+		// Marcador do alvo da missão: o jogador sempre sabe onde ir, mesmo
+		// quando a seta do waypoint está na borda.
+		com.traduvertgames.quest.RPGObjective active = com.traduvertgames.graficos.MissionHud.findActiveObjective();
+		String targetName = active != null ? active.getTargetHint() : null;
+		if (targetName != null && !targetName.isEmpty() && !com.traduvertgames.quest.QuestManager.isSurvivalMode()) {
+			Entity target = com.traduvertgames.graficos.MissionHud.findTargetEntity(targetName);
+			if (target != null) {
+				double pulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI
+						* (System.currentTimeMillis() % 960) / 960.0);
+				int alpha = 140 + (int) (80 * pulse);
+				g2.setColor(new Color(255, 235, 59, alpha));
+				int mapX = panelX + (target.getX() / 16) * TILE_DRAW;
+				int mapY = panelY + (target.getY() / 16) * TILE_DRAW;
+				g2.fillRect(mapX, mapY, TILE_DRAW, TILE_DRAW);
+				g2.setColor(new Color(255, 235, 59, 90));
+				g2.drawRect(mapX - 1, mapY - 1, TILE_DRAW + 2, TILE_DRAW + 2);
+			}
 		}
 	}
 }
