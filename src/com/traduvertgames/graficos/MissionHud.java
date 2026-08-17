@@ -239,34 +239,47 @@ public final class MissionHud {
 			// Pulsação sutil de brilho (ciclo de 1.6s, curva senoidal suave):
 			// o halo amarelo "respira" atrás da seta sem chamar atenção demais.
 			double glowPulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % 1600) / 1600.0);
-			int haloSize = (int) ((9 + glowPulse * 2) * s);
-			g2.setColor(new Color(255, 235, 59, 28 + (int) (22 * glowPulse)));
+			int haloSize = (int) ((10 + glowPulse * 3) * s);
+			g2.setColor(new Color(255, 235, 59, 25 + (int) (20 * glowPulse)));
 			g2.fillOval(pointerX - haloSize, pointerY - haloSize, haloSize * 2, haloSize * 2);
-			int pointerAlpha = 215 + (int) (30 * glowPulse);
-		// Painel escuro compacto atrás do ponteiro
-		Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
-		g2.setFont(smallFont);
-		String distLabel = String.format("%dm", (int) (distance / 16));
-		int labelW = g2.getFontMetrics().stringWidth(distLabel);
-		int labelH = 11 * s / 4 + 2;
-		int padX = 4 * s / 4 + 2, padY = 3 * s / 4 + 2;
-		int panelW = Math.max(labelW + padX * 2, 20 * s / 4 + 2);
-		int panelH = labelH + padY * 2 + 9 * s / 4 + 2;
-		g2.setColor(new Color(0, 0, 0, 190));
-		g2.fillRoundRect(pointerX - panelW / 2, pointerY - panelH / 2 + 2 * s / 4, panelW, panelH, 6 * s / 4, 6 * s / 4);
-		// Seta na direção do alvo (girada com o ângulo), com brilho pulsante
-		g2.setColor(new Color(255, 235, 59, pointerAlpha));
-		int size = 7 * s / 4 + 2;
-		double headAngle1 = angle + Math.toRadians(150);
-		double headAngle2 = angle - Math.toRadians(150);
-		g2.fillPolygon(
-				new int[] { pointerX, (int) (pointerX + size * Math.cos(headAngle1)),
-						(int) (pointerX + size * Math.cos(headAngle2)) },
-				new int[] { pointerY, (int) (pointerY + size * Math.sin(headAngle1)),
-						(int) (pointerY + size * Math.sin(headAngle2)) },
-			3);
-		g2.setColor(new Color(255, 235, 59, Math.max(140, pointerAlpha)));
-		g2.drawString(distLabel, pointerX - labelW / 2, pointerY + 7 * s / 4 + 2 + labelH);
+			int pointerAlpha = 220 + (int) (25 * glowPulse);
+			// Seta de cursor limpa na direção do alvo (sem painel preto):
+			// corpo pontiagudo + cauda curta, preenchida de amarelo com
+			// contorno escuro suave para leitura sobre qualquer fundo.
+			Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
+			g2.setFont(smallFont);
+			String distLabel = String.format("%dm", (int) (distance / 16));
+			int size = 9 * s / 4 + 2;
+			double tailAngle = angle + Math.PI; // direção oposta: cauda do cursor
+			double headAngle1 = angle + Math.toRadians(150);
+			double headAngle2 = angle - Math.toRadians(150);
+			int[] arrowX = new int[] { pointerX,
+				(int) (pointerX + size * Math.cos(headAngle1)),
+				(int) (pointerX + size * Math.cos(headAngle2)) };
+			int[] arrowY = new int[] { pointerY,
+				(int) (pointerY + size * Math.sin(headAngle1)),
+				(int) (pointerY + size * Math.sin(headAngle2)) };
+			// Sombra discreta da seta
+			g2.setColor(new Color(0, 0, 0, 150));
+			g2.fillPolygon(arrowX, arrowY, 3);
+			// Corpo amarelo
+			g2.setColor(new Color(255, 235, 59, pointerAlpha));
+			g2.fillPolygon(arrowX, arrowY, 3);
+			// Contorno fino para destacar sobre fundos claros
+			g2.setColor(new Color(0, 0, 0, 220));
+			g2.setStroke(new java.awt.BasicStroke(0.8f * s / 4));
+			g2.drawPolygon(arrowX, arrowY, 3);
+			// Label de distância com sombra de texto (sem painel):
+			// desenhado no lado oposto da direção para não cobrir a seta.
+			int labelOffX = -(int) Math.round(Math.cos(angle) * (14 * s / 4 + 2));
+			int labelOffY = -(int) Math.round(Math.sin(angle) * (14 * s / 4 + 2));
+			int labelW = g2.getFontMetrics().stringWidth(distLabel);
+			int lx = pointerX - labelW / 2 + labelOffX;
+			int ly = pointerY + labelOffY;
+			g2.setColor(new Color(0, 0, 0, 190));
+			g2.drawString(distLabel, lx + 1, ly + 1);
+			g2.setColor(new Color(255, 255, 255, 245));
+			g2.drawString(distLabel, lx, ly);
 		// Apoio secundário na borda (somente alvos bem distantes): seta na
 			// borda para o jogador perceber a direção sem olhar para o centro.
 		if (distance > WAYPOINT_DISTANCE * 2.5 * s) {
