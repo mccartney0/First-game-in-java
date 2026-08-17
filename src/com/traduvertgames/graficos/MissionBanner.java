@@ -24,6 +24,15 @@ public final class MissionBanner {
 	private static int life = 0;
 	private static boolean announced = false;
 
+	/**
+	 * Lore da próxima fase agendada (rodada 21): o banner de ambientação não
+	 * compete mais com o aviso de conclusão nem com o card de estatísticas —
+	 * aparece apenas após o jogador fechar o card e o fade revelar a nova fase.
+	 */
+	private static String scheduledTitle = "";
+	private static String scheduledSubtitle = "";
+	private static int scheduledDelay = 0;
+
 	private MissionBanner() {
 	}
 
@@ -56,6 +65,9 @@ public final class MissionBanner {
 		announced = false;
 		title = "";
 		subtitle = "";
+		scheduledTitle = "";
+		scheduledSubtitle = "";
+		scheduledDelay = 0;
 	}
 
 	/** Desmarca a flag de anúncio sem esconder o banner visível. */
@@ -67,10 +79,32 @@ public final class MissionBanner {
 		return life > 0;
 	}
 
-	/** Atualiza o tempo de vida do banner. */
+	/**
+	 * Agenda o banner de lore da próxima fase para aparecer daqui a
+	 * `delayFrames` — usado na transição de fase: a lore só entra depois
+	 * que o cooldown de respiro (rodada 21) termina.
+	 */
+	public static void scheduleLore(String title, String subtitle, int delayFrames) {
+		scheduledTitle = title;
+		scheduledSubtitle = subtitle;
+		scheduledDelay = delayFrames;
+	}
+
+	/** Atualiza o tempo de vida do banner e dispara a lore agendada. */
 	public static void update() {
 		if (life > 0) {
 			life--;
+		}
+		// Rodada 21: quando o cooldown da transição termina, exibe a lore
+		// da nova fase (se houver agendamento pendente).
+		if (scheduledDelay > 0) {
+			scheduledDelay--;
+			if (scheduledDelay == 0 && !scheduledTitle.isEmpty()) {
+				show(scheduledTitle, scheduledSubtitle,
+					new Color(255, 235, 59), Color.WHITE, 300);
+				scheduledTitle = "";
+				scheduledSubtitle = "";
+			}
 		}
 	}
 

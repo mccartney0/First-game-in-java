@@ -84,14 +84,16 @@ public class PhaseTransitionTest {
         check("QuestManager acompanhou a fase 2",
             com.traduvertgames.quest.QuestManager.getCurrentLevel() == 2);
 
-        Field fLife = com.traduvertgames.graficos.MissionBanner.class.getDeclaredField("life");
-        fLife.setAccessible(true);
-        int life = (int) fLife.get(null);
-        check("banner de lore ativo na fase 2", life > 0);
-        Field fSub = com.traduvertgames.graficos.MissionBanner.class.getDeclaredField("subtitle");
-        fSub.setAccessible(true);
-        String sub = (String) fSub.get(null);
-        check("lore da fase 2 exibida", sub != null && !sub.isEmpty());
+	// Rodada 21: a lore é agendada (scheduleLore) e só aparece depois do
+	// cooldown pós-transição — verificar os campos de agendamento.
+	Field fDelay = com.traduvertgames.graficos.MissionBanner.class.getDeclaredField("scheduledDelay");
+	fDelay.setAccessible(true);
+	int delay = (int) fDelay.get(null);
+	check("lore da fase 2 agendada (delay > 0)", delay > 0);
+	Field fSub = com.traduvertgames.graficos.MissionBanner.class.getDeclaredField("scheduledSubtitle");
+	fSub.setAccessible(true);
+	String sub = (String) fSub.get(null);
+	check("lore da fase 2 registrada para exibição", sub != null && !sub.isEmpty());
 
         // 6) NPCs temáticos na fase 2 fora do canto de spawn
         int storyNpcsAway = 0;

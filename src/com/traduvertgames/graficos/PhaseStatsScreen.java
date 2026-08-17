@@ -53,7 +53,13 @@ public final class PhaseStatsScreen {
 		return showing;
 	}
 
-	/** Fecha o card liberando o jogo (Enter ou tempo esgotado). */
+	/**
+	 * Fecha o card liberando o jogo (Enter). Na campanha, o jogo não retoma
+	 * o combate de imediato: entra no cooldown de respiro pós-transição
+	 * (rodada 21) — inimigos ficam congelados por ~2,5s para o jogador se
+	 * orientar. No modo sobrevivência (infinito), o auto-dismiss é mantido
+	 * para não travar o fluxo de ondas.
+	 */
 	public static void dismiss() {
 		if (!showing) {
 			return;
@@ -61,6 +67,9 @@ public final class PhaseStatsScreen {
 		showing = false;
 		Menu.pause = false;
 		Game.gameState = "NORMAL";
+		if (!com.traduvertgames.main.WaveManager.isArenaMode()) {
+			Game.startTransitionCooldown();
+		}
 	}
 
 	/** Enter fecha o card; ESC cancela para o menu principal (comportamento de fallback). */
@@ -80,7 +89,11 @@ public final class PhaseStatsScreen {
 			}
 		} else if (enter && framesElapsed > FADE_TOTAL) {
 			dismiss();
-		} else if (framesElapsed > AUTO_DISMISS_FRAMES) {
+		// Rodada 21: na campanha o card não fecha sozinho — o jogador deve
+		// apertar Enter. No modo sobrevivência o auto-dismiss continua
+		// existindo para manter o fluxo de ondas.
+		} else if (com.traduvertgames.main.WaveManager.isArenaMode()
+				&& framesElapsed > AUTO_DISMISS_FRAMES) {
 			dismiss();
 		}
 	}
