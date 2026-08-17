@@ -9,8 +9,8 @@ import com.traduvertgames.main.Game;
 /**
  * Banner central temporário para eventos narrativos importantes, como a
  * conclusão de uma missão ("MISSÃO CONCLUÍDA") ou marcos da campanha.
- * O banner aparece em coordenadas de buffer (384x216), centralizado, e
- * desaparece gradualmente.
+ * O banner é desenhado no espaço escalado da janela (overlayG), com fontes
+ * proporcionais à escala, garantindo leitura nítida em qualquer resolução.
  */
 public final class MissionBanner {
 
@@ -79,8 +79,10 @@ public final class MissionBanner {
 		if (life <= 0 || title.isEmpty()) {
 			return;
 		}
-		int screenWidth = Game.WIDTH;
-		int screenHeight = Game.HEIGHT;
+	// Espaço do jogo em coordenadas escaladas (buffer * escala base 4).
+		int screenWidth = Game.WIDTH * Game.SCALE;
+		int screenHeight = Game.HEIGHT * Game.SCALE;
+		int s = Game.SCALE;
 		int elapsed = DEFAULT_LIFE - life;
 		int alpha = 255;
 		if (elapsed < FADE_IN) {
@@ -89,26 +91,29 @@ public final class MissionBanner {
 			alpha = Math.max(0, (life * 255) / FADE_IN);
 		}
 
-		int fontSize = 14;
-		g.setFont(new Font("arial", Font.BOLD, fontSize));
+		// Fontes proporcionais à escala: leitura nítida sem depender do zoom do buffer.
+		int titleSize = 18 * s / 4 + 3;
+		int subtitleSize = 12 * s / 4 + 2;
+		g.setFont(new Font("arial", Font.BOLD, titleSize));
 		int titleWidth = g.getFontMetrics().stringWidth(title);
-		g.setFont(new Font("arial", Font.PLAIN, 8));
+		g.setFont(new Font("arial", Font.PLAIN, subtitleSize));
 		int subtitleWidth = g.getFontMetrics().stringWidth(subtitle);
-		int boxWidth = Math.max(titleWidth, subtitleWidth) + 24;
-		int boxHeight = 34;
+		int pad = 20 * s / 4 + 6;
+		int boxWidth = Math.min(screenWidth - 32, Math.max(titleWidth, subtitleWidth) + pad * 2);
+		int boxHeight = 26 * s / 4 + 16;
 		int x = (screenWidth - boxWidth) / 2;
-		int y = (screenHeight - boxHeight) / 2 - 12;
+		int y = (screenHeight - boxHeight) / 2 - 18 * s / 4;
 
-		g.setColor(new Color(8, 12, 20, (int) (alpha * 0.85)));
-		g.fillRoundRect(x, y, boxWidth, boxHeight, 6, 6);
+		g.setColor(new Color(8, 12, 20, (int) (alpha * 0.9)));
+		g.fillRoundRect(x, y, boxWidth, boxHeight, 10, 10);
 		g.setColor(new Color(255, 214, 0, alpha / 2));
-		g.drawRoundRect(x, y, boxWidth, boxHeight, 6, 6);
+		g.drawRoundRect(x, y, boxWidth, boxHeight, 10, 10);
 
-		g.setFont(new Font("arial", Font.BOLD, fontSize));
+		g.setFont(new Font("arial", Font.BOLD, titleSize));
 		g.setColor(new Color(titleColor.getRed(), titleColor.getGreen(), titleColor.getBlue(), alpha));
-		g.drawString(title, (screenWidth - titleWidth) / 2, y + 14);
-		g.setFont(new Font("arial", Font.PLAIN, 8));
+		g.drawString(title, x + (boxWidth - titleWidth) / 2, y + boxHeight / 2 - subtitleSize / 2 - 2);
+		g.setFont(new Font("arial", Font.PLAIN, subtitleSize));
 		g.setColor(new Color(subtitleColor.getRed(), subtitleColor.getGreen(), subtitleColor.getBlue(), alpha));
-		g.drawString(subtitle, (screenWidth - subtitleWidth) / 2, y + 26);
+		g.drawString(subtitle, x + (boxWidth - subtitleWidth) / 2, y + boxHeight / 2 + subtitleSize - 2);
 	}
 }

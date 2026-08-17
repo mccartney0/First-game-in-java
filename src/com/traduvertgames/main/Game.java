@@ -699,7 +699,6 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// ui.render(g) (coordenadas do buffer, por baixo dos overlays) foi removido.
 		ParticleSystem.render(g);
 		FloatingText.render(g, SCALE);
-		MissionBanner.render(g);
 		UltimateAbility.render(g);
 		g.dispose();
 
@@ -721,9 +720,19 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 // buffer — letterboxing preto nas bordas).
                 int offsetX = Math.max(0, (windowWidth - scaledWidth) / 2);
                 int offsetY = Math.max(0, (windowHeight - scaledHeight) / 2);
-                drawOffsetX = offsetX;
-                drawOffsetY = offsetY;
-                g.drawImage(image, offsetX, offsetY, offsetX + scaledWidth, offsetY + scaledHeight, null);
+		drawOffsetX = offsetX;
+		drawOffsetY = offsetY;
+		// Interpolação por vizinho mais próximo no zoom do buffer: a pixel art
+		// fica crua e nítida (sem borrão bilinear) em qualquer resolução.
+		if (g instanceof Graphics2D) {
+			Graphics2D g2 = (Graphics2D) g;
+			g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION,
+					java.awt.RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+			g2.drawImage(image, offsetX, offsetY, offsetX + scaledWidth, offsetY + scaledHeight, null);
+			g2.setRenderingHint(java.awt.RenderingHints.KEY_INTERPOLATION, null);
+		} else {
+			g.drawImage(image, offsetX, offsetY, offsetX + scaledWidth, offsetY + scaledHeight, null);
+		}
 		// Translada os overlays para o espaço do jogo centralizado
 		// (fullscreen com letterboxing), revertendo depois.
 		Graphics2D overlayG = (Graphics2D) g.create();
@@ -749,8 +758,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// Durante a transição de fase (banner de conclusão / lore) as HUDs
 		// de combate ficam escondidas para deixar o momento mais limpo.
 		boolean hidingHud = questCompletedPending || showLevelTransition > 0;
-		if (!hidingHud) {
-		MiniMap.render(overlayG);
+if (!hidingHud) {
+	MiniMap.render(overlayG);
+	// Texto do banner central renderizado no overlay (espaço escalado): letras
+	// nítidas e proporcionais, sem depender do zoom pixelado do buffer.
+	MissionBanner.render(overlayG);
 		LevelUpManager.render(overlayG);
 		LevelSelectScreen.render(overlayG);
 		WaveManager.render(overlayG);
