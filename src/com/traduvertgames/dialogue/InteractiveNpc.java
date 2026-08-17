@@ -174,20 +174,32 @@ public class InteractiveNpc extends Entity {
 	 * Desenha o prompt de interação "R — conversar" flutuando acima do NPC
 	 * quando o jogador está perto e o diálogo está inativo.
 	 */
-	public static void renderPrompt(Graphics g, InteractiveNpc npc, int scale) {
+		public static void renderPrompt(Graphics g, InteractiveNpc npc, int scale) {
 		if (npc.hasFinished() || !npc.isWithinReach()) {
 			return;
 		}
-		String label = "R — " + npc.getName();
-		g.setFont(new Font("arial", Font.BOLD, 8 * scale / 4 + 2));
-		int w = g.getFontMetrics().stringWidth(label);
+		// Badge ancorado no topo do NPC: tecla destacada em amarelo ("R") e
+		// nome do personagem ao lado — legível contra qualquer fundo.
+		String key = "R";
+		String label = npc.getName();
+		Font badgeFont = new Font("arial", Font.BOLD, 9 * scale / 4 + 2);
+		Font nameFont = new Font("arial", Font.BOLD, 8 * scale / 4 + 2);
+		int keyW = g.getFontMetrics(badgeFont).stringWidth(key);
+		int nameW = g.getFontMetrics(nameFont).stringWidth(label);
+		int totalW = keyW + 12 + nameW + 10;
+		int totalH = 13 * scale / 4 + 2;
 		int screenX = npc.getX() - Camera.x;
 		int screenY = npc.getY() - Camera.y;
-		int px = screenX + 8 - w / 2;
-		int py = screenY - 6;
-		g.setColor(new Color(0, 0, 0, 200));
-		g.fillRoundRect(px - 3, py - 8, w + 6, 11, 5, 5);
-		g.setColor(new Color(255, 255, 255, 245));
-		g.drawString(label, px, py);
+		int px = screenX + 8 - totalW / 2;
+		int py = screenY - totalH - 4;
+		// Sombra do badge para destacar sobre chão e paredes
+		g.setColor(new Color(0, 0, 0, 220));
+		g.fillRoundRect(px - 2, py - 2, totalW + 4, totalH + 4, 6 * scale / 4, 6 * scale / 4);
+		g.setColor(new Color(255, 235, 59, 255));
+		g.setFont(badgeFont);
+		g.drawString(key, px + 4, py + totalH - 3);
+		g.setColor(new Color(230, 240, 250, 250));
+		g.setFont(nameFont);
+		g.drawString("\u2014 " + label, px + keyW + 8, py + totalH - 3);
 	}
 }

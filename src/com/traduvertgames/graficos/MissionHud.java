@@ -200,7 +200,10 @@ public final class MissionHud {
 		double dy = targetCenterY - centerY;
 		double distance = Math.sqrt(dx * dx + dy * dy);
 
-		if (distance < 2 * s) {
+		// Raio de interação: quando o alvo está próximo o suficiente para a
+		// conversa, a seta some — o NPC com o badge "R — Nome" já mostra onde
+		// interagir, e ficar com seta + pulso por cima atrapalhava a leitura.
+		if (distance < com.traduvertgames.dialogue.InteractiveNpc.INTERACTION_RADIUS * s) {
 			return;
 		}
 
@@ -220,9 +223,10 @@ public final class MissionHud {
 		g2.drawOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
 		}
 		// Ponteiro de direção próximo ao personagem (companion radar):
-		// pequena seta a 34px do centro do player na direção do alvo, com a
-		// distância em metros logo abaixo — acompanha o personagem e mostra
-		// para onde ir mesmo com o alvo fora da tela.
+		// pequena seta pulsante a 34px do centro do player na direção do alvo,
+		// com a distância em metros logo abaixo — acompanha o personagem e
+		// mostra para onde ir mesmo com o alvo fora da tela. O brilho pulsa
+		// (alfa + halo) para chamar atenção sem cobrir o jogo.
 		double angle = Math.atan2(dy, dx);
 		int pointerRadius = 34 * s;
 		// Se o alvo estiver visível, o ponteiro fica mais discreto (a 44px)
@@ -232,6 +236,13 @@ public final class MissionHud {
 		}
 		int pointerX = centerX + (int) Math.round(Math.cos(angle) * pointerRadius); // pointerRadius já em espaço escalado
 		int pointerY = centerY + (int) Math.round(Math.sin(angle) * pointerRadius);
+		// Pulsação de brilho do ponteiro (ciclo de 800ms): o halo amarelo
+		// respira atrás da seta para facilitar a visualização.
+		double glowPulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % 800) / 800.0);
+		int haloSize = (int) ((10 + glowPulse * 4) * s);
+		g2.setColor(new Color(255, 235, 59, 40 + (int) (36 * glowPulse)));
+		g2.fillOval(pointerX - haloSize, pointerY - haloSize, haloSize * 2, haloSize * 2);
+		int pointerAlpha = 180 + (int) (75 * glowPulse);
 		// Painel escuro compacto atrás do ponteiro
 		Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
 		g2.setFont(smallFont);
@@ -243,8 +254,8 @@ public final class MissionHud {
 		int panelH = labelH + padY * 2 + 9 * s / 4 + 2;
 		g2.setColor(new Color(0, 0, 0, 190));
 		g2.fillRoundRect(pointerX - panelW / 2, pointerY - panelH / 2 + 2 * s / 4, panelW, panelH, 6 * s / 4, 6 * s / 4);
-		// Seta na direção do alvo (girada com o ângulo)
-		g2.setColor(new Color(255, 235, 59, 255));
+		// Seta na direção do alvo (girada com o ângulo), com brilho pulsante
+		g2.setColor(new Color(255, 235, 59, pointerAlpha));
 		int size = 7 * s / 4 + 2;
 		double headAngle1 = angle + Math.toRadians(150);
 		double headAngle2 = angle - Math.toRadians(150);
@@ -254,7 +265,7 @@ public final class MissionHud {
 				new int[] { pointerY, (int) (pointerY + size * Math.sin(headAngle1)),
 						(int) (pointerY + size * Math.sin(headAngle2)) },
 			3);
-		g2.setColor(new Color(255, 235, 59, 245));
+		g2.setColor(new Color(255, 235, 59, Math.max(140, pointerAlpha)));
 		g2.drawString(distLabel, pointerX - labelW / 2, pointerY + 7 * s / 4 + 2 + labelH);
 		// Apoio secundário na borda (somente alvos bem distantes): seta na
 			// borda para o jogador perceber a direção sem olhar para o centro.
