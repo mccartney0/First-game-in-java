@@ -58,11 +58,13 @@ public class Menu {
 	private static final int LOAD_BACK = SaveManager.SLOT_COUNT;
 
 	private static final int OPTIONS_INDEX_MUSIC = 0;
-	private static final int OPTIONS_INDEX_DIFFICULTY = 1;
-	private static final int OPTIONS_INDEX_BACK = 2;
+	private static final int OPTIONS_INDEX_MUSIC_VOLUME = 1;
+	private static final int OPTIONS_INDEX_DIFFICULTY = 2;
+	private static final int OPTIONS_INDEX_BACK = 3;
 
 	private static final String[] OPTIONS_LABELS = {
 			"musica",
+			"volume da trilha",
 			"dificuldade",
 			"voltar"
 	};
@@ -76,6 +78,9 @@ public class Menu {
 	private int exitConfirmSelection = 0; // 0 = Não, 1 = Sim
 
 	public boolean up, down, enter, left, right, escape;
+
+	/** Rodada 22: Shift + Enter nas opções alterna o sentido (ex.: volume da trilha). */
+	public boolean shift;
 
 	public static boolean pause = false;
 
@@ -334,6 +339,15 @@ public class Menu {
 		case OPTIONS_INDEX_MUSIC:
 			OptionsConfig.toggleMusic();
 			break;
+		case OPTIONS_INDEX_MUSIC_VOLUME:
+			// Rodada 22: volume separado da trilha sonora adaptativa —
+			// Enter/M aumenta; Shift+M (ou A/seta esquerda) diminui.
+			if (shift) {
+				OptionsConfig.adjustMusicVolume(-2);
+			} else {
+				OptionsConfig.adjustMusicVolume(2);
+			}
+			break;
 		case OPTIONS_INDEX_DIFFICULTY:
 			OptionsConfig.cycleDifficulty();
 			break;
@@ -365,8 +379,11 @@ public class Menu {
 			}
 			if (OptionsConfig.isMusicEnabled()) {
 				OptionsConfig.applyMusicPreference();
-			} else if (Sound.music != null) {
-				Sound.music.stop();
+			} else {
+				if (Sound.music != null) {
+					Sound.music.stop();
+				}
+				com.traduvertgames.main.MusicManager.pause();
 			}
 		}
 		currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
@@ -781,8 +798,11 @@ public class Menu {
 
 		Font optionFont = new Font("arial", Font.PLAIN, 22);
 		g.setFont(optionFont);
+		// Rodada 22: volume da trilha sonora adaptativa é independente dos efeitos.
+		int musicDb = (int) Math.round(OptionsConfig.getMusicVolume() / 2);
 		String[] lines = {
 				"Música: " + (OptionsConfig.isMusicEnabled() ? "Ligada" : "Desligada"),
+				"Trilha sonora: " + (musicDb > 0 ? "+" : "") + musicDb + " dB",
 				"Dificuldade: " + OptionsConfig.getDifficulty().getDisplayName(),
 				"Voltar"
 		};

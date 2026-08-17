@@ -40,6 +40,63 @@ public final class StoryManager {
 		relocateByTag("Pesquisador Ivo", IVO_TILES, level);
 		relocateByTag("Armeiro Mercúrio", MERCURIO_TILES, level);
 		relocateByTag("Técnico Hélio", HELIO_TILES, level);
+		// Rodada 22: NPCs secundários com diálogos ramificados e missões.
+		// Veterano Rex (missões de kills) aparece a partir da fase 2;
+		// Pesquisadora Lila (coleta) a partir da fase 3; Mercador Finn
+		// (troca de dados) a partir da fase 5.
+		spawnSecondaryNpcs(level);
+	}
+
+	private static void spawnSecondaryNpcs(int level) {
+		if (Game.entities == null) {
+			return;
+		}
+		// Cada NPC aparece uma vez por fase (vetor de entidades).
+		for (Entity e : Game.entities) {
+			if (e instanceof com.traduvertgames.dialogue.InteractiveNpc && isSecondary(e)) {
+				return;
+			}
+		}
+		if (level >= 2 && level <= 8) {
+			Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createVeteranRex(0, 0));
+		}
+		if (level >= 3 && level <= 8) {
+			Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createResearcherLila(0, 0));
+		}
+		if (level >= 5 && level <= 8) {
+			Game.entities.add(com.traduvertgames.entities.SecondaryNpcs.createMerchantFinn(0, 0));
+		}
+		// Reposiciona os NPCs secundários recém-criados para chão válido,
+		// espalhados dos NPCs da campanha.
+		relocateSecondary("Veterano Rex", REX_TILES, level);
+		relocateSecondary("Pesquisadora Lila", LILA_TILES, level);
+		relocateSecondary("Mercador Finn", FINN_TILES, level);
+	}
+
+	private static final int[][] REX_TILES = {
+			{ 10, 8 }, { 34, 18 }, { 14, 20 } };
+	private static final int[][] LILA_TILES = {
+			{ 26, 16 }, { 12, 14 }, { 36, 8 } };
+	private static final int[][] FINN_TILES = {
+			{ 32, 20 }, { 20, 6 }, { 8, 16 } };
+
+	private static boolean isSecondary(Entity e) {
+		String name = ((com.traduvertgames.dialogue.InteractiveNpc) e).getName();
+		return "Veterano Rex".equals(name) || "Pesquisadora Lila".equals(name)
+				|| "Mercador Finn".equals(name);
+	}
+
+	private static void relocateSecondary(String name, int[][] tiles, int level) {
+		if (Game.entities == null) {
+			return;
+		}
+		for (Entity e : Game.entities) {
+			if (e instanceof com.traduvertgames.dialogue.InteractiveNpc
+					&& name.equals(((com.traduvertgames.dialogue.InteractiveNpc) e).getName())) {
+				moveToNearestFreeTile(e, tiles, level);
+				return;
+			}
+		}
 	}
 
 	private static void relocate(Class<?> npcClass, int[][] tiles, int level) {

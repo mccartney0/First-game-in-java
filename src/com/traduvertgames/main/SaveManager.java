@@ -153,6 +153,13 @@ public final class SaveManager {
 				session.put(key, entry.getValue());
 			}
 		}
+		// Inventário (rodada 22): quantidades persistidas na sessão.
+		session.put("inventario", new HashMap<String, Object>(InventoryManager.serialize()));
+		// Missões secundárias (rodada 22): progresso e concluídas persistidas.
+		session.put("sideQuests", new HashMap<String, Object>(
+				com.traduvertgames.quest.SideQuestManager.serialize()));
+		session.put("sideQuestsDone", new HashMap<String, Boolean>(
+				com.traduvertgames.quest.SideQuestManager.getCompleted()));
 		Map<String, Object> progress = buildProgressMap(game);
 		// As flags de diálogos por NPC/fase são persistidas em memória e
 		// refletidas no progress a cada gravação (a migração v2→v3 inicia
@@ -372,6 +379,41 @@ public final class SaveManager {
 		int savedBestComboSession = toInt(session.get("melhorComboSessao"));
 		int savedWeaponOrdinal = toInt(session.get("armaAtual"));
 		int savedWeaponMask = toInt(session.get("armasDesbloqueadas"));
+
+		// Inventário (rodada 22): restaura as quantidades salvas da sessão.
+		@SuppressWarnings("unchecked")
+		Map<String, Object> savedInventory = (Map<String, Object>) session.get("inventario");
+		if (savedInventory != null) {
+			Map<String, Integer> inventory = new HashMap<String, Integer>();
+			for (Map.Entry<String, Object> entry : savedInventory.entrySet()) {
+				if (entry.getValue() instanceof Number) {
+					inventory.put(entry.getKey(), ((Number) entry.getValue()).intValue());
+				}
+			}
+			InventoryManager.deserialize(inventory);
+		} else {
+			InventoryManager.reset();
+		}
+		// Missões secundárias (rodada 22): progresso e concluídas restaurados.
+		@SuppressWarnings("unchecked")
+		Map<String, Object> savedQuests = (Map<String, Object>) session.get("sideQuests");
+		@SuppressWarnings("unchecked")
+		Map<String, Boolean> savedDone = (Map<String, Boolean>) session.get("sideQuestsDone");
+		if (savedQuests != null || savedDone != null) {
+			Map<String, Integer> questsSnapshot = new HashMap<String, Integer>();
+			if (savedQuests != null) {
+				for (Map.Entry<String, Object> entry : savedQuests.entrySet()) {
+					if (entry.getValue() instanceof Number) {
+						questsSnapshot.put(entry.getKey(),
+								((Number) entry.getValue()).intValue());
+					}
+				}
+			}
+			com.traduvertgames.quest.SideQuestManager.deserialize(
+					questsSnapshot,
+					savedDone != null ? new HashMap<String, Boolean>(savedDone)
+							: new HashMap<String, Boolean>());
+		}
 
 		Enemy.enemies = savedEnemies;
 		Game.setScore(savedScore);

@@ -601,6 +601,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				ParticleSystem.update();
 				FloatingText.update();
 				MissionBanner.update();
+				// Trilha sonora adaptativa (rodada 22): conduz o crossfade.
+				MusicManager.update();
+				// Inventário (rodada 22): decai o cooldown de uso.
+				InventoryManager.update();
 
                         if (QuestManager.isObjectiveComplete()) {
                                 onObjectiveComplete();
@@ -800,8 +804,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// Durante a transição de fase (banner de conclusão / lore) as HUDs
 		// de combate ficam escondidas para deixar o momento mais limpo.
 		// Rodada 21: o card de estatísticas também conta como transição.
-		boolean hidingHud = questCompletedPending || showLevelTransition > 0
-				|| com.traduvertgames.graficos.PhaseStatsScreen.isShowing();
+		// Rodada 22: o inventário aberto também oculta a HUD de combate (o painel
+		// ocupa o centro inferior e o jogador não está em combate ativo).
+	boolean hidingHud = questCompletedPending || showLevelTransition > 0
+				|| com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
+				|| InventoryManager.isOpen();
 if (!hidingHud) {
 	MiniMap.render(overlayG);
 	// Texto do banner central renderizado no overlay (espaço escalado): letras
@@ -841,6 +848,8 @@ if (!hidingHud) {
 		damageOverlayFrames--;
 	}
 	DialogueManager.render(overlayG);
+	// Inventário (rodada 22): renderizado após o diálogo para ficar por cima.
+	InventoryManager.render(overlayG);
 	OnboardingManager.render(overlayG);
 	// A tela de escolha de arma inicial é desenhada por cima de tudo (inclusive
 	// do menu de pausa): durante a seleção o estado é MENU com pause=true, mas o
@@ -1003,9 +1012,14 @@ if (!hidingHud) {
 				// Navegação horizontal do menu por A/D e seta direita (rodada 15):
 				// evita mover o personagem pelos itens do menu.
 				menu.right = true;
-			} else {
-				player.right = true;
+				return;
 			}
+			if (InventoryManager.isOpen()) {
+				// Navegação do inventário por setas (inimigos congelados, sem movimento).
+				InventoryManager.navigateRight();
+				return;
+			}
+			player.right = true;
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
 			if ("GAMEOVER".equals(gameState)) {
 				this.gameOverSelection = (this.gameOverSelection + 1) % 2;
@@ -1014,12 +1028,22 @@ if (!hidingHud) {
 			}
 			if ("MENU".equals(gameState)) {
 				menu.left = true;
-			} else {
-				player.left = true;
+				return;
 			}
+			if (InventoryManager.isOpen()) {
+				InventoryManager.navigateLeft();
+				return;
+			}
+			player.left = true;
 		}
 
 		if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+			if (InventoryManager.isOpen()) {
+				// Rodada 22: com o inventário aberto, as setas navegam a grade
+				// (sem mover o personagem nem ativar menus em cascata).
+				InventoryManager.navigateUp();
+				return;
+			}
 			if (showInitialWeaponSelect) {
 				initialWeaponSelection = Math.max(0, initialWeaponSelection - 1);
 				return;
@@ -1039,6 +1063,10 @@ if (!hidingHud) {
 			if (showInitialWeaponSelect) {
 				initialWeaponSelection = Math.min(getUnlockedInitialWeapons().length - 1,
 						initialWeaponSelection + 1);
+				return;
+			}
+			if (InventoryManager.isOpen()) {
+				InventoryManager.navigateDown();
 				return;
 			}
 			player.down = true;
@@ -1135,6 +1163,11 @@ if (!hidingHud) {
 			this.escape = true;
 		}
 
+		// Rodada 22: Shift modificador nas opções do menu (ex.: diminuir o volume da trilha).
+		if (e.getKeyCode() == KeyEvent.VK_SHIFT) {
+			menu.shift = true;
+		}
+
 		if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 			// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
 			// do menu de pausa ao segurar a tecla).
@@ -1221,27 +1254,59 @@ if (!hidingHud) {
                         }
                 }
 
-                if (e.getKeyCode() == KeyEvent.VK_R) {
-                        if (DialogueManager.isActive()) {
-                                DialogueManager.advance();
-                        } else if ("NORMAL".equals(gameState)) {
-                                DialogueManager.startNearestDialogue();
-                        }
-                }
+		// Rodada 22: tecla I abre/fecha o inventário visual.
+		if (e.getKeyCode() == KeyEvent.VK_I) {
+			if (DialogueManager.isActive()) {
+				// Inventário acessível durante o diálogo (sem abrir dois overlays).
+				return;
+			}
+			InventoryManager.toggle();
+			return;
+		}
+
+		if (e.getKeyCode() == KeyEvent.VK_R) {
+			if (DialogueManager.isActive()) {
+				DialogueManager.advance();
+			} else if ("NORMAL".equals(gameState) && !InventoryManager.isOpen()) {
+				DialogueManager.startNearestDialogue();
+			}
+		}
+
+		// Rodada 22: teclas 1/2/3 escolhem opções do diálogo ramificado.
+		if (DialogueManager.isActive()) {
+			int choice = 0;
+			if (e.getKeyCode() == KeyEvent.VK_1 || e.getKeyCode() == KeyEvent.VK_NUMPAD1) {
+				choice = 1;
+			} else if (e.getKeyCode() == KeyEvent.VK_2 || e.getKeyCode() == KeyEvent.VK_NUMPAD2) {
+				choice = 2;
+			} else if (e.getKeyCode() == KeyEvent.VK_3 || e.getKeyCode() == KeyEvent.VK_NUMPAD3) {
+				choice = 3;
+			} else {
+				choice = 0;
+			}
+			if (choice > 0 && com.traduvertgames.dialogue.DialogueManager.getBranchChoices().length >= choice) {
+				com.traduvertgames.dialogue.DialogueManager.selectBranchChoice(choice - 1);
+			}
+		}
 
 		if (e.getKeyCode() == KeyEvent.VK_ENTER) {
 				if (DialogueManager.isActive()) {
 					DialogueManager.advance();
+				} else if (InventoryManager.isOpen()) {
+					// Enter usa o item selecionado no inventário.
+					InventoryManager.useSelected();
 				} else if (VictoryCutscene.isShowing()) {
 					this.enter = true;
 				}
 			}
 
-                if (e.getKeyCode() == KeyEvent.VK_SPACE) {
-                        if (DialogueManager.isActive()) {
-                                DialogueManager.advance();
-                        }
-                }
+		if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+				if (DialogueManager.isActive()) {
+					DialogueManager.advance();
+				} else if (InventoryManager.isOpen()) {
+					InventoryManager.useSelected();
+				}
+			}
         }
 
 
@@ -1393,6 +1458,10 @@ if (!hidingHud) {
 			World.restartGame("level1.png");
 			LevelUpManager.reset();
 			WaveManager.reset();
+			// Inventário (rodada 22): novo jogo limpa o inventário.
+			InventoryManager.reset();
+			// Trilha sonora adaptativa (rodada 22): tema da fase inicial.
+			MusicManager.setZone(MusicManager.Zone.forLevel(1));
 			DashAbility.reset();
 			UltimateAbility.reset();
 			LootGuarantee.reset();
@@ -1601,19 +1670,23 @@ if (!hidingHud) {
 		// Rodada 21: o banner de lore é adiado para o fim do respiro — antes
 		// ele competia com o card de estatísticas e com o aviso de conclusão.
 		com.traduvertgames.graficos.MissionBanner.reset();
-		com.traduvertgames.graficos.MissionBanner.scheduleLore(
-			com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(CUR_LEVEL),
-			com.traduvertgames.quest.StoryManager.getPhaseLore(CUR_LEVEL),
-			RESPIRO_FRAMES);
-	}
+			com.traduvertgames.graficos.MissionBanner.scheduleLore(
+				com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(CUR_LEVEL),
+				com.traduvertgames.quest.StoryManager.getPhaseLore(CUR_LEVEL),
+				RESPIRO_FRAMES);
+			// Trilha sonora adaptativa (rodada 22): tema da nova fase da campanha.
+			MusicManager.setZone(MusicManager.Zone.forLevel(CUR_LEVEL));
+		}
 
 	/**
 	 * Ativa o modo sobrevivência: ondas infinitas na Torre do Supervisor,
 	 * com a profundidade do modo (levelPlus) escalando a dificuldade.
 	 */
-	public static void enterSurvivalMode() {
+		public static void enterSurvivalMode() {
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		WaveManager.startArena();
+		// Trilha sonora adaptativa (rodada 22): tema de arena no modo sobrevivência.
+		MusicManager.setZone(MusicManager.Zone.ARENA);
 		showLevelTransition = 180 + RESPIRO_FRAMES;
 		transitionAlpha = 150;
 		transitionCooldown = RESPIRO_FRAMES;
@@ -1639,6 +1712,8 @@ if (!hidingHud) {
 		transitionCooldown = RESPIRO_FRAMES;
 		showLevelTransition = 180 + RESPIRO_FRAMES;
 		transitionAlpha = 150;
+		// Trilha sonora adaptativa (rodada 22): tema de arena no modo infinito.
+		MusicManager.setZone(MusicManager.Zone.ARENA);
 	}
 
 	/**
@@ -1818,6 +1893,9 @@ if (!hidingHud) {
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();
+		// Trilha sonora adaptativa (rodada 22): volta ao menu — pausar o tema
+		// (a música do menu é o Sound.music clássico, tratado pelo Menu).
+		MusicManager.pause();
 		damageOverlayFrames = 0;
 		showInitialWeaponSelect = false;
 		if (this.menu != null) {
