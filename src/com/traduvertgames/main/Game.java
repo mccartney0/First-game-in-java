@@ -175,8 +175,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         public static boolean isTransitionCooldown() {
                 return transitionCooldown > 0;
         }
-        /** Opacidade do fade preto da transição de fase (150 = totalmente escuro). */
-        private static int transitionAlpha = 0;
+	/** Opacidade do fade preto da transição de fase (255 = totalmente escuro). */
+	private static int transitionAlpha = 0;
 
         public Game() throws IOException {
                 instance = this;
@@ -572,7 +572,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 					// praticar sem risco (Player continua atualizando normalmente).
 					// Cooldown pós-transição (rodada 21): inimigos também ficam
 					// congelados até o jogador se orientar na nova fase.
-if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused() || isTransitionCooldown())) {
+if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused() || isTransitionCooldown() || isTransitioning())) {
 						continue;
 					}
 					e.update();
@@ -662,10 +662,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		if (showLevelTransition > 0 && transitionCooldown <= 0) {
 			showLevelTransition--;
 		}
-		// Fade preto da transição não decai durante o cooldown: a nova fase
-		// só é revelada quando o jogador está pronto.
-		if (transitionAlpha > 0 && transitionCooldown <= 0) {
-			transitionAlpha = Math.max(0, transitionAlpha - 3);
+		// Fade preto da transição decai sempre, inclusive durante o cooldown
+		// (o cooldown congela apenas o aviso e o spawn de inimigos). O fade
+		// total "apaga" a fase antiga e a cena nova é revelada em seguida —
+		// sem escurecimento residual no meio da tela (rodada 22c).
+		if (transitionAlpha > 0) {
+			transitionAlpha = Math.max(0, transitionAlpha - 8);
 		}
 	}
 
@@ -1645,7 +1647,7 @@ if (!hidingHud) {
 			// sobrevivência: inimigos não atacam de imediato.
 			transitionCooldown = RESPIRO_FRAMES;
 			showLevelTransition = 180 + RESPIRO_FRAMES;
-		transitionAlpha = 150;
+		transitionAlpha = 255;
 			return;
 		}
 		// O progresso de fase encerra a loja aberta (ou level up) para seguir.
@@ -1668,10 +1670,10 @@ if (!hidingHud) {
 		// Rodada 21: o card fica pausado na frente do jogo e só fecha por Enter
 		// (sem auto-dismiss na campanha) — a tela não é arremessada ao combate.
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
-		// Transição de fase limpa: fade preto suave para "apagar" a fase
-		// antiga antes de revelar a nova, com HUDs escondidas no meio tempo.
-		// O fade decai apenas quando o cooldown pós-transição terminar.
-		transitionAlpha = 150;
+		// Transição de fase limpa: fade preto total "apaga" a fase antiga
+		// e esmaece rapidamente, revelando a nova fase sem escurecimento
+		// residual (rodada 22c). O HUD fica escondido no meio tempo.
+		transitionAlpha = 255;
 		showLevelTransition = 150 + RESPIRO_FRAMES;
 		// Lore da nova fase: título e texto de ambientação em destaque dourado.
 		// Rodada 21: o banner de lore é adiado para o fim do respiro — antes
@@ -1695,7 +1697,7 @@ if (!hidingHud) {
 		// Trilha sonora adaptativa (rodada 22): tema de arena no modo sobrevivência.
 		MusicManager.setZone(MusicManager.Zone.ARENA);
 		showLevelTransition = 180 + RESPIRO_FRAMES;
-		transitionAlpha = 150;
+		transitionAlpha = 255;
 		transitionCooldown = RESPIRO_FRAMES;
 		// Card de estatísticas do ciclo anterior do modo infinito (se não for a
 		// primeira entrada, que já ganha a cutscene de vitória da campanha).
@@ -1718,7 +1720,7 @@ if (!hidingHud) {
 		// Cooldown de respiro (rodada 21): inimigos não atacam de imediato.
 		transitionCooldown = RESPIRO_FRAMES;
 		showLevelTransition = 180 + RESPIRO_FRAMES;
-		transitionAlpha = 150;
+		transitionAlpha = 255;
 		// Trilha sonora adaptativa (rodada 22): tema de arena no modo infinito.
 		MusicManager.setZone(MusicManager.Zone.ARENA);
 	}
@@ -1744,7 +1746,7 @@ if (!hidingHud) {
 		startProceduralLevel(depth);
 		transitionCooldown = RESPIRO_FRAMES;
 		showLevelTransition = 180 + RESPIRO_FRAMES;
-		transitionAlpha = 150;
+		transitionAlpha = 255;
 	}
 
 	/** Carrega o mapa procedural da profundidade informada. */

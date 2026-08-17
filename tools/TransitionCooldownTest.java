@@ -11,9 +11,9 @@ import com.traduvertgames.main.WaveManager;
 /**
  * Rodada 21 — testa o cooldown de respiro pós-transição:
  * 1. advanceToNextLevel() arma transitionCooldown = RESPIRO_FRAMES
- * 2. Durante o cooldown: aviso fixo (showLevelTransition não decai),
- *    fade fixo (transitionAlpha não decai), WaveManager não spawna,
- *    inimigos congelados
+  *	2. Durante o cooldown: aviso fixo (showLevelTransition não decai),
+ *	    fade esmaece rapidamente (rodada 22c — sem escurecimento residual),
+ *	    WaveManager não spawna, inimigos congelados
  * 3. Ao final do cooldown: tudo zera e o combate retoma
  * 4. PhaseStatsScreen na campanha não fecha sozinho (sem auto-dismiss)
  * 5. Banner de lore da nova fase é agendado (scheduleLore) e só dispara
@@ -63,7 +63,8 @@ public class TransitionCooldownTest {
 		check("estado é MENU com o card de estatísticas na frente",
 				"MENU".equals(Game.gameState));
 		check("aviso prolongado (>= RESPIRO)", getInt(Game.class, "showLevelTransition") >= 150);
-		check("fade ativo (150)", getInt(Game.class, "transitionAlpha") == 150);
+		// Rodada 22c: fade total (255) que esmaece rápido para revelar a fase.
+		check("fade ativo (255)", getInt(Game.class, "transitionAlpha") == 255);
 		System.out.println("    cooldown=" + cooldown);
 		// Simula o fechamento do card pelo jogador (Enter): disparará o
 		// cooldown de respiro.
@@ -80,8 +81,10 @@ public class TransitionCooldownTest {
 		g.update();
 		check("showLevelTransition não decai durante cooldown",
 				getInt(Game.class, "showLevelTransition") == trBefore);
-		check("transitionAlpha não decai durante cooldown",
-				getInt(Game.class, "transitionAlpha") == alphaBefore);
+		// Rodada 22c: o fade decai mesmo durante o cooldown — o cooldown
+		// congela apenas o aviso e o spawn de inimigos, não a revelação.
+		check("fade decai durante cooldown (sem escurecimento residual)",
+				getInt(Game.class, "transitionAlpha") < alphaBefore);
 
 		// --- 3. Cooldown decai no estado NORMAL ---
 		System.out.println("[Teste 3] Cooldown decai e libera o combate");
@@ -94,9 +97,7 @@ public class TransitionCooldownTest {
 		check("showLevelTransition zera ao final",
 				getInt(Game.class, "showLevelTransition") == 0);
 		int alphaFinal = getInt(Game.class, "transitionAlpha");
-		check("fade esmaeceu ao final", alphaFinal < alphaBefore);
-		// O fade decai junto com o cooldown: no último frame ele ainda
-		// pode estar ligeiramente acima de 0 (o jogo revela a fase).
+		check("fade zera ao final", alphaFinal == 0);
 
 		// --- 4. Card de stats na campanha não fecha sozinho ---
 		System.out.println("[Teste 4] Card de stats na campanha só fecha por Enter");
