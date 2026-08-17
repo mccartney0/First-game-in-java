@@ -34,6 +34,8 @@ public final class LevelSelectScreen {
 
 	private static int selection = 0;
 	private static boolean open = false;
+	/** Frames restantes do aviso "fase travada" (som e feedback ao tentar entrar). */
+	private static int lockFeedbackFrames = 0;
 
 	private LevelSelectScreen() {
 	}
@@ -42,9 +44,34 @@ public final class LevelSelectScreen {
 		return open;
 	}
 
+	/** @return fase mais alta alcançada pela campanha (mínimo 1); usada para
+	 *  destravar a seleção de fases pelo progresso real do save. */
+	public static int getUnlockedUpTo() {
+		int reached = SaveManager.getHighestUnlockedLevel();
+		if (reached < 1) {
+			reached = 1;
+		}
+		return reached;
+	}
+
+	/** @return true se a fase indicada (1..9) está destravada pelo progresso. */
+	public static boolean isUnlocked(int level) {
+		if (level == TOTAL_LEVELS) {
+			// O modo infinito abre junto da fase 8 (última da campanha).
+			return getUnlockedUpTo() >= Game.MAX_LEVEL;
+		}
+		// A fase atual do jogador e todas as anteriores estão destravadas:
+		// a progressão da campanha destrava a próxima automaticamente.
+		return level <= getUnlockedUpTo();
+	}
+
 	public static void open() {
 		open = true;
 		selection = Math.max(0, Math.min(TOTAL_LEVELS - 1, QuestManager.getCurrentLevel() - 1));
+		// Garante que a seleção inicial nunca cai em uma fase travada.
+		while (!isUnlocked(selection + 1)) {
+			selection = (selection + 1) % TOTAL_LEVELS;
+		}
 		Game.gameState = "LEVELSELECT";
 	}
 
@@ -67,6 +94,9 @@ public final class LevelSelectScreen {
 	}
 
 	public static void update() {
+		if (lockFeedbackFrames > 0) {
+			lockFeedbackFrames--;
+		}
 		if (!open) {
 			return;
 		}
@@ -94,7 +124,14 @@ public final class LevelSelectScreen {
 		if (!open) {
 			return;
 		}
-		selection = (selection - 1 + TOTAL_LEVELS) % TOTAL_LEVELS;
+		// Rodada 22b: a navegação circula apenas pelas fases destravadas —
+		// as travadas ficam puladas pelas setas, para não confundir o jogador.
+		for (int attempts = 0; attempts < TOTAL_LEVELS; attempts++) {
+			selection = (selection - 1 + TOTAL_LEVELS) % TOTAL_LEVELS;
+			if (isUnlocked(selection + 1)) {
+				return;
+			}
+		}
 	}
 
 	/** Navegação exposta para o handler de teclado do Game. */
@@ -102,7 +139,12 @@ public final class LevelSelectScreen {
 		if (!open) {
 			return;
 		}
-		selection = (selection + 1) % TOTAL_LEVELS;
+		for (int attempts = 0; attempts < TOTAL_LEVELS; attempts++) {
+			selection = (selection + 1) % TOTAL_LEVELS;
+			if (isUnlocked(selection + 1)) {
+				return;
+			}
+		}
 	}
 
 	/** Confirma a seleção (Enter). Se a fase escolhida for a atual, apenas
@@ -115,6 +157,13 @@ public final class LevelSelectScreen {
 		int chosen = selection + 1;
 		if (chosen == QuestManager.getCurrentLevel()) {
 			close();
+			return;
+		}
+		if (!isUnlocked(chosen)) {
+			// Rodada 22b: fases não concluídas não podem ser selecionadas —
+			// só o avanço natural da campanha destrava a próxima.
+			lockFeedbackFrames = 45;
+			SoundManager.play(SoundManager.Event.PICKUP);
 			return;
 		}
 		playLevel(chosen);
@@ -175,24 +224,42 @@ public final class LevelSelectScreen {
 		g.setColor(new Color(14, 18, 28, 220));
 		g.fillRoundRect(panelX, panelY, 420, panelHeight, 16, 16);
 
+		int unlockedUpTo = getUnlockedUpTo();
 		for (int i = 0; i < TOTAL_LEVELS; i++) {
+			int levelNumber = i + 1;
+			boolean unlocked = isUnlocked(levelNumber);
 			int rowY = panelY + 16 + lineHeight * i;
 			if (selection == i) {
-				g.setColor(new Color(60, 68, 88));
+				if (unlocked) {
+					g.setColor(new Color(60, 68, 88));
+				} else {
+					g.setColor(new Color(74, 44, 44));
+				}
 				g.fillRoundRect(panelX + 8, rowY - 22, 404, 30, 10, 10);
 				g.setColor(Color.yellow);
 				g.drawString(">", panelX + 22, rowY);
-				g.setColor(Color.white);
+				g.setColor(unlocked ? Color.white : new Color(200, 200, 200));
 			} else {
-				g.setColor(Color.white);
+				g.setColor(unlocked ? Color.white : new Color(140, 140, 140));
 			}
 			String label = "Fase " + (i + 1) + ": " + LEVEL_NAMES[i];
+			if (!unlocked) {
+				label += "  [TRAVADA]";
+			}
 			g.drawString(label, panelX + 40, rowY);
 		}
 
 		g.setFont(new Font("arial", Font.PLAIN, 14));
 		g.setColor(new Color(200, 200, 200));
+		String progressHint = "Progresso destravado ate a fase " + unlockedUpTo
+				+ (unlockedUpTo >= Game.MAX_LEVEL ? " (Modo Infinito liberado)" : "");
+		g.drawString(progressHint, (screenWidth - g.getFontMetrics().stringWidth(progressHint)) / 2, panelY + panelHeight + 30);
+		if (lockFeedbackFrames > 0) {
+			g.setColor(new Color(255, 87, 34, Math.min(255, lockFeedbackFrames * 6)));
+			String lockText = "Conclua a fase anterior para desbloquear";
+			g.drawString(lockText, (screenWidth - g.getFontMetrics().stringWidth(lockText)) / 2, panelY - 18);
+		}
 		String hint = "Setas para escolher — Enter para trocar de fase — ESC ou TAB para voltar";
-		g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2, panelY + panelHeight + 30);
+		g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2, panelY + panelHeight + 52);
 	}
 }

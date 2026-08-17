@@ -621,6 +621,22 @@ public final class SaveManager {
 		return slot != null && (getSession(slot).containsKey("vida") || getSession(slot).containsKey("level"));
 	}
 
+	/** Fase mais alta alcançada pela campanha no slot ativo: usada pela tela de
+	 *  seleção de fases para destravar apenas o progresso real do jogador
+	 *  (rodada 22b). Sem save válido, retorna 0. */
+	public static int getHighestUnlockedLevel() {
+		Map<String, Object> root = loadRoot();
+		if (root == null) {
+			return 0;
+		}
+		@SuppressWarnings("unchecked")
+		Map<String, Object> campaign = (Map<String, Object>) root.get("campaign");
+		if (campaign == null) {
+			return 0;
+		}
+		return toInt(campaign.get("maxLevelReached"));
+	}
+
 	/** Retorna a fase salva em um slot, ou -1 se vazio. */
 	public static int getSlotLevel(int slotId) {
 		Map<String, Object> root = loadRoot();

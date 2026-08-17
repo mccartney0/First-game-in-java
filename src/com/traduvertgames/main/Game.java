@@ -1189,6 +1189,13 @@ if (!hidingHud) {
 				returnToMainMenu();
 				return;
 			}
+			if (InventoryManager.isOpen()) {
+				// Rodada 22b: o ESC fecha o inventário antes de abrir a pausa —
+				// sem isso o painel ficava preso aberto (tela escura e HUD
+				// oculta), como reportado pelo jogador.
+				InventoryManager.toggle();
+				return;
+			}
 			if ("NORMAL".equals(gameState)) {
 				Menu.openPauseScreen();
 			} else if ("MENU".equals(gameState) && Menu.pause) {
