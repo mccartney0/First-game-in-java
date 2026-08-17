@@ -1474,14 +1474,19 @@ if (!hidingHud) {
         }
 
                 private boolean loadGameFromSave() {
+                // Rodada 24: o autosave moderno grava em saves.json — antes,
+                // este método exigia o antigo save.txt que nunca existe, e o
+                // "Reiniciar partida" caía direto em startNewGame (tutorial).
+                // Tentativa 1: autosave do SaveManager (saves.json).
+                if (SaveManager.hasAnySave()) {
+                        if (SaveManager.loadSlot(SaveManager.activeSlot)) {
+                                return true;
+                        }
+                }
+                // Tentativa 2: a codificação manual antiga (legado, save.txt).
                 File file = new File("save.txt");
                 if (!file.exists()) {
                         return false;
-                }
-                // Primeiro tenta o autosave do SaveManager; depois a codificação
-                // manual antiga (legado) como último recurso.
-                if (SaveManager.hasAnySave()) {
-                        return SaveManager.loadSlot(SaveManager.activeSlot);
                 }
                 String saver = Menu.loadGame(20);
                 if (saver == null || saver.isEmpty()) {
@@ -1544,6 +1549,13 @@ if (!hidingHud) {
 	}
 
 	/** Abre a tela de escolha de arma inicial (pausa o jogo no estado NORMAL). */
+	/** Limpa a tela de seleção de arma inicial (usada no carregamento de save — rodada 24). */
+	public static void clearInitialWeaponSelect() {
+		showInitialWeaponSelect = false;
+		initialWeaponSelection = 0;
+		Menu.pause = false;
+	}
+
 	private static void startInitialWeaponSelect() {
 		showInitialWeaponSelect = true;
 		initialWeaponSelection = 0;
@@ -1715,13 +1727,15 @@ if (!hidingHud) {
 		bullets.clear();
 		questCompletedPending = false;
 		shopPendingOpened = false;
-		QuestManager.prepareForLevel(CUR_LEVEL);
-		String newWorld = "level" + CUR_LEVEL + ".png";
-		World.restartGame(newWorld);
 		// Card de estatísticas da fase que acabou de terminar (kills, tempo, combo).
 		// Rodada 21: o card fica pausado na frente do jogo e só fecha por Enter
 		// (sem auto-dismiss na campanha) — a tela não é arremessada ao combate.
+		// Rodada 24: capturado ANTES do World.restartGame — o restart zera os
+		// contadores da fase (resetLevelStats) e o card mostrava tudo zerado.
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
+		QuestManager.prepareForLevel(CUR_LEVEL);
+		String newWorld = "level" + CUR_LEVEL + ".png";
+		World.restartGame(newWorld);
 		// Transição de fase limpa: fade preto total "apaga" a fase antiga
 		// e esmaece rapidamente, revelando a nova fase sem escurecimento
 		// residual (rodada 22c). O HUD fica escondido no meio tempo.
@@ -1766,7 +1780,7 @@ if (!hidingHud) {
 	 * Gera o primeiro mapa procedural, entra no modo arena e exibe o banner de
 	 * transição do modo.
 	 */
-	public static void enterInfiniteMode() {
+		public static void enterInfiniteMode() {
 		if (instance != null) {
 			instance.levelPlus = 1;
 		}
@@ -1779,6 +1793,13 @@ if (!hidingHud) {
 		transitionAlpha = 255;
 		// Trilha sonora adaptativa (rodada 22): tema de arena no modo infinito.
 		MusicManager.setZone(MusicManager.Zone.ARENA);
+		// Rodada 24: a entrada nas Profundezas ganha o banner de lore da trama,
+		// com destaque dourado igual ao das fases de campanha.
+		com.traduvertgames.graficos.MissionBanner.reset();
+		com.traduvertgames.graficos.MissionBanner.scheduleLore(
+				com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(MAX_LEVEL + 1),
+				com.traduvertgames.quest.StoryManager.getPhaseLore(MAX_LEVEL + 1),
+				RESPIRO_FRAMES);
 	}
 
 	/**
@@ -1803,6 +1824,13 @@ if (!hidingHud) {
 		transitionCooldown = RESPIRO_FRAMES;
 		showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
+		// Rodada 24: cada nova profundidade exibe o banner de lore progressivo
+		// da trama das Profundezas (títulos de ciclo-chave em dourado).
+		com.traduvertgames.graficos.MissionBanner.reset();
+		com.traduvertgames.graficos.MissionBanner.scheduleLore(
+				com.traduvertgames.quest.StoryManager.getPhaseLoreTitle(MAX_LEVEL + depth),
+				com.traduvertgames.quest.StoryManager.getPhaseLore(MAX_LEVEL + depth),
+				RESPIRO_FRAMES);
 	}
 
 	/** Carrega o mapa procedural da profundidade informada. */
