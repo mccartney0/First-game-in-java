@@ -215,12 +215,12 @@ public final class MissionHud {
 			// Alvo na tela: sinal pulsante sobre ele
 			double pulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % (PULSE_PERIOD * 16))
 					/ (PULSE_PERIOD * 16));
-			int radius = (8 + (int) (2 * pulse)) * s / 4 + 2;
-			g2.setColor(new Color(255, 235, 59, 120 + (int) (80 * pulse)));
-		g2.fillOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
-		g2.setColor(new Color(255, 235, 59, 200));
-		g2.setStroke(new java.awt.BasicStroke(1.5f * s / 4));
-		g2.drawOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
+			int radius = (8 + (int) (1.5 * pulse)) * s / 4 + 2;
+			g2.setColor(new Color(255, 235, 59, 80 + (int) (50 * pulse)));
+			g2.fillOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
+			g2.setColor(new Color(255, 235, 59, 180 + (int) (40 * pulse)));
+			g2.setStroke(new java.awt.BasicStroke(1.5f * s / 4));
+			g2.drawOval(targetCenterX - radius, targetCenterY - radius, radius * 2, radius * 2);
 		}
 		// Ponteiro de direção próximo ao personagem (companion radar):
 		// pequena seta pulsante a 34px do centro do player na direção do alvo,
@@ -236,13 +236,13 @@ public final class MissionHud {
 		}
 		int pointerX = centerX + (int) Math.round(Math.cos(angle) * pointerRadius); // pointerRadius já em espaço escalado
 		int pointerY = centerY + (int) Math.round(Math.sin(angle) * pointerRadius);
-		// Pulsação de brilho do ponteiro (ciclo de 800ms): o halo amarelo
-		// respira atrás da seta para facilitar a visualização.
-		double glowPulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % 800) / 800.0);
-		int haloSize = (int) ((10 + glowPulse * 4) * s);
-		g2.setColor(new Color(255, 235, 59, 40 + (int) (36 * glowPulse)));
-		g2.fillOval(pointerX - haloSize, pointerY - haloSize, haloSize * 2, haloSize * 2);
-		int pointerAlpha = 180 + (int) (75 * glowPulse);
+			// Pulsação sutil de brilho (ciclo de 1.6s, curva senoidal suave):
+			// o halo amarelo "respira" atrás da seta sem chamar atenção demais.
+			double glowPulse = 0.5 + 0.5 * Math.sin(2.0 * Math.PI * (System.currentTimeMillis() % 1600) / 1600.0);
+			int haloSize = (int) ((9 + glowPulse * 2) * s);
+			g2.setColor(new Color(255, 235, 59, 28 + (int) (22 * glowPulse)));
+			g2.fillOval(pointerX - haloSize, pointerY - haloSize, haloSize * 2, haloSize * 2);
+			int pointerAlpha = 215 + (int) (30 * glowPulse);
 		// Painel escuro compacto atrás do ponteiro
 		Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
 		g2.setFont(smallFont);
