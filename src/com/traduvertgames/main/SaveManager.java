@@ -115,6 +115,10 @@ public final class SaveManager {
 		slot.put("arma", clampDouble(Player.weapon));
 		slot.put("escudo", clampDouble(Player.shield));
 		slot.put("inimigosMortos", Enemy.enemies);
+		// Rodada 25: o conjunto de inimigos mortos por tile (formato x,y,B|N)
+		// evita que o reinício da fase ressuscite os abatidos — o
+		// applyMapPixels pula as posições registradas aqui.
+		slot.put("inimigosMortosSet", com.traduvertgames.main.EnemyKillTracker.serialize());
 		slot.put("levelPlus", game != null ? game.getLevelPlus() : 0);
 		slot.put("level", game != null ? game.getCurrentLevel() : 1);
 		slot.put("pontuacao", Game.getScore());
@@ -437,6 +441,11 @@ public final class SaveManager {
 		int savedEnemies = toInt(session.get("inimigosMortos"));
 		int savedLevelPlus = toInt(session.get("levelPlus"));
 		int savedLevel = toInt(session.get("level"));
+		// Rodada 25: o conjunto de inimigos abatidos — salvo antes do reload
+		// do mundo (restoreObjectiveState abaixo) para o applyMapPixels pular
+		// as posições registradas e não ressuscitar os mobs já derrotados.
+		com.traduvertgames.main.EnemyKillTracker.setCurrentLevel(savedLevel);
+		com.traduvertgames.main.EnemyKillTracker.deserialize(session.get("inimigosMortosSet"));
 		int savedScore = toInt(session.get("pontuacao"));
 		int savedHighScore = toInt(session.get("recorde"));
 		int savedBestComboRecord = toInt(session.get("melhorCombo"));
@@ -489,10 +498,20 @@ public final class SaveManager {
 			// Troca de fase completa: recarrega o mapa, a quest e o chefe da fase
 			// salva (sem reabrir o onboarding), garantindo que o jogo retorne
 			// exatamente à fase em que foi salvo — e não à fase atual.
-			game.setLevelPlus(savedLevelPlus);
-			game.setCurrentLevel(savedLevel);
-			World.restartGame("level" + Math.min(Math.max(1, savedLevel), Game.MAX_LEVEL) + ".png");
-			OnboardingManager.stop();
+						game.setLevelPlus(savedLevelPlus);
+						game.setCurrentLevel(savedLevel);
+						// Rodada 25: a restauração de save recarrega a mesma fase;
+						// o tracker de mortos (restaurado acima) não pode ser
+						// zerado pelo restart — senão os mobs abatidos voltam.
+						com.traduvertgames.main.Game.restorePhase = true;
+						try {
+							World.restartGame("level" + Math.min(Math.max(1, savedLevel), Game.MAX_LEVEL) + ".png");
+						} finally {
+							com.traduvertgames.main.Game.restorePhase = false;
+						}
+						com.traduvertgames.main.EnemyKillTracker.setCurrentLevel(savedLevel);
+						com.traduvertgames.main.EnemyKillTracker.deserialize(session.get("inimigosMortosSet"));
+					OnboardingManager.stop();
 			LevelUpManager.reset();
 			WaveManager.reset();
 			// Recorde de sobrevivência restaurado do save (preservado entre sessões).

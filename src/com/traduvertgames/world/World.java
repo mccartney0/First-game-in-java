@@ -111,18 +111,21 @@ public class World {
 						// Player
 						Game.player.setX(xx * 16);
 						Game.player.setY(yy * 16);
-} else if (pixelAtual == 0xFFFF0000) {
-// Enemy
+					} else if (pixelAtual == 0xFFFF0000
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
+// Enemy — pulado se já foi abatido (rodada 25)
 Enemy en = Enemy.spawnRandomVariant(xx * 16, yy * 16);
 Game.entities.add(en);
 Game.enemies.add(en);
-} else if (pixelAtual == 0xFF9C27B0) {
-// Teleporter elite
+} else if (pixelAtual == 0xFF9C27B0
+						&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
+// Teleporter elite — pulado se já foi abatido (rodada 25)
 Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.TELEPORTER);
 Game.entities.add(en);
 Game.enemies.add(en);
-} else if (pixelAtual == 0xFF00BCD4) {
-// Artillery elite
+} else if (pixelAtual == 0xFF00BCD4
+						&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
+// Artillery elite — pulado se já foi abatido (rodada 25)
 Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.ARTILLERY);
 Game.entities.add(en);
 Game.enemies.add(en);
@@ -175,35 +178,43 @@ Game.enemies.add(en);
                                                 Game.entities.add(new EngineerNPC(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFF7E57C2) {
                                                 Game.entities.add(new ResearcherNPC(xx * 16, yy * 16));
-                                        } else if (pixelAtual == 0xFF3F51B5) {
-                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.WARDEN);
-                                                Game.entities.add(en);
-                                                Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFF009688) {
-                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.SENTINEL);
-                                                Game.entities.add(en);
-                                                Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFFF4511E) {
-                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.RAVAGER);
-                                                Game.entities.add(en);
-                                                Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFFE91E63) {
-                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
-                                                                Enemy.Variant.WARBRINGER, true);
-                                                Game.entities.add(en);
-                                                Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFF7986CB) {
-                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
-                                                                Enemy.Variant.OVERSEER, true);
-                                                Game.entities.add(en);
-                                                Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFF81C784) {
-                                                // Phantom: caçador furtivo que drena escudo e mana
-                                                Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
-                                                                Enemy.Variant.PHANTOM);
-                                                Game.entities.add(en);
-                                                Game.enemies.add(en);
-						} else if (pixelAtual == 0xFFFF5722) {
+					} else if (pixelAtual == 0xFF3F51B5
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.WARDEN);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFF009688
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.SENTINEL);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFFF4511E
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.RAVAGER);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFFE91E63
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+								Enemy.Variant.WARBRINGER, true);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFF7986CB
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+								Enemy.Variant.OVERSEER, true);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+					} else if (pixelAtual == 0xFF81C784
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
+						// Phantom: caçador furtivo que drena escudo e mana
+						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+								Enemy.Variant.PHANTOM);
+						Game.entities.add(en);
+						Game.enemies.add(en);
+						} else if (pixelAtual == 0xFFFF5722
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy,
+									QuestManager.getCurrentLevel() == 7)) {
 							// Guardian-chefe: o chefe do subsolo da fase 7
 							// (boss fixo do mapa — apenas um por fase).
 							boolean bossGuardian = QuestManager.getCurrentLevel() == 7;
@@ -211,7 +222,8 @@ Game.enemies.add(en);
 									Enemy.Variant.GUARDIAN, bossGuardian);
 							Game.entities.add(en);
 							Game.enemies.add(en);
-						} else if (pixelAtual == 0xFFBF360C) {
+						} else if (pixelAtual == 0xFFBF360C
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
 							// Guardian comum: tanque robusto que regenera vida,
 							// presente nas fases 7/8 como tropa de elite —
 							// nunca conta como chefe (rodada 23b).
@@ -219,14 +231,16 @@ Game.enemies.add(en);
 									Enemy.Variant.GUARDIAN, false);
 							Game.entities.add(en);
 							Game.enemies.add(en);
-						} else if (pixelAtual == 0xFF74DE80) {
+						} else if (pixelAtual == 0xFF74DE80
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
 							// Guardian comum (mapas das fases 7/8): nunca conta
 							// como chefe (rodada 23b).
 							Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
 									Enemy.Variant.GUARDIAN, false);
 							Game.entities.add(en);
 							Game.enemies.add(en);
-						} else if (pixelAtual == 0xFFFFC800) {
+						} else if (pixelAtual == 0xFFFFC800
+							&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
 							// Tropas de elite procedurais (rodada 24b): variante sólida
 							// determinada deterministicamente pela posição, com aura
 							// dourada e vida/dano +30% — nunca conta como chefe.

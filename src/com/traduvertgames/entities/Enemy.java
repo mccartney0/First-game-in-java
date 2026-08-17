@@ -1126,6 +1126,13 @@ public class Enemy extends Entity {
 		FloatingText.show("+" + xpGain + " XP", (int) this.getX() + 8, (int) this.getY(),
 				new Color(255, 214, 0), 45);
 	}
+        // Rodada 25: registrar a morte para o reinício não ressuscitar este
+        // inimigo (o mapa é recriado do PNG, e o conjunto de mortos é pulado).
+        // Rodada 25: marca o TILE DE SPAWN (não a posição atual) para que o
+        // inimigo abatido não ressuscite quando o mapa for recriado — o
+        // applyMapPixels recria cada inimigo na posição original do mapa, e o
+        // piloto pode ter matado o inimigo já em movimento (tile diferente).
+        com.traduvertgames.main.EnemyKillTracker.markDead(spawnTile.x, spawnTile.y, boss);
         Game.enemies.remove(this);
         Game.entities.remove(this);
         QuestManager.notifyEnemyKilled(this);
