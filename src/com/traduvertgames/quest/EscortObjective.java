@@ -25,7 +25,8 @@ import com.traduvertgames.main.SoundManager;
  * re-rastreado pelo {@link #registerEscort(EscortNpc)}; se não estiver
  * (morte), a fase recomeça do zero.
  */
-public class EscortObjective extends BaseObjective {
+public class EscortObjective extends BaseObjective
+		implements SequenceObjective.EscortStage {
 
 	/** Raio em pixels no qual inimigos ameaçam o escoltado. */
 	public static final double THREAT_RADIUS = 70;

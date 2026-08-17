@@ -203,15 +203,30 @@ Game.enemies.add(en);
                                                                 Enemy.Variant.PHANTOM);
                                                 Game.entities.add(en);
                                                 Game.enemies.add(en);
-					} else if (pixelAtual == 0xFFFF5722) {
-						// Guardian: tanque robusto que regenera vida.
-						// Na fase 7 ele é o chefe do subsolo (boss fixo do mapa).
-						boolean boss7 = QuestManager.getCurrentLevel() == 7;
-						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
-								Enemy.Variant.GUARDIAN, boss7);
-						Game.entities.add(en);
-						Game.enemies.add(en);
-					} else if (pixelAtual == 0xFFD01937) {
+						} else if (pixelAtual == 0xFFFF5722) {
+							// Guardian-chefe: o chefe do subsolo da fase 7
+							// (boss fixo do mapa — apenas um por fase).
+							boolean bossGuardian = QuestManager.getCurrentLevel() == 7;
+							Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+									Enemy.Variant.GUARDIAN, bossGuardian);
+							Game.entities.add(en);
+							Game.enemies.add(en);
+						} else if (pixelAtual == 0xFFBF360C) {
+							// Guardian comum: tanque robusto que regenera vida,
+							// presente nas fases 7/8 como tropa de elite —
+							// nunca conta como chefe (rodada 23b).
+							Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+									Enemy.Variant.GUARDIAN, false);
+							Game.entities.add(en);
+							Game.enemies.add(en);
+						} else if (pixelAtual == 0xFF74DE80) {
+							// Guardian comum (mapas das fases 7/8): nunca conta
+							// como chefe (rodada 23b).
+							Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+									Enemy.Variant.GUARDIAN, false);
+							Game.entities.add(en);
+							Game.enemies.add(en);
+						} else if (pixelAtual == 0xFFD01937) {
 						// Supervisor-Prime: a mente da colônia, chefe final da campanha (fase 8).
 						Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
 								Enemy.Variant.OVERSEER_PRIME, true);
