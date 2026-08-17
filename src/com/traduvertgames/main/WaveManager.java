@@ -96,8 +96,11 @@ public final class WaveManager {
 				Game.entities.add(boss);
 				Game.enemies.add(boss);
 			}
-			announce("CHEFE — Onda " + wavesSurvived, new Color(233, 30, 99));
+			announce("CHEFE APROXIMANDO-SE — Onda " + wavesSurvived, new Color(233, 30, 99));
 			SoundManager.play(SoundManager.Event.BOSS_ALERT);
+			// Rodada 20: o alerta de chefe ganha mais duração para não passar
+			// despercebido no meio do combate.
+			announceTimer = Math.max(announceTimer, 150);
 		}
 		// Drop de respiro a cada 3 ondas concluídas. Quando um chefe do modo
 		// infinito é derrotado, um respiro garantido é solto no próximo ciclo
@@ -109,6 +112,11 @@ public final class WaveManager {
 			bossDefeated = false;
 			dropBreather();
 			announce("CHEFE DERROTADO — SUPRIMENTOS!", new Color(255, 214, 0));
+		}
+		// Rodada 20: recompensa de pontuação por onda sobrevivida — incentiva
+		// continuar jogando o modo infinito e converte em score/loja.
+		if (wavesSurvived > 0) {
+			Game.addScore(20 + wavesSurvived * 2);
 		}
 	}
 
@@ -266,9 +274,13 @@ public final class WaveManager {
 			}
 			Enemy enemy = Enemy.spawnRandomVariant(spot[0], spot[1]);
 			// Escalada de dificuldade: mais vida e dano conforme a onda atual.
-			// Curva suavizada (0.22/0.09 por onda) para o arco do modo infinito
-			// permanecer desafiador sem ficar impossível em ondas profundas.
-			enemy.boost(1.0 + wavesSurvived * 0.22, 1.0 + wavesSurvived * 0.09);
+			// Rodada 20: curva sub-linear (raiz quadrada da onda) — a linear
+			// (0.22/0.09 por onda) tornava ondas profundas impossíveis; agora a
+			// dificuldade cresce rápido no início e desacelera, mantendo o
+			// desafio sem teto artificial. Ondas altas permanecem mais fortes
+			// que antes a partir da onda 6.
+			double depth = Math.sqrt(Math.max(1, wavesSurvived));
+			enemy.boost(1.0 + depth * 0.20, 1.0 + depth * 0.07);
 			Game.entities.add(enemy);
 			Game.enemies.add(enemy);
 		}
