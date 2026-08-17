@@ -401,21 +401,33 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return OptionsConfig.getDamageTakenMultiplier();
         }
 
-	/** Recalcula o SCALE para que o buffer (384x216) caiba na área útil atual. */
+	/** Recalcula o SCALE para que o buffer (384x216) caiba na janela atual.
+	 * Rodada 22e: a escala usa o retângulo da JANELA inteira (nunca a área
+	 * útil do conteúdo) — a barra de tarefas do Windows e os insets do tema
+	 * deixam o content pane ~26-40px menor que a tela; calcular pela área
+	 * útil derrubava o SCALE (ex.: 4 → 3) e a tela ficava cercada de preto
+	 * como um "backdrop de modal". Com o tamanho da janela, o jogo mantém
+	 * o tamanho e o preenchimento preto do render cobre a sobra. */
 		public static void recomputeScale() {
-		int width = Math.max(1, frame.getContentPane().getWidth());
-		int height = Math.max(1, frame.getContentPane().getHeight());
+		java.awt.Rectangle b = frame.getBounds();
+		int width = Math.max(1, b.width);
+		int height = Math.max(1, b.height);
 		SCALE = Math.max(1, Math.min(width / WIDTH, height / HEIGHT));
 	}
 	/** Registra um listener que recompõe o SCALE sempre que a janela muda de
 	 * tamanho (incluindo a alternância de tela cheia com F11). */
 	public static void installResizeListener() {
-		frame.addComponentListener(new java.awt.event.ComponentAdapter() {
+			// Rodada 22e: maximização nativa pelo botão do Windows (sem F11)
+			// também é tela cheia: a janela ocupa o monitor e o SCALE deve
+			// preencher a tela, não encolher o jogo para caber na área útil.
+			frame.addComponentListener(new java.awt.event.ComponentAdapter() {
 			@Override
 			public void componentResized(java.awt.event.ComponentEvent e) {
+				boolean maximized = (frame.getExtendedState() & javax.swing.JFrame.MAXIMIZED_BOTH) != 0;
 				// Modo tela cheia (F11, maximização nativa): recalcula o SCALE
 				// para preencher o monitor mantendo a nitidez da pixel art.
-				if (fullscreen) {
+				if (fullscreen || maximized) {
+					if (maximized) { fullscreen = true; }
 					recomputeScale();
 					return;
 				}
@@ -454,7 +466,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			fullscreen = true;
 		} else {
 			frame.setExtendedState(javax.swing.JFrame.NORMAL);
-			frame.setSize(WIDTH * SCALE, HEIGHT * SCALE);
+			// O SCALE atual (tela cheia) vale para o tamanho alvo da janela —
+			// atualiza o tamanho ANTES de recomputeScale, senão a janela fica
+			// com o tamanho da tela inteira e o jogo encolhe na janela grande.
+			int targetW = WIDTH * SCALE;
+			int targetH = HEIGHT * SCALE;
+			frame.setSize(targetW, targetH);
 			frame.setLocationRelativeTo(null);
 			fullscreen = false;
 		}
