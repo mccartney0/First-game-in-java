@@ -600,7 +600,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 			// Recompensa final da campanha: arma de elite desbloqueada.
 			grantCampaignReward();
-			com.traduvertgames.graficos.VictoryCutscene.start();
+			// Rodada 31 — conteúdo pós-campanha: a campanha concluída pela fase 9
+			// marca a conta, ativa o epílogo dos refugiados e habilita a Nova
+			// campanha+ no menu principal.
+			SaveManager.setCampaignCompleted(true);
+			VictoryCutscene.setRefugeeEnding(true);
+			VictoryCutscene.start();
 		} else if (questCompletedPending) {
 			// Conclusão da fase 7: recompensa de arma da campanha (Canhão de Vazio).
 			if (CUR_LEVEL == 7) {
@@ -1641,6 +1646,30 @@ if (!hidingHud) {
 		// Antes do onboarding, o jogador escolhe sua arma inicial entre as
 		// desbloqueadas — a escolha fica registrada no arsenal persistente.
 		startInitialWeaponSelect();
+	}
+
+	/**
+	 * Nova campanha+ (rodada 31): inicia a campanha do zero herdando as armas
+	 * desbloqueadas, os créditos e upgrades permanentes do metagame, com um
+	 * bônus de recursos de +25% sobre a vida e a mana base.
+	 */
+	public void startNewGamePlus() {
+		startNewGame();
+		if (!SaveManager.isNewGamePlus()) {
+			return;
+		}
+		// Bônus de recursos da Nova campanha+: +25% sobre os máximos aplicados
+		// depois da dificuldade da fase inicial (applyDifficultyToPlayerStats).
+		int bonusLife = Math.max(1, (int) Math.round(Player.maxLife * 0.25));
+		int bonusMana = Math.max(0, (int) Math.round(Player.maxMana * 0.25));
+		Player.maxLife += bonusLife;
+		Player.maxMana += bonusMana;
+		Player.life = Player.maxLife;
+		Player.mana = Player.maxMana;
+		// As flags de Nova campanha+ se esgotam ao iniciar: manter o
+		// desbloqueio de armas permanente (arsenal persistente) sem repetir
+		// o bônus a cada novo jogo do menu principal.
+		SaveManager.setNewGamePlus(false);
 	}
 
 	/**
