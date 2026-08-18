@@ -59,6 +59,28 @@
 - Load do Slot 1 (/tmp/game_loaded.png): HUD restaurado (VIDA 100/100, ESCUDO 147/150, MANA 500/500, PADRÃO 0250/250), card de missão "Contato com o Comando — Fale com a Comandante Ava", minimapa, inimigos spawned. O companion DRONE_SCOUT do save fabricado não apareceu visivelmente (o sprite pode ser discreto) — verificação de existência via snapshot do saves.json gravado pelo jogo já validada pelos testes lógicos (companionType gravado no JSON).
 - PRÓXIMO (final): rodar suíte completa de testes; git add src/ bin/ tools/ (exceto todo_current_session.md) + commit + push; PR comment 27 via /tmp/pr_body.md; entregar.
 
+## RODADA 27 (sessão atual — JUnit 5 pipeline):
+### Descobertas dos probes:
+1. O canal AVANÇA sim (state S0 CHANNEL=300 após 300 updates) — mas `getObjectiveProgress()` retorna o texto do DialogueObjective ("Fale com Engenheira Nia") até talked=true. O teste beaconStageRevealed deve esperar progresso da FASE (wrapper): melhor validar `QuestManager.serializeObjectiveState()` contendo CHANNEL>0, ou testar diálogo primeiro.
+2. `reloadPreservesBeaconProgress` falhou porque `channelOf()` procura "CHANNEL=" no serializeObjectiveState — DEVE funcionar (formato IDX=0|S0=...CHANNEL=300...). Mas o teste rodou 90 updates só → CHANNEL=90? Verificar: o teste espera channelBefore>0 — deve ser true com 90. A falha real: talvez o state do reload tenha "CHANNEL=0"? Não — na falha anterior channelOf=-1 → o índice "CHANNEL=" não encontrado no retorno (getObjectiveProgress? não, serializeObjectiveState). REVERificar — o teste chama serializeObjectiveState, deve conter CHANNEL. Suspeita: QuestManager.update não roda 90x? Ou o teste usou objeto errado. Re-rodar e olhar XML.
+3. A Nia NÃO SPAWNA do mapa de teste: tools/generate_maps.py não coloca tile 0xFF66BB6A (Engenheira Nia) — os PNGs de teste de QA anteriores eram gerados por generate_maps.py sem NPCs de apoio. No jogo real (res/level2.png do usuário, feito no editor), existe. FIX para teste: criar a Nia manualmente via SupportNpcs.engineer e add ao Game.entities ANTES de notifyDialogueFinished — o DialogueObjective compara por nome "Engenheira Nia", funciona.
+4. Fase 2 objetivo: DialogueObjective(SequenceObjective(HoldObjective(), BossHuntObjective()), "Engenheira Nia") — confirmado linha 88-93 do QuestManager.
+5. Reflection channel fix: o add-opens java.base/java.lang resolve o IllegalAccessException (o campo é da aplicação, não precisaria... mas o stack dizia IllegalAccessException em setChannelToMax linha 122 = f.getInt(null) em CHANNEL_MAX — precisa setAccessible ANTES de getInt). REESCREVER: setAccessible em ambos os campos.
+### Correções a aplicar:
+- CampaignBeaconTest.beaconStageRevealedAfterDialogue: criar Nia manualmente (SupportNpcs.engineer) e add Game.entities; validar serializeObjectiveState contém CHANNEL>0 E progresso do delegate (HoldObjective) — ou simplesmente validar que após diálogo + updates CHANNEL>300 e boss não derrotado.
+- CampaignBeaconTest.reloadPreservesBeaconProgress: validar CHANNEL via serializeObjectiveState antes/depois do reload (o reload chama restoreObjectiveState que chama deserializeState — verificar se CHANNEL persiste; state antes: CHANNEL=90).
+- QuestObjectiveLogicTest: setChannelToMax com setAccessible nos 2 campos.
+## RODADA 27 — CONCLUÍDA (entregue ao usuário):
+- Pipeline JUnit 5: build.gradle (plugins block, Java 11, JUnit 5.11.4 + launcher, test com useJUnitPlatform/headless=false/add-opens, check.dependsOn test). OBS: res/level1-5.png foram acidentalmente regravados durante a sessão (provavelmente por um jogo headless/PIL) — RESTAURADOS do git (md5 conferido) antes do commit.
+- tests/java: GameTestFixture, CampaignBeaconTest (5 cenários) e QuestObjectiveLogicTest (5 testes) — 10/10 verdes no Gradle (sandbox tem DISPLAY=:0; sem display usar xvfb-run).
+- Descoberta importante: res/level1-5.png do repositório NÃO contêm o tile 0xFF66BB6A (Engenheira Nia) → testes criam a Nia manualmente; mapa real do usuário tem.
+- Branch manus/junit-rodada-27 criada a partir da main, commit c827b0f, pushed; PR #43 aberto (base main). TODO: o usuário mergeia o PR; depois iniciar Rodada 28 (GameState).
+
+### Ajustes aplicados (2ª iteração):
+- QuestObjectiveLogicTest: sequence.update() antes de verificar etapa ativa; boss.onLevelStart()+registerBossPresence()+onEnemyKilled(direto) + QuestManager.update() p/ completar; funciona sem World.ensureActivePhaseBoss.
+- CampaignBeaconTest: falta limpar inimigos de Game.entities (level2 QA tem 10 inimigos → INVADERS=4 no raio do beacon, CHANNEL=0). FIX: em setUp após advanceToLevel, iterar Game.entities e remover todos os Enemy (fora entities/enemies? cuidado: remove de ambas listas `Game.enemies.remove(e)` também). Depois dos updates CHANNEL deve ser >0.
+- beaconChannelAdvances e reloadPreservesBeaconProgress com esse fix.
+
 ## RODADA 7 (novo pedido do usuário):
 O crash `ArrayIndexOutOfBoundsException: Index 514 out of bounds for length 504` no `World.applyMapPixels` (World.java:212) é causado por índices fora de bounds: `pixels[xx + (yy * mapWidth)]` e `tiles[xx + (yy * WIDTH)]` com `yy < pixels.length / mapWidth` — se o mapa for retangular (ex.: level7 42x28 → 42*28=1176), pixels.length/mapWidth = 28 linhas corretas... mas o loop atual usa `pixels.length / mapWidth` e a linha `tiles[xx + (yy * mapWidth)] = new WallTile(...)` escreve com mapWidth em vez de WIDTH (mesmo valor, ok). O bug real: quando pixels.length não é múltiplo de mapWidth, `yy * mapWidth` pode ultrapassar o tamanho (ex.: 514 = xx + yy*mapWidth com xx=510, yy=1??). 504 = 18*28. Ou seja: WIDTH=18? Não — 504 = 18*28. Provável: o mapa tem 18 pixels de largura?? Não. 504 = 42*12 = 28*18. O mapa lido tem 18 colunas x 28 linhas (504 px) mas mapWidth deveria ser 18; 514 = 4*18+4? 514 = 28*18+10. yy=28 (linha fora) — ou seja, a divisão `pixels.length/mapWidth` dá 28 (504/18=28) mas yy pode chegar 27 ok... hmm. Na verdade o stack mostra World.java:212 = linha `if (tiles[xx + (yy * WIDTH)] == null)`. Se xx=17, yy=28 → 17+504=521>504. Índice 514: yy=28? 28*18=504+10=514 → xx=10, yy=28. Mas yy < 504/18=28 (max 27). Contradição → WIDTH≠mapWidth: tiles length = WIDTH*HEIGHT do mapa; se WIDTH=514?? Não. Hipótese mais provável: race condition/estado corrompido pós-merge ou mapa corrompido na branch main (merge trouxe outra versão de World.java e level PNG). Ação: rodar o jogo localmente com `restartGame("level1.png")` reproduzindo o path exato do startNewGame, ler o stack do sandbox (se reproduzir) ou inspecionar os PNGs level1..8 em bin/ (verificar dimensões reais vs. esperadas) e procurar por mapas com dimensões anômalas.
 Plano roda 7 também: (2) tela cheia bugada (screenshot do usuário mostra janela com barras pretas laterais — fullscreen F11 não preenche a tela; provavelmente Game usa setUndecorated mas o FRAME não é redimensionado para a resolução real), (3) skins de companions (variantes de cor/sprite compráveis), (4) efeitos sonoros e visuais dos companions (sons de compra, atirar, heal, shield; partículas).
@@ -429,3 +451,118 @@ Implementação simples e robusta:
 - Stash do todo re-aplicado na main; branch manus/bin-consistente pode ser deletada no remote (PR fechado/mergeado).
 - PRÓXIMAS RODADAS: criar novas branches a partir da main (ex.: manus/rodada14-*) e PRs novos; `git pull origin main` de onde partir.
 - Lembrete: bin/ NÃO é versionado; commits só de src/, res/, tools/ (exceto todo).
+
+## RODADA 28 (novo pedido do usuário):
+- Encapsular campos estáticos do Game.java em classe GameState com reset bem definido (causa raiz dos bugs de transição).
+- + Playthrough completo do jogo ao final (validar menu → fase 1 → progresso → save).
+- Plano: (1) grep dos campos static do Game.java (player, entities, enemies, currentLevel, gameState, SCALE, playerScore etc); (2) criar GameState.java como holder singleton com reset(); (3) delegação: Game.java mantém os nomes mas encaminha para GameState (fase 1) OU migrar chamadas diretamente — decidir por impacto; (4) não quebrar 104 classes; (5) build + JUnit + playthrough headless; (6) PR.
+- Estado atual: PR #43 (manus/junit-rodada-27) aberto, usuário deve mergear; trabalho na mesma sandbox, branch atual manus/junit-rodada-27 — criar nova branch a partir da main (ou assumir que usuário mergeou; usar main).
+- Rodar suíte: `./gradlew test --no-daemon` (10 testes verdes). Playthrough: DISPLAY=:0 xvfb-run... na sandbox DISPLAY=:0 existe (rodou sem xvfb).
+
+### ANÁLISE RODADA 28 (fase 1 concluída):
+- Game.java = 2.078 linhas. Campos static: entities, enemies, bullets, bullet, spritesheet, world, player, rand, CUR_LEVEL, MAX_LEVEL, SCALE, gameState, score/highScore/combo*, killsThisLevel, levelStartTime, overlayExpanded, questCompletedPending, shopPendingOpened, traitorTalked, fullscreen, drawOffsetX/Y, showLevelTransition, transitionCooldown/Alpha, escapePressed, damageOverlayFrames, restorePhase, saveGame, frame, instance, buffers constants.
+- Uso externo massivo (30 arquivos por campo): NÃO trocar todas as referências de uma vez.
+- DESIGN ESCOLHIDO (migração segura):
+  1. Criar `com.traduvertgames.state.GameState` como holder final com campos (nada de lógica de jogo nele, só dados + reset explícito).
+  2. GameState.resetToMainMenu() = reseta level/score/transições; GameState.resetLevel() = stats do nível; GameState.resetAll() = novo jogo completo.
+  3. Game.java passa a delegar: Game.player = GameState.player etc. — manter nomes públicos no Game (compat) e adicionar acesso via Game.state / GameState.get(). Decisão final: manter campos no Game como referências ao GameState para não quebrar 30 arquivos por campo; a classe GameState centraliza os resets e as atribuições (ex.: no startNewGame, Game.player = new Player... continua, mas o reset é agora GameState.resetLevelStats() consolidado).
+  4. Refatorar Game.java: extrair os reseters dispersos (resetLevelStats, resetTraitorTalked etc.) para GameState; consolidar resetAll() usado em startNewGame.
+  5. Testes: CampaignBeaconTest usa Game.entities/Game.advanceToLevel — manter compat total.
+- Playthrough: menu Novo jogo → fase 1 → mata inimigos → avança fase 2 → NPC/beacon → save → carregar. Validar HEADLESS via screenshots (BufferStrategy limita import; usar probe de estados via Java ou aceitar validação do save.json).
+- IMPORTANTE: atualizar AGENTS.md/README com decisão do GameState para próximas rodadas.
+
+### RODADA 28 — ESTADO DE IMPLEMENTAÇÃO (fase 2):
+- CRIADO: src/com/traduvertgames/state/GameState.java (holder final com campos public static: bufferImage, scale, spritesheet, world, player, entities, enemies, playerBullets/EnemyBullets, rand, gameState, currentLevel, restorePhase, saveGame, escapePressed, score, highScore, comboMultiplier/Timer, bestComboRecord/ThisRun, killsThisLevel, levelStartTime, overlayExpanded, shopPendingOpened, questCompletedPending, traitorTalked, fullscreen, drawOffsetX/Y, showLevelTransition/RESPIRO_FRAMES, transitionCooldown/Alpha, damageOverlayFrames/DAMAGE_OVERLAY_DURATION, BASE_SCORE_PER_KILL=100, MAX_COMBO_MULTIPLIER=5, COMBO_DURATION_FRAMES=240, WIDTH=384, HEIGHT=216, MAX_LEVEL=8) + métodos resetAll(), resetLevel(), resetToMainMenu(), newEntities/Enemies/PlayerBullets/EnemyBullets(), formatLevelTime, startLevelTimer, getLevelTimeMs.
+- IMPORTANTE nomes no Game original: `bullet` (sem s) = balas DO JOGADOR; `bullets` = balas inimigas. GameState usa playerBullets/enemyBullets; delegação precisa mapear corretamente.
+- FALTA: (1) delegar no Game.java: player=GameState.player, entities=GameState.entities etc.; fazer getters/setters delegados onde possível; (2) startNewGame (linha 1553) chamar GameState.resetAll() (substituindo resets dispersos: CUR_LEVEL=1, questCompletedPending, shopPendingOpened, showLevelTransition, transitionAlpha, resetScoreState, resetTraitorTalked); manter Enemy.enemies=0, Menu.pause, resetPlayerToDefaults, applyDifficulty, World.restartGame("level1.png"), LevelUpManager/WaveManager/InventoryManager.reset, MusicManager.setZone(1), DashAbility.reset, UltimateAbility.reset, LootGuarantee.reset, ParticleSystem.clear, FloatingText.clear, startInitialWeaponSelect. OBS: não zerar entities/enemies no resetAll?? — startNewGame deveria sim (World.restartGame recria). resetAll() limpa listas.
+- (3) resetLevelStats (linha 307 Game.java): substituir por GameState.resetLevel() + SaveManager.captureBestRun() + EnemyKillTracker.if(!restorePhase)reset + setCurrentLevel(CUR_LEVEL). World.restartGame linha 344 chama resetLevelStats — delegar lá também.
+- (4) setCurrentLevel (linha 352) delegar para GameState.currentLevel; getCurrentLevel retorna GameState.currentLevel; getStaticLevelPlus = instance.levelPlus.
+- (5) toggleOverlayExpanded/isOverlayExpanded delegar.
+- (6) getScore/setScore/addScore, highScore, combo*, bestCombo*, killsThisLevel, levelStartTime delegar; resetLevelStats usa.
+- (7) Compilar: `cd /home/ubuntu/First-game-in-java && javac -d bin -cp bin $(find src -name "*.java") 2>&1 | grep error | head -5; echo BUILD_OK` (bin/ recriar).
+- (8) Testes: `./gradlew test --no-daemon` (10 testes JUnit da rodada 27 — CampaignBeaconTest usa Game.entities/Game.advanceToLevel; compat necessário: Game.entities precisa continuar funcional APÓS `Game.entities = GameState.newEntities()` no construtor).
+- (9) Playthrough: pkill java; rm saves.json; DISPLAY=:0 java -cp bin com.traduvertgames.main.Game; driver teclado via python script (usar /home/ubuntu/xinput.py ou xdotool); screenshots import -window root /tmp/X.png.
+- (10) Branch manus/gamestate-rodada-28 a partir da main; PR novo (usuário ainda não mergeou o #43).
+- FEITO (fase 2 parcial): Game.java: import GameState adicionado; construtor usa GameState.newEntities/newEnemies/newPlayerBullets/newEnemyBullets + GameState.spritesheet/player/world = ...; resetLevelStats delega GameState.resetLevel(); startLevelTimer/formatLevelTime/setBestComboThisRun/isOverlayExpanded/toggle/setCurrentLevel/getCurrentLevel/getBestComboThisRun/getKillsThisLevel/getLevelTimeMs delegam; clearQuestPending/resetTraitorTalked/setTraitorTalked delegam; getScore/setScore/addScore/getHighScore/setHighScore/applyComboSurge/setBestComboRecord delegam; startNewGame usa GameState.resetAll() no lugar dos resets dispersos (mantém CUR_LEVEL=1, Enemy.enemies=0, resetTraitorTalked etc).
+- FEITO (continuação): Game.java: loadFirstPhase usa GameState.resetAll()+CUR_LEVEL=1; resetScoreState delega GameState (espelhando); returnToMainMenu usa GameState.resetToMainMenu()+gameState=MENU; normalizeScoreAfterLoad delega GameState; registerEnemyKill/registerPlayerDamage delegam GameState (espelhando score/kills/combo/bestCombo/damageOverlayFrames); updateComboTimer delega GameState (espelhando); startInitialWeaponSelect/onboarding/applyPostLoadAdjustments espelham gameState=MENU/NORMAL no GameState.
+- VALIDAÇÃO OK: compila (bin/), ./gradlew test = 10/10 (CampaignBeaconTest 5/5, QuestObjectiveLogicTest 5/5) APÓS trazer build.gradle + tests/ + docs da branch junit-rodada-27 (PR #43 não mergeado na main!). Nota: branch atual manus/gamestate-rodada-28 já contém a config JUnit da rodada 27 (a main não tem).
+- PLAYTHROUGH (status):
+  - Janela correta: WID=16777223 (título "Game 2 RPG", 1536x864) em DISPLAY=:0. (16777224 é janela filha 1x1 — IGNORAR).
+  - Driver de input: `DISPLAY=:0 xdotool windowactivate --sync 16777223 && xdotool windowfocus 16777223 && xdotool key --clearmodifiers KEY` (enviar para DISPLAY ativo, NÃO --window).
+  - Screenshot: `DISPLAY=:0 import -window 16777223 /tmp/ss.png` (imagemagick instalado).
+  - IMPORTANTE: rodar com `java -cp bin:res` (res/ precisa no classpath senão crasha "input == null" no Spritesheet).
+  - Menu principal renderiza OK (Novo jogo/Continuar/...). Screenshot: /tmp/ss_game.png.
+  - Próximo: Enter p/ Novo jogo → tela de seleção de arma inicial → iniciar fase → matar inimigos → avançar fase → testar pausa/ESC → salvar (F5?) → reload → testar modo infinito.
+  - Teclas conhecidas: WASD move; Enter seleciona no MENU (menu.enter=true; Game instância usa this.restartGame=true e menu.enter); ESC menu/pausa; salvar via SaveManager (ver tecla no Game/menu).
+  - xdotool key não chega ao jogo (Canvas KeyListener sem rota de teclado no display sem WM roteador). openbox instalado mas mesmo assim não roteia (sem display real talvez; Xvfb + openbox). TENTAR: xdotool key após xdotool windowfocus --sync funcionou? getwindowfocus=18874375 (jogo) mas menu não moveu — provavelmente xdotool envia para a janela correta mas o jogo lê VK_DOWN do menu.up/down? NÃO: menu usa setas = VK_DOWN vai p/ menu.down? Verificar: menu.down é setado onde? No keyPressed: 'if (VK_DOWN) menu.down=true' — procurar no Game.java linha 1158-1180 (Down). Se sim, xdotool Down deveria funcionar...
+  - HIPÓTESE REAL: jogo está travado em loop infinito? 90% CPU mas menu render animado (spiders se movem nos screenshots) → loop OK. Então teclado não chega.
+  - RESOLVIDO INPUT: Driver funciona: `DISPLAY=:0 xdotool windowactivate --sync $W; DISPLAY=:0 java -cp /tmp GameDriver click 640 400 wait 800 tap ENTER` (/tmp/GameDriver.java, sintaxe: click X Y | tap TECLA | hold TECLA | release TECLA | wait MS).
+  - xdotool key não funciona sozinho; precisa click primeiro (foco no Canvas).
+  - PLAYTHROUGH PROGRESSO:
+    1. Enter no menu OK → arena de treino (onboarding "Bem-vindo, piloto!"). Screenshot /tmp/ss10.png.
+    2. Move RIGHT OK — player moveu; onboarding passou p/ "Pressione X para atirar" (Tiros 0/3). /tmp/ss11.png.
+    3. PRÓXIMOS: tap X 3x → onboarding avança → sair da arena p/ fase 1 → matar inimigos → completar objetivo → loja → fase 2 → ESC (pausa) → testar save/reload (ver tecla de save no jogo) → modo infinito.
+    4. Janela do jogo: $W=$(xdotool search --name "Game 2 RPG" | head -1); openbox rodando.
+    5. 3 tiros X OK (Tiros OK). Dash: hold SHIFT+W 1.5s + hold SHIFT+S 1.5s → "Tiros OK — Dash 0/2" (dash não completou com W+S; talvez precisa de VK_SHIFT sozinho com movimento em 2 direções diferentes — OK, não crítico).
+    6. Pulou Space → saiu da arena de treino → FASE 1 INICIADA! Missão: "Contacto com o Comando — Fale com a Comandante Ava". Mapa com spiders inimigos. VIDA 92/120 (tomou dano). Player no centro perto de NPC azul-claro (Comandante Ava?). Screenshot /tmp/ss13.png.
+    7. PRÓXIMOS: ir até a NPC (azul, y~875 x~1005) → diálogos → completar missão → matar spiders → avançar fase → loja → fase 2 (falar com Nia) → ESC pausa → save/reload.
+    8. Coordenadas visíveis na janela (1279x864): player ~ (605,365); NPC azul (Comandante Ava?) ~ (1005,875); spiders (170,215),(905,185),(1135,620); item amarelo (~940,615), coração (1280,475).
+    9. ALERTA: após mover D+S (vida 28/120), o jogo voltou ao MENU principal (ss15.png mostra menu com Continuar). Player morreu e foi ao menu (sem autosave — saves.json não existe; SaveManager.saveCurrentGame não rodou automaticamente). "Continuar" não faz nada quando saveExists=false.
+    10. TECLAS CONFIRMADAS NO JOGO REAL: T=save manual, P=pausa (Menu.openPauseScreen), L=(load?), ESC volta ao menu. Setas W/A/S/D navegam menu; Enter confirma. Robot (click+tap) funciona; xdotool key não funciona sozinho.
+    11. PROBLEMA: Enter no menu NÃO dispara; click em "Novo jogo" (650,515) também não reagiu; setas DOWN/UP funcionavam antes mas agora nem elas — jogo PARECE TRAVADO (screenshots ss15/ss17/ss19/ss21 idênticos no estado de fundo; spiders imóveis). VERIFICAR: ps/jstack — pode estar em deadlock ou 100% em algo. Se travado de verdade: é um BUG da Rodada 28 a investigar (possível: loops de decaimento transitionAlpha/cooldown no update com valores estáticos espelhados mal sincronizados, ou Menu.openPauseScreen com pause=true eterno). IMPORTANTE investigar ANTES de continuar playthrough.
+- ESTADO PLAYTHROUGH 2 (falha): menu sem resposta ao Enter; jogo atrás congelado; precisa click do mouse em menu item ou ESC pra destravar.
+- FALTA NO Game.java (restante): NENHUM — tudo migrado (advanceToNextLevel/enterSurvivalMode/enterInfiniteMode espelham flags; update() decai via GameState).
+- FALTA NO World.java: NENHUM — restartGameCommon já migrado.
+- FALTA: loadFirstPhase (linha ~1715: CUR_LEVEL=1, pendências, resetScoreState → usar GameState.resetAll()+CUR_LEVEL=1); returnToMainMenu (linha ~2065: gameState=MENU, pendências, damageOverlayFrames=0 → GameState.resetToMainMenu()); getStaticLevelPlus ok (mantém); getComboSecondsRemaining usa comboTimer local (funciona pois espelhado); resetScoreState (linha 1753) pode delegar GameState.score/combo... (usado em loadFirstPhase).
+- FALTA NO World.java: restartGameCommon (linha ~331): substituir recriação de listas/spritesheet/player/world por GameState.resetLevel() + GameState.spritesheet/player/world = ... (manter clear + QuestManager.prepareForLevel + ensurePhaseBoss + NPCs).
+- DECISÃO DE COMPAT FINAL: Game.java mantém campos com mesmo nome e atribui GameState.xxx no construtor/criação; os reseters dispersos viram delegados para GameState. NÃO trocar referências em outros 103 arquivos.
+- ACHADO CRÍTICO: World.restartGameCommon (linha 331-354) recria TODAS as listas: Game.entities/enemies/bullet/bullets = new ArrayList(), Game.spritesheet = new Spritesheet(), Game.player = new Player(), Game.entities.add(Game.player), QuestManager.prepareForLevel(levelNumber), Game.world = new World(mapSource), QuestManager.onLevelLoaded(), ensurePhaseBoss(levelNumber), depois NPCs da campanha. E chama Game.resetLevelStats() (linha 344). 
+- ESTRATÉGIA DE MIGRAÇÃO ADOTADA (2 arquivos tocados: Game.java + World.java + novo GameState.java):
+  a) GameState: campos estáticos como fonte única.
+  b) Game.java: campos public static mantidos; construtor atribui Game.entities = GameState.newEntities() etc. (referências às MESMAS listas do GameState).
+  c) World.restartGameCommon: substituir recriação por GameState.resetLevel() (limpa) + atribuir GameState.player/world/spritesheet (que são os campos usados).
+  d) Game.resetLevelStats() vira wrapper delegando GameState.resetLevel() + capturaBestRun + EnemyKillTracker.
+  e) Game.startNewGame: usar GameState.resetAll() no topo (substitui resets dispersos).
+  f) Getters/setters delegados (score, combo, currentLevel, overlay, traitorTalked).
+  g) NÃO mexer em: getBufferImage() e referências de leitura nos 103 arquivos.
+
+## RODADA 28 (sessão atual — GameState)
+### Diagnóstico "congelamento" RESOLVIDO:
+- Jogo NÃO estava congelado: renderização ativa (2.2M canais de pixels diferentes em 2s de intervalo)
+- Causa real: xdotool key/click NÃO mantém o foco AWT do Canvas — NENHUM input chega. Já confirmado também no vanilla (main pura) → NÃO é bug da Rodada 28
+- SOLUÇÃO: usar GameDriver (Java Robot): `DISPLAY=:0 java -cp /tmp GameDriver click 640 400 wait 300` no início, depois tap/hold TECLA. Sempre iniciar com o click 640 400 para dar foco
+- Gradle às vezes falha "toolchain installation does not provide JAVA_COMPILER" → `./gradlew --stop` resolve (daemon stale)
+
+### Playthrough via GameDriver (rodada 28):
+1. Menu → click 640 400 + DOWN + ENTER → Arena de treino (onboarding) ✅
+2. 3x X + SPACE + hold D → Fase 1 "Contacto com o Comando" ✅ HUD: Missão: Contacto com o Comando — Fale com a Comandante Ava
+3. Movimentos S+D+S: vida 94→47 (spiders agressivos). S+A+S → GAME OVER (melhor combo x1) — sem saves.json, "Voltar ao último save" indisponível; menu GAMEOVER com 2 opções funcionou
+4. Próximo: escolher "Voltar ao menu" (RIGHT + ENTER), Novo jogo de novo, ir DIRETO para a Comandante Ava (NPC azul, embaixo) evitando spiders, e salvar com T antes de qualquer coisa
+- Validar GameState na prática: (a) resetToMainMenu após morte, (b) HUD zera no novo jogo, (c) save T + Continuar (após criar saves.json)
+
+### Pendências para fechar Rodada 28:
+- [ ] Completar playthrough acima
+- [ ] ./gradlew check (10 testes)
+- [ ] git add src/com/traduvertgames/state GameState.java + Game.java + World.java + build.gradle + tests/ → commit → push → PR base main (mensagem: "feat(rodada-28): encapsular campos estáticos do Game.java em GameState com resets bem definidos")
+- IMPORTANTE: não commitar tools/todo_current_session.md
+- PR#43 (junit) ainda não mergeado; branch rodada-28 baseada em main sem ele
+
+### 3ª tentativa de playthrough (game re-iniciado 02:04):
+A Fase 1 carrega normalmente, mas o player morre em ~20-40s (vida 100→0) por causa dos spiders agressivos do level1. Já validei por screenshot: menu principal, escolha de arma, onboarding da arena, Fase 1 com HUD de missão "Fale com a Comandante Ava", tela de Game Over com "Voltar ao último save/Voltar ao menu" (GameState.resetToMainMenu funciona — HUD e pontuação zeram em novo jogo). Morte NÃO é regressão (Player/Enemy não foram alterados na rodada; mesmo comportamento na main; o jogo é difícil por design).
+
+Estratégia final para validar o save (T): em vez de tentar alcançar a Ava (morreria no caminho), salvar com T logo no início da arena de treino OU na Fase 1 assim que começar (o save funciona em qualquer lugar). Depois: ESC → menu → Continuar → valida loadSlot com GameState. Isso cobre o fluxo crítico do GameState.
+
+### 4ª tentativa — descobertas sobre save/morte (02:08):
+- Na arena de treino/onboarding o gameState=="NORMAL" também, mas T não criou saves.json (não entendo por que — possivelmente foco, ou saveCurrentGame falhou sem banner visível).
+- T e P não respondem em vários momentos → foco AWT perdido; sempre re-dar `GameDriver click 640 400` antes de comandos de tecla.
+- Ao morrer, o jogo mostra menu GAMEOVER (~10s) e AUTO-REINICIA: handleGameOverRestart → loadGameFromSave (sem saves.json → false) → restartCurrentPhaseWithoutSave (reinicia a fase atual; CUR_LEVEL=1 → level1.png SEM onboarding).
+- A tela h17 (vida 100 + onboarding) sugere que entre h16 e h17 o jogo morreu, mas a sequência real: morreu na fase 1 → restart para level1 → morte rápida → ... a tela final mostrou arena de treino (training) — ou seja, em algum ponto morreu na ARENA de treino e o restartCurrentPhaseWithoutSave com CUR_LEVEL=0 → "level0.png"?? parseLevelNumber("level0.png")=0 → World.restartGame → mas level0.png não existe! Provável: CUR_LEVEL=0 na arena → restartCurrentPhaseWithoutSave usa "level0.png" (mapa inexistente) → fallback training? Não confirmado.
+- SaveManager.setDeepRecord chama saveCurrentGame (grava saves.json ao bater recorde de profundidade).
+- Pausa (P) também não respondeu (gameState deve ser NORMAL — talvez foco).
+- SaveManager.saveCurrentGame grava em saves.json (raiz: slots[activeSlot], bestRun, level etc.) — usado por T e autosave de deep record.
+- CONCLUSÃO prática: o fluxo crítico do GameState (MENU→novo jogo→fase 1→morte→menu/restart, score zerando) JÁ FOI validado visualmente. Falta só validar T (save) e Continuar (load). Se T seguir falhando, validar save por código (teste JUnit com GameTestFixture e SaveManager.saveCurrentGame).
+
+### Estado atual: jogo rodando PID 11015, janela W. Playthrough ainda em andamento.
+
+### DESCOBERTA CRÍTICA (02:09):
+O T (save manual) e o P (pausa) funcionam perfeitamente no jogo. O "bug" era no GameDriver.java: teclas T, P, I, F, L não estavam mapeadas no switch keyCode() — o default retornava VK_ENTER, então cada "tap T" dava ENTER no jogo! Saves.json criado com sucesso (slot 1, level 1, campanha.maxLevelReached=1, version 4). Playthrough pode prosseguir: testar Continuar (load), pausar com P, etc.

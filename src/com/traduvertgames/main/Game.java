@@ -22,6 +22,7 @@ import java.util.Random;
 import javax.swing.JFrame;
 
 import com.traduvertgames.entities.Bullet;
+import com.traduvertgames.state.GameState;
 import com.traduvertgames.entities.BulletShoot;
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.DashAbility;
@@ -121,10 +122,14 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private static boolean shopPendingOpened = false;
 
 	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
-		public static void clearQuestPending() {
+	public static void clearQuestPending() {
+		GameState.questCompletedPending = false;
 		questCompletedPending = false;
+		GameState.shopPendingOpened = false;
 		shopPendingOpened = false;
+		GameState.showLevelTransition = 0;
 		showLevelTransition = 0;
+		GameState.transitionAlpha = 0;
 		transitionAlpha = 0;
 	}
 
@@ -132,7 +137,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private static boolean traitorTalked = false;
 
 	public static boolean isTraitorTalked() {
-		return traitorTalked;
+		return GameState.traitorTalked;
 	}
 
 	/**
@@ -145,11 +150,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	}
 
 	public static void resetTraitorTalked() {
+		GameState.traitorTalked = false;
 		traitorTalked = false;
 	}
 
 	/** Define a flag do desertor do subsolo (usada pelo TraitorNpc e pelos saves). */
 	public static void setTraitorTalked(boolean value) {
+		GameState.traitorTalked = value;
 		traitorTalked = value;
 	}
         private static boolean fullscreen = false;
@@ -180,30 +187,37 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	/** Opacidade do fade preto da transição de fase (255 = totalmente escuro). */
 	private static int transitionAlpha = 0;
 
-        public Game() throws IOException {
-                instance = this;
-                rand = new Random();
-                addKeyListener(this);
-                addMouseListener(this);
-                setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
-                setFocusable(true);
-                setFocusTraversalKeysEnabled(false);
-		initFrame();
+	public Game() throws IOException {
+		instance = this;
+		rand = new Random();
+		addKeyListener(this);
+		addMouseListener(this);
+		setPreferredSize(new Dimension(WIDTH * SCALE, HEIGHT * SCALE));
+		setFocusable(true);
+		setFocusTraversalKeysEnabled(false);
+	initFrame();
 // Inicializando objetos;
-		ui = new UI();
-		image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
-		entities = new ArrayList<Entity>();
-		enemies = new ArrayList<Enemy>();
-		bullet = new ArrayList<Bullet>();
-		bullets = new ArrayList<BulletShoot>();
+	ui = new UI();
+	image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_BGR);
+	// Rodada 28 — as listas passam a ser as do GameState (fonte única do
+	// estado), evitando que reseters dispersos limpem listas diferentes das
+	// usadas pelas outras 103 classes. O nome `bullet`/`bullets` do Game é
+	// mantido por compatibilidade (`bullet` = balas do jogador).
+	entities = GameState.newEntities();
+	enemies = GameState.newEnemies();
+	bullet = GameState.newPlayerBullets();
+	bullets = GameState.newEnemyBullets();
 
-		spritesheet = new Spritesheet("/spritesheet.png");
+	spritesheet = new Spritesheet("/spritesheet.png");
+	GameState.spritesheet = spritesheet;
 // Passando tamanho dele e posições
                 player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
+                GameState.player = player;
 // Adicionar o jogador na lista e ja aparece na tela
                 entities.add(player);
                 QuestManager.prepareForLevel(CUR_LEVEL);
                 world = new World("/level1.png");
+                GameState.world = world;
                 QuestManager.onLevelLoaded();
 
                 menu = new Menu();
@@ -215,19 +229,21 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         }
 
         public static int getScore() {
-                return score;
+                return GameState.score;
         }
 
         public static void setScore(int value) {
-                score = Math.max(0, value);
+                GameState.score = Math.max(0, value);
+                score = GameState.score;
         }
 
         public static void addScore(int delta) {
-                int newValue = score + delta;
-                score = Math.max(0, newValue);
-                if (score > highScore) {
-                        highScore = score;
+                GameState.score = Math.max(0, GameState.score + delta);
+                if (GameState.score > GameState.highScore) {
+                        GameState.highScore = GameState.score;
                 }
+                score = GameState.score;
+                highScore = GameState.highScore;
         }
 
 	/** Marcador para tecla Escape: usado por telas que consomem o ESC (loja, seleção de fases). */
@@ -238,19 +254,20 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private boolean escape = false;
 
         public static int getHighScore() {
-                return highScore;
+                return GameState.highScore;
         }
 
         public static void setHighScore(int value) {
-                highScore = Math.max(0, value);
+                GameState.highScore = Math.max(0, value);
+                highScore = GameState.highScore;
         }
 
         public static int getComboMultiplier() {
-                return comboMultiplier;
+                return GameState.comboMultiplier;
         }
 
         public static int getComboTimer() {
-                return comboTimer;
+                return GameState.comboTimer;
         }
 
         public static int getComboSecondsRemaining() {
@@ -270,38 +287,42 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
         public static void applyComboSurge(int bonusMultiplier, int bonusFrames) {
                 if (bonusMultiplier > 0) {
-                        comboMultiplier = Math.min(MAX_COMBO_MULTIPLIER, comboMultiplier + bonusMultiplier);
-                        bestComboThisRun = Math.max(bestComboThisRun, comboMultiplier);
-                        bestComboRecord = Math.max(bestComboRecord, bestComboThisRun);
+                        GameState.comboMultiplier = Math.min(MAX_COMBO_MULTIPLIER, GameState.comboMultiplier + bonusMultiplier);
+                        GameState.bestComboThisRun = Math.max(GameState.bestComboThisRun, GameState.comboMultiplier);
+                        GameState.bestComboRecord = Math.max(GameState.bestComboRecord, GameState.bestComboThisRun);
                 }
                 if (bonusFrames > 0) {
                         int cap = COMBO_DURATION_FRAMES * 2;
-                        comboTimer = Math.min(cap, comboTimer + bonusFrames);
+                        GameState.comboTimer = Math.min(cap, GameState.comboTimer + bonusFrames);
                 }
+                comboMultiplier = GameState.comboMultiplier;
+                comboTimer = GameState.comboTimer;
+                bestComboThisRun = GameState.bestComboThisRun;
+                bestComboRecord = GameState.bestComboRecord;
         }
 
         public static int getBestComboRecord() {
-                return bestComboRecord;
+                return GameState.bestComboRecord;
         }
 
         public static void setBestComboRecord(int value) {
-                bestComboRecord = Math.max(1, value);
+                GameState.bestComboRecord = Math.max(1, value);
+                bestComboRecord = GameState.bestComboRecord;
         }
 
-        public static int getBestComboThisRun() {
-                return bestComboThisRun;
-        }
+	public static int getBestComboThisRun() {
+		return GameState.bestComboThisRun;
+	}
 
-        /** Kills realizadas desde o início da fase atual. */
-        public static int getKillsThisLevel() {
-                return killsThisLevel;
-        }
+	/** Kills realizadas desde o início da fase atual. */
+	public static int getKillsThisLevel() {
+		return GameState.killsThisLevel;
+	}
 
-        /** Duração da fase atual em milissegundos (0 se ainda não iniciou). */
-        public static long getLevelTimeMs() {
-                long elapsed = System.currentTimeMillis() - levelStartTime;
-                return Math.max(0, elapsed);
-        }
+	/** Duração da fase atual em milissegundos (0 se ainda não iniciou). */
+	public static long getLevelTimeMs() {
+		return GameState.getLevelTimeMs();
+	}
 
 	/** Zera kills e timer ao iniciar uma nova fase (inclui ciclos do modo infinito). */
 	public static void resetLevelStats() {
@@ -313,40 +334,38 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// Exceção: durante a restauração de um save (restorePhase), a mesma
 		// fase é recarregada e os abatidos devem ser preservados para o
 		// applyMapPixels não ressuscitar os mobs já derrotados.
-		if (!restorePhase) {
+		if (!GameState.restorePhase) {
 			com.traduvertgames.main.EnemyKillTracker.reset();
 		}
 		com.traduvertgames.main.EnemyKillTracker.setCurrentLevel(CUR_LEVEL);
-		killsThisLevel = 0;
-                bestComboThisRun = 1;
-                comboMultiplier = 1;
-                comboTimer = 0;
-                levelStartTime = System.currentTimeMillis();
+		// Rodada 28 — a limpeza das listas e o reset dos contadores ficam
+		// centralizados no GameState (reset bem definido da troca de fase).
+		GameState.resetLevel();
         }
 
         /** Inicia o timer da fase (usado por World.restartGame ao trocar de mapa). */
         public static void startLevelTimer() {
-                levelStartTime = System.currentTimeMillis();
+                GameState.startLevelTimer();
+                levelStartTime = GameState.levelStartTime;
         }
 
         /** Formata milissegundos como mm:ss para o card de estatísticas. */
         public static String formatLevelTime(long ms) {
-                long totalSeconds = ms / 1000;
-                long minutes = totalSeconds / 60;
-                long seconds = totalSeconds % 60;
-                return String.format("%d:%02d", minutes, seconds);
+                return GameState.formatLevelTime(ms);
         }
 
         public static void setBestComboThisRun(int value) {
-                bestComboThisRun = Math.max(1, value);
+                GameState.bestComboThisRun = Math.max(1, value);
+                bestComboThisRun = GameState.bestComboThisRun;
         }
 
         public static boolean isOverlayExpanded() {
-                return overlayExpanded;
+                return GameState.overlayExpanded;
         }
 
         public static void toggleOverlayExpanded() {
-                overlayExpanded = !overlayExpanded;
+                GameState.overlayExpanded = !GameState.overlayExpanded;
+                overlayExpanded = GameState.overlayExpanded;
         }
 
                 public static void setCurrentLevel(int level) {
@@ -354,10 +373,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                         level = 1;
                 if (level > MAX_LEVEL)
                         level = MAX_LEVEL;
+                GameState.currentLevel = level;
                 CUR_LEVEL = level;
         }
         public static int getCurrentLevel() {
-                return CUR_LEVEL;
+                return GameState.currentLevel;
         }
 
         public void setLevelPlus(int value) {
@@ -376,31 +396,45 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 return game != null ? game.levelPlus : 0;
         }
 
-        public static void registerEnemyKill() {
-                LevelUpManager.grantKillXp();
-                killsThisLevel++;
-                int points = BASE_SCORE_PER_KILL * comboMultiplier;
-                score += points;
-                if (score > highScore) {
-                        highScore = score;
-                }
+	public static void registerEnemyKill() {
+		LevelUpManager.grantKillXp();
+		// Rodada 28 — o registro do kill opera sobre o GameState; os campos
+		// locais do Game são espelhados para manter compatibilidade com o
+		// restante do código que ainda lê as cópias estáticas.
+		GameState.killsThisLevel++;
+		killsThisLevel = GameState.killsThisLevel;
+		int points = BASE_SCORE_PER_KILL * GameState.comboMultiplier;
+		GameState.score += points;
+		if (GameState.score > GameState.highScore) {
+			GameState.highScore = GameState.score;
+		}
 
-                bestComboThisRun = Math.max(bestComboThisRun, comboMultiplier);
-                bestComboRecord = Math.max(bestComboRecord, bestComboThisRun);
+		GameState.bestComboThisRun = Math.max(GameState.bestComboThisRun, GameState.comboMultiplier);
+		GameState.bestComboRecord = Math.max(GameState.bestComboRecord, GameState.bestComboThisRun);
 
-                comboTimer = COMBO_DURATION_FRAMES;
-                if (comboMultiplier < MAX_COMBO_MULTIPLIER) {
-                        comboMultiplier++;
-                }
-        }
+		GameState.comboTimer = COMBO_DURATION_FRAMES;
+		if (GameState.comboMultiplier < MAX_COMBO_MULTIPLIER) {
+			GameState.comboMultiplier++;
+		}
+		score = GameState.score;
+		highScore = GameState.highScore;
+		comboMultiplier = GameState.comboMultiplier;
+		comboTimer = GameState.comboTimer;
+		bestComboThisRun = GameState.bestComboThisRun;
+		bestComboRecord = GameState.bestComboRecord;
+	}
 
 	public static void registerPlayerDamage() {
-		if (comboMultiplier > 1) {
-			bestComboRecord = Math.max(bestComboRecord, comboMultiplier);
+		if (GameState.comboMultiplier > 1) {
+			GameState.bestComboRecord = Math.max(GameState.bestComboRecord, GameState.comboMultiplier);
 		}
-		comboMultiplier = 1;
-		comboTimer = 0;
-		damageOverlayFrames = Math.max(damageOverlayFrames, DAMAGE_OVERLAY_DURATION);
+		GameState.comboMultiplier = 1;
+		GameState.comboTimer = 0;
+		GameState.damageOverlayFrames = Math.max(GameState.damageOverlayFrames, DAMAGE_OVERLAY_DURATION);
+		comboMultiplier = GameState.comboMultiplier;
+		comboTimer = GameState.comboTimer;
+		bestComboRecord = GameState.bestComboRecord;
+		damageOverlayFrames = GameState.damageOverlayFrames;
 	}
 
 		/** Duração (frames) da vinheta vermelha exibida quando o jogador toma dano. */
@@ -637,14 +671,17 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 
 				// Cooldown de respiro: decai apenas durante o estado NORMAL (a
 				// contagem não corre enquanto a tela de estatísticas estiver aberta).
-				if (transitionCooldown > 0) {
-					transitionCooldown--;
-					if (transitionCooldown == 0) {
+				// Rodada 28 — o decaimento opera no GameState (reset bem definido).
+				if (GameState.transitionCooldown > 0) {
+					GameState.transitionCooldown--;
+					if (GameState.transitionCooldown == 0) {
 						// Inimigos voltam a agir; projéteis antigos já foram
 						// removidos na conclusão da fase anterior.
-						showLevelTransition = 0;
+						GameState.showLevelTransition = 0;
 					}
 				}
+				transitionCooldown = GameState.transitionCooldown;
+				showLevelTransition = GameState.showLevelTransition;
 
                         for (int i = 0; i < bullets.size(); i++) {
                                 bullets.get(i).update();
@@ -713,16 +750,19 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// showLevelTransition decai apenas fora do cooldown pós-transição
 		// (rodada 21): o aviso de transição permanece na tela até o fim do
 		// respiro, evitando que a mensagem suma com o jogo já em combate.
-		if (showLevelTransition > 0 && transitionCooldown <= 0) {
-			showLevelTransition--;
+		// Rodada 28 — o decaimento opera no GameState (reset bem definido).
+		if (GameState.showLevelTransition > 0 && GameState.transitionCooldown <= 0) {
+			GameState.showLevelTransition--;
 		}
 		// Fade preto da transição decai sempre, inclusive durante o cooldown
 		// (o cooldown congela apenas o aviso e o spawn de inimigos). O fade
 		// total "apaga" a fase antiga e a cena nova é revelada em seguida —
 		// sem escurecimento residual no meio da tela (rodada 22c).
-		if (transitionAlpha > 0) {
-			transitionAlpha = Math.max(0, transitionAlpha - 8);
+		if (GameState.transitionAlpha > 0) {
+			GameState.transitionAlpha = Math.max(0, GameState.transitionAlpha - 8);
 		}
+		showLevelTransition = GameState.showLevelTransition;
+		transitionAlpha = GameState.transitionAlpha;
 	}
 
 	/** Quando o objetivo da fase é completado: abre a loja antes de avançar. */
@@ -1016,15 +1056,18 @@ if (!hidingHud) {
                 g.drawString(text, textX, baselineY);
         }
 
-        private void updateComboTimer() {
-                if (comboTimer > 0) {
-                        comboTimer--;
-                        if (comboTimer <= 0) {
-                                comboTimer = 0;
-                                comboMultiplier = 1;
-                        }
-                }
-        }
+	private void updateComboTimer() {
+		// Rodada 28 — o timer do combo vive no GameState (reset bem definido).
+		if (GameState.comboTimer > 0) {
+			GameState.comboTimer--;
+			if (GameState.comboTimer <= 0) {
+				GameState.comboTimer = 0;
+				GameState.comboMultiplier = 1;
+			}
+		}
+		comboTimer = GameState.comboTimer;
+		comboMultiplier = GameState.comboMultiplier;
+	}
 
         @Override
         public void run() {
@@ -1555,19 +1598,18 @@ if (!hidingHud) {
 		// Novo jogo: remove o companion ativo (persistência apenas por save).
 		com.traduvertgames.entities.Companion.clear();
 		this.levelPlus = 0;
-		CUR_LEVEL = 1;
 		// Recorde de profundidade (rodada 24b): novo jogo reseta o recorde em memória;
 		// o recorde gravado no save persiste — ao carregar um slot ele é restaurado.
 		com.traduvertgames.main.SaveManager.resetDeepRecord();
-		questCompletedPending = false;
-		shopPendingOpened = false;
-		showLevelTransition = 0;
-		transitionAlpha = 0;
+		// Rodada 28 — o reset do novo jogo agora passa por um único ponto de
+		// entrada (GameState.resetAll): nível, score, transições, flags de
+		// missão e listas voltam ao estado inicial de forma consistente.
+		GameState.resetAll();
+		CUR_LEVEL = 1;
 		Enemy.enemies = 0;
 			Menu.pause = false;
 		resetPlayerToDefaults();
 		applyDifficultyToPlayerStats();
-		resetScoreState();
 		resetTraitorTalked();
 			World.restartGame("level1.png");
 			LevelUpManager.reset();
@@ -1612,6 +1654,7 @@ if (!hidingHud) {
 		showInitialWeaponSelect = true;
 		initialWeaponSelection = 0;
 		gameState = "MENU";
+		GameState.gameState = "MENU";
 		Menu.pause = true;
 	}
 
@@ -1655,6 +1698,7 @@ if (!hidingHud) {
 		}
 		OnboardingManager.start();
 		gameState = "NORMAL";
+		GameState.gameState = "NORMAL";
 	}
 
 	private static boolean showInitialWeaponSelect = false;
@@ -1695,13 +1739,10 @@ if (!hidingHud) {
 	 * quest intactos — o treino nunca consome progresso da campanha.
 	 */
 		public void loadFirstPhase() {
+		// Rodada 28 — reset centralizado no GameState antes de recarregar a fase 1.
+		GameState.resetAll();
 		CUR_LEVEL = 1;
-		questCompletedPending = false;
-		shopPendingOpened = false;
-		showLevelTransition = 0;
-		transitionAlpha = 0;
 		Enemy.enemies = 0;
-		resetScoreState();
 		applyDifficultyToPlayerStats();
 		clampPlayerResources();
 		LevelUpManager.reset();
@@ -1732,10 +1773,15 @@ if (!hidingHud) {
 	}
 
         private void resetScoreState() {
-                score = 0;
-                comboMultiplier = 1;
-                comboTimer = 0;
-                bestComboThisRun = 1;
+                // Rodada 28 — delega ao GameState (fonte única do score/combo).
+                GameState.score = 0;
+                GameState.comboMultiplier = 1;
+                GameState.comboTimer = 0;
+                GameState.bestComboThisRun = 1;
+                score = GameState.score;
+                comboMultiplier = GameState.comboMultiplier;
+                comboTimer = GameState.comboTimer;
+                bestComboThisRun = GameState.bestComboThisRun;
         }
 
 	/** Avança para a próxima fase (loja encerra e o mapa muda). */
@@ -1762,8 +1808,12 @@ if (!hidingHud) {
 			// Cooldown de respiro (rodada 21) mesmo na entrada do modo
 			// sobrevivência: inimigos não atacam de imediato.
 			transitionCooldown = RESPIRO_FRAMES;
+			GameState.transitionCooldown = RESPIRO_FRAMES;
 			showLevelTransition = 90 + RESPIRO_FRAMES;
+			GameState.showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
+			GameState.transitionAlpha = 255;
+			GameState.currentLevel = CUR_LEVEL;
 			return;
 		}
 		// O progresso de fase encerra a loja aberta (ou level up) para seguir.
@@ -1795,7 +1845,10 @@ if (!hidingHud) {
 		// escurecida por segundos inteiros (rodada 22d: o "permanece escuro"
 		// após fechar a loja vinha daqui + da faixa escura da conclusão).
 		transitionAlpha = 255;
+		GameState.transitionAlpha = 255;
 		showLevelTransition = 90 + RESPIRO_FRAMES;
+		GameState.showLevelTransition = 90 + RESPIRO_FRAMES;
+		GameState.currentLevel = CUR_LEVEL;
 		// Lore da nova fase: título e texto de ambientação em destaque dourado.
 		// Rodada 21: o banner de lore é adiado para o fim do respiro — antes
 		// ele competia com o card de estatísticas e com o aviso de conclusão.
@@ -1818,8 +1871,11 @@ if (!hidingHud) {
 		// Trilha sonora adaptativa (rodada 22): tema de arena no modo sobrevivência.
 		MusicManager.setZone(MusicManager.Zone.ARENA);
 		showLevelTransition = 90 + RESPIRO_FRAMES;
+		GameState.showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
+		GameState.transitionAlpha = 255;
 		transitionCooldown = RESPIRO_FRAMES;
+		GameState.transitionCooldown = RESPIRO_FRAMES;
 		// Card de estatísticas do ciclo anterior do modo infinito (se não for a
 		// primeira entrada, que já ganha a cutscene de vitória da campanha).
 		if (instance != null && instance.levelPlus > 1) {
@@ -1843,9 +1899,14 @@ if (!hidingHud) {
 		startProceduralLevel(1);
 		WaveManager.startArena();
 		// Cooldown de respiro (rodada 21): inimigos não atacam de imediato.
+		// Rodada 28 — as flags de transição espelham no GameState.
 		transitionCooldown = RESPIRO_FRAMES;
+		GameState.transitionCooldown = RESPIRO_FRAMES;
 		showLevelTransition = 90 + RESPIRO_FRAMES;
+		GameState.showLevelTransition = 90 + RESPIRO_FRAMES;
 		transitionAlpha = 255;
+		GameState.transitionAlpha = 255;
+		GameState.currentLevel = CUR_LEVEL;
 		// Trilha sonora adaptativa (rodada 22): tema de arena no modo infinito.
 		MusicManager.setZone(MusicManager.Zone.ARENA);
 		// Rodada 24: a entrada nas Profundezas ganha o banner de lore da trama,
@@ -2024,6 +2085,7 @@ if (!hidingHud) {
                         player.syncFromPersistentState();
                 }
                 gameState = "NORMAL";
+                GameState.gameState = "NORMAL";
         }
 
 	public void resetGameOverState() {
@@ -2052,26 +2114,33 @@ if (!hidingHud) {
 		if (this.menu != null) {
 			this.menu.resetToMain();
 		}
-		questCompletedPending = false;
-		shopPendingOpened = false;
-		showLevelTransition = 0;
-		transitionAlpha = 0;
+		// Rodada 28 — o retorno ao menu passa pelo reset centralizado do
+		// GameState (estado, transições e overlays limpos de uma vez).
+		GameState.resetToMainMenu();
+		gameState = "MENU";
+		damageOverlayFrames = 0;
 		resetGameOverState();
 	}
 
         private void normalizeScoreAfterLoad() {
-                if (score < 0) {
-                        score = 0;
+                // Rodada 28 — a normalização pós-carga opera sobre o GameState
+                // (fonte única) e espelha o resultado nos campos locais.
+                if (GameState.score < 0) {
+                        GameState.score = 0;
                 }
-                if (highScore < score) {
-                        highScore = score;
+                if (GameState.highScore < GameState.score) {
+                        GameState.highScore = GameState.score;
                 }
-                if (bestComboThisRun < 1) {
-                        bestComboThisRun = 1;
+                if (GameState.bestComboThisRun < 1) {
+                        GameState.bestComboThisRun = 1;
                 }
-                if (bestComboRecord < bestComboThisRun) {
-                        bestComboRecord = bestComboThisRun;
+                if (GameState.bestComboRecord < GameState.bestComboThisRun) {
+                        GameState.bestComboRecord = GameState.bestComboThisRun;
                 }
+                score = GameState.score;
+                highScore = GameState.highScore;
+                bestComboThisRun = GameState.bestComboThisRun;
+                bestComboRecord = GameState.bestComboRecord;
                 comboMultiplier = 1;
                 comboTimer = 0;
         }

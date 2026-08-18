@@ -1,9 +1,17 @@
-apply plugin: 'java'
-apply plugin: 'application'
+plugins {
+    id 'java'
+    id 'application'
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_11
+    targetCompatibility = JavaVersion.VERSION_11
+}
 
 application {
     mainClass = 'com.traduvertgames.main.Game'
 }
+
 sourceSets {
     main.java.srcDirs = ['src','res']
     main.resources.srcDirs = ['src','res']
@@ -13,4 +21,28 @@ sourceSets {
 
 tasks.withType(JavaCompile) {
     options.encoding = 'UTF-8'
+    options.compilerArgs += ['-Xlint:deprecation']
 }
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    testImplementation platform('org.junit:junit-bom:5.11.4')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+test {
+    useJUnitPlatform()
+    // Os testes de jogo são headless: criam o `Game` sem janela.
+    jvmArgs '-Djava.awt.headless=false',
+            '--add-opens', 'java.base/java.lang=ALL-UNNAMED'
+    testLogging {
+        events 'passed', 'skipped', 'failed'
+        showStandardStreams = false
+    }
+}
+
+check.dependsOn test

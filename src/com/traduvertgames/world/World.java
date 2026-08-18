@@ -13,6 +13,7 @@ import com.traduvertgames.entities.*;
 import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
+import com.traduvertgames.state.GameState;
 import com.traduvertgames.dialogue.CommanderNpc;
 import com.traduvertgames.dialogue.SupportNpcs;
 
@@ -334,17 +335,21 @@ Game.enemies.add(en);
 		deferredBossX = -1;
 		deferredBossY = -1;
 		deferredBossVariant = null;
-                Game.entities.clear();
-                Game.enemies.clear();
-                Game.entities = new ArrayList<Entity>();
-                Game.enemies = new ArrayList<Enemy>();
-                Game.bullet = new ArrayList<Bullet>();
-                Game.bullets = new ArrayList<BulletShoot>();
+		// Rodada 28 — a troca de fase passa pelo GameState: as listas são
+		// limpas (e, se algum código ainda reatribuir, passam a ser as novas
+		// listas do GameState) e as entidades globais são atualizadas para que
+		// o Player/World/QuestManager trabalhem sobre o mesmo estado.
+                Game.entities = GameState.newEntities();
+                Game.enemies = GameState.newEnemies();
+                Game.bullet = GameState.newPlayerBullets();
+                Game.bullets = GameState.newEnemyBullets();
                 // Nova fase (inclui ciclos procedurais): zera kills, combo da fase e o timer.
                 Game.resetLevelStats();
                 Game.spritesheet = new Spritesheet("/spritesheet.png");
+                GameState.spritesheet = Game.spritesheet;
                 // Passando tamanho dele e posições
                 Game.player = new Player(0, 0, 16, 16, Game.spritesheet.getSprite(32, 0, 16, 16));
+                GameState.player = Game.player;
                 // Adicionar o jogador na lista e ja aparece na tela
                 Game.entities.add(Game.player);
 			// Sem prepareForLevel o nível da campanha ficava desatualizado ao
@@ -352,6 +357,7 @@ Game.enemies.add(en);
 			// não avança").
 			QuestManager.prepareForLevel(levelNumber);
 			Game.world = new World(mapSource);
+			GameState.world = Game.world;
 			QuestManager.onLevelLoaded();
 			// Garante o chefe da fase: níveis a partir do 2 têm a missão de
 			// neutralizar o comandante; se o mapa não tiver um boss fixo,
