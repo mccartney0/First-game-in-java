@@ -584,8 +584,114 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	}
 
 	public static void main(String[] args) throws IOException {
+		// TEMPORÁRIO (playthrough da rodada 31): bridge TCP na porta 10445
+		// para automação de input — REMOVER antes do PR.
+		startStdinBridge();
 		Game game = new Game();
 		game.start();
+	}
+
+	// TEMPORÁRIO (rodada 31) — remove antes do PR.
+	private static void startStdinBridge() {
+		Thread bridge = new Thread(() -> {
+			try {
+				java.net.ServerSocket server = new java.net.ServerSocket(10445);
+				while (true) {
+					java.net.Socket client = server.accept();
+					java.io.BufferedReader reader = new java.io.BufferedReader(
+							new java.io.InputStreamReader(client.getInputStream()));
+					String line;
+					while ((line = reader.readLine()) != null) {
+						String cmd = line.trim().toUpperCase();
+						if (cmd.startsWith("PRESS ")) {
+							simulateKey(cmd.substring(6), true);
+						} else if (cmd.startsWith("RELEASE ")) {
+							simulateKey(cmd.substring(8), false);
+						} else if (cmd.startsWith("WAIT ")) {
+							Thread.sleep(Long.parseLong(cmd.substring(5).trim()));
+						}
+					}
+					client.close();
+				}
+			} catch (Exception ignored) {
+			}
+		});
+		bridge.setDaemon(true);
+		bridge.start();
+	}
+
+	// TEMPORÁRIO (rodada 31) — remove antes do PR.
+	private static void simulateKey(String key, boolean pressed) {
+		com.traduvertgames.main.Game game = com.traduvertgames.main.Game.getInstance();
+		if (game == null || game.menu == null) {
+			return;
+		}
+		String lower = key.toLowerCase();
+		switch (lower) {
+		case "w":
+			if ("MENU".equals(gameState)) {
+				game.menu.up = pressed;
+			}
+			if (player != null) {
+				player.up = pressed;
+			}
+			break;
+		case "s":
+			if ("MENU".equals(gameState)) {
+				game.menu.down = pressed;
+			}
+			if (player != null) {
+				player.down = pressed;
+			}
+			break;
+		case "a":
+			if ("MENU".equals(gameState)) {
+				game.menu.left = pressed;
+			}
+			if (player != null) {
+				player.left = pressed;
+			}
+			break;
+		case "d":
+			if ("MENU".equals(gameState)) {
+				game.menu.right = pressed;
+			}
+			if (player != null) {
+				player.right = pressed;
+			}
+			break;
+		case "x":
+			if (pressed && player != null) {
+				player.shoot = true;
+			}
+			break;
+		case "r":
+			// R inicia/avança diálogos com NPCs (mesma semântica do VK_R).
+			if (pressed) {
+				if (DialogueManager.isActive()) {
+					DialogueManager.advance();
+				} else if ("NORMAL".equals(gameState) && !InventoryManager.isOpen()) {
+					DialogueManager.startNearestDialogue();
+				}
+			}
+			break;
+		case "t":
+			if (pressed && "NORMAL".equals(gameState)) {
+				saveGame = true;
+			}
+			break;
+		case "enter":
+			game.menu.enter = pressed;
+			break;
+		case "escape":
+			game.menu.escape = pressed;
+			break;
+		default:
+			break;
+		}
+		System.out.println("[bridge] " + (pressed ? "PRESS" : "RELEASE") + " " + key
+				+ " px" + (game.player != null ? game.player.getX() : -1)
+				+ " py" + (game.player != null ? game.player.getY() : -1));
 	}
 
 	// Toda a lógica fica no update ou tick
