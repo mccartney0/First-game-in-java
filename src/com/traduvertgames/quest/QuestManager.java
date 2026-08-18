@@ -32,6 +32,7 @@ public final class QuestManager {
             "Torre do Supervisor",
             "Subsolo da Colônia",
             "Núcleo Central",
+            "Vale dos Refugiados",
             "Modo Sobrevivência"
     };
 
@@ -132,6 +133,11 @@ public final class QuestManager {
             // informante até o núcleo e a destruição do OVERSEER PRIME.
             return new SequenceObjective(new InfiltratorObjective(), new EscortObjective());
         case 9:
+            // Fase 9 (Vale dos Refugiados): com o apoio do Curandeiro Léo,
+            // resgatar a líder dos refugiados presos no acampamento do vale
+            // e ativar o beacon de evacuação para concluir a campanha.
+            return new DialogueObjective(new RescueObjective(), "Curandeiro Léo");
+        case 10:
             // Modo sobrevivência pós-campanha: ondas infinitas.
             return new NullObjective();
         default:
