@@ -68,6 +68,23 @@ O jogo grava vida, mana, escudo, quantidade de munição (arma), inimigos derrot
 
 ## Compilação e execução
 
+Na raiz do projeto, use o Gradle Wrapper incluído no repositório. Não é necessário instalar o Gradle separadamente.
+
+### Windows (PowerShell ou Prompt de Comando)
+
+```powershell
+.\gradlew.bat build
+.\gradlew.bat run
+```
+
+### Linux e macOS
+
+```bash
+./gradlew build
+./gradlew run
+```
+
+O comando `build` compila o código, executa os testes e gera os artefatos em `build/`. O comando `run` inicia o jogo pela classe principal `com.traduvertgames.main.Game`.
 
 ## Porta em Python (pygame)
 
@@ -80,20 +97,6 @@ python -m python_port.main --level 1
 
 Os mapas (`res/level*.png`) continuam sendo gerados pelo script `tools/generate_maps.py`, e a janela renderiza na mesma resolução interna (384×216) escalada para 1 152×648 pixels. A dificuldade inicial pode ser alterada com `--difficulty easy|normal|hard`.
 
-
-Você pode compilar e executar o projeto utilizando o Gradle wrapper:
-
-```
-./gradlew run
-```
-
-Para gerar um JAR distribuível:
-
-```
-./gradlew build
-```
-
-Os artefatos gerados ficarão disponíveis em `build/libs/`.
 
 ## Gerar os mapas RPG
 
