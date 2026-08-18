@@ -60,6 +60,39 @@ public final class SupportNpcs {
 		});
 	}
 
+	/**
+	 * Curandeiro Léo (verde-lima) — trata os ferimentos do piloto, restaurando
+	 * 60% da vida máxima, e deixa um kit de campo (+20 de escudo). Aparece no
+	 * mapa do Vale dos Refugiados (fase 9) e em campos de socorro espalhados.
+	 */
+	public static InteractiveNpc healer(int x, int y) {
+		return new InteractiveNpc(x, y, "Curandeiro Léo", new Color(205, 220, 57), new Color(255, 224, 178),
+				new String[] {
+						"Chegou atrasado, mas ainda há o que salvar aqui. Deixa comigo.",
+						"Os refugiados se escondem no vale; as máquinas varrem a floresta em ciclos.",
+						"Aquele beacon pode abrir o caminho da evacuação. Vá com cuidado."
+				}, new InteractionListener() {
+			@Override
+			public void onInteractionStart(InteractiveNpc npc) {
+			}
+
+			@Override
+			public void onInteractionEnd(InteractiveNpc npc) {
+				if (Game.player != null) {
+					com.traduvertgames.entities.Player.life = Math.min(
+							com.traduvertgames.entities.Player.life
+									+ (int) (com.traduvertgames.entities.Player.maxLife * 0.6),
+							com.traduvertgames.entities.Player.maxLife);
+					com.traduvertgames.entities.Player.shield = Math.min(
+							com.traduvertgames.entities.Player.shield + 20,
+							com.traduvertgames.entities.Player.maxShield);
+					com.traduvertgames.entities.FloatingText.show("CURA +60% VIDA", (int) Game.player.getX(),
+							(int) Game.player.getY() - 20, new Color(110, 255, 130), 60);
+				}
+			}
+		});
+	}
+
 	/** Armeiro Mercúrio — arma cheia e +25 vida. */
 	public static InteractiveNpc armorer(int x, int y) {
 		return new InteractiveNpc(x, y, "Armeiro Mercúrio", new Color(255, 152, 0), new Color(255, 224, 178),

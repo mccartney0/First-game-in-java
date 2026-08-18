@@ -169,9 +169,12 @@ Game.enemies.add(en);
                                         } else if (pixelAtual == 0xFF00897C) {
                                                 // Comandante Ava — NPC interativo (diálogo R)
                                                 Game.entities.add(new CommanderNpc(xx * 16, yy * 16));
-                                        } else if (pixelAtual == 0xFF66BB6A) {
-                                                // Engenheira Nia — NPC interativo (recarga + mana)
-                                                Game.entities.add(SupportNpcs.engineer(xx * 16, yy * 16));
+} else if (pixelAtual == 0xFFCDDC39) {
+						// Curandeiro Léo — NPC interativo (cura +60% vida, +20 escudo)
+						Game.entities.add(com.traduvertgames.dialogue.SupportNpcs.healer(xx * 16, yy * 16));
+					} else if (pixelAtual == 0xFF66BB6A) {
+						// Engenheira Nia — NPC interativo (recarga + mana)
+						Game.entities.add(SupportNpcs.engineer(xx * 16, yy * 16));
                                         } else if (pixelAtual == 0xFF5E35B1) {
                                                 // Pesquisador Ivo — NPC interativo (mana + dica)
                                                 Game.entities.add(SupportNpcs.researcher(xx * 16, yy * 16));

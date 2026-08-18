@@ -59,6 +59,7 @@ public final class SaveManager {
 
 	/** Arquivo temporário usado na gravação atômica. */
 	private static final File SAVE_TMP = new File("saves.tmp");
+
 	/** Última versão válida antes de uma nova gravação. */
 	public static final File SAVE_BACKUP = new File("saves.backup.json");
 
@@ -204,6 +205,12 @@ public final class SaveManager {
 
 		root.put("activeSlot", activeSlot);
 		writeBestRun(root);
+		// Rodada 29 — metagame: créditos e upgrades permanentes do piloto
+		// persistem no nível superior do save (independentes de slot, pois
+		// são recompensas da conta e não do progresso de uma fase).
+		Map<String, Object> metagame = new HashMap<String, Object>(
+				com.traduvertgames.state.PilotUpgrades.serialize());
+		root.put("metagame", metagame);
 		root.put("slots", slots);
 
 		return writeRoot(root);
@@ -308,6 +315,15 @@ public final class SaveManager {
 		restoreBestRun(loadRoot());
 	}
 
+	/**
+	 * Rodada 29 — recarrega os créditos e upgrades permanentes a partir do
+	 * disco para que o menu principal exiba o saldo mesmo antes de um
+	 * carregamento de slot (mesmo padrão do {@link #refreshBestRun()}).
+	 */
+	public static void refreshMetagame() {
+		restoreMetagame(loadRoot());
+	}
+
 	// ---------- Flags de diálogos por NPC/fase ----------
 
 	/** Flags de diálogos concluídos, carregadas do disco e mantidas em memória. */
@@ -396,6 +412,11 @@ public final class SaveManager {
 		deepRecord = 0;
 	}
 
+	/** Rodada 29 — metagame: restaura créditos e upgrades permanentes do root do save. */
+	private static void restoreMetagame(Map<String, Object> root) {
+		com.traduvertgames.state.PilotUpgrades.deserialize(root.get("metagame"));
+	}
+
 	private static void restoreDeepRecord(Map<String, Object> slot) {
 		if (slot == null) {
 			return;
@@ -431,6 +452,11 @@ public final class SaveManager {
 
 		// Recorde de profundidade (rodada 24b): maior profundidade do infinito neste slot.
 		restoreDeepRecord(slot);
+
+		// Rodada 29 — metagame: créditos e upgrades permanentes restaurados
+		// do nível superior do save; a aplicação dos stats acontece junto com
+		// applyDifficultyToPlayerStats() mais abaixo.
+		restoreMetagame(root);
 
 		// Migração v1→v2: se o slot é flat (v1), a sessão é o próprio slot.
 		Map<String, Object> session = getSession(slot);

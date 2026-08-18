@@ -214,6 +214,8 @@ public final class StoryManager {
 			return "O Traidor do Subsolo";
 		case 8:
 			return "O Núcleo Central";
+		case 9:
+			return "O Vale dos Refugiados";
 		default:
 			// Rodada 24a — narrativa das Profundezas: ciclos-chave a cada 3
 			// profundidades ganham título próprio (Camada Zero, Um, Dois,
@@ -260,6 +262,8 @@ public final class StoryManager {
 			return "Um desertor confessa a traição no subsolo. Confronte o Técnico Hélio e descubra quem puxa as cordas.";
 		case 8:
 			return "O Núcleo Central revela a mente por trás da colônia. Esta é a batalha final da campanha.";
+		case 9:
+			return "Sobreviventes se abrigaram num vale além da colônia. Resgate a líder dos refugiados e abra a passagem de evacuação.";
 		default:
 			// Rodada 24a — linhas de lore das Profundezas, coerentes com o
 			// título da profundidade correspondente.
@@ -304,6 +308,8 @@ public final class StoryManager {
 			return "Técnico Hélio, Nia e Mercúrio";
 		case 8:
 			return "Armeiro Mercúrio";
+		case 9:
+			return "Curandeiro Léo, Nia e Ivo";
 		default:
 			return "Nenhum contato";
 		}

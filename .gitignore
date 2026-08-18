@@ -13,6 +13,7 @@ res/level*.png
 !res/level6.png
 !res/level7.png
 !res/level8.png
+!res/level9.png
 saves.json
 saves.backup.json
 saves.tmp

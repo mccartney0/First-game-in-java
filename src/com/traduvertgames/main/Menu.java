@@ -29,7 +29,10 @@ public class Menu {
 	private static final int OPTION_LOAD_GAME = 2;
 	private static final int OPTION_HOW_TO_PLAY = 3;
 	private static final int OPTION_SETTINGS = 4;
-	private static final int OPTION_EXIT = 5;
+	// Rodada 29 — metagame: opção do menu principal para as melhorias
+	// permanentes do piloto, compráveis com os créditos persistentes.
+	private static final int OPTION_UPGRADES = 5;
+	private static final int OPTION_EXIT = 6;
 
 	private static final String[] MAIN_OPTIONS = {
 			"novo jogo",
@@ -37,6 +40,7 @@ public class Menu {
 			"carregar jogo",
 			"como jogar",
 			"opções",
+			"melhorias do piloto",
 			"sair"
 	};
 
@@ -102,33 +106,64 @@ public class Menu {
 	public void update() {
 		saveExists = SaveManager.hasAnySave();
 
+		// Rodada 29 — metagame: enquanto a tela de melhorias do piloto estiver
+		// aberta, a navegação vertical e a confirmação operam sobre ela — o
+		// menu principal fica parado atrás para o jogador conferir o saldo.
+		boolean upgradesOpen = com.traduvertgames.graficos.PilotUpgradesScreen.isOpen();
 		if (up) {
 			up = false;
-			moveSelection(-1);
+			if (upgradesOpen) {
+				com.traduvertgames.graficos.PilotUpgradesScreen.up();
+			} else {
+				moveSelection(-1);
+			}
 		}
 		if (down) {
 			down = false;
-			moveSelection(1);
+			if (upgradesOpen) {
+				com.traduvertgames.graficos.PilotUpgradesScreen.down();
+			} else {
+				moveSelection(1);
+			}
 		}
 		// Navegação horizontal por A/D e setas esquerda/direita: nas telas de
 		// opções (pausa, opções, carregar, confirmação de saída) move a seleção
 		// para os lados; no EXIT_CONFIRM escolhe Não/Sim.
 		if (left) {
 			left = false;
-			moveSelection(-1);
+			if (!upgradesOpen) {
+				moveSelection(-1);
+			}
 		}
 		if (right) {
 			right = false;
-			moveSelection(1);
+			if (!upgradesOpen) {
+				moveSelection(1);
+			}
 		}
 		// ESC fecha a tela atual voltando ao nível anterior (o jogador ficava
 		// preso em "Deseja realmente sair?" e nas demais telas do menu).
+		// Rodada 29 — metagame: ESC fecha a tela de melhorias do piloto.
 		if (escape) {
 			escape = false;
-			escapeFromCurrentScreen();
+			if (upgradesOpen) {
+				com.traduvertgames.graficos.PilotUpgradesScreen.close();
+			} else {
+				escapeFromCurrentScreen();
+			}
 		}
 		if (enter) {
 			enter = false;
+			// Rodada 29 — metagame: Enter compra o upgrade selecionado quando
+				// a tela de melhorias do piloto estiver aberta.
+			if (upgradesOpen) {
+				// Enter confirma a compra do upgrade selecionado e fecha a tela
+				// de melhorias (o jogador retorna ao menu principal pelo banner
+				// de feedback, sem precisar de um passo extra de navegação).
+				com.traduvertgames.graficos.PilotUpgradesScreen.confirm();
+				com.traduvertgames.graficos.PilotUpgradesScreen.close();
+				return;
+			}
 			switch (currentScreen) {
 			case MAIN:
 				handleMainMenuSelection();
@@ -294,6 +329,10 @@ public class Menu {
 		case OPTION_SETTINGS:
 			currentScreen = Screen.OPTIONS;
 			currentOption = 0;
+			break;
+		// Rodada 29 — metagame: abre a tela de melhorias permanentes do piloto.
+		case OPTION_UPGRADES:
+			com.traduvertgames.graficos.PilotUpgradesScreen.open();
 			break;
 		case OPTION_EXIT:
 			currentScreen = Screen.EXIT_CONFIRM;
@@ -512,6 +551,10 @@ public class Menu {
 			renderMainMenu(g);
 			break;
 		}
+
+		// Rodada 29 — metagame: a tela de melhorias do piloto é desenhada por
+		// cima do menu principal (fundo translúcido, saldo e lista de upgrades).
+		com.traduvertgames.graficos.PilotUpgradesScreen.draw(g);
 	}
 
 	private void renderMainMenu(Graphics g) {
@@ -546,6 +589,17 @@ public class Menu {
 
 			g.drawString(labels[i], textX, baselineY);
 		}
+
+		// Rodada 29 — metagame: saldo de créditos do piloto exibido no menu
+		// principal (atualizado a partir do disco a cada render).
+		SaveManager.refreshMetagame();
+		int credits = com.traduvertgames.state.PilotUpgrades.getCredits();
+		Font creditFont = new Font("arial", Font.BOLD, 16);
+		g.setFont(creditFont);
+		String creditLabel = "CREDITOS: " + credits;
+		g.setColor(new java.awt.Color(255, 214, 10));
+		g.drawString(creditLabel, (screenWidth - g.getFontMetrics().stringWidth(creditLabel)) / 2,
+				(int) (screenHeight * 0.28) + g.getFontMetrics().getHeight() + 6);
 	}
 
 	private boolean isOptionAvailable(String option) {
@@ -570,6 +624,8 @@ public class Menu {
 			return "Como jogar";
 		case OPTION_SETTINGS:
 			return "Opções";
+		case OPTION_UPGRADES:
+			return "Melhorias do piloto";
 		case OPTION_EXIT:
 			return "Sair";
 		default:
