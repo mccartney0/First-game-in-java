@@ -6,6 +6,7 @@ import java.util.Map;
 
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.FloatingText;
+import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.state.PilotUpgrades;
 
@@ -105,6 +106,7 @@ public final class DungeonManager {
         if (Game.player == null) {
             return;
         }
+        DynamicEventManager.abortActiveEventForMapChange();
         surfaceRegion = RpgWorldManager.getCurrentRegion();
         surfaceDepth = Math.max(1, RpgWorldManager.getDepth());
         surfaceX = Game.player.getX();
@@ -177,7 +179,37 @@ public final class DungeonManager {
         bossDefeated = true;
         completed.put(dungeonRegion.name(), true);
         PilotUpgrades.addCredits(350);
-        FloatingText.show("CHEFE REGIONAL DERROTADO +350 CRÉDITOS",
-                enemy.getX(), enemy.getY() - 16, new java.awt.Color(255, 214, 10), 150);
+        Game.addScore(500);
+        WeaponType reward = rewardForRegion(dungeonRegion);
+        if (Game.player != null && reward != null && !Game.player.hasWeaponUnlocked(reward)) {
+            Game.player.unlockWeapon(reward);
+            FloatingText.show("ARMA DESBLOQUEADA: " + reward.getDisplayName().toUpperCase(),
+                    enemy.getX(), enemy.getY() - 30, new java.awt.Color(255, 235, 59), 180);
+        } else {
+            FloatingText.show("CHEFE REGIONAL DERROTADO +350 CRÉDITOS",
+                    enemy.getX(), enemy.getY() - 16, new java.awt.Color(255, 214, 10), 150);
+        }
+    }
+
+    /** Cada região entrega uma arma permanente diferente; a conclusão é idempotente. */
+    private static WeaponType rewardForRegion(RpgWorldManager.RegionType region) {
+        if (region == null) {
+            return null;
+        }
+        switch (region) {
+        case REFUGE:
+            return WeaponType.BOOMERANG_ARCANO;
+        case RUINS:
+            return WeaponType.ARC_DISRUPTOR;
+        case MARSH:
+            return WeaponType.SOLAR_CANNON;
+        case TUNDRA:
+            return WeaponType.CHAIN_ARC;
+        case SANCTUARY:
+            return WeaponType.PLASMA_CUTTER;
+        case CORE:
+        default:
+            return WeaponType.FUSION_LANCE;
+        }
     }
 }

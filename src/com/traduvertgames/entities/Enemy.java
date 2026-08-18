@@ -58,7 +58,12 @@ public class Enemy extends Entity {
         // Rodada 23c: vida aumentada (28 → 38) — o chefe da fase 7 morria em
         // menos de um segundo de tiro padrão, sem desafiar o combate longo
         // que o design de regeneração esperava.
-        GUARDIAN(38.0, 0.7, 0.5, 3.4, 2.6, 6, 110, 200, 0, new Color(255, 87, 34));
+        GUARDIAN(38.0, 0.7, 0.5, 3.4, 2.6, 6, 110, 200, 0, new Color(255, 87, 34)),
+        // Novos papéis regionais: explosivo, suporte, atirador e pressão de grupo.
+        BOMBER(4.0, 1.1, 1.0, 0.0, 0.0, 4, 75, 0, 56, new Color(255, 193, 7)),
+        SHIELDER(12.0, 0.65, 0.8, 2.5, 2.2, 5, 110, 60, 72, new Color(0, 188, 212)),
+        SNIPER(7.0, 0.55, 0.7, 7.0, 7.5, 4, 150, 90, 260, new Color(255, 82, 82)),
+        SWARM(1.4, 1.9, 1.6, 0.0, 0.0, 3, 80, 0, 48, new Color(156, 204, 101));
 
         private final double maxLife;
         private final double speedMultiplier;
@@ -427,24 +432,39 @@ public class Enemy extends Entity {
         // sobrecarregar o jogador novato nas primeiras fases.
         boolean phantomAllowed = Game.getCurrentLevel() >= 2;
         boolean sapperAllowed = Game.getCurrentLevel() >= 3;
+        boolean regionalVariantsAllowed = Game.getCurrentLevel() >= 4;
         int roll = Game.rand.nextInt(100);
-        if (roll < 35) {
-            return Variant.SCOUT;
-        } else if (roll < 55) {
-            return Variant.TELEPORTER;
-        } else if (roll < 75) {
-            return Variant.ARTILLERY;
-        } else if (roll < 88) {
-            return Variant.WARDEN;
-        } else if (roll < 93) {
-            return Variant.SENTINEL;
-        } else if (sapperAllowed && roll < 96) {
-            return Variant.SAPPER;
-        } else if (phantomAllowed && roll < 98) {
-            return Variant.PHANTOM;
-        } else {
-            return Variant.GUARDIAN;
+        if (!regionalVariantsAllowed) {
+            if (roll < 35) {
+                return Variant.SCOUT;
+            } else if (roll < 55) {
+                return Variant.TELEPORTER;
+            } else if (roll < 75) {
+                return Variant.ARTILLERY;
+            } else if (roll < 88) {
+                return Variant.WARDEN;
+            } else if (roll < 93) {
+                return Variant.SENTINEL;
+            } else if (sapperAllowed && roll < 96) {
+                return Variant.SAPPER;
+            } else if (phantomAllowed && roll < 98) {
+                return Variant.PHANTOM;
+            } else {
+                return Variant.GUARDIAN;
+            }
         }
+        if (roll < 25) return Variant.SCOUT;
+        if (roll < 42) return Variant.TELEPORTER;
+        if (roll < 57) return Variant.ARTILLERY;
+        if (roll < 68) return Variant.WARDEN;
+        if (roll < 76) return Variant.SENTINEL;
+        if (roll < 82) return Variant.SHIELDER;
+        if (roll < 87) return Variant.SWARM;
+        if (roll < 91) return Variant.SNIPER;
+        if (sapperAllowed && roll < 94) return Variant.SAPPER;
+        if (roll < 97) return Variant.BOMBER;
+        if (phantomAllowed && roll < 99) return Variant.PHANTOM;
+        return Variant.GUARDIAN;
     }
 
     public void update() {
@@ -553,6 +573,18 @@ public class Enemy extends Entity {
             break;
         case GUARDIAN:
             handleGuardianAbility();
+            break;
+        case BOMBER:
+            handleBomberAbility(distanceToPlayer);
+            break;
+        case SHIELDER:
+            handleShielderAbility();
+            break;
+        case SNIPER:
+            handleSniperAbility(distanceToPlayer, canSeePlayer);
+            break;
+        case SWARM:
+            handleSwarmAbility(distanceToPlayer);
             break;
         default:
             break;
@@ -678,6 +710,60 @@ public class Enemy extends Entity {
             life = Math.min(maxLife, life + 0.5);
             ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(255, 87, 34, 120), 3, 0.8);
         }
+    }
+
+    /** Explosivo frágil: sinaliza o risco e prepara uma explosão ao morrer. */
+    private void handleBomberAbility(double distanceToPlayer) {
+        if (distanceToPlayer < specialRange && frames % 12 == 0) {
+            ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(255, 193, 7, 120), 2, 0.6);
+        }
+    }
+
+    /** Suporte: concede redução de dano aos aliados próximos, mas não a si mesmo. */
+    private void handleShielderAbility() {
+        if (frames % 30 == 0 && hasNearbyAlly()) {
+            ParticleSystem.burst((int) x + 8, (int) y + 8, new Color(0, 229, 255, 130), 3, 0.8);
+        }
+    }
+
+    /** Atirador: permanece distante e lança um disparo de precisão de alto dano. */
+    private void handleSniperAbility(double distanceToPlayer, boolean canSeePlayer) {
+        if (specialCooldown > 0 || !canSeePlayer || distanceToPlayer < 132 || distanceToPlayer > specialRange) {
+            return;
+        }
+        double angle = Math.atan2(Game.player.getY() - this.getY(), Game.player.getX() - this.getX());
+        spawnProjectile(angle, projectileSpeed, projectileDamage, projectileSize + 2, projectileColor);
+        attackCooldown = Math.max(attackCooldown, attackCooldownBase / 2);
+        specialCooldown = specialCooldownBase;
+        FloatingText.show("TIRO DE PRECISÃO", (int) x + 8, (int) y - 8, new Color(255, 82, 82), 45);
+    }
+
+    /** Enxame: acelera a aproximação em impulsos curtos e procura contato. */
+    private void handleSwarmAbility(double distanceToPlayer) {
+        if (distanceToPlayer < specialRange && frames % 20 == 0) {
+            burstStepTowardPlayer();
+            ParticleSystem.trail((int) x + 8, (int) y + 8, new Color(156, 204, 101, 150));
+        }
+    }
+
+    private boolean hasNearbyAlly() {
+        for (Enemy other : Game.enemies) {
+            if (other != this && other.variant != Variant.BOMBER
+                    && this.calculateDistance(other.getX(), other.getY(), getX(), getY()) <= specialRange) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isShieldedByNearbyShielder() {
+        for (Enemy other : Game.enemies) {
+            if (other != this && other.variant == Variant.SHIELDER
+                    && this.calculateDistance(other.getX(), other.getY(), getX(), getY()) <= 72) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private void handleTeleportAbility(double distanceToPlayer, boolean canSeePlayer) {
@@ -925,8 +1011,10 @@ public class Enemy extends Entity {
         }
 
         if (isCollidingWithPlayer()) {
-            if (Game.rand.nextInt(100) < 20) {
-                double scaledDamage = 2 * Game.getDamageTakenMultiplier();
+            int contactChance = variant == Variant.SWARM ? 42 : 20;
+            if (Game.rand.nextInt(100) < contactChance) {
+                double baseDamage = variant == Variant.SWARM ? 1.35 : 2.0;
+                double scaledDamage = baseDamage * Game.getDamageTakenMultiplier();
                 Game.player.applyDamage(scaledDamage);
                 Game.player.damage = true;
                 Game.registerPlayerDamage();
@@ -1104,6 +1192,9 @@ public class Enemy extends Entity {
     }
 
     public void destroySelf() {
+        if (variant == Variant.BOMBER) {
+            triggerBomberExplosion();
+        }
         // Som de morte do inimigo; chefes ganham um efeito de derrota especial.
         com.traduvertgames.main.SoundManager.play(boss
                         ? com.traduvertgames.main.SoundManager.Event.BOSS_DEFEAT
@@ -1132,11 +1223,29 @@ public class Enemy extends Entity {
         Game.enemies.remove(this);
         Game.entities.remove(this);
         QuestManager.notifyEnemyKilled(this);
+        com.traduvertgames.world.DynamicEventManager.onEnemyDefeated(this);
         com.traduvertgames.world.DungeonManager.onEnemyDefeated(this);
         // Modo infinito: matar um chefe no modo arena avança para a próxima
         // fase procedural (novo mapa gerado por semente e rotação de chefes).
         if (this.boss && com.traduvertgames.main.WaveManager.isArenaMode()) {
             Game.advanceProceduralPhase();
+        }
+    }
+
+    private void triggerBomberExplosion() {
+        final double radius = 56.0;
+        ParticleSystem.explode(this.getX() + 8, this.getY() + 8, new Color(255, 193, 7));
+        if (Game.player != null
+                && calculateDistance(getX(), getY(), Game.player.getX(), Game.player.getY()) <= radius) {
+            Game.player.applyDamage(7.0 * Game.getDamageTakenMultiplier());
+            Game.player.damage = true;
+            Game.registerPlayerDamage();
+            FloatingText.show("EXPLOSÃO", Game.player.getX() + 8, Game.player.getY(), new Color(255, 87, 34), 60);
+        }
+        for (Enemy other : new java.util.ArrayList<Enemy>(Game.enemies)) {
+            if (other != this && calculateDistance(getX(), getY(), other.getX(), other.getY()) <= radius) {
+                other.takeDamageDirect(5.0);
+            }
         }
     }
 
@@ -1226,7 +1335,8 @@ public class Enemy extends Entity {
                     takenDamage = projectile.getDamage();
                     persistent = projectile.isPersistent();
                 }
-                applyDamage(takenDamage);
+                double mitigatedDamage = isShieldedByNearbyShielder() ? takenDamage * 0.55 : takenDamage;
+                applyDamage(mitigatedDamage);
                 if (!persistent) {
                     Game.bullets.remove(i);
                     i--;
@@ -1273,6 +1383,26 @@ public class Enemy extends Entity {
             Color aura = new Color(auraColor.getRed(), auraColor.getGreen(), auraColor.getBlue(), 120);
             g.setColor(aura);
             g.drawOval(this.getX() + 1 - Camera.x, this.getY() + 1 - Camera.y, auraSize, auraSize);
+        }
+        int markerX = this.getX() - Camera.x;
+        int markerY = this.getY() - Camera.y;
+        if (variant == Variant.BOMBER) {
+            g.setColor(new Color(255, 193, 7, 220));
+            g.fillOval(markerX + 6, markerY + 6, 4, 4);
+            g.drawOval(markerX + 1, markerY + 1, 14, 14);
+        } else if (variant == Variant.SHIELDER) {
+            g.setColor(new Color(0, 229, 255, 210));
+            g.drawArc(markerX - 2, markerY - 2, 20, 20, 35, 110);
+            g.drawArc(markerX - 2, markerY - 2, 20, 20, 215, 110);
+        } else if (variant == Variant.SNIPER) {
+            g.setColor(new Color(255, 82, 82, 220));
+            g.drawLine(markerX + 2, markerY + 13, markerX + 14, markerY + 3);
+            g.drawLine(markerX + 5, markerY + 14, markerX + 15, markerY + 5);
+        } else if (variant == Variant.SWARM) {
+            g.setColor(new Color(156, 204, 101, 220));
+            g.fillRect(markerX + 1, markerY + 1, 3, 3);
+            g.fillRect(markerX + 12, markerY + 3, 3, 3);
+            g.fillRect(markerX + 5, markerY + 12, 3, 3);
         }
         if (variant == Variant.GUARDIAN && state == EnemyState.CHASING && life < maxLife) {
             // Indicador de regeneração: contorno verde pulsante.

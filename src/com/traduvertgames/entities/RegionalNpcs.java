@@ -66,6 +66,24 @@ public final class RegionalNpcs {
         return new RegionalQuestNpc(x, y, spec);
     }
 
+    /** Ativa pelo hub a mesma missão que o NPC regional ofereceria. */
+    public static void activateQuestForRegion(RpgWorldManager.RegionType region) {
+        QuestSpec spec = specFor(region);
+        SideQuestManager.register(new SideQuest(spec.questId, spec.type, spec.itemType, spec.target,
+                spec.reward, spec.title, spec.description));
+        SideQuestManager.activateIfNeeded(spec.questId);
+    }
+
+    /** Título legível da missão secundária disponível na região. */
+    public static String getQuestTitleForRegion(RpgWorldManager.RegionType region) {
+        return specFor(region).title;
+    }
+
+    /** Identificador persistente usado pelo save e pelos testes de regressão. */
+    public static String getQuestIdForRegion(RpgWorldManager.RegionType region) {
+        return specFor(region).questId;
+    }
+
     private static QuestSpec specFor(RpgWorldManager.RegionType region) {
         switch (region) {
         case REFUGE:

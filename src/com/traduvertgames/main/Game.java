@@ -35,10 +35,12 @@ import com.traduvertgames.graficos.Spritesheet;
 import com.traduvertgames.graficos.MiniMap;
 import com.traduvertgames.graficos.VictoryCutscene;
 import com.traduvertgames.graficos.MissionBanner;
+import com.traduvertgames.graficos.HubScreen;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
 import com.traduvertgames.world.RpgWorldManager;
+import com.traduvertgames.world.DynamicEventManager;
 import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.dialogue.DialogueManager;
 
@@ -132,8 +134,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		resetTraitorTalked();
 		// Rodada 31: o epílogo dos refugiados é consumido na renderização da
 		// cutscene; desligar explicitamente para os testes partirem limpos.
-		VictoryCutscene.setRefugeeEnding(false);
-	}
+			VictoryCutscene.setRefugeeEnding(false);
+			HubScreen.reset();
+			DynamicEventManager.reset();
+		}
 
 	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
 	public static void clearQuestPending() {
@@ -746,6 +750,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 									new java.awt.Color(129, 199, 132), java.awt.Color.WHITE, 150);
 						}
 						RpgWorldManager.tick();
+						DynamicEventManager.update();
 					}
 					// Rodada 29 — regeneração passiva do metagame: os upgrades
 				// permanentes de regeneração recuperam vida a cada tick,
@@ -762,6 +767,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 } else if ("SHOP".equals(gameState)) {
                         ShopManager.update();
                         ParticleSystem.update();
+		} else if ("REGIONAL_HUB".equals(gameState)) {
+			// O hub é modal: nenhum inimigo, projétil ou objetivo avança atrás
+			// da escolha de atividade.
+			HubScreen.update();
 		} else if ("GAMEOVER".equals(gameState)) {
 //Forma de Fazer animação - Game over
 			this.framesGameOver++;
@@ -997,8 +1006,10 @@ if (!hidingHud) {
 		// e sobre os demais painéis, sem parecer esmaecida no fundo.
 	ui.renderOverlay(overlayG);
 	if (!hidingHud) {
-	com.traduvertgames.graficos.MissionHud.render(overlayG);
-	}
+			DynamicEventManager.render(overlayG);
+		com.traduvertgames.graficos.MissionHud.render(overlayG);
+		}
+
 		com.traduvertgames.graficos.VictoryCutscene.render(overlayG, SCALE);
 		com.traduvertgames.graficos.PhaseStatsScreen.render(overlayG, SCALE);
 	// OBS: o dispose do overlayG foi MOVIDO para o final do render — antes ele
@@ -1073,9 +1084,11 @@ if (!hidingHud) {
 				ShopManager.render(overlayG);
 			} else if ("LEVELUP".equals(gameState)) {
                         // Tela de level up já renderiza por cima do jogo (LevelUpManager.render).
-			} else if ("LEVELSELECT".equals(gameState)) {
-				LevelSelectScreen.render(overlayG);
-                }
+				} else if ("LEVELSELECT".equals(gameState)) {
+					LevelSelectScreen.render(overlayG);
+				} else if ("REGIONAL_HUB".equals(gameState)) {
+					HubScreen.render(overlayG);
+	                }
 
                 // Aviso de transição de fase: a fase atual foi concluída e o jogo
                 // avança para a próxima assim que a loja/level up forem encerrados.
@@ -1203,9 +1216,24 @@ if (!hidingHud) {
 					showInitialWeaponSelect = false;
 					returnToMainMenu();
 				}
-				return;
-			}
-			if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+									return;
+				}
+				// O hub regional é modal e consome todo o teclado antes de qualquer
+				// flag de movimento, tiro, arma ou pausa.
+				if ("REGIONAL_HUB".equals(gameState)) {
+					if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+						HubScreen.navigateUp();
+					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+						HubScreen.navigateDown();
+					} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						HubScreen.confirm();
+					} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+						HubScreen.cancel();
+					}
+					return;
+				}
+				if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+
 			if (OnboardingManager.isActive()) {
 				OnboardingManager.skip();
 				return;
@@ -1428,13 +1456,25 @@ if (!hidingHud) {
 				returnToMainMenu();
 			}
 		}
-		if (e.getKeyCode() == KeyEvent.VK_T) {
+					if (e.getKeyCode() == KeyEvent.VK_T) {
                         if ("NORMAL".equals(gameState)) {
                                 Game.saveGame = true;
                         }
                 }
 
-			if (e.getKeyCode() == KeyEvent.VK_P) {
+			// H abre o hub somente no mundo procedural de superfície. A tecla não
+			// interfere na campanha fixa nem durante diálogos ou transições.
+			if (e.getKeyCode() == KeyEvent.VK_H) {
+				if ("NORMAL".equals(gameState) && !DialogueManager.isActive()
+						&& !InventoryManager.isOpen() && !isTransitioning()
+						&& !isTransitionCooldown()) {
+					HubScreen.open();
+				}
+				return;
+			}
+
+				if (e.getKeyCode() == KeyEvent.VK_P) {
+
 						if ("NORMAL".equals(gameState)) {
 							Menu.openPauseScreen();
 						} else if ("MENU".equals(gameState) && Menu.pause) {
@@ -1708,8 +1748,10 @@ if (!hidingHud) {
 		resetTraitorTalked();
 			World.restartGame("level1.png");
 			LevelUpManager.reset();
-			WaveManager.reset();
-			// Inventário (rodada 22): novo jogo limpa o inventário.
+							WaveManager.reset();
+				DynamicEventManager.reset();
+				// Inventário (rodada 22): novo jogo limpa o inventário.
+
 			InventoryManager.reset();
 			// Trilha sonora adaptativa (rodada 22): tema da fase inicial.
 			MusicManager.setZone(MusicManager.Zone.forLevel(1));
@@ -2099,8 +2141,10 @@ if (!hidingHud) {
 	}
 
 	/** Carrega o mapa procedural da profundidade informada. */
-	private static void startProceduralLevel(int depth) {
-		try {
+			private static void startProceduralLevel(int depth) {
+			com.traduvertgames.world.DynamicEventManager.abortActiveEventForMapChange();
+			try {
+
 			java.io.File mapFile = com.traduvertgames.world.ProceduralLevelGenerator.generate(depth);
 			String absPath = mapFile.getAbsolutePath();
 			com.traduvertgames.world.World.restartGameFromFile(absPath);

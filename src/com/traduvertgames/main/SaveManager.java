@@ -184,9 +184,12 @@ public final class SaveManager {
 				// Missões secundárias (rodada 22): progresso e concluídas persistidas.
 				session.put("sideQuests", new HashMap<String, Object>(
 					com.traduvertgames.quest.SideQuestManager.serialize()));
-				session.put("dungeonsCompleted", new HashMap<String, Boolean>(
-					com.traduvertgames.world.DungeonManager.serializeCompletions()));
-			session.put("sideQuestsDone", new HashMap<String, Boolean>(
+									session.put("dungeonsCompleted", new HashMap<String, Boolean>(
+						com.traduvertgames.world.DungeonManager.serializeCompletions()));
+					session.put("dynamicEvents", new HashMap<String, Object>(
+						com.traduvertgames.world.DynamicEventManager.serialize()));
+								session.put("sideQuestsDone", new HashMap<String, Boolean>(
+
 					com.traduvertgames.quest.SideQuestManager.getCompleted()));
 			// Bônus escolhidos no level up pertencem à campanha atual e precisam
 			// sobreviver à recriação do mapa e ao carregamento do slot.
@@ -587,6 +590,7 @@ public final class SaveManager {
 				com.traduvertgames.world.DungeonManager.reset();
 				com.traduvertgames.world.DungeonManager.deserializeCompletions(
 					savedDungeonsRaw == null ? null : toBooleanMap(savedDungeonsRaw));
+				com.traduvertgames.world.DynamicEventManager.deserialize(session.get("dynamicEvents"));
 
 			Enemy.enemies = savedEnemies;
 		Game.setScore(savedScore);
