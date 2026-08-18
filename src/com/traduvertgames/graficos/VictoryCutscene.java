@@ -28,6 +28,29 @@ public final class VictoryCutscene {
 			"— Comandante Ava"
 	};
 
+	/**
+	 * Epílogo dos refugiados (rodada 31): linhas adicionais contadas quando a
+	 * campanha termina pela fase 9 (Vale dos Refugiados).
+	 */
+	private static final String[] REFUGEE_EPILOGUE = {
+			"Os refugiados deixaram o vale esta noite, sob a escolta da sua luz.",
+			"No caminho para a colônia, as crianças contavam o que viram: um drone que os protegia.",
+			"A reconstrução começa amanhã — e o seu nome está no primeiro capítulo."
+	};
+
+	/** Epílogo dos refugiados ativo nesta cutscene (fase 9 concluiu a campanha). */
+	private static boolean refugeeEnding = false;
+
+	/** Ativa o epílogo dos refugiados na próxima cutscene de vitória (fase 9). */
+	public static void setRefugeeEnding(boolean value) {
+		refugeeEnding = value;
+	}
+
+	/** @return true se o epílogo dos refugiados está ativo nesta cutscene. */
+	public static boolean isRefugeeEnding() {
+		return refugeeEnding;
+	}
+
 	private VictoryCutscene() {
 	}
 
@@ -113,6 +136,17 @@ public final class VictoryCutscene {
 			g.drawString(line, (screenWidth - g.getFontMetrics().stringWidth(line)) / 2, y);
 			y += 20 * scale / 4;
 		}
+		// Epílogo dos refugiados (rodada 31): a campanha concluída pela fase 9
+		// ganha três linhas finais sobre a evacuação do Vale dos Refugiados.
+		if (refugeeEnding) {
+			y += 14 * scale / 4;
+			for (String line : REFUGEE_EPILOGUE) {
+				g.setColor(new Color(255, 236, 179, alpha));
+				g.drawString(line, (screenWidth - g.getFontMetrics().stringWidth(line)) / 2, y);
+				y += 20 * scale / 4;
+			}
+		}
+		refugeeEnding = false;
 
 		// Estatísticas da campanha.
 		y += 26 * scale / 4;
