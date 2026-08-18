@@ -82,8 +82,18 @@ public final class SaveManager {
 	/** Chave do mapa de flags de diálogos por NPC/fase no progress do slot. */
 	private static final String NPC_DIALOGUES_KEY = "npcDialogues";
 
+	/** Chave da flag de campanha concluída no root do save (rodada 31). */
+	private static final String CAMPAIGN_COMPLETED_KEY = "campaignCompleted";
+
+	/** Chave da flag de Nova campanha+ no root do save (rodada 31). */
+	private static final String NEW_GAME_PLUS_KEY = "newGamePlus";
+
 	/** Recorde de profundidade carregado do slot ativo (rodada 24b). */
 	private static int deepRecord = 0;
+	/** Campanha concluída (rodada 31 — conteúdo pós-campanha). */
+	private static boolean campaignCompleted = false;
+	/** Nova campanha+ ativa (rodada 31): herda armas e créditos com bônus. */
+	private static boolean newGamePlus = false;
 	private static int bestRunKills = 0;
 	private static long bestRunTimeMs = 0;
 	private static int bestRunCombo = 0;
@@ -211,6 +221,9 @@ public final class SaveManager {
 		Map<String, Object> metagame = new HashMap<String, Object>(
 				com.traduvertgames.state.PilotUpgrades.serialize());
 		root.put("metagame", metagame);
+		// Rodada 31 — conteúdo pós-campanha: flags globais da conta no root.
+		root.put(CAMPAIGN_COMPLETED_KEY, campaignCompleted);
+		root.put(NEW_GAME_PLUS_KEY, newGamePlus);
 		root.put("slots", slots);
 
 		return writeRoot(root);
@@ -345,6 +358,28 @@ public final class SaveManager {
 		return npcDialogues.get(npcName + "_" + level) == Boolean.TRUE;
 	}
 
+	/** Marca a campanha como concluída e grava no save. */
+	public static void setCampaignCompleted(boolean value) {
+		campaignCompleted = value;
+		saveCurrentGame();
+	}
+
+	/** @return true se o jogador já concluiu a campanha completa. */
+	public static boolean hasCampaignCompleted() {
+		return campaignCompleted;
+	}
+
+	/** Ativa/desativa a Nova campanha+ e grava no save. */
+	public static void setNewGamePlus(boolean value) {
+		newGamePlus = value;
+		saveCurrentGame();
+	}
+
+	/** @return true se a próxima campanha será uma Nova campanha+ com bônus. */
+	public static boolean isNewGamePlus() {
+		return newGamePlus;
+	}
+
 	/** Atualiza a seção de campanha global (fases concluídas e fase máxima). */
 	private static void updateCampaign(Map<String, Object> root, Game game) {
 		@SuppressWarnings("unchecked")
@@ -417,6 +452,15 @@ public final class SaveManager {
 		com.traduvertgames.state.PilotUpgrades.deserialize(root.get("metagame"));
 	}
 
+	/**
+	 * Restaura as flags globais pós-campanha (rodada 31) a partir do root do
+	 * save: campanha concluída e Nova campanha+ ativa.
+	 */
+	private static void restorePostCampaignFlags(Map<String, Object> root) {
+		campaignCompleted = "true".equalsIgnoreCase(String.valueOf(root.get(CAMPAIGN_COMPLETED_KEY)));
+		newGamePlus = "true".equalsIgnoreCase(String.valueOf(root.get(NEW_GAME_PLUS_KEY)));
+	}
+
 	private static void restoreDeepRecord(Map<String, Object> slot) {
 		if (slot == null) {
 			return;
@@ -457,6 +501,8 @@ public final class SaveManager {
 		// do nível superior do save; a aplicação dos stats acontece junto com
 		// applyDifficultyToPlayerStats() mais abaixo.
 		restoreMetagame(root);
+		// Rodada 31 — flags globais pós-campanha restauradas do root do save.
+		restorePostCampaignFlags(root);
 
 		// Migração v1→v2: se o slot é flat (v1), a sessão é o próprio slot.
 		Map<String, Object> session = getSession(slot);
