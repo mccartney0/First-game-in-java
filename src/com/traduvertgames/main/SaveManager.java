@@ -337,6 +337,16 @@ public final class SaveManager {
 		restoreMetagame(loadRoot());
 	}
 
+	/**
+	 * Rodada 31 — recarrega as flags pós-campanha (campanha concluída e Nova
+	 * campanha+) a partir do disco para que o menu principal reflita o estado
+	 * gravado mesmo antes de um carregamento de slot (mesmo padrão do
+	 * {@link #refreshBestRun()}).
+	 */
+	public static void refreshPostCampaignFlags() {
+		restorePostCampaignFlags(loadRoot());
+	}
+
 	// ---------- Flags de diálogos por NPC/fase ----------
 
 	/** Flags de diálogos concluídos, carregadas do disco e mantidas em memória. */

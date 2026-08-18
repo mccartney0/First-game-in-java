@@ -266,6 +266,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	private boolean enter = false;
 	private boolean escape = false;
 
+
+	// Rodada 31 — o bônus da Nova campanha+ (+25% vida/mana) é aplicado no
+	// início (onboarding), mas loadFirstPhase() recalcula os máximos pela
+	// dificuldade e perderia o bônus; o consumo da flag de NG+ acontece em
+	// loadFirstPhase(), então esta flag pendente cobre o intervalo.
+	private boolean ngPlusPending = false;
+
         public static int getHighScore() {
                 return GameState.highScore;
         }
@@ -583,118 +590,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
-		// TEMPORÁRIO (playthrough da rodada 31): bridge TCP na porta 10445
-		// para automação de input — REMOVER antes do PR.
-		startStdinBridge();
-		Game game = new Game();
-		game.start();
-	}
-
-	// TEMPORÁRIO (rodada 31) — remove antes do PR.
-	private static void startStdinBridge() {
-		Thread bridge = new Thread(() -> {
-			try {
-				java.net.ServerSocket server = new java.net.ServerSocket(10445);
-				while (true) {
-					java.net.Socket client = server.accept();
-					java.io.BufferedReader reader = new java.io.BufferedReader(
-							new java.io.InputStreamReader(client.getInputStream()));
-					String line;
-					while ((line = reader.readLine()) != null) {
-						String cmd = line.trim().toUpperCase();
-						if (cmd.startsWith("PRESS ")) {
-							simulateKey(cmd.substring(6), true);
-						} else if (cmd.startsWith("RELEASE ")) {
-							simulateKey(cmd.substring(8), false);
-						} else if (cmd.startsWith("WAIT ")) {
-							Thread.sleep(Long.parseLong(cmd.substring(5).trim()));
-						}
-					}
-					client.close();
-				}
-			} catch (Exception ignored) {
-			}
-		});
-		bridge.setDaemon(true);
-		bridge.start();
-	}
-
-	// TEMPORÁRIO (rodada 31) — remove antes do PR.
-	private static void simulateKey(String key, boolean pressed) {
-		com.traduvertgames.main.Game game = com.traduvertgames.main.Game.getInstance();
-		if (game == null || game.menu == null) {
-			return;
+		public static void main(String[] args) throws IOException {
+			Game game = new Game();
+			game.start();
 		}
-		String lower = key.toLowerCase();
-		switch (lower) {
-		case "w":
-			if ("MENU".equals(gameState)) {
-				game.menu.up = pressed;
-			}
-			if (player != null) {
-				player.up = pressed;
-			}
-			break;
-		case "s":
-			if ("MENU".equals(gameState)) {
-				game.menu.down = pressed;
-			}
-			if (player != null) {
-				player.down = pressed;
-			}
-			break;
-		case "a":
-			if ("MENU".equals(gameState)) {
-				game.menu.left = pressed;
-			}
-			if (player != null) {
-				player.left = pressed;
-			}
-			break;
-		case "d":
-			if ("MENU".equals(gameState)) {
-				game.menu.right = pressed;
-			}
-			if (player != null) {
-				player.right = pressed;
-			}
-			break;
-		case "x":
-			if (pressed && player != null) {
-				player.shoot = true;
-			}
-			break;
-		case "r":
-			// R inicia/avança diálogos com NPCs (mesma semântica do VK_R).
-			if (pressed) {
-				if (DialogueManager.isActive()) {
-					DialogueManager.advance();
-				} else if ("NORMAL".equals(gameState) && !InventoryManager.isOpen()) {
-					DialogueManager.startNearestDialogue();
-				}
-			}
-			break;
-		case "t":
-			if (pressed && "NORMAL".equals(gameState)) {
-				saveGame = true;
-			}
-			break;
-		case "enter":
-			game.menu.enter = pressed;
-			break;
-		case "escape":
-			game.menu.escape = pressed;
-			break;
-		default:
-			break;
-		}
-		System.out.println("[bridge] " + (pressed ? "PRESS" : "RELEASE") + " " + key
-				+ " px" + (game.player != null ? game.player.getX() : -1)
-				+ " py" + (game.player != null ? game.player.getY() : -1));
-	}
 
-	// Toda a lógica fica no update ou tick
+		// Toda a lógica fica no update ou tick
 	//Primeiro atualiza, depois renderiza
 	public void update() {
 		// Avança de fase assim que a loja aberta por objetivo concluído fecha.
@@ -1785,9 +1686,10 @@ if (!hidingHud) {
 		Player.maxMana += bonusMana;
 		Player.life = Player.maxLife;
 		Player.mana = Player.maxMana;
-		// As flags de Nova campanha+ se esgotam ao iniciar: manter o
-		// desbloqueio de armas permanente (arsenal persistente) sem repetir
-		// o bônus a cada novo jogo do menu principal.
+		// O bônus fica pendente até a fase 1 real ser carregada: a flag de
+		// Nova campanha+ é consumida em loadFirstPhase(), depois de reaplicar
+		// o bônus sobre os máximos recalculados pela dificuldade.
+		this.ngPlusPending = true;
 		SaveManager.setNewGamePlus(false);
 	}
 
@@ -1913,6 +1815,22 @@ if (!hidingHud) {
 		CUR_LEVEL = 1;
 		Enemy.enemies = 0;
 		applyDifficultyToPlayerStats();
+		// Rodada 31 — a fase 1 real é carregada depois do bônus da Nova
+		// campanha+ aplicado no novo jogo; reaplicar o bônus de +25% sobre os
+		// máximos recalculados pela dificuldade para não perdê-lo no
+		// carregamento da fase 1. A flag SaveManager.isNewGamePlus() é
+		// consumida assim que o bônus do início do jogo é aplicado (para
+		// não repetir o bônus a cada novo jogo do menu), então o reforço
+		// aqui usa a flag pendente local (ngPlusPending).
+		if (ngPlusPending) {
+			ngPlusPending = false;
+			int bonusLife = Math.max(1, (int) Math.round(Player.maxLife * 0.25));
+			int bonusMana = Math.max(0, (int) Math.round(Player.maxMana * 0.25));
+			Player.maxLife += bonusLife;
+			Player.maxMana += bonusMana;
+			Player.life = Math.max(Player.life, Player.maxLife);
+			Player.mana = Math.max(Player.mana, Player.maxMana);
+		}
 		clampPlayerResources();
 		LevelUpManager.reset();
 		WaveManager.reset();

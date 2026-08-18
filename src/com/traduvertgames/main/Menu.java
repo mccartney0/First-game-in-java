@@ -622,6 +622,10 @@ private void handlePauseSelection() {
 		// Rodada 29 — metagame: saldo de créditos do piloto exibido no menu
 		// principal (atualizado a partir do disco a cada render).
 		SaveManager.refreshMetagame();
+		// Rodada 31 — recarrega as flags pós-campanha a cada render do menu,
+		// para que "Nova campanha+" reflita o estado gravado no disco mesmo
+		// antes de carregar um slot (mesmo padrão do refreshMetagame).
+		SaveManager.refreshPostCampaignFlags();
 		int credits = com.traduvertgames.state.PilotUpgrades.getCredits();
 		Font creditFont = new Font("arial", Font.BOLD, 16);
 		g.setFont(creditFont);
