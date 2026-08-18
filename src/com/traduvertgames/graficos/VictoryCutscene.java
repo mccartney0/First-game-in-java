@@ -59,6 +59,10 @@ public final class VictoryCutscene {
 		if (showing) {
 			return;
 		}
+		Game game = Game.getInstance();
+		if (game != null) {
+			game.clearPendingOverlayInput();
+		}
 		showing = true;
 		fadeIn = 0;
 		framesElapsed = 0;
@@ -75,6 +79,10 @@ public final class VictoryCutscene {
 	/** Cancela a cutscene restaurando o estado de jogo normal. */
 	public static void stop() {
 		showing = false;
+		Game game = Game.getInstance();
+		if (game != null) {
+			game.clearPendingOverlayInput();
+		}
 		Game.gameState = "NORMAL";
 		Menu.pause = false;
 	}

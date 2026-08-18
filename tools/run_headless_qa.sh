@@ -20,6 +20,7 @@ classes=(
   RpgWorldMapTest
   RegionalQuestTest
   DungeonSystemTest
+  OptionsTransitionRegressionTest
   AvaFirstObjectiveTest
   BannerHintTest
   BranchingNpcTest

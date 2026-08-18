@@ -139,18 +139,22 @@ public class Menu {
 		// Navegação horizontal por A/D e setas esquerda/direita: nas telas de
 		// opções (pausa, opções, carregar, confirmação de saída) move a seleção
 		// para os lados; no EXIT_CONFIRM escolhe Não/Sim.
-		if (left) {
-			left = false;
-			if (!upgradesOpen) {
-				moveSelection(-1);
+			if (left) {
+				left = false;
+				if (!upgradesOpen) {
+					if (!adjustSelectedVolume(-2)) {
+						moveSelection(-1);
+					}
+				}
 			}
-		}
-		if (right) {
-			right = false;
-			if (!upgradesOpen) {
-				moveSelection(1);
+			if (right) {
+				right = false;
+				if (!upgradesOpen) {
+					if (!adjustSelectedVolume(2)) {
+						moveSelection(1);
+					}
+				}
 			}
-		}
 		// ESC fecha a tela atual voltando ao nível anterior (o jogador ficava
 		// preso em "Deseja realmente sair?" e nas demais telas do menu).
 		// Rodada 29 — metagame: ESC fecha a tela de melhorias do piloto.
@@ -415,6 +419,22 @@ private void handlePauseSelection() {
 		}
 	}
 
+	private boolean adjustSelectedVolume(int deltaDb) {
+		if (currentScreen != Screen.OPTIONS) {
+			return false;
+		}
+		if (currentOption == OPTIONS_INDEX_MUSIC_VOLUME) {
+			OptionsConfig.adjustMusicVolume(deltaDb);
+			return true;
+		}
+		if (currentOption == OPTIONS_INDEX_SOUND_VOLUME) {
+			OptionsConfig.adjustSoundVolume(deltaDb);
+			SoundManager.play(SoundManager.Event.MENU_SELECT);
+			return true;
+		}
+		return false;
+	}
+
 	private void handleOptionsSelection() {
 		switch (currentOption) {
 		case OPTIONS_INDEX_MUSIC:
@@ -536,6 +556,18 @@ private void handlePauseSelection() {
 		currentScreen = Screen.MAIN;
 		currentOption = 0;
 		pause = false;
+		clearPendingInput();
+	}
+
+	/** Descarta eventos que chegaram enquanto outro overlay estava na frente. */
+	public void clearPendingInput() {
+		up = false;
+		down = false;
+		enter = false;
+		left = false;
+		right = false;
+		escape = false;
+		shift = false;
 	}
 
 	public void render(Graphics g) {
@@ -963,11 +995,17 @@ private void handlePauseSelection() {
 				g.drawString(">", arrowX, baselineY);
 				g.setColor(Color.white);
 			}
-			g.drawString(lines[i], textX, baselineY);
+							g.drawString(lines[i], textX, baselineY);
+			}
+			Font hintFont = new Font("arial", Font.PLAIN, 13);
+			g.setFont(hintFont);
+			g.setColor(new Color(190, 190, 190));
+			String hint = "Esquerda/direita: ajustar volume — Enter: alternar/confirmar";
+			g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2,
+					startY + OPTIONS_LABELS.length * OPTIONS_LINE_HEIGHT + 28);
 		}
-	}
 
-	private void renderOptionList(Graphics g, String[] labels, String headerLabel) {
+		private void renderOptionList(Graphics g, String[] labels, String headerLabel) {
 		int screenWidth = Game.WIDTH * Game.SCALE;
 		int screenHeight = Game.HEIGHT * Game.SCALE;
 

@@ -1164,10 +1164,37 @@ if (!hidingHud) {
 		// TODO Auto-generated method stub
 	}
 
-	@Override
-	// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
-		public void keyPressed(KeyEvent e) {
-		if(e.getKeyCode() == KeyEvent.VK_SPACE) {
+		@Override
+		// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
+			public void keyPressed(KeyEvent e) {
+			// Overlays de conclusão/vitória têm prioridade absoluta: nenhuma tecla
+			// deve alcançar o menu de pausa ou a seleção inicial por baixo deles.
+			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
+					|| VictoryCutscene.isShowing()) {
+				if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+					this.enter = true;
+				} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					this.escape = true;
+				}
+				return;
+			}
+			// A seleção inicial de arma também é modal. Ela só aceita navegação
+			// vertical, Enter e Esc; não vaza A/D, ataque ou opções do menu.
+			if (showInitialWeaponSelect) {
+				if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+					initialWeaponSelection = Math.max(0, initialWeaponSelection - 1);
+				} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+					initialWeaponSelection = Math.min(getUnlockedInitialWeapons().length - 1,
+							initialWeaponSelection + 1);
+				} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+					getInstance().applyInitialWeaponSelection();
+				} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					showInitialWeaponSelect = false;
+					returnToMainMenu();
+				}
+				return;
+			}
+			if(e.getKeyCode() == KeyEvent.VK_SPACE) {
 			if (OnboardingManager.isActive()) {
 				OnboardingManager.skip();
 				return;
@@ -1523,22 +1550,25 @@ if (!hidingHud) {
 
 	}
 
-	@Override
-	public void mousePressed(MouseEvent e) {
-		player.mouseShoot = true;
-		// A posição do clique é convertida do espaço da janela para o espaço do
-		// buffer do jogo, desconsiderando o deslocamento do letterboxing
-		// (drawOffsetX/Y — jogo centralizado em fullscreen ou redimensionamento)
-		// e o SCALE atual da renderização.
-		player.mx = Math.max(0, Math.min(WIDTH - 1, (e.getX() - drawOffsetX) / SCALE));
-		player.my = Math.max(0, Math.min(HEIGHT - 1, (e.getY() - drawOffsetY) / SCALE));
-
-		if ("GAMEOVER".equals(gameState)) {
-			this.restartGame = true;
-		} else if ("MENU".equals(gameState)) {
-			menu.enter = true;
+		@Override
+		public void mousePressed(MouseEvent e) {
+			// Clique não confirma nem dispara enquanto overlays modais estiverem
+			// visíveis. Antes, PhaseStatsScreen usava gameState=MENU e este bloco
+			// transformava qualquer clique em menu.enter.
+			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
+					|| VictoryCutscene.isShowing() || showInitialWeaponSelect) {
+				return;
+			}
+			if ("NORMAL".equals(gameState) && player != null) {
+				player.mouseShoot = true;
+				// A posição do clique é convertida do espaço da janela para o espaço do
+				// buffer do jogo, desconsiderando o deslocamento de letterboxing.
+				player.mx = Math.max(0, Math.min(WIDTH - 1, (e.getX() - drawOffsetX) / SCALE));
+				player.my = Math.max(0, Math.min(HEIGHT - 1, (e.getY() - drawOffsetY) / SCALE));
+			} else if ("GAMEOVER".equals(gameState)) {
+				this.restartGame = true;
+			}
 		}
-	}
 
 	@Override
 	public void mouseReleased(MouseEvent e) {
@@ -1733,6 +1763,9 @@ if (!hidingHud) {
 	}
 
 	private static void startInitialWeaponSelect() {
+		if (instance != null) {
+			instance.clearPendingOverlayInput();
+		}
 		showInitialWeaponSelect = true;
 		initialWeaponSelection = 0;
 		gameState = "MENU";
@@ -2205,6 +2238,15 @@ if (!hidingHud) {
 		this.showMessageGameOver = true;
 		this.menuReturnTimer = 450;
 		this.gameOverSelection = 0;
+	}
+
+	/** Remove confirmações que poderiam atravessar a troca de overlay. */
+	public void clearPendingOverlayInput() {
+		enter = false;
+		escape = false;
+		if (menu != null) {
+			menu.clearPendingInput();
+		}
 	}
 
 	/** Volta ao menu principal mantendo o autosave do progresso da partida. */

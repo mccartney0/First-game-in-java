@@ -42,6 +42,10 @@ public final class PhaseStatsScreen {
 		capturedTimeMs = Game.getLevelTimeMs();
 		capturedBestCombo = Game.getBestComboThisRun();
 		capturedWaves = WaveManager.getWavesSurvived();
+		Game game = Game.getInstance();
+		if (game != null) {
+			game.clearPendingOverlayInput();
+		}
 		showing = true;
 		fadeIn = 0;
 		framesElapsed = 0;
@@ -65,6 +69,10 @@ public final class PhaseStatsScreen {
 			return;
 		}
 		showing = false;
+		Game game = Game.getInstance();
+		if (game != null) {
+			game.clearPendingOverlayInput();
+		}
 		Menu.pause = false;
 		Game.gameState = "NORMAL";
 		if (!com.traduvertgames.main.WaveManager.isArenaMode()) {
