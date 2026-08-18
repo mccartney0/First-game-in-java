@@ -196,9 +196,15 @@ public final class MissionHud {
 		int targetCenterX = (target.getX() + 8 - Camera.x) * s;
 		int targetCenterY = (target.getY() + 8 - Camera.y) * s;
 
-		double dx = targetCenterX - centerX;
-		double dy = targetCenterY - centerY;
-		double distance = Math.sqrt(dx * dx + dy * dy);
+			double dx = targetCenterX - centerX;
+			double dy = targetCenterY - centerY;
+			double distance = Math.sqrt(dx * dx + dy * dy);
+			// A distância acima está em pixels escalados da janela. Preserve também
+			// a distância no mundo para o rótulo: antes, dividir o valor escalado
+			// por 16 fazia o waypoint mostrar 4x a distância real quando SCALE=4.
+			double worldDx = target.getX() + 8 - (Game.player.getX() + 8);
+			double worldDy = target.getY() + 8 - (Game.player.getY() + 8);
+			double worldDistance = Math.sqrt(worldDx * worldDx + worldDy * worldDy);
 
 		// Raio de interação: quando o alvo está próximo o suficiente para a
 		// conversa, a seta some — o NPC com o badge "R — Nome" já mostra onde
@@ -243,7 +249,7 @@ public final class MissionHud {
 			// contorno escuro suave para leitura sobre qualquer fundo.
 			Font smallFont = new Font("SansSerif", Font.BOLD, 7 * s / 4 + 2);
 			g2.setFont(smallFont);
-			String distLabel = String.format("%dm", (int) (distance / 16));
+			String distLabel = formatDistanceMeters(worldDistance);
 			int size = 24 * s / 4 + 2;
 			double tailAngle = angle + Math.PI; // direção oposta: cauda do cursor
 			double headAngle1 = angle + Math.toRadians(150);
@@ -305,11 +311,27 @@ public final class MissionHud {
 	 * a cor como critério para beacons. Visível no pacote para o
 	 * marcador do alvo no minimapa.
 	 */
-	static Entity findTargetEntity(String targetName) {
+		static String formatDistanceMeters(double worldDistance) {
+			return String.format("%dm", Math.max(0, (int) (worldDistance / com.traduvertgames.world.World.TILE_SIZE)));
+		}
+
+		static Entity findTargetEntity(String targetName) {
 		for (int i = 0; i < Game.entities.size(); i++) {
 			Entity e = Game.entities.get(i);
 			if (e instanceof InteractiveNpc && targetName.equals(((InteractiveNpc) e).getName())) {
 				return e;
+			}
+		}
+		// Após falar com Ava, a fase 1 aponta para o primeiro artefato ainda
+		// presente no mapa. O item é escolhido por ordem de entidade para manter
+		// o waypoint estável durante a exploração.
+		if ("Artefato de missão".equals(targetName)) {
+			for (int i = 0; i < Game.entities.size(); i++) {
+				Entity e = Game.entities.get(i);
+				if (e instanceof com.traduvertgames.entities.QuestItem
+						&& !((com.traduvertgames.entities.QuestItem) e).isCollected()) {
+					return e;
+				}
 			}
 		}
 		// Alvo narrativo de chefe (ex.: "o Guardião do Subsolo", "o Supervisor-Prime"):

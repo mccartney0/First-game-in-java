@@ -31,7 +31,7 @@ public class EscortObjective extends BaseObjective
 	/** Raio em pixels no qual inimigos ameaçam o escoltado. */
 	public static final double THREAT_RADIUS = 70;
 	/** Intervalo em frames entre os ataques de inimigos na zona de ameaça. */
-	private static final int ATTACK_INTERVAL_FRAMES = 60;
+	private static final int ATTACK_INTERVAL_FRAMES = 75;
 	/** Distância em pixels para registrar ataque já contabilizado. */
 	private static final double HIT_DIST_SQ = 20 * 20;
 
@@ -182,7 +182,7 @@ public class EscortObjective extends BaseObjective
 		}
 		int hp = escort.getHp();
 		int percent = (int) Math.round(100.0 * getJourneyProgress());
-		return "Jornada: " + percent + "% (vida " + hp + ")";
+		return "Jornada: " + percent + "% — proteja o informante (vida " + hp + "/4)";
 	}
 
 	@Override

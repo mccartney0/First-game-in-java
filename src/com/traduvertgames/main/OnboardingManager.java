@@ -184,11 +184,11 @@ public final class OnboardingManager {
 	private static String currentInstruction() {
 		switch (step) {
 		case 0:
-			return "Segure WASD ou as setas para se mover";
+			return "PASSO 1/3 — Mova-se com WASD ou as setas";
 		case 1:
-			return "Pressione X (ou clique) para atirar";
+			return "PASSO 2/3 — Pressione X ou clique para atirar";
 		case 2:
-			return "Segure SHIFT para o dash";
+			return "PASSO 3/3 — Pressione SHIFT para usar o dash";
 		default:
 			return "";
 		}
@@ -197,11 +197,11 @@ public final class OnboardingManager {
 	private static String progressHint() {
 		switch (step) {
 		case 0:
-			return "Arena de treino — pratique antes da missão";
+			return "Arena segura — mova-se por cerca de 1 segundo";
 		case 1:
-			return "Movimento OK — Tiros: " + shotsDone + "/" + SHOTS_REQUIRED;
+			return "Movimento concluído — tiros: " + shotsDone + "/" + SHOTS_REQUIRED;
 		case 2:
-			return "Tiros OK — Dash: " + dashesDone + "/" + DASHES_REQUIRED;
+			return "Tiros concluídos — dash: " + dashesDone + "/" + DASHES_REQUIRED;
 		default:
 			return "";
 		}
@@ -215,10 +215,10 @@ public final class OnboardingManager {
 		int screenHeight = Game.HEIGHT * Game.SCALE;
 
 		// Painel central escuro com a instrução
-		String title = "Bem-vindo, piloto!";
+		String title = "Treino rápido — sem inimigos";
 		String instruction = currentInstruction();
 		String hint = progressHint();
-		String skipLabel = "Space para pular";
+		String skipLabel = "SPACE: pular tutorial e ir para a missão";
 
 		Font titleFont = new Font("arial", Font.BOLD, 26 * Game.SCALE / 4);
 		Font bodyFont = new Font("arial", Font.PLAIN, 18 * Game.SCALE / 4);

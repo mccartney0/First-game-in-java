@@ -35,7 +35,8 @@ import javax.imageio.ImageIO;
  * vez com semente alternativa para nunca entregar um layout injogável.
  *
  * O PNG é gravado em {@code bin/proc_level_N.png} e carregado pela World
- * como qualquer outro nível.
+ * como qualquer outro nível. O diretório de saída é criado automaticamente
+ * quando necessário, inclusive em um clone limpo do projeto.
  */
 public final class ProceduralLevelGenerator {
 
@@ -103,7 +104,12 @@ public final class ProceduralLevelGenerator {
 			placeBoss(map, w, h, altRng, depth);
 		}
 
-		File file = new File("bin/proc_level_" + depth + ".png");
+		File outputDir = new File("bin");
+		if (!outputDir.exists() && !outputDir.mkdirs()) {
+			throw new IOException("Não foi possível criar o diretório de mapas procedurais: "
+					+ outputDir.getAbsolutePath());
+		}
+		File file = new File(outputDir, "proc_level_" + depth + ".png");
 		ImageIO.write(map, "png", file);
 		return file;
 	}

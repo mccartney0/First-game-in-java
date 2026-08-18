@@ -23,13 +23,13 @@ import com.traduvertgames.world.Camera;
 public class EscortNpc extends Entity {
 
 	/** Velocidade de deslocamento em pixels por frame. */
-	private static final double SPEED = 0.6;
-	/** Pontos de vida do escoltado. */
-	private static final int MAX_HP = 3;
+	private static final double SPEED = 0.75;
+	/** Pontos de vida do escoltado: a fase 8 permite erros sem reinício imediato. */
+	private static final int MAX_HP = 4;
 	/** Raio em que inimigos próximos assustam o escoltado (pausa de caminhada). */
-	private static final double FEAR_RADIUS = 120;
+	private static final double FEAR_RADIUS = 105;
 	/** Frames de pausa quando assustado. */
-	private static final int FEAR_FRAMES = 90;
+	private static final int FEAR_FRAMES = 60;
 	/** Frames de invulnerabilidade após ser atingido. */
 	private static final int HIT_INVULN_FRAMES = 45;
 

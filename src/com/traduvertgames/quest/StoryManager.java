@@ -1,5 +1,7 @@
 package com.traduvertgames.quest;
 
+import java.util.ArrayDeque;
+
 import com.traduvertgames.dialogue.CommanderNpc;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.main.Game;
@@ -143,13 +145,23 @@ public final class StoryManager {
 		}
 	}
 
-	/** Move a entidade para o tile livre mais próximo da preferência, com
-	 *  rotação por fase (tiles[level % tiles.length]) e fallback por anel. */
+	/**
+	 * Move a entidade para um piso alcançável pelo jogador e próximo do ponto
+	 * narrativo. O algoritmo anterior escolhia apenas o tile geometricamente mais
+	 * próximo; no level1 isso podia colocar Ava do outro lado de um muro, deixando
+	 * o waypoint correto, mas o objetivo impossível de concluir.
+	 */
 	private static void moveToNearestFreeTile(Entity e, int[][] tiles, int level) {
 		int[] preferred = tiles[level % tiles.length];
-		int startRadius = 0;
-		int maxRadius = 8;
-		for (int radius = startRadius; radius <= maxRadius; radius++) {
+		int[] reachable = findNearestReachableTile(preferred);
+		if (reachable != null) {
+			e.setX(reachable[0] * World.TILE_SIZE);
+			e.setY(reachable[1] * World.TILE_SIZE);
+			return;
+		}
+
+		// Fallback seguro para testes isolados sem jogador/mapa inicializado.
+		for (int radius = 0; radius <= 8; radius++) {
 			for (int dx = -radius; dx <= radius; dx++) {
 				for (int dy = -radius; dy <= radius; dy++) {
 					if (Math.abs(dx) != radius && Math.abs(dy) != radius) {
@@ -157,42 +169,75 @@ public final class StoryManager {
 					}
 					int tx = preferred[0] + dx;
 					int ty = preferred[1] + dy;
-					if (World.isValidTile(tx, ty) && !World.isWallTile(tx, ty)) {
-						e.setX(tx * 16);
-						e.setY(ty * 16);
+					if (isWalkableTile(tx, ty)) {
+						e.setX(tx * World.TILE_SIZE);
+						e.setY(ty * World.TILE_SIZE);
 						return;
 					}
 				}
 			}
 		}
-		// O tile preferido e o anel de raio 8 falharam (mapa cercado de paredes,
-		// como o nível 1): varre o mapa inteiro por ordem de distância do tile
-		// preferido e escolhe o primeiro chão válido — assim o NPC nunca fica
-		// grudado no canto de spawn, que era a reclamação do jogador.
-		int bestTx = -1;
-		int bestTy = -1;
-		int bestDist = Integer.MAX_VALUE;
-		for (int ty = 0; ty < World.HEIGHT; ty++) {
-			for (int tx = 0; tx < World.WIDTH; tx++) {
-				// Chão válido: o World aplica FloorTile em todos os pixels sem
-				// caso específico, então tile null não persiste — basta rejeitar
-				// paredes (inclui tiles fora dos limites do mapa).
-				if (World.isWallTile(tx, ty)) {
-					continue;
-				}
-				int dist = Math.abs(tx - preferred[0]) + Math.abs(ty - preferred[1]);
-				if (dist < bestDist) {
-					bestDist = dist;
-					bestTx = tx;
-					bestTy = ty;
+	}
+
+	/**
+	 * Procura todos os tiles caminháveis a partir do spawn e escolhe o mais
+	 * próximo do ponto narrativo. O BFS respeita a mesma colisão usada pelo jogo,
+	 * evitando que NPCs sejam colocados em uma sala visualmente próxima, mas
+	 * separada por paredes.
+	 */
+	private static int[] findNearestReachableTile(int[] preferred) {
+		if (Game.player == null || World.tiles == null || World.WIDTH <= 0 || World.HEIGHT <= 0) {
+			return null;
+		}
+		int startX = Game.player.getX() / World.TILE_SIZE;
+		int startY = Game.player.getY() / World.TILE_SIZE;
+		if (!World.isValidTile(startX, startY) || !isWalkableTile(startX, startY)) {
+			return null;
+		}
+
+		int[][] steps = new int[World.WIDTH][World.HEIGHT];
+		for (int x = 0; x < World.WIDTH; x++) {
+			java.util.Arrays.fill(steps[x], -1);
+		}
+		ArrayDeque<int[]> queue = new ArrayDeque<>();
+		queue.add(new int[] { startX, startY });
+		steps[startX][startY] = 0;
+
+		int bestX = -1;
+		int bestY = -1;
+		int bestPreferredDistance = Integer.MAX_VALUE;
+		int bestPathDistance = Integer.MAX_VALUE;
+		while (!queue.isEmpty()) {
+			int[] current = queue.removeFirst();
+			int x = current[0];
+			int y = current[1];
+			int pathDistance = steps[x][y];
+			int preferredDistance = Math.abs(x - preferred[0]) + Math.abs(y - preferred[1]);
+			if (!(x == startX && y == startY)
+					&& (preferredDistance < bestPreferredDistance
+							|| (preferredDistance == bestPreferredDistance && pathDistance < bestPathDistance))) {
+				bestX = x;
+				bestY = y;
+				bestPreferredDistance = preferredDistance;
+				bestPathDistance = pathDistance;
+			}
+
+			int[][] neighbors = { { x + 1, y }, { x - 1, y }, { x, y + 1 }, { x, y - 1 } };
+			for (int[] next : neighbors) {
+				int nx = next[0];
+				int ny = next[1];
+				if (World.isValidTile(nx, ny) && steps[nx][ny] < 0 && isWalkableTile(nx, ny)) {
+					steps[nx][ny] = pathDistance + 1;
+					queue.addLast(new int[] { nx, ny });
 				}
 			}
 		}
-		if (bestTx >= 0) {
-			e.setX(bestTx * 16);
-			e.setY(bestTy * 16);
-		}
-		// Sem alternativa válida: mantém a posição original (seguro).
+		return bestX >= 0 ? new int[] { bestX, bestY } : null;
+	}
+
+	private static boolean isWalkableTile(int tileX, int tileY) {
+		return World.isValidTile(tileX, tileY)
+				&& World.isFree(tileX * World.TILE_SIZE, tileY * World.TILE_SIZE, 0);
 	}
 
 	/** Título de lore exibido ao entrar na fase (banner de abertura). */

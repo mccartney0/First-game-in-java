@@ -79,7 +79,10 @@ public final class WaveManager {
 		arenaWave = 1;
 		arenaTimer = 180;
 		wavesSurvived = 0;
-		announce("ARENA INFINITA", new Color(255, 87, 34));
+		// A arena começa com um período de preparação; a primeira área vazia
+		// não conta como uma onda concluída nem concede recompensa.
+		waveClearedAnnounced = true;
+		announce("ARENA INFINITA — PREPARE-SE", new Color(255, 87, 34));
 	}
 
 	/** Registra uma onda concluída: atualiza placar, drops e escalada. */
@@ -155,6 +158,7 @@ public final class WaveManager {
 		arenaMode = false;
 		arenaWave = 0;
 		arenaTimer = 0;
+		waveClearedAnnounced = false;
 	}
 
 	public static int getArenaWave() {
@@ -179,6 +183,7 @@ public final class WaveManager {
 		arenaTimer = 0;
 		wavesSurvived = 0;
 		bossDefeated = false;
+		waveClearedAnnounced = false;
 	}
 
 	public static void update() {
@@ -264,6 +269,7 @@ public final class WaveManager {
 
 	private static void spawnArenaEnemies() {
 		int count = 2 + arenaWave / 2;
+		boolean spawnedAny = false;
 		for (int i = 0; i < count; i++) {
 			if (Game.enemies.size() >= MAX_ENEMIES_ON_MAP) {
 				return;
@@ -272,8 +278,9 @@ public final class WaveManager {
 			if (spot == null) {
 				return;
 			}
-			Enemy enemy = Enemy.spawnRandomVariant(spot[0], spot[1]);
-			// Escalada de dificuldade: mais vida e dano conforme a onda atual.
+				Enemy enemy = Enemy.spawnRandomVariant(spot[0], spot[1]);
+				spawnedAny = true;
+				// Escalada de dificuldade: mais vida e dano conforme a onda atual.
 			// Rodada 20: curva sub-linear (raiz quadrada da onda) — a linear
 			// (0.22/0.09 por onda) tornava ondas profundas impossíveis; agora a
 			// dificuldade cresce rápido no início e desacelera, mantendo o
@@ -281,12 +288,16 @@ public final class WaveManager {
 			// que antes a partir da onda 6.
 			double depth = Math.sqrt(Math.max(1, wavesSurvived));
 			enemy.boost(1.0 + depth * 0.20, 1.0 + depth * 0.07);
-			Game.entities.add(enemy);
-			Game.enemies.add(enemy);
+							Game.entities.add(enemy);
+				Game.enemies.add(enemy);
+			}
+			if (spawnedAny) {
+				// A próxima área vazia poderá registrar a conclusão desta onda.
+				waveClearedAnnounced = false;
+			}
 		}
-	}
 
-	public static void spawnEnemyAt(int x, int y) {
+		public static void spawnEnemyAt(int x, int y) {
 		Enemy enemy = Enemy.spawnRandomVariant(x, y);
 		Game.entities.add(enemy);
 		Game.enemies.add(enemy);

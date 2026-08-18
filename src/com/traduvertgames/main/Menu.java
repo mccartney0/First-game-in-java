@@ -69,12 +69,16 @@ public class Menu {
 
 	private static final int OPTIONS_INDEX_MUSIC = 0;
 	private static final int OPTIONS_INDEX_MUSIC_VOLUME = 1;
-	private static final int OPTIONS_INDEX_DIFFICULTY = 2;
-	private static final int OPTIONS_INDEX_BACK = 3;
+	private static final int OPTIONS_INDEX_SOUND = 2;
+	private static final int OPTIONS_INDEX_SOUND_VOLUME = 3;
+	private static final int OPTIONS_INDEX_DIFFICULTY = 4;
+	private static final int OPTIONS_INDEX_BACK = 5;
 
 	private static final String[] OPTIONS_LABELS = {
 			"musica",
 			"volume da trilha",
+			"efeitos sonoros",
+			"volume dos efeitos",
 			"dificuldade",
 			"voltar"
 	};
@@ -424,6 +428,18 @@ private void handlePauseSelection() {
 			} else {
 				OptionsConfig.adjustMusicVolume(2);
 			}
+			break;
+		case OPTIONS_INDEX_SOUND:
+			OptionsConfig.toggleSound();
+			SoundManager.play(SoundManager.Event.MENU_SELECT);
+			break;
+		case OPTIONS_INDEX_SOUND_VOLUME:
+			if (shift) {
+				OptionsConfig.adjustSoundVolume(-2);
+			} else {
+				OptionsConfig.adjustSoundVolume(2);
+			}
+			SoundManager.play(SoundManager.Event.MENU_SELECT);
 			break;
 		case OPTIONS_INDEX_DIFFICULTY:
 			OptionsConfig.cycleDifficulty();
@@ -840,18 +856,20 @@ private void handlePauseSelection() {
 		Font optionFont = new Font("arial", Font.PLAIN, 14);
 		g.setFont(optionFont);
 
-		String[] lines = {
-				"WASD/setas: mover — Space: pular — X: atirar — Q/E: armas",
-				"Shift: dash — F: especial — TAB: painel — L: fases — F11: cheia",
-				"Fase 1: recolha as 4 reliquias — Fase 2: derrote o chefe",
-				"Fase 3: ative os obeliscos — Fase 4: evacue sobreviventes",
-				"Fase 5: proteja a pesquisadora e recupere os nucleos",
-				"Matar concede XP e melhoras; a loja abre ao concluir a fase",
-				"PHANTOM (verde furtivo) drena escudo/mana: mantenha distancia!",
-				"GUARDIAN (laranja) regenera escudo — prioridade alta no ataque",
-				"Morrer salva automaticamente; o jogo volta ao menu sozinho",
-				"Enter para voltar"
-		};
+			String[] lines = {
+					"WASD/setas: mover — SPACE: pular — X/clique: atirar",
+					"Q/E ou 1–6: trocar arma — SHIFT: dash — F: especial",
+					"TAB: painel tático — I: inventário — P/ESC: pausa",
+					"Fase 1: fale com Ava e colete 2 artefatos do setor",
+					"Fase 2: ative o beacon, defenda a área e derrote o Warbringer",
+					"Fase 3–5: sobreviva, desative obeliscos, resgate e recupere dados",
+					"Fase 6–8: resista, sabote, defenda e escolte até o núcleo",
+					"Matar concede XP; a loja e as estatísticas aparecem ao concluir a fase",
+					"PHANTOM drena escudo/mana — mantenha distância; elites brilham em dourado",
+					"Morrer salva automaticamente; no game over use setas/A-D e ENTER",
+					"Opções: música, volume da trilha, efeitos, volume e dificuldade",
+					"ENTER ou ESC: voltar"
+			};
 
 		int maxWidth = 0;
 		for (String line : lines) {
@@ -912,12 +930,15 @@ private void handlePauseSelection() {
 		g.setFont(optionFont);
 		// Rodada 22: volume da trilha sonora adaptativa é independente dos efeitos.
 		int musicDb = (int) Math.round(OptionsConfig.getMusicVolume() / 2);
-		String[] lines = {
-				"Música: " + (OptionsConfig.isMusicEnabled() ? "Ligada" : "Desligada"),
-				"Trilha sonora: " + (musicDb > 0 ? "+" : "") + musicDb + " dB",
-				"Dificuldade: " + OptionsConfig.getDifficulty().getDisplayName(),
-				"Voltar"
-		};
+			int soundDb = (int) Math.round(OptionsConfig.getSoundVolume() / 2);
+			String[] lines = {
+					"Música: " + (OptionsConfig.isMusicEnabled() ? "Ligada" : "Desligada"),
+					"Trilha sonora: " + (musicDb > 0 ? "+" : "") + musicDb + " dB",
+					"Efeitos sonoros: " + (OptionsConfig.isSoundEnabled() ? "Ligados" : "Desligados"),
+					"Volume dos efeitos: " + (soundDb > 0 ? "+" : "") + soundDb + " dB",
+					"Dificuldade: " + OptionsConfig.getDifficulty().getDisplayName(),
+					"Voltar"
+			};
 
 		int maxWidth = headerWidth;
 		for (String line : lines) {

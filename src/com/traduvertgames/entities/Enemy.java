@@ -329,7 +329,7 @@ public class Enemy extends Entity {
 
     /**
      * Suaviza vida e dano de um inimigo conforme a fase da campanha (1-8).
-     * Fase 1: 55% dos atributos; fase 2: 72%; fase 3: 85%; fase 4+: 100%.
+     * Fase 1: 60% dos atributos; fase 2: 78%; fase 3: 88%; fase 4+: 100%.
      */
     public static void scaleForPhase(Enemy enemy, int level) {
         if (enemy == null || level > Game.MAX_LEVEL || level < 1) {
@@ -340,12 +340,12 @@ public class Enemy extends Entity {
             return;
         }
         double factor;
-        if (level == 1) {
-            factor = 0.55;
-        } else if (level == 2) {
-            factor = 0.72;
-        } else if (level == 3) {
-            factor = 0.85;
+		if (level == 1) {
+			factor = 0.60;
+		} else if (level == 2) {
+			factor = 0.78;
+		} else if (level == 3) {
+			factor = 0.88;
         } else {
             return;
         }
