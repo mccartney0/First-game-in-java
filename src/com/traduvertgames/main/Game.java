@@ -121,6 +121,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	/** Loja aguardando o level-up ser resolvido antes de abrir. */
 	private static boolean shopPendingOpened = false;
 
+	/**
+	 * Reset completo para testes (rodada 31): reaproveita o reset central do
+	 * GameState e desliga as flags de pós-campanha em memória.
+	 */
+	public static void resetAllForTest() {
+		GameState.resetAll();
+		clearQuestPending();
+		resetTraitorTalked();
+		// Rodada 31: o epílogo dos refugiados é consumido na renderização da
+		// cutscene; desligar explicitamente para os testes partirem limpos.
+		VictoryCutscene.setRefugeeEnding(false);
+	}
+
 	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
 	public static void clearQuestPending() {
 		GameState.questCompletedPending = false;
@@ -252,6 +265,13 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	/** Enter/Escape consumidos pela cutscene de vitória no update(). */
 	private boolean enter = false;
 	private boolean escape = false;
+
+
+	// Rodada 31 — o bônus da Nova campanha+ (+25% vida/mana) é aplicado no
+	// início (onboarding), mas loadFirstPhase() recalcula os máximos pela
+	// dificuldade e perderia o bônus; o consumo da flag de NG+ acontece em
+	// loadFirstPhase(), então esta flag pendente cobre o intervalo.
+	private boolean ngPlusPending = false;
 
         public static int getHighScore() {
                 return GameState.highScore;
@@ -570,12 +590,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		}
 	}
 
-	public static void main(String[] args) throws IOException {
-		Game game = new Game();
-		game.start();
-	}
+		public static void main(String[] args) throws IOException {
+			Game game = new Game();
+			game.start();
+		}
 
-	// Toda a lógica fica no update ou tick
+		// Toda a lógica fica no update ou tick
 	//Primeiro atualiza, depois renderiza
 	public void update() {
 		// Avança de fase assim que a loja aberta por objetivo concluído fecha.
@@ -600,7 +620,12 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			}
 			// Recompensa final da campanha: arma de elite desbloqueada.
 			grantCampaignReward();
-			com.traduvertgames.graficos.VictoryCutscene.start();
+			// Rodada 31 — conteúdo pós-campanha: a campanha concluída pela fase 9
+			// marca a conta, ativa o epílogo dos refugiados e habilita a Nova
+			// campanha+ no menu principal.
+			SaveManager.setCampaignCompleted(true);
+			VictoryCutscene.setRefugeeEnding(true);
+			VictoryCutscene.start();
 		} else if (questCompletedPending) {
 			// Conclusão da fase 7: recompensa de arma da campanha (Canhão de Vazio).
 			if (CUR_LEVEL == 7) {
@@ -1644,6 +1669,31 @@ if (!hidingHud) {
 	}
 
 	/**
+	 * Nova campanha+ (rodada 31): inicia a campanha do zero herdando as armas
+	 * desbloqueadas, os créditos e upgrades permanentes do metagame, com um
+	 * bônus de recursos de +25% sobre a vida e a mana base.
+	 */
+	public void startNewGamePlus() {
+		startNewGame();
+		if (!SaveManager.isNewGamePlus()) {
+			return;
+		}
+		// Bônus de recursos da Nova campanha+: +25% sobre os máximos aplicados
+		// depois da dificuldade da fase inicial (applyDifficultyToPlayerStats).
+		int bonusLife = Math.max(1, (int) Math.round(Player.maxLife * 0.25));
+		int bonusMana = Math.max(0, (int) Math.round(Player.maxMana * 0.25));
+		Player.maxLife += bonusLife;
+		Player.maxMana += bonusMana;
+		Player.life = Player.maxLife;
+		Player.mana = Player.maxMana;
+		// O bônus fica pendente até a fase 1 real ser carregada: a flag de
+		// Nova campanha+ é consumida em loadFirstPhase(), depois de reaplicar
+		// o bônus sobre os máximos recalculados pela dificuldade.
+		this.ngPlusPending = true;
+		SaveManager.setNewGamePlus(false);
+	}
+
+	/**
 	 * Recompensa de arma concedida ao concluir fases da campanha (7 e 8).
 	 * Fase 7: Morteiro do Vazio. Fase 8 (fim da campanha): Drone Sentinela.
 	 */
@@ -1765,6 +1815,22 @@ if (!hidingHud) {
 		CUR_LEVEL = 1;
 		Enemy.enemies = 0;
 		applyDifficultyToPlayerStats();
+		// Rodada 31 — a fase 1 real é carregada depois do bônus da Nova
+		// campanha+ aplicado no novo jogo; reaplicar o bônus de +25% sobre os
+		// máximos recalculados pela dificuldade para não perdê-lo no
+		// carregamento da fase 1. A flag SaveManager.isNewGamePlus() é
+		// consumida assim que o bônus do início do jogo é aplicado (para
+		// não repetir o bônus a cada novo jogo do menu), então o reforço
+		// aqui usa a flag pendente local (ngPlusPending).
+		if (ngPlusPending) {
+			ngPlusPending = false;
+			int bonusLife = Math.max(1, (int) Math.round(Player.maxLife * 0.25));
+			int bonusMana = Math.max(0, (int) Math.round(Player.maxMana * 0.25));
+			Player.maxLife += bonusLife;
+			Player.maxMana += bonusMana;
+			Player.life = Math.max(Player.life, Player.maxLife);
+			Player.mana = Math.max(Player.mana, Player.maxMana);
+		}
 		clampPlayerResources();
 		LevelUpManager.reset();
 		WaveManager.reset();

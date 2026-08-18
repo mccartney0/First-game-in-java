@@ -105,10 +105,18 @@ px[5, 8] = SHIELD
 px[16, 9] = LIFE
 
 # Inimigos: a fase 9 é narrativa (resgate) — o acampamento fica livre para a
-# interação com os refugiados. Três sentinelas patrulham a trilha sul, fora do
-# vale; a dificuldade real de sobrevivência fica para o pós-beacon.
-for (x, y) in ((18, 26), (24, 27), (30, 26)):
+# interação com os refugiados. Duas sentinelas patrulham o canto sul (bem longe
+# da rota de resgate) e o Sentinel da trilha sul foi removido: qualquer
+# pressão na área da líder quebrou o fluxo do resgate (playthrough da rodada
+# 31). A dificuldade real de sobrevivência fica para o pós-beacon.
+for (x, y) in ((5, 27), (10, 28)):
     px[x, y] = SENTINEL
+
+# Kit médico de emergência na rota de resgate (rodada 31): a área da líder
+# fica exposta a investidas ocasionais e o piloto precisa de recuperação no
+# caminho — o NanoMedkit fica em (13, 10), logo após a abertura norte.
+NANOMED = (0xFF, 0x52, 0x52)
+px[13, 10] = NANOMED
 
 img.save('/home/ubuntu/First-game-in-java/res/level9.png')
 print('level9.png gerado:', img.size)
