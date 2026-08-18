@@ -101,10 +101,10 @@ public class CommanderNpc extends InteractiveNpc {
 		public void onInteractionEnd(InteractiveNpc npc) {
 			PilotUpgrades.addCredits(50);
 			if (Game.player != null) {
-				Game.player.setLife(Game.player.getMaxLife());
-				Game.player.setMana(Game.player.getMaxMana());
+				com.traduvertgames.entities.Player.life = com.traduvertgames.entities.Player.maxLife;
+				com.traduvertgames.entities.Player.mana = com.traduvertgames.entities.Player.maxMana;
 			}
-			com.traduvertgames.main.FloatingText.show("RECURSITOS DA COLÔNIA: +50 CRÉDITOS",
+			com.traduvertgames.entities.FloatingText.show("RECURSITOS DA COLÔNIA: +50 CRÉDITOS",
 					Game.WIDTH * Game.SCALE / 2, Game.SCALE * 40,
 					new Color(255, 214, 10), 240);
 		}
