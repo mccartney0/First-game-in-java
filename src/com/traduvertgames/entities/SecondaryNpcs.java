@@ -43,7 +43,8 @@ public final class SecondaryNpcs {
 						new DialogueNode(
 								"Você tem cara de quem aguenta o tranco, piloto. Já viu gente como eu sobreviver sem lutar — nunca. Posso testar você... ou você pode seguir em frente e se lamentar depois.",
 								new String[] { "Aceitar a missão", "Não tenho tempo para isso", "O que ganho com isso?" },
-								new int[] { 1, 4, 2 },
+								// Aceitar vai direto ao progresso; não ativa um prompt intermediário.
+									new int[] { 3, 4, 2 },
 								new Runnable[] {
 										() -> {
 											SideQuest quest = new SideQuest(questId,
@@ -56,7 +57,7 @@ public final class SecondaryNpcs {
 						new DialogueNode(
 								"Espere. Você acha que é fácil? Os comandantes nunca contam quantos caíram antes da fase começar. Mostre serviço e eu cuido da sua recuperação.",
 								new String[] { "Aceito o desafio", "Esquece", null },
-								new int[] { 1, 4, -1 },
+								new int[] { 3, 4, -1 },
 								new Runnable[] {
 										() -> {
 											SideQuest quest = new SideQuest(questId,
@@ -69,7 +70,7 @@ public final class SecondaryNpcs {
 						new DialogueNode(
 								"Honra, piloto. E recursos: kits de reparo, escudo de emergência e crédito extra com os comandantes. Vale cada gota de suor.",
 								new String[] { "Então vamos lá", "Passo", null },
-								new int[] { 1, 4, -1 },
+								new int[] { 3, 4, -1 },
 								new Runnable[] {
 										() -> {
 											SideQuest quest = new SideQuest(questId,
