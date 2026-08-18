@@ -403,6 +403,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// restante do código que ainda lê as cópias estáticas.
 		GameState.killsThisLevel++;
 		killsThisLevel = GameState.killsThisLevel;
+		// Rodada 29 — metagame: cada abatido rende 1 crédito persistente,
+		// que pode ser gasto em melhorias permanentes do piloto.
+		com.traduvertgames.state.PilotUpgrades.addCredits(1);
 		int points = BASE_SCORE_PER_KILL * GameState.comboMultiplier;
 		GameState.score += points;
 		if (GameState.score > GameState.highScore) {
@@ -694,6 +697,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				ParticleSystem.update();
 				FloatingText.update();
 				MissionBanner.update();
+				// Rodada 29 — regeneração passiva do metagame: os upgrades
+				// permanentes de regeneração recuperam vida a cada tick,
+				// respeitando o máximo e sem ressuscitar o piloto abatido.
+				com.traduvertgames.state.PilotUpgrades.regenTick();
 				// O crossfade da música roda no topo do update() para todos os
 				// gameStates (ver linha acima do bloco NORMAL). Inventário
 				// (rodada 22): decai o cooldown de uso.
@@ -773,6 +780,15 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// Já em transição ou loja aberta: não reabrir nem marcar novamente.
 		if (questCompletedPending || ShopManager.isOpen()) {
 			return;
+		}
+		// Rodada 29 — recompensa de créditos por fase concluída da campanha:
+		// 50 créditos pelo avanço de fase e a gravação do saldo no save.
+		com.traduvertgames.state.PilotUpgrades.addCredits(50);
+		if (SaveManager.saveCurrentGame()) {
+			com.traduvertgames.graficos.MissionBanner.show(
+				"FASE CONCLUIDA",
+				"+50 creditos — " + com.traduvertgames.state.PilotUpgrades.summary(),
+				new java.awt.Color(255, 214, 10), java.awt.Color.WHITE, 180);
 		}
 		// Marca que a fase foi concluída: ao fechar a loja (compra ou ESC),
 		// o jogo avança automaticamente para a próxima fase.
@@ -1634,6 +1650,9 @@ if (!hidingHud) {
 	 */
 	private static void grantCampaignReward() {
 		WeaponType reward = CUR_LEVEL == 7 ? WeaponType.VOID_MORTAR : WeaponType.DRONE_SENTINEL;
+		// Rodada 29 — metagame: a conclusão das fases 7 e 8 (chefes) rende
+		// um bônus de 100 créditos além da arma de elite.
+		com.traduvertgames.state.PilotUpgrades.addCredits(100);
 		if (Game.player != null && !Game.player.hasWeaponUnlocked(reward)) {
 			Game.player.unlockWeapon(reward);
 			FloatingText.show("NOVA ARMA: " + reward.getDisplayName().toUpperCase(),
@@ -2041,13 +2060,19 @@ if (!hidingHud) {
                         Player.shield = Player.maxShield;
                 }
 
-                Player.setWeaponCapacityMultiplier(Math.max(0.5, scaledCapacity));
-                if (Player.weapon > Player.maxWeapon) {
-                        Player.weapon = Player.maxWeapon;
-                }
-        }
+		Player.setWeaponCapacityMultiplier(Math.max(0.5, scaledCapacity));
+		if (Player.weapon > Player.maxWeapon) {
+			Player.weapon = Player.maxWeapon;
+		}
 
-        public void clampPlayerResources() {
+		// Rodada 29 — metagame: os upgrades permanentes do piloto (células
+		// vitais, escudo e munição iniciais) são aplicados sobre a base já
+		// escalada pela dificuldade, garantindo consistência em resets de
+		// fase e recarregamentos de save.
+		com.traduvertgames.state.PilotUpgrades.applyToPlayer();
+	}
+
+	public void clampPlayerResources() {
                 if (Player.life <= 0) {
                         Player.life = Player.maxLife;
                 } else if (Player.life > Player.maxLife) {
