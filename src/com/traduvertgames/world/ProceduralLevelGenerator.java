@@ -62,6 +62,7 @@ public final class ProceduralLevelGenerator {
 	private static final Color BEACON = new Color(76, 175, 80, 255);
 	private static final Color DATACORE = new Color(0, 172, 193, 255);
 	private static final Color OVERCLOCK = new Color(0, 229, 255, 255);
+	private static final Color DUNGEON_PORTAL = new Color(170, 0, 255, 255);
 	private static final Color PLAYER = new Color(0, 38, 255, 255);
 
 	/** Largura dos mapas RPG procedurais (tiles). */
@@ -269,10 +270,13 @@ public final class ProceduralLevelGenerator {
 				case DATA_TERMINAL:
 					marker = DATACORE;
 					break;
-				case SUPERVISOR_ARENA:
-					marker = OVERCLOCK;
-					break;
-				default:
+			case SUPERVISOR_ARENA:
+				marker = OVERCLOCK;
+				break;
+			case DUNGEON_ENTRANCE:
+				marker = DUNGEON_PORTAL;
+				break;
+			default:
 					marker = WEAPON;
 					break;
 			}
@@ -307,6 +311,16 @@ public final class ProceduralLevelGenerator {
 				sanctuary.centerX(), sanctuary.centerY());
 		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.SUPERVISOR_ARENA, RpgWorldManager.RegionType.CORE,
 				core.centerX(), core.centerY());
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.DUNGEON_ENTRANCE, RpgWorldManager.RegionType.RUINS,
+				ruins.minX + 3, ruins.maxY - 3);
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.DUNGEON_ENTRANCE, RpgWorldManager.RegionType.MARSH,
+				marsh.minX + 3, marsh.minY + 3);
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.DUNGEON_ENTRANCE, RpgWorldManager.RegionType.TUNDRA,
+				tundra.maxX - 3, tundra.minY + 3);
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.DUNGEON_ENTRANCE, RpgWorldManager.RegionType.SANCTUARY,
+				sanctuary.minX + 3, sanctuary.maxY - 3);
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.DUNGEON_ENTRANCE, RpgWorldManager.RegionType.CORE,
+				core.maxX - 3, core.maxY - 3);
 	}
 
 	private static void registerMobArea(RpgWorldManager.RegionType region, int w, int h, int offset) {

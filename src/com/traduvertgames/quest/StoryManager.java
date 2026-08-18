@@ -6,6 +6,7 @@ import com.traduvertgames.dialogue.CommanderNpc;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.World;
+import com.traduvertgames.world.RpgWorldManager;
 
 /**
  * Posiciona os NPCs da campanha em pontos temáticos do mapa (em vez de deixá-los
@@ -47,6 +48,51 @@ public final class StoryManager {
 		// Pesquisadora Lila (coleta) a partir da fase 3; Mercador Finn
 		// (troca de dados) a partir da fase 5.
 		spawnSecondaryNpcs(level);
+		spawnRegionalNpcs();
+	}
+
+	/** Cria um NPC de missão em cada região do mundo procedural. */
+	private static void spawnRegionalNpcs() {
+		if (!RpgWorldManager.isActive() || Game.entities == null) {
+			return;
+		}
+		for (RpgWorldManager.RegionType region : RpgWorldManager.RegionType.values()) {
+			String npcName = com.traduvertgames.entities.RegionalNpcs.getNameForRegion(region);
+			if (hasNpcNamed(npcName)) {
+				continue;
+			}
+			RpgWorldManager.PointOfInterest poi = findRegionPoi(region);
+			if (poi == null) {
+				continue;
+			}
+			Entity npc = com.traduvertgames.entities.RegionalNpcs.create(region,
+					poi.getTileX() * World.TILE_SIZE, poi.getTileY() * World.TILE_SIZE);
+			Game.entities.add(npc);
+			moveToNearestFreeTile(npc, new int[][] {
+					{ poi.getTileX() + 2, poi.getTileY() },
+					{ poi.getTileX(), poi.getTileY() + 2 },
+					{ poi.getTileX() - 2, poi.getTileY() }
+			}, QuestManager.getCurrentLevel());
+		}
+	}
+
+	private static boolean hasNpcNamed(String name) {
+		for (Entity entity : Game.entities) {
+			if (entity instanceof com.traduvertgames.dialogue.InteractiveNpc
+					&& name.equals(((com.traduvertgames.dialogue.InteractiveNpc) entity).getName())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static RpgWorldManager.PointOfInterest findRegionPoi(RpgWorldManager.RegionType region) {
+		for (RpgWorldManager.PointOfInterest poi : RpgWorldManager.getPointsOfInterest()) {
+			if (poi.getRegion() == region) {
+				return poi;
+			}
+		}
+		return null;
 	}
 
 	private static void spawnSecondaryNpcs(int level) {

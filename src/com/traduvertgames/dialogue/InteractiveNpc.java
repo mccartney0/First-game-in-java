@@ -28,6 +28,7 @@ public class InteractiveNpc extends Entity {
 	private final InteractionListener listener;
 	private boolean finished = false;
 	private boolean wasInteracted = false;
+	private boolean repeatableDialogue = false;
 
 	public InteractiveNpc(int x, int y, String name, Color bodyColor, Color headColor, String[] lines,
 			InteractionListener listener) {
@@ -61,7 +62,12 @@ public class InteractiveNpc extends Entity {
 	}
 
 	public boolean hasFinished() {
-		return finished;
+		return finished && !repeatableDialogue;
+	}
+
+	/** Mantém o NPC disponível para consultas após aceitar uma missão. */
+	public void setRepeatableDialogue(boolean repeatable) {
+		repeatableDialogue = repeatable;
 	}
 
 	/** Indica se o jogador está perto o suficiente para interagir. */
@@ -101,7 +107,7 @@ public class InteractiveNpc extends Entity {
 
 	@Override
 	public void render(Graphics g) {
-		if (finished) {
+		if (finished && !repeatableDialogue) {
 			return;
 		}
 		int screenX = this.getX() - Camera.x;

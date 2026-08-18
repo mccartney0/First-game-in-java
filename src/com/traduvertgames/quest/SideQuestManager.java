@@ -79,14 +79,23 @@ public final class SideQuestManager {
 		public final InventoryManager.ItemType itemType; // COLLECT_N/DELIVER
 		public final int target;
 		public final Reward reward;
+		public final String title;
+		public final String description;
 
 		public SideQuest(String id, Type type, InventoryManager.ItemType itemType, int target,
 				Reward reward) {
+			this(id, type, itemType, target, reward, id, "");
+		}
+
+		public SideQuest(String id, Type type, InventoryManager.ItemType itemType, int target,
+				Reward reward, String title, String description) {
 			this.id = id;
 			this.type = type;
 			this.itemType = itemType;
 			this.target = target;
 			this.reward = reward;
+			this.title = title == null || title.isEmpty() ? id : title;
+			this.description = description == null ? "" : description;
 		}
 	}
 
@@ -104,6 +113,10 @@ public final class SideQuestManager {
 
 	public static SideQuest get(String id) {
 		return quests.get(id);
+	}
+
+	public static boolean isRegistered(String id) {
+		return id != null && quests.containsKey(id);
 	}
 
 	/** Ativa a missão e zera o progresso (nova fase/novo save). */
@@ -204,6 +217,33 @@ public final class SideQuestManager {
 	}
 
 	/** Label legível do progresso (ex.: "5/10 inimigos"). */
+	public static String getActiveQuestTitle() {
+		for (Map.Entry<String, SideQuest> entry : quests.entrySet()) {
+			if (isActive(entry.getKey())) {
+				return entry.getValue().title;
+			}
+		}
+		return "";
+	}
+
+	public static String getActiveQuestDescription() {
+		for (Map.Entry<String, SideQuest> entry : quests.entrySet()) {
+			if (isActive(entry.getKey())) {
+				return entry.getValue().description;
+			}
+		}
+		return "";
+	}
+
+	public static String getActiveQuestProgressLabel() {
+		for (Map.Entry<String, SideQuest> entry : quests.entrySet()) {
+			if (isActive(entry.getKey())) {
+				return getProgressLabel(entry.getKey());
+			}
+		}
+		return "";
+	}
+
 	public static String getProgressLabel(String id) {
 		SideQuest quest = quests.get(id);
 		if (quest == null) {

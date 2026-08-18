@@ -54,8 +54,13 @@ public class World {
 		TeleportPad.linkPairs();
 	}
 
-	/** Carrega um mapa a partir de um arquivo PNG absoluto (mapas procedurais). */
-	private void loadFromFile(java.io.File mapFile) {
+	        /** Carrega uma instância de dungeon sem reconstruir o objetivo principal. */
+        public static void restartDungeonFromFile(String absolutePath) {
+                restartGameCommon(0, absolutePath);
+        }
+
+        /** Carrega um mapa a partir de um arquivo PNG absoluto (mapas procedurais). */
+        private void loadFromFile(java.io.File mapFile) {
 		try {
 			BufferedImage map = ImageIO.read(mapFile);
 			if (map == null) {
@@ -131,9 +136,45 @@ Game.enemies.add(en);
 						&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, false)) {
 // Artillery elite — pulado se já foi abatido (rodada 25)
 Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.ARTILLERY);
-Game.entities.add(en);
-Game.enemies.add(en);
-                                        } else if (pixelAtual == 0xFFFF6A00) {
+										Game.entities.add(en);
+										Game.enemies.add(en);
+										                                        } else if (pixelAtual == 0xFFAA00AA
+												&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
+											Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+													Enemy.Variant.SAPPER, true);
+											Game.entities.add(en);
+											Game.enemies.add(en);
+										} else if (pixelAtual == 0xFF00A6A6
+												&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
+											Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+													Enemy.Variant.ARTILLERY, true);
+											Game.entities.add(en);
+											Game.enemies.add(en);
+										} else if (pixelAtual == 0xFF66CC66
+												&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
+											Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+													Enemy.Variant.PHANTOM, true);
+											Game.entities.add(en);
+											Game.enemies.add(en);
+										} else if (pixelAtual == 0xFFFF6600
+												&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
+											Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+													Enemy.Variant.GUARDIAN, true);
+											Game.entities.add(en);
+											Game.enemies.add(en);
+										} else if (pixelAtual == 0xFF6666CC
+												&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
+											Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+													Enemy.Variant.OVERSEER, true);
+											Game.entities.add(en);
+											Game.enemies.add(en);
+										} else if (pixelAtual == 0xFFCC0033
+												&& !com.traduvertgames.main.EnemyKillTracker.isAlreadyDead(xx, yy, true)) {
+											Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN,
+													Enemy.Variant.OVERSEER_PRIME, true);
+											Game.entities.add(en);
+											Game.enemies.add(en);
+										                                        } else if (pixelAtual == 0xFFFF6A00) {
                                                 // Weapon
                                                 Game.entities.add(new Weapon(xx * 16, yy * 16, 16, 16, Entity.WEAPON_EN));
                                         } else if (pixelAtual == 0xFF4CFF00) {
@@ -276,9 +317,14 @@ Game.enemies.add(en);
 					} else if (pixelAtual == 0xFFA1887F) {
 						// Técnico Hélio — desertor do subsolo (fase 7)
 						Game.entities.add(new TraitorNpc(xx * 16, yy * 16));
-					} else if (pixelAtual == 0xFF673AB7) {
-						Game.entities.add(new TeleportPad(xx * 16, yy * 16));
-					}
+						} else if (pixelAtual == 0xFF673AB7) {
+								Game.entities.add(new TeleportPad(xx * 16, yy * 16));
+						} else if (pixelAtual == 0xFFAA00FF) {
+								Game.entities.add(new DungeonPortal(xx * 16, yy * 16,
+										RpgWorldManager.regionForTile(xx, yy)));
+						} else if (pixelAtual == 0xFFFF00FF) {
+								Game.entities.add(new DungeonExit(xx * 16, yy * 16));
+						}
 					// Floor: pixels sem caso específico (spawns de entidades, bordas
 					// decorativas) viram chão caminhável — evita tiles null e
 					// NullPointerException no render ao avançar de fase

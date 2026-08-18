@@ -46,7 +46,8 @@ public final class RpgWorldManager {
         SUPPLY_DEPOT("Depósito de suprimentos"),
         MARSH_CACHE("Cache de sobrevivência"),
         CONTAINMENT_BEACON("Beacon de contenção"),
-        SUPERVISOR_ARENA("Arena do Supervisor");
+        SUPERVISOR_ARENA("Arena do Supervisor"),
+        DUNGEON_ENTRANCE("Entrada da masmorra");
 
         private final String displayName;
 
@@ -165,6 +166,8 @@ public final class RpgWorldManager {
     private static int mapWidth;
     private static int mapHeight;
     private static RegionType currentRegion;
+    private static RegionType dungeonRegion;
+    private static boolean dungeonMode;
     private static int regionBannerFrames;
 
     private RpgWorldManager() {
@@ -177,6 +180,8 @@ public final class RpgWorldManager {
         mapWidth = Math.max(1, width);
         mapHeight = Math.max(1, height);
         currentRegion = null;
+        dungeonRegion = null;
+        dungeonMode = false;
         regionBannerFrames = 0;
         pointsOfInterest.clear();
         mobAreas.clear();
@@ -190,6 +195,8 @@ public final class RpgWorldManager {
     public static void disable() {
         active = false;
         currentRegion = null;
+        dungeonRegion = null;
+        dungeonMode = false;
         regionBannerFrames = 0;
         pointsOfInterest.clear();
         mobAreas.clear();
@@ -198,6 +205,27 @@ public final class RpgWorldManager {
 
     public static boolean isActive() {
         return active;
+    }
+
+    public static boolean isDungeonMode() {
+        return dungeonMode;
+    }
+
+    /** Ativa a semântica espacial da instância de dungeon carregada. */
+    public static void configureDungeon(RpgWorldManager.RegionType region, int depth) {
+        active = true;
+        dungeonMode = true;
+        dungeonRegion = region == null ? RegionType.CORE : region;
+        currentRegion = dungeonRegion;
+        RpgWorldManager.depth = Math.max(1, depth);
+        regionBannerFrames = 150;
+        pointsOfInterest.clear();
+        mobAreas.clear();
+        BOUNDS.clear();
+        BOUNDS.put(dungeonRegion, boundsFor(dungeonRegion, ProceduralDungeonGenerator.MAP_WIDTH,
+                ProceduralDungeonGenerator.MAP_HEIGHT));
+        mapWidth = ProceduralDungeonGenerator.MAP_WIDTH;
+        mapHeight = ProceduralDungeonGenerator.MAP_HEIGHT;
     }
 
     public static int getDepth() {
@@ -214,6 +242,9 @@ public final class RpgWorldManager {
 
     /** Calcula a região de uma célula pela divisão 3×2 do mundo. */
     public static RegionType regionForTile(int tileX, int tileY) {
+        if (dungeonMode && dungeonRegion != null) {
+            return dungeonRegion;
+        }
         if (mapWidth <= 0 || mapHeight <= 0) {
             return RegionType.REFUGE;
         }
@@ -286,10 +317,16 @@ public final class RpgWorldManager {
     }
 
     public static String getCurrentRegionName() {
+        if (dungeonMode && currentRegion != null) {
+            return "Masmorra: " + currentRegion.getDisplayName();
+        }
         return currentRegion == null ? "Exploração" : currentRegion.getDisplayName();
     }
 
     public static String getCurrentRegionSubtitle() {
+        if (dungeonMode) {
+            return "instância procedural — derrote o chefe e encontre a saída";
+        }
         return currentRegion == null ? "mapeando o setor" : currentRegion.getSubtitle();
     }
 

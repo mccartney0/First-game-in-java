@@ -9,6 +9,7 @@ import com.traduvertgames.entities.Entity;
 import com.traduvertgames.dialogue.InteractiveNpc;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
+import com.traduvertgames.quest.SideQuestManager;
 import com.traduvertgames.world.Camera;
 
 /**
@@ -85,8 +86,11 @@ public final class MissionHud {
 		g2.setColor(new Color(129, 199, 132));
 		g2.drawString(shortProgress, margin + cardWidth - progW - 8, margin + cardHeight - 6);
 
-		// --- Barra de canal (objetivo de defesa) e timer (sobrevivência) ---
-		drawObjectiveWidgets(g2, s, screenWidth);
+			// --- Missão secundária regional ---
+			drawRegionalQuest(g2, s, margin + cardHeight + 4);
+
+			// --- Barra de canal (objetivo de defesa) e timer (sobrevivência) ---
+			drawObjectiveWidgets(g2, s, screenWidth);
 
 		// --- Waypoint apontando para o alvo da missão ---
 		drawWaypoint(g2, s, screenWidth);
@@ -127,6 +131,35 @@ public final class MissionHud {
 	 * Widgets de acompanhamento de objetivos variados: barra de canalização
 	 * (objetivos de defesa) e timer grande centralizado no topo (sobrevivência).
 	 */
+	private static void drawRegionalQuest(Graphics2D g2, int s, int y) {
+		String title = SideQuestManager.getActiveQuestTitle();
+		if (title == null || title.isEmpty()) {
+			return;
+		}
+		String progress = SideQuestManager.getActiveQuestProgressLabel();
+		int margin = 10 * s / 4 + 2;
+		int width = Math.min(Game.WIDTH * s - margin * 2, 220 * s / 4 + 28);
+		int height = 20 * s / 4 + 4;
+		g2.setColor(new Color(24, 12, 36, 190));
+		g2.fillRoundRect(margin, y, width, height, 8, 8);
+		g2.setColor(new Color(206, 147, 216, 180));
+		g2.drawRoundRect(margin, y, width, height, 8, 8);
+		Font font = new Font("SansSerif", Font.PLAIN, 7 * s / 4 + 2);
+		g2.setFont(font);
+		String shortTitle = title;
+		int maxWidth = width - 70;
+		while (shortTitle.length() > 5 && g2.getFontMetrics().stringWidth(shortTitle) > maxWidth) {
+			shortTitle = shortTitle.substring(0, shortTitle.length() - 4) + "...";
+		}
+		g2.setColor(new Color(230, 190, 255));
+		g2.drawString("Secundária", margin + 7, y + 10 * s / 4 + 2);
+		g2.setColor(Color.WHITE);
+		g2.drawString(shortTitle, margin + 7, y + height - 5);
+		g2.setColor(new Color(188, 245, 200));
+		int progressWidth = g2.getFontMetrics().stringWidth(progress);
+		g2.drawString(progress, margin + width - progressWidth - 7, y + height - 5);
+	}
+
 	private static void drawObjectiveWidgets(Graphics2D g2, int s, int screenWidth) {
 		com.traduvertgames.quest.RPGObjective o = unwrapObjective();
 		if (o == null) {

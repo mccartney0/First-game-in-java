@@ -696,9 +696,12 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 					}
 					e.update();
 				}
-				OnboardingManager.update();
+									OnboardingManager.update();
+					// Portais de dungeon agendam a troca para depois do loop de entidades;
+					// isso evita ConcurrentModificationException durante a colisão.
+					com.traduvertgames.world.DungeonManager.processPendingTransition();
 
-				// Cooldown de respiro: decai apenas durante o estado NORMAL (a
+					// Cooldown de respiro: decai apenas durante o estado NORMAL (a
 				// contagem não corre enquanto a tela de estatísticas estiver aberta).
 				// Rodada 28 — o decaimento opera no GameState (reset bem definido).
 				if (GameState.transitionCooldown > 0) {
@@ -1841,6 +1844,7 @@ if (!hidingHud) {
 		}
 		clampPlayerResources();
 		LevelUpManager.reset();
+		com.traduvertgames.world.DungeonManager.reset();
 		WaveManager.reset();
 		DashAbility.reset();
 		UltimateAbility.reset();

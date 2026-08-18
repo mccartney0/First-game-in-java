@@ -1136,6 +1136,7 @@ public class Enemy extends Entity {
         Game.enemies.remove(this);
         Game.entities.remove(this);
         QuestManager.notifyEnemyKilled(this);
+        com.traduvertgames.world.DungeonManager.onEnemyDefeated(this);
         // Modo infinito: matar um chefe no modo arena avança para a próxima
         // fase procedural (novo mapa gerado por semente e rotação de chefes).
         if (this.boss && com.traduvertgames.main.WaveManager.isArenaMode()) {

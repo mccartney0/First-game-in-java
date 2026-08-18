@@ -181,9 +181,11 @@ public final class SaveManager {
 		}
 		// Inventário (rodada 22): quantidades persistidas na sessão.
 		session.put("inventario", new HashMap<String, Object>(InventoryManager.serialize()));
-		// Missões secundárias (rodada 22): progresso e concluídas persistidas.
-		session.put("sideQuests", new HashMap<String, Object>(
-				com.traduvertgames.quest.SideQuestManager.serialize()));
+				// Missões secundárias (rodada 22): progresso e concluídas persistidas.
+				session.put("sideQuests", new HashMap<String, Object>(
+					com.traduvertgames.quest.SideQuestManager.serialize()));
+				session.put("dungeonsCompleted", new HashMap<String, Boolean>(
+					com.traduvertgames.world.DungeonManager.serializeCompletions()));
 			session.put("sideQuestsDone", new HashMap<String, Boolean>(
 					com.traduvertgames.quest.SideQuestManager.getCompleted()));
 			// Bônus escolhidos no level up pertencem à campanha atual e precisam
@@ -561,26 +563,32 @@ public final class SaveManager {
 			InventoryManager.reset();
 		}
 			// Missões secundárias (rodada 22): progresso e concluídas restaurados.
+			// As definições regionais precisam existir mesmo quando o save é carregado
+			// antes de a superfície procedural ser reconstruída.
+			com.traduvertgames.entities.RegionalNpcs.registerDefinitions();
 			Map<String, Object> savedQuests = asMap(session.get("sideQuests"));
 			Map<String, Object> savedDoneRaw = asMap(session.get("sideQuestsDone"));
-			Map<String, Boolean> savedDone = toBooleanMap(savedDoneRaw);
-		if (savedQuests != null || savedDone != null) {
-			Map<String, Integer> questsSnapshot = new HashMap<String, Integer>();
-			if (savedQuests != null) {
-				for (Map.Entry<String, Object> entry : savedQuests.entrySet()) {
-					if (entry.getValue() instanceof Number) {
-						questsSnapshot.put(entry.getKey(),
-								((Number) entry.getValue()).intValue());
+							Map<String, Boolean> savedDone = toBooleanMap(savedDoneRaw);
+				Map<String, Integer> questsSnapshot = new HashMap<String, Integer>();
+				if (savedQuests != null) {
+					for (Map.Entry<String, Object> entry : savedQuests.entrySet()) {
+						if (entry.getValue() instanceof Number) {
+							questsSnapshot.put(entry.getKey(),
+									((Number) entry.getValue()).intValue());
+						}
 					}
 				}
-			}
-			com.traduvertgames.quest.SideQuestManager.deserialize(
-					questsSnapshot,
-					savedDone != null ? new HashMap<String, Boolean>(savedDone)
-							: new HashMap<String, Boolean>());
-		}
+				com.traduvertgames.quest.SideQuestManager.deserialize(
+						questsSnapshot,
+						savedDone != null ? new HashMap<String, Boolean>(savedDone)
+								: new HashMap<String, Boolean>());
 
-		Enemy.enemies = savedEnemies;
+				Map<String, Object> savedDungeonsRaw = asMap(session.get("dungeonsCompleted"));
+				com.traduvertgames.world.DungeonManager.reset();
+				com.traduvertgames.world.DungeonManager.deserializeCompletions(
+					savedDungeonsRaw == null ? null : toBooleanMap(savedDungeonsRaw));
+
+			Enemy.enemies = savedEnemies;
 		Game.setScore(savedScore);
 		Game.setHighScore(Math.max(savedScore, savedHighScore));
 		Game.setBestComboRecord(Math.max(1, savedBestComboRecord));
