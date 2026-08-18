@@ -121,6 +121,19 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	/** Loja aguardando o level-up ser resolvido antes de abrir. */
 	private static boolean shopPendingOpened = false;
 
+	/**
+	 * Reset completo para testes (rodada 31): reaproveita o reset central do
+	 * GameState e desliga as flags de pós-campanha em memória.
+	 */
+	public static void resetAllForTest() {
+		GameState.resetAll();
+		clearQuestPending();
+		resetTraitorTalked();
+		// Rodada 31: o epílogo dos refugiados é consumido na renderização da
+		// cutscene; desligar explicitamente para os testes partirem limpos.
+		VictoryCutscene.setRefugeeEnding(false);
+	}
+
 	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
 	public static void clearQuestPending() {
 		GameState.questCompletedPending = false;

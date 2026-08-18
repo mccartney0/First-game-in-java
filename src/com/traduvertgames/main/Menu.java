@@ -362,7 +362,17 @@ public class Menu {
 		}
 	}
 
-	private void handlePauseSelection() {
+	/** Contagem das opções do menu principal (exposta para testes — rodada 31). */
+	public int getMainMenuOptionCountForTest() {
+		return MAIN_OPTIONS.length;
+	}
+
+	/** Disponibilidade da opção Nova campanha+ (exposta para testes — rodada 31). */
+	public boolean isNewGamePlusAvailableForTest() {
+		return isOptionAvailable("nova campanha+");
+	}
+
+private void handlePauseSelection() {
 		switch (currentOption) {
 		case PAUSE_CONTINUE:
 			closePauseScreen();
