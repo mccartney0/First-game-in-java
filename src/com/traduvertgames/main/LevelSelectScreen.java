@@ -183,7 +183,7 @@ public final class LevelSelectScreen {
 		Game.resetTraitorTalked();
 		Enemy.enemies = 0;
 		Game.setScore(0);
-		LevelUpManager.reset();
+		LevelUpManager.resetProgress();
 		DashAbility.reset();
 		UltimateAbility.reset();
 		WaveManager.reset();

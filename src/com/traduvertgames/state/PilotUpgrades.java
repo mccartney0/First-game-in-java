@@ -129,6 +129,16 @@ public final class PilotUpgrades {
 		}
 		credits -= cost;
 		levels.put(upgrade, levels.get(upgrade) + 1);
+		// A compra deve ser perceptível imediatamente quando existe um piloto
+		// ativo. O recálculo completo e idempotente dos máximos acontece em
+		// Game.applyDifficultyScalingForCurrentLevel() nas transições/reloads.
+		if (upgrade == Upgrade.CELLS && Player.life > 0 && Player.maxLife > 0) {
+			int bonus = cellsBonusPerLevel();
+			double ratio = Player.life / Player.maxLife;
+			Player.maxLife += bonus;
+			Player.life = Math.max(1, Math.min(Player.maxLife,
+					Math.round(Player.maxLife * Math.max(0.0, ratio))));
+		}
 		applyToPlayer();
 		return true;
 	}
@@ -155,23 +165,16 @@ public final class PilotUpgrades {
 	}
 
 	/**
-	 * Aplica os upgrades ao piloto atual: aumenta a vida máxima pelo bônus
-	 * de células, preenche o escudo/mana iniciais nas frações permanentes e
-	 * mantém a vida proporcional ao novo máximo. Chamado depois de
-	 * {@code applyDifficultyToPlayerStats()} para que os bônus sejam
-	 * somados sobre a base já escalada pela dificuldade.
+	 * Aplica os efeitos de recursos iniciais do piloto atual. Os bônus de
+	 * máximos são calculados de forma idempotente em
+	 * {@code Game.applyDifficultyScalingForCurrentLevel()}; manter a alteração
+	 * de {@code maxLife} fora deste método evita que chamadas repetidas
+	 * acumulem o mesmo upgrade.
 	 */
 	public static void applyToPlayer() {
 		if (Player.life == 0 && Player.maxLife > 0) {
 			// Piloto abatido: não ressuscitar apenas por upgrades.
 			return;
-		}
-		int cellsBonus = cellsBonus();
-		if (cellsBonus > 0 && Player.maxLife > 0) {
-			// Preserva a proporção de vida: a vida sobe junto com o máximo.
-			double ratio = Player.maxLife > 0 ? Player.life / (double) Player.maxLife : 0.0;
-			Player.maxLife = Math.max(1, Player.maxLife + cellsBonus);
-			Player.life = Math.max(1, Math.round(Player.maxLife * Math.max(0.0, ratio)));
 		}
 		if (getLevel(Upgrade.SHIELD) > 0 && Player.maxShield > 0) {
 			Player.shield = Math.min(Player.maxShield, Player.shield
@@ -184,18 +187,16 @@ public final class PilotUpgrades {
 	}
 
 	/**
-	 * Regeneração passiva devida aos upgrades: recupera
-	 * {@code levels(REGEN) * 0.5} de vida por chamada (chamado a cada tick
-	 * de {@code ~60 Hz}, o que equivale a {@code levels} de vida por
-	 * segundo), respeitando o máximo.
+	 * Regeneração passiva devida aos upgrades, respeitando o máximo. O loop do
+	 * jogo chama este método a aproximadamente 60 Hz; portanto, cada nível
+	 * recupera cerca de 1 ponto por segundo, e não 30 pontos por segundo.
 	 */
 	public static void regenTick() {
 		int level = getLevel(Upgrade.REGEN);
 		if (level <= 0 || Player.life <= 0) {
 			return;
 		}
-		// 0.5 vida por tick x 2 ticks por nível x ~60 Hz ≈ level vida/s.
-		Player.life = Math.min(Player.maxLife, Player.life + 0.5 * level);
+		Player.life = Math.min(Player.maxLife, Player.life + level / 60.0);
 	}
 
 	// ---------- Persistência ----------

@@ -43,6 +43,15 @@ public final class LevelUpManager {
 	private static final boolean ENABLED = true;
 	private static double xp = 0;
 	private static int playerLevel = 1;
+	/** Bônus acumulados escolhidos durante a campanha atual. */
+	private static int maxLifeBonus = 0;
+	private static int maxManaBonus = 0;
+	private static int maxShieldBonus = 0;
+
+	private static int toInt(Object value) {
+		return value instanceof Number ? ((Number) value).intValue() : 0;
+	}
+
 	private static Upgrade[] pendingChoices = new Upgrade[CHOICES];
 	private static int choiceIndex = 0;
 	private static boolean showingLevelUp = false;
@@ -80,6 +89,21 @@ public final class LevelUpManager {
 		return playerLevel;
 	}
 
+	/** Bônus acumulado de vida máxima das escolhas de level up. */
+	public static int getMaxLifeBonus() {
+		return maxLifeBonus;
+	}
+
+	/** Bônus acumulado de mana máxima das escolhas de level up. */
+	public static int getMaxManaBonus() {
+		return maxManaBonus;
+	}
+
+	/** Bônus acumulado de escudo máximo das escolhas de level up. */
+	public static int getMaxShieldBonus() {
+		return maxShieldBonus;
+	}
+
 	public static boolean isShowingLevelUp() {
 		return showingLevelUp;
 	}
@@ -115,14 +139,17 @@ public final class LevelUpManager {
 		}
 		switch (pendingChoices[index]) {
 		case VIDA_MAXIMA:
+			maxLifeBonus += 25;
 			Player.maxLife += 25;
 			Player.life += 25;
 			break;
 		case MANA_MAXIMA:
+			maxManaBonus += 100;
 			Player.maxMana += 100;
 			Player.mana += 50;
 			break;
 		case ESCUDO_MAXIMO:
+			maxShieldBonus += 30;
 			Player.maxShield += 30;
 			Player.shield += 30;
 			break;
@@ -281,5 +308,42 @@ public final class LevelUpManager {
 			pendingChoices[i] = Upgrade.values()[i % Upgrade.values().length];
 		}
 		choiceIndex = 0;
+	}
+
+	/** Zera o progresso e os bônus temporários de uma nova campanha. */
+	public static void resetProgress() {
+		reset();
+		maxLifeBonus = 0;
+		maxManaBonus = 0;
+		maxShieldBonus = 0;
+	}
+
+	/** Serializa os bônus de máximos escolhidos na campanha atual. */
+	public static java.util.Map<String, Object> serializeBonuses() {
+		java.util.Map<String, Object> map = new java.util.HashMap<String, Object>();
+		map.put("maxLifeBonus", maxLifeBonus);
+		map.put("maxManaBonus", maxManaBonus);
+		map.put("maxShieldBonus", maxShieldBonus);
+		map.put("xp", xp);
+		map.put("playerLevel", playerLevel);
+		return map;
+	}
+
+	/** Restaura os bônus de máximos de um save antigo ou atual. */
+	public static void deserializeBonuses(Object raw) {
+		if (!(raw instanceof java.util.Map<?, ?>)) {
+			return;
+		}
+		java.util.Map<?, ?> map = (java.util.Map<?, ?>) raw;
+		maxLifeBonus = Math.max(0, toInt(map.get("maxLifeBonus")));
+		maxManaBonus = Math.max(0, toInt(map.get("maxManaBonus")));
+		maxShieldBonus = Math.max(0, toInt(map.get("maxShieldBonus")));
+		if (map.get("xp") instanceof Number) {
+			xp = Math.max(0.0, ((Number) map.get("xp")).doubleValue());
+		}
+		if (map.get("playerLevel") instanceof Number) {
+			playerLevel = Math.max(1, Math.min(MAX_PLAYER_LEVEL,
+					((Number) map.get("playerLevel")).intValue()));
+		}
 	}
 }

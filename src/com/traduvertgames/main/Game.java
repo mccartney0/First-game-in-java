@@ -354,7 +354,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// Exceção: durante a restauração de um save (restorePhase), a mesma
 		// fase é recarregada e os abatidos devem ser preservados para o
 		// applyMapPixels não ressuscitar os mobs já derrotados.
-		if (!GameState.restorePhase) {
+		if (!restorePhase && !GameState.restorePhase) {
 			com.traduvertgames.main.EnemyKillTracker.reset();
 		}
 		com.traduvertgames.main.EnemyKillTracker.setCurrentLevel(CUR_LEVEL);
@@ -1621,22 +1621,9 @@ if (!hidingHud) {
                                 return true;
                         }
                 }
-                // Tentativa 2: a codificação manual antiga (legado, save.txt).
-                File file = new File("save.txt");
-                if (!file.exists()) {
-                        return false;
-                }
-                String saver = Menu.loadGame(20);
-                if (saver == null || saver.isEmpty()) {
-                        return false;
-                }
-                try {
-                        Menu.applySave(saver);
-                        return true;
-                } catch (Exception e) {
-                        e.printStackTrace();
-                }
-                return false;
+				// O formato manual save.txt foi descontinuado. SaveManager é o único
+				// caminho suportado, evitando aplicar estado parcialmente decodificado.
+				return false;
         }
 
 	public void startNewGame() {
@@ -1654,8 +1641,11 @@ if (!hidingHud) {
 		CUR_LEVEL = 1;
 		Enemy.enemies = 0;
 			Menu.pause = false;
-		resetPlayerToDefaults();
-		applyDifficultyToPlayerStats();
+			resetPlayerToDefaults();
+			// O level up é temporário à campanha atual; upgrades do piloto ficam
+			// preservados em SaveManager e não são apagados aqui.
+			LevelUpManager.resetProgress();
+			applyDifficultyToPlayerStats();
 		resetTraitorTalked();
 			World.restartGame("level1.png");
 			LevelUpManager.reset();
@@ -2087,29 +2077,36 @@ if (!hidingHud) {
 			// os recursos máximos do piloto crescem para compensar
 			// as ondas cada vez mais agressivas.
 			int survivalDepth = Math.max(0, instance != null ? instance.levelPlus - 1 : 0);
-			baseMaxLife = 1000 + 200 * survivalDepth;
-			baseMaxMana = 1500 + 300 * survivalDepth;
-			baseMaxShield = 600 + 100 * survivalDepth;
-			baseCapacityMultiplier = 4.0;
+				baseMaxLife = 1000 + 200 * survivalDepth;
+				baseMaxMana = 1500 + 300 * survivalDepth;
+				baseMaxShield = 600 + 100 * survivalDepth;
+				baseCapacityMultiplier = 4.0;
 				} else {
 			// Rodada 15: a vida base do piloto cresce suavemente com a fase
 			// (120 na fase 1 até 176 na fase 8) em vez de ficar travada em
 			// 100 — o piloto precisa de folga para aprender as fases iniciais.
-			baseMaxLife = 120 + (CUR_LEVEL - 1) * 8;
-			baseMaxMana = 500;
-			baseMaxShield = 150;
-			baseCapacityMultiplier = 1.0;
+				baseMaxLife = 120 + (CUR_LEVEL - 1) * 8;
+				baseMaxMana = 500;
+				baseMaxShield = 150;
+				baseCapacityMultiplier = 1.0;
 		}
 		// Agressividade e recursos do piloto crescem no arco final da campanha
 		// (fases 7 e 8), refletindo o esforço da colônia para deter a IA.
-		if (CUR_LEVEL >= 7 && CUR_LEVEL <= MAX_LEVEL) {
-			int finalStretch = CUR_LEVEL - 6;
-			baseMaxLife += 10 * finalStretch;          // piloto mais resiliente
-			baseMaxMana += 50 * finalStretch;
-			baseMaxShield += 15 * finalStretch;
-			baseCapacityMultiplier += 0.25 * finalStretch;
-		}
-                applyDifficultyScaling(baseMaxLife, baseMaxMana, baseMaxShield, baseCapacityMultiplier);
+			if (CUR_LEVEL >= 7 && CUR_LEVEL <= MAX_LEVEL) {
+				int finalStretch = CUR_LEVEL - 6;
+				baseMaxLife += 10 * finalStretch;          // piloto mais resiliente
+				baseMaxMana += 50 * finalStretch;
+				baseMaxShield += 15 * finalStretch;
+				baseCapacityMultiplier += 0.25 * finalStretch;
+			}
+			// Bônus de level up e células permanentes entram antes do escalonamento
+			// da dificuldade. Assim, cada recalculo parte da mesma base e não perde
+			// nem duplica melhorias ao recriar o mapa ou carregar um save.
+			baseMaxLife += com.traduvertgames.state.PilotUpgrades.cellsBonus()
+					+ LevelUpManager.getMaxLifeBonus();
+			baseMaxMana += LevelUpManager.getMaxManaBonus();
+			baseMaxShield += LevelUpManager.getMaxShieldBonus();
+	                applyDifficultyScaling(baseMaxLife, baseMaxMana, baseMaxShield, baseCapacityMultiplier);
         }
 
         private static void applyDifficultyScaling(int baseMaxLife, int baseMaxMana, int baseMaxShield,

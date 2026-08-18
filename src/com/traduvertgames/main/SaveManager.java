@@ -184,9 +184,13 @@ public final class SaveManager {
 		// Missões secundárias (rodada 22): progresso e concluídas persistidas.
 		session.put("sideQuests", new HashMap<String, Object>(
 				com.traduvertgames.quest.SideQuestManager.serialize()));
-		session.put("sideQuestsDone", new HashMap<String, Boolean>(
-				com.traduvertgames.quest.SideQuestManager.getCompleted()));
-		Map<String, Object> progress = buildProgressMap(game);
+			session.put("sideQuestsDone", new HashMap<String, Boolean>(
+					com.traduvertgames.quest.SideQuestManager.getCompleted()));
+			// Bônus escolhidos no level up pertencem à campanha atual e precisam
+			// sobreviver à recriação do mapa e ao carregamento do slot.
+			session.put("levelUpBonuses", new HashMap<String, Object>(
+					LevelUpManager.serializeBonuses()));
+			Map<String, Object> progress = buildProgressMap(game);
 		// As flags de diálogos por NPC/fase são persistidas em memória e
 		// refletidas no progress a cada gravação (a migração v2→v3 inicia
 		// o mapa a partir do disco, então ele precisa ser reescrito aqui).
@@ -392,8 +396,7 @@ public final class SaveManager {
 
 	/** Atualiza a seção de campanha global (fases concluídas e fase máxima). */
 	private static void updateCampaign(Map<String, Object> root, Game game) {
-		@SuppressWarnings("unchecked")
-		Map<String, Object> campaign = (Map<String, Object>) root.get("campaign");
+		Map<String, Object> campaign = asMap(root.get("campaign"));
 		if (campaign == null) {
 			campaign = new HashMap<String, Object>();
 			root.put("campaign", campaign);
@@ -406,9 +409,8 @@ public final class SaveManager {
 			// Uma fase é considerada concluída quando o jogador avança além dela:
 			// o save registra a fase ANTERIOR à atual como concluída ao avançar.
 			int completedLevel = reached - 1;
-			if (completedLevel >= 1 && completedLevel < Game.MAX_LEVEL) {
-				@SuppressWarnings("unchecked")
-				List<Object> completed = (List<Object>) campaign.get("completedLevels");
+				if (completedLevel >= 1 && completedLevel < Game.MAX_LEVEL) {
+					List<Object> completed = asList(campaign.get("completedLevels"));
 				if (completed == null) {
 					completed = new ArrayList<Object>();
 					campaign.put("completedLevels", completed);
@@ -416,8 +418,11 @@ public final class SaveManager {
 				if (!completed.contains(completedLevel)) {
 					completed.add(completedLevel);
 				}
+				}
 			}
-		}
+			// asMap() devolve uma cópia validada; recolocar o mapa garante que as
+		// mutações de progresso sejam efetivamente gravadas no root.
+		root.put("campaign", campaign);
 	}
 
 	/** ---------- Recorde de profundidade (rodada 24b) ---------- */
@@ -514,10 +519,14 @@ public final class SaveManager {
 		// Rodada 31 — flags globais pós-campanha restauradas do root do save.
 		restorePostCampaignFlags(root);
 
-		// Migração v1→v2: se o slot é flat (v1), a sessão é o próprio slot.
-		Map<String, Object> session = getSession(slot);
+					// Migração v1→v2: se o slot é flat (v1), a sessão é o próprio slot.
+			Map<String, Object> session = getSession(slot);
+			// Saves anteriores ao campo levelUpBonuses não devem herdar escolhas
+			// da partida que estava aberta antes do carregamento.
+			LevelUpManager.resetProgress();
+			LevelUpManager.deserializeBonuses(session.get("levelUpBonuses"));
 
-		// Valores salvos são aplicados DEPOIS do reload do mundo, pois o
+			// Valores salvos são aplicados DEPOIS do reload do mundo, pois o
 		// restart redefine os máximos de vida/mana/escudo para a fase carregada.
 		double savedLife = toDouble(session.get("vida"));
 		double savedMana = toDouble(session.get("mana"));
@@ -538,9 +547,8 @@ public final class SaveManager {
 		int savedWeaponOrdinal = toInt(session.get("armaAtual"));
 		int savedWeaponMask = toInt(session.get("armasDesbloqueadas"));
 
-		// Inventário (rodada 22): restaura as quantidades salvas da sessão.
-		@SuppressWarnings("unchecked")
-		Map<String, Object> savedInventory = (Map<String, Object>) session.get("inventario");
+			// Inventário (rodada 22): restaura as quantidades salvas da sessão.
+			Map<String, Object> savedInventory = asMap(session.get("inventario"));
 		if (savedInventory != null) {
 			Map<String, Integer> inventory = new HashMap<String, Integer>();
 			for (Map.Entry<String, Object> entry : savedInventory.entrySet()) {
@@ -552,11 +560,10 @@ public final class SaveManager {
 		} else {
 			InventoryManager.reset();
 		}
-		// Missões secundárias (rodada 22): progresso e concluídas restaurados.
-		@SuppressWarnings("unchecked")
-		Map<String, Object> savedQuests = (Map<String, Object>) session.get("sideQuests");
-		@SuppressWarnings("unchecked")
-		Map<String, Boolean> savedDone = (Map<String, Boolean>) session.get("sideQuestsDone");
+			// Missões secundárias (rodada 22): progresso e concluídas restaurados.
+			Map<String, Object> savedQuests = asMap(session.get("sideQuests"));
+			Map<String, Object> savedDoneRaw = asMap(session.get("sideQuestsDone"));
+			Map<String, Boolean> savedDone = toBooleanMap(savedDoneRaw);
 		if (savedQuests != null || savedDone != null) {
 			Map<String, Integer> questsSnapshot = new HashMap<String, Integer>();
 			if (savedQuests != null) {
@@ -668,13 +675,11 @@ public final class SaveManager {
 	}
 
 	/** Restaura o snapshot da melhor partida do root do save (migração v2→v3). */
-	@SuppressWarnings("unchecked")
 	private static void restoreBestRun(Map<String, Object> root) {
-		Object raw = root.get(BEST_RUN_KEY);
-		if (!(raw instanceof Map)) {
+		Map<String, Object> bestRun = asMap(root.get(BEST_RUN_KEY));
+		if (bestRun == null) {
 			return;
 		}
-		Map<String, Object> bestRun = (Map<String, Object>) raw;
 		bestRunKills = toInt(bestRun.get(BEST_KILLS_KEY));
 		bestRunTimeMs = bestRun.get(BEST_TIME_KEY) instanceof Number
 				? ((Number) bestRun.get(BEST_TIME_KEY)).longValue() : 0;
@@ -683,18 +688,15 @@ public final class SaveManager {
 	}
 
 	/** Restaura as flags de diálogos por NPC/fase do slot (migração v2→v3). */
-	@SuppressWarnings("unchecked")
 	private static void restoreNpcDialogues(Map<String, Object> slot) {
-		Object raw = slot.get("progress");
-		if (!(raw instanceof Map)) {
+		Map<String, Object> progress = asMap(slot.get("progress"));
+		if (progress == null) {
 			return;
 		}
-		Map<String, Object> progress = (Map<String, Object>) raw;
-		Object dialoguesRaw = progress.get(NPC_DIALOGUES_KEY);
-		if (!(dialoguesRaw instanceof Map)) {
+		Map<String, Object> dialogues = asMap(progress.get(NPC_DIALOGUES_KEY));
+		if (dialogues == null) {
 			return;
 		}
-		Map<String, Object> dialogues = (Map<String, Object>) dialoguesRaw;
 		for (Map.Entry<String, Object> entry : dialogues.entrySet()) {
 			if ("true".equalsIgnoreCase(String.valueOf(entry.getValue()))) {
 				npcDialogues.put(entry.getKey(), true);
@@ -729,13 +731,11 @@ public final class SaveManager {
 	}
 
 	/** Restaura as flags narrativas salvas (ex.: TraitorNpc da fase 7). */
-	@SuppressWarnings("unchecked")
 	private static void restoreNarrativeFlags(Map<String, Object> slot) {
-		Object raw = slot.get("progress");
-		if (!(raw instanceof Map)) {
+		Map<String, Object> progress = asMap(slot.get("progress"));
+		if (progress == null) {
 			return;
 		}
-		Map<String, Object> progress = (Map<String, Object>) raw;
 		Object talked = progress.get("traitorTalked");
 		Game.resetTraitorTalked();
 		if ("true".equalsIgnoreCase(String.valueOf(talked))) {
@@ -744,28 +744,21 @@ public final class SaveManager {
 	}
 
 	/** Sessão do slot: v2 usa a seção "session"; v1 é o próprio slot (flat). */
-	@SuppressWarnings("unchecked")
 	private static Map<String, Object> getSession(Map<String, Object> slot) {
-		Object raw = slot.get("session");
-		if (raw instanceof Map) {
-			return (Map<String, Object>) raw;
-		}
-		return slot;
+		Map<String, Object> session = asMap(slot.get("session"));
+		return session != null ? session : slot;
 	}
 
 	/** Restaura o estado da missão da fase salva após o reload do mundo. */
-	@SuppressWarnings("unchecked")
 	private static void restoreObjectiveState(Map<String, Object> slot, int savedLevel) {
-		Object raw = slot.get("progress");
-		if (!(raw instanceof Map)) {
+		Map<String, Object> progress = asMap(slot.get("progress"));
+		if (progress == null) {
 			return;
 		}
-		Map<String, Object> progress = (Map<String, Object>) raw;
-		Object rawState = progress.get("objectiveState");
-		if (!(rawState instanceof Map)) {
+		Map<String, Object> objectiveState = asMap(progress.get("objectiveState"));
+		if (objectiveState == null) {
 			return;
 		}
-		Map<String, Object> objectiveState = (Map<String, Object>) rawState;
 		Object state = objectiveState.get(String.valueOf(savedLevel));
 		if (state instanceof String) {
 			com.traduvertgames.quest.QuestManager.deserializeObjectiveState((String) state);
@@ -804,8 +797,7 @@ public final class SaveManager {
 		if (root == null) {
 			return 0;
 		}
-		@SuppressWarnings("unchecked")
-		Map<String, Object> campaign = (Map<String, Object>) root.get("campaign");
+		Map<String, Object> campaign = asMap(root.get("campaign"));
 		if (campaign == null) {
 			return 0;
 		}
@@ -835,16 +827,14 @@ public final class SaveManager {
 		if (slot == null) {
 			return "";
 		}
-		Object raw = slot.get("progress");
-		if (!(raw instanceof Map)) {
+		Map<String, Object> progress = asMap(slot.get("progress"));
+		if (progress == null) {
 			return "";
 		}
-		Map<String, Object> progress = (Map<String, Object>) raw;
-		Object rawState = progress.get("objectiveState");
-		if (!(rawState instanceof Map)) {
+		Map<String, Object> objectiveState = asMap(progress.get("objectiveState"));
+		if (objectiveState == null) {
 			return "";
 		}
-		Map<String, Object> objectiveState = (Map<String, Object>) rawState;
 		// Procura o estado pela fase salva no slot e, se não houver, pela fase
 		// registrada na sessão (o save pode ter sido feito com uma fase
 		// ligeiramente diferente da exibida no rótulo do slot).
@@ -930,7 +920,46 @@ public final class SaveManager {
 
 	/** ---------- Serialização JSON manual (sem dependências externas) ---------- */
 
-	@SuppressWarnings("unchecked")
+	/** Converte um objeto JSON em mapa string-object sem cast unchecked. */
+	private static Map<String, Object> asMap(Object raw) {
+		if (!(raw instanceof Map<?, ?>)) {
+			return null;
+		}
+		Map<?, ?> source = (Map<?, ?>) raw;
+		Map<String, Object> result = new HashMap<String, Object>();
+		for (Map.Entry<?, ?> entry : source.entrySet()) {
+			if (entry.getKey() instanceof String) {
+				result.put((String) entry.getKey(), entry.getValue());
+			}
+		}
+		return result;
+	}
+
+	/** Converte uma lista JSON em lista de objetos preservando valores brutos. */
+	private static List<Object> asList(Object raw) {
+		if (!(raw instanceof List<?>)) {
+			return null;
+		}
+		return new ArrayList<Object>((List<?>) raw);
+	}
+
+	/** Converte flags JSON em booleanos apenas para chaves string válidas. */
+	private static Map<String, Boolean> toBooleanMap(Map<String, Object> raw) {
+		if (raw == null) {
+			return null;
+		}
+		Map<String, Boolean> result = new HashMap<String, Boolean>();
+		for (Map.Entry<String, Object> entry : raw.entrySet()) {
+			Object value = entry.getValue();
+			if (value instanceof Boolean) {
+				result.put(entry.getKey(), (Boolean) value);
+			} else if (value != null) {
+				result.put(entry.getKey(), Boolean.valueOf(String.valueOf(value)));
+			}
+		}
+		return result;
+	}
+
 	private static Map<String, Object> loadRoot() {
 		if (!SAVE_FILE.exists()) {
 			return emptyRoot();
@@ -944,8 +973,9 @@ public final class SaveManager {
 			}
 			reader.close();
 			Object parsed = JsonParser.parse(builder.toString());
-			if (parsed instanceof Map) {
-				return (Map<String, Object>) parsed;
+			Map<String, Object> parsedRoot = asMap(parsed);
+			if (parsedRoot != null) {
+				return parsedRoot;
 			}
 		} catch (Exception ignored) {
 			// Arquivo malformado (ex.: corrupção por queda de energia):
@@ -957,17 +987,13 @@ public final class SaveManager {
 		return emptyRoot();
 	}
 
-	@SuppressWarnings("unchecked")
 	private static List<Map<String, Object>> getSlots(Map<String, Object> root) {
 		Object raw = root.get("slots");
 		List<Map<String, Object>> slots = new ArrayList<Map<String, Object>>();
-		if (raw instanceof List) {
+		if (raw instanceof List<?>) {
 			for (Object entry : (List<?>) raw) {
-				if (entry instanceof Map) {
-					slots.add((Map<String, Object>) entry);
-				} else {
-					slots.add(new HashMap<String, Object>());
-				}
+				Map<String, Object> slot = asMap(entry);
+				slots.add(slot != null ? slot : new HashMap<String, Object>());
 			}
 		}
 		while (slots.size() < SLOT_COUNT) {

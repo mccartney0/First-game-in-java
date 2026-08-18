@@ -180,6 +180,10 @@ public class SaveLoadLogicTest {
 	}
 
 	private static void setKills(int value) throws Exception {
+		// GameState é a fonte atual dos contadores; o campo espelhado de Game
+		// permanece apenas por compatibilidade com testes antigos.
+		com.traduvertgames.state.GameState.killsThisLevel = value;
+		com.traduvertgames.state.GameState.levelStartTime = System.currentTimeMillis() - 1_000L;
 		Field f = Game.class.getDeclaredField("killsThisLevel");
 		f.setAccessible(true);
 		f.set(null, value);
