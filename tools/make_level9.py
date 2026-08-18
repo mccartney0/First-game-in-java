@@ -68,10 +68,13 @@ for x in (7, 39):
     px[x, 10] = WHITE
     px[x, 21] = WHITE
 
-# Spawn seguro do player no canto noroeste (área de chegada)
+# Spawn seguro do player no canto noroeste (área de chegada) —
+# um único tile para evitar spawn duplicado que posiciona o player fora do mapa
+px[3, 3] = SPAWN
 for yy in range(2, 5):
     for xx in range(2, 5):
-        px[xx, yy] = SPAWN
+        if (xx, yy) != (3, 3):
+            px[xx, yy] = GRASS
 
 # Curandeiro Léo em alcova protegida a oeste do vale
 px[6, 6] = HEALER
@@ -94,14 +97,15 @@ px[18, 18] = LIFE
 px[32, 18] = SHIELD
 px[14, 26] = LIFE
 px[30, 27] = LIFE
+# Itens de suporte na rota de chegada (área segura a norte da muralha)
+px[5, 8] = SHIELD
+px[16, 9] = LIFE
 
-# Inimigos: Wardens e Sentinels nas bordas do vale, Ravagers no sul
-# Norte do vale
-for x in (10, 14, 20, 26, 32, 36):
-    px[x, 4] = WARDEN
-# Corredor norte do vale
+# Inimigos: Sentinels dentro do vale, Ravagers na trilha sul e nos flancos.
+# A área de chegada (NW) é segura — o desafio real fica no vale central.
+# Wardens patrulham o corredor entre a muralha norte e o vale
 for x in (12, 18, 24, 30, 36):
-    px[x, 7] = WARDEN
+    px[x, 12] = WARDEN
 # Dentro do vale (sobre lama)
 for x in (11, 15, 20, 28, 33, 36):
     px[x, 13] = SENTINEL
