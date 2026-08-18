@@ -155,6 +155,12 @@ public class Player extends Entity {
                         dir = down_dir;
                         y += effectiveSpeed;
                 }
+                // Clamp de borda: impede que o player saia da área do mapa
+                // (fora do mapa não há tiles nem paredes — bug da fase 9).
+                if (World.tiles != null) {
+                        x = Math.max(0, Math.min(World.WIDTH * World.TILE_SIZE - mwidth, x));
+                        y = Math.max(0, Math.min(World.HEIGHT * World.TILE_SIZE - mheight, y));
+                }
                 if (onIce) {
                         // Sem comando: desliza até parar.
                         if (!moved && (Math.abs(inertiaDx) > 0.05 || Math.abs(inertiaDy) > 0.05)) {
