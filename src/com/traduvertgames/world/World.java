@@ -334,6 +334,7 @@ Game.enemies.add(en);
         }
 
         public static void restartGame(String level) {
+                RpgWorldManager.disable();
                 restartGameCommon(parseLevelNumber(level), "/" + level);
         }
 

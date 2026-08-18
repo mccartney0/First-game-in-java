@@ -43,6 +43,9 @@ public final class ProceduralLevelGenerator {
 	private static final Color BLACK = new Color(0, 0, 0, 255);
 	private static final Color WALL = new Color(255, 255, 255, 255);
 	private static final Color DESTRUCT = new Color(128, 128, 128, 255);
+	private static final Color GRASS = new Color(124, 179, 66, 255);
+	private static final Color MUD = new Color(109, 76, 65, 255);
+	private static final Color ICE = new Color(176, 190, 197, 255);
 
 	private static final Color ENEMY = new Color(255, 0, 0, 255);
 	private static final Color WARDEN = new Color(63, 81, 181, 255);
@@ -55,12 +58,16 @@ public final class ProceduralLevelGenerator {
 	private static final Color ELITE = new Color(255, 200, 0, 255);
 	private static final Color LIFEPACK = new Color(76, 255, 0, 255);
 	private static final Color NANO = new Color(255, 82, 82, 255);
+	private static final Color WEAPON = new Color(255, 106, 0, 255);
+	private static final Color BEACON = new Color(76, 175, 80, 255);
+	private static final Color DATACORE = new Color(0, 172, 193, 255);
+	private static final Color OVERCLOCK = new Color(0, 229, 255, 255);
 	private static final Color PLAYER = new Color(0, 38, 255, 255);
 
-	/** Largura padrão dos mapas procedurais (tiles). */
-	public static final int MAP_WIDTH = 46;
-	/** Altura padrão dos mapas procedurais (tiles). */
-	public static final int MAP_HEIGHT = 30;
+	/** Largura dos mapas RPG procedurais (tiles). */
+	public static final int MAP_WIDTH = 96;
+	/** Altura dos mapas RPG procedurais (tiles). */
+	public static final int MAP_HEIGHT = 64;
 
 	/** Cap da densidade de inimigos: impede mapas injogáveis em profundidades altas. */
 	public static final int MAX_ENEMY_TARGET = 20;
@@ -84,11 +91,13 @@ public final class ProceduralLevelGenerator {
 
 		// Base: tudo parede, depois escava o chão.
 		fill(map, w, h, WALL);
-		carveRooms(map, w, h, rng, depth);
-		carveCorridors(map, w, h, rng);
-		border(map, w, h);
+			carveRooms(map, w, h, rng, depth);
+			carveCorridors(map, w, h, rng);
+			border(map, w, h);
+			paintRegions(map, w, h, depth);
+			placePoiMarkers(map);
 
-		// Tile a tile: escaneia o chão livre e decide ocupação.
+			// Tile a tile: escaneia o chão livre e decide ocupação.
 		placeEntities(map, w, h, rng, depth);
 		placeBoss(map, w, h, rng, depth);
 
@@ -97,10 +106,12 @@ public final class ProceduralLevelGenerator {
 		if (!validate(map)) {
 			fill(map, w, h, WALL);
 			Random altRng = new Random(depth * 53L + 77L);
-			carveRooms(map, w, h, altRng, depth);
-			carveCorridors(map, w, h, altRng);
-			border(map, w, h);
-			placeEntities(map, w, h, altRng, depth);
+				carveRooms(map, w, h, altRng, depth);
+				carveCorridors(map, w, h, altRng);
+				border(map, w, h);
+				paintRegions(map, w, h, depth);
+				placePoiMarkers(map);
+				placeEntities(map, w, h, altRng, depth);
 			placeBoss(map, w, h, altRng, depth);
 		}
 
@@ -114,41 +125,38 @@ public final class ProceduralLevelGenerator {
 		return file;
 	}
 
-	/** Escava a sala de entrada e 2–3 salas secundárias conectadas. */
+	/** Escava as seis macro-regiões do mundo e a área segura inicial. */
 	private static void carveRooms(BufferedImage map, int w, int h, Random rng, int depth) {
-		// Sala de entrada (superior esquerda) — sempre livre para o jogador.
+		// Sala segura do spawn fixo do jogador.
 		carveBox(map, w, h, 2, 2, 9, 7);
+		int[][] anchors = regionAnchors(w, h);
+		for (int[] anchor : anchors) {
+			int roomW = anchor[2];
+			int roomH = anchor[3];
+			carveBox(map, w, h, anchor[0] - roomW / 2, anchor[1] - roomH / 2, roomW, roomH);
+			// Varia a silhueta de cada região sem remover a passagem central.
+			int pillars = 2 + Math.floorMod(depth + anchor[0] + anchor[1], 4);
+			for (int i = 0; i < pillars; i++) {
+				int px = anchor[0] - roomW / 2 + 2 + rng.nextInt(Math.max(2, roomW - 4));
+				int py = anchor[1] - roomH / 2 + 2 + rng.nextInt(Math.max(2, roomH - 4));
+				if (isFloor(map, w, px, py)
+						&& Math.abs(px - anchor[0]) + Math.abs(py - anchor[1]) > 3) {
+					map.setRGB(px, py, DESTRUCT.getRGB());
+				}
+			}
+		}
+	}
 
-		// 3 templates de layout rotativos por profundidade (depth % 3):
-		// 0 = sala aberta (grandes salas, poucas barreiras),
-		// 1 = corredores (salas menores e mais estreitas),
-		// 2 = câmaras (salas grandes separadas por paredes).
-		int layout = depth % 3;
-		int rooms = 2 + (depth % 3); // 2 a 4 salas por profundidade
-		int roomMinW = layout == 1 ? 4 : 6;
-		int roomMinH = layout == 1 ? 3 : 5;
-		int rx = 14, ry = 2;
-		for (int i = 0; i < rooms; i++) {
-			int rw = roomMinW + rng.nextInt(4);
-			int rh = roomMinH + rng.nextInt(4);
-			if (layout == 2 && rng.nextBoolean()) {
-				rw += 2; // câmaras tendem a ser maiores
-			}
-			// Desloca a sala para dentro do mapa, evitando a borda.
-			rx = Math.max(4, Math.min(w - rw - 3, rx + 6 + rng.nextInt(5)));
-			ry = Math.max(2, Math.min(h - rh - 3, ry + (rng.nextBoolean() ? 6 : -6)));
-			carveBox(map, w, h, rx, ry, rw, rh);
-		}
-		// Pilares decorativos (paredes destrutíveis isoladas no chão):
-		// câmaras ganham mais barreiras; salas abertas quase nenhum.
-		int pillars = layout == 2 ? 9 : (layout == 1 ? 5 : 2);
-		for (int i = 0; i < pillars; i++) {
-			int px = 4 + rng.nextInt(w - 8);
-			int py = 2 + rng.nextInt(h - 6);
-			if (isFloor(map, w, px, py)) {
-				map.setRGB(px, py, DESTRUCT.getRGB());
-			}
-		}
+	/** Âncoras das seis regiões: refúgio, ruínas, pântano, tundra, santuário e núcleo. */
+	private static int[][] regionAnchors(int w, int h) {
+		return new int[][] {
+			{ Math.max(7, w / 6), Math.max(7, h / 4), 18, 12 },
+			{ w / 2, Math.max(7, h / 4), 22, 14 },
+			{ Math.max(7, w / 6), (h * 3) / 4, 20, 14 },
+			{ w / 2, (h * 3) / 4, 22, 15 },
+			{ (w * 5) / 6, Math.max(7, h / 4), 20, 14 },
+			{ (w * 5) / 6, (h * 3) / 4, 20, 16 }
+		};
 	}
 
 	private static void carveBox(BufferedImage map, int w, int h, int x, int y, int bw, int bh) {
@@ -161,46 +169,49 @@ public final class ProceduralLevelGenerator {
 		}
 	}
 
-	/** Conecta as salas escavadas com corredores em L (garantindo navegabilidade). */
+	/** Conecta as seis salas por corredores de duas células de largura. */
 	private static void carveCorridors(BufferedImage map, int w, int h, Random rng) {
-		// Varre o mapa: chão escavado é coletado; conecta o centro de massa
-		// das regiões de chão por caminhos retos até o canto do jogador.
-		int playerX = 4, playerY = 4;
-		for (int y = 2; y < h - 2; y += 4) {
-			for (int x = 2; x < w - 2; x += 4) {
-				// Só conecta células que já são chão (dentro de uma sala).
-				if (!isFloor(map, w, x, y)) {
-					continue;
-				}
-				int cx = x, cy = y;
-				boolean horizontalFirst = rng.nextBoolean();
-				if (horizontalFirst) {
-					while (cx != playerX) {
-						carve(map, w, h, cx, cy);
-						cx += cx > playerX ? -1 : 1;
-					}
-					while (cy != playerY) {
-						carve(map, w, h, cx, cy);
-						cy += cy > playerY ? -1 : 1;
-					}
-				} else {
-					while (cy != playerY) {
-						carve(map, w, h, cx, cy);
-						cy += cy > playerY ? -1 : 1;
-					}
-					while (cx != playerX) {
-						carve(map, w, h, cx, cy);
-						cx += cx > playerX ? -1 : 1;
-					}
-				}
+		int[][] anchors = regionAnchors(w, h);
+		int playerX = 4;
+		int playerY = 4;
+		for (int i = 0; i < anchors.length; i++) {
+			int targetX = anchors[i][0];
+			int targetY = anchors[i][1];
+			int fromX = i == 0 ? playerX : anchors[i - 1][0];
+			int fromY = i == 0 ? playerY : anchors[i - 1][1];
+			boolean horizontalFirst = ((i + rng.nextInt(2)) % 2 == 0);
+			if (horizontalFirst) {
+				carveCorridorSegment(map, w, h, fromX, fromY, targetX, fromY);
+				carveCorridorSegment(map, w, h, targetX, fromY, targetX, targetY);
+			} else {
+				carveCorridorSegment(map, w, h, fromX, fromY, fromX, targetY);
+				carveCorridorSegment(map, w, h, fromX, targetY, targetX, targetY);
 			}
 		}
-		// Corredor principal horizontal + vertical de fallback garantido.
-		for (int x = 2; x < w - 2; x++) {
-			carve(map, w, h, x, h / 2);
-		}
-		for (int y = 2; y < h - 2; y++) {
-			carve(map, w, h, w / 3, y);
+		// Dois eixos de fallback mantêm o spawn conectado mesmo com salas ruins.
+		carveCorridorSegment(map, w, h, playerX, playerY, w - 4, playerY);
+		carveCorridorSegment(map, w, h, playerX, playerY, playerX, h - 4);
+	}
+
+	private static void carveCorridorSegment(BufferedImage map, int w, int h,
+			int x0, int y0, int x1, int y1) {
+		int stepX = Integer.compare(x1, x0);
+		int stepY = Integer.compare(y1, y0);
+		int x = x0;
+		int y = y0;
+		while (true) {
+			carve(map, w, h, x, y);
+			carve(map, w, h, x + 1, y);
+			carve(map, w, h, x, y + 1);
+			if (x == x1 && y == y1) {
+				break;
+			}
+			if (x != x1) {
+				x += stepX;
+			}
+			if (y != y1) {
+				y += stepY;
+			}
 		}
 	}
 
@@ -221,6 +232,89 @@ public final class ProceduralLevelGenerator {
 		}
 	}
 
+	/**
+	 * Aplica a identidade visual das regiões e reserva pontos de interesse.
+	 * O mapa continua monocromático onde há paredes, mas os terrenos jogáveis
+	 * passam a comunicar a geografia do mundo sem exigir novos sprites.
+	 */
+	private static void paintRegions(BufferedImage map, int w, int h, int depth) {
+		RpgWorldManager.configure(depth, w, h);
+		for (int y = 1; y < h - 1; y++) {
+			for (int x = 1; x < w - 1; x++) {
+				if (!isFloor(map, w, x, y)) {
+					continue;
+				}
+				RpgWorldManager.RegionType region = RpgWorldManager.regionForTile(x, y);
+				Color terrain = region == RpgWorldManager.RegionType.MARSH ? MUD
+						: region == RpgWorldManager.RegionType.TUNDRA ? ICE
+						: region == RpgWorldManager.RegionType.REFUGE ? GRASS : BLACK;
+				map.setRGB(x, y, terrain.getRGB());
+			}
+		}
+
+					registerRegionContent(w, h);
+	}
+
+	private static void placePoiMarkers(BufferedImage map) {
+		for (RpgWorldManager.PointOfInterest poi : RpgWorldManager.getPointsOfInterest()) {
+			Color marker;
+			switch (poi.getType()) {
+				case REFUGE_GATE:
+				case CONTAINMENT_BEACON:
+					marker = BEACON;
+					break;
+				case MEDICAL_SHELTER:
+					marker = LIFEPACK;
+					break;
+				case DATA_TERMINAL:
+					marker = DATACORE;
+					break;
+				case SUPERVISOR_ARENA:
+					marker = OVERCLOCK;
+					break;
+				default:
+					marker = WEAPON;
+					break;
+			}
+			map.setRGB(poi.getTileX(), poi.getTileY(), marker.getRGB());
+		}
+	}
+
+	private static void registerRegionContent(int w, int h) {
+		registerMobArea(RpgWorldManager.RegionType.RUINS, w, h, 1);
+		registerMobArea(RpgWorldManager.RegionType.MARSH, w, h, 2);
+		registerMobArea(RpgWorldManager.RegionType.TUNDRA, w, h, 3);
+		registerMobArea(RpgWorldManager.RegionType.SANCTUARY, w, h, 4);
+		registerMobArea(RpgWorldManager.RegionType.CORE, w, h, 5);
+
+		RpgWorldManager.RegionBounds refuge = RpgWorldManager.getBounds(RpgWorldManager.RegionType.REFUGE);
+		RpgWorldManager.RegionBounds ruins = RpgWorldManager.getBounds(RpgWorldManager.RegionType.RUINS);
+		RpgWorldManager.RegionBounds marsh = RpgWorldManager.getBounds(RpgWorldManager.RegionType.MARSH);
+		RpgWorldManager.RegionBounds tundra = RpgWorldManager.getBounds(RpgWorldManager.RegionType.TUNDRA);
+		RpgWorldManager.RegionBounds sanctuary = RpgWorldManager.getBounds(RpgWorldManager.RegionType.SANCTUARY);
+		RpgWorldManager.RegionBounds core = RpgWorldManager.getBounds(RpgWorldManager.RegionType.CORE);
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.REFUGE_GATE, RpgWorldManager.RegionType.REFUGE,
+				refuge.centerX(), refuge.centerY());
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.MEDICAL_SHELTER, RpgWorldManager.RegionType.REFUGE,
+				refuge.minX + 4, refuge.minY + 4);
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.SUPPLY_DEPOT, RpgWorldManager.RegionType.RUINS,
+				ruins.centerX(), ruins.centerY());
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.MARSH_CACHE, RpgWorldManager.RegionType.MARSH,
+				marsh.centerX(), marsh.centerY());
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.CONTAINMENT_BEACON, RpgWorldManager.RegionType.TUNDRA,
+				tundra.centerX(), tundra.centerY());
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.DATA_TERMINAL, RpgWorldManager.RegionType.SANCTUARY,
+				sanctuary.centerX(), sanctuary.centerY());
+		RpgWorldManager.registerPoi(RpgWorldManager.PoiType.SUPERVISOR_ARENA, RpgWorldManager.RegionType.CORE,
+				core.centerX(), core.centerY());
+	}
+
+	private static void registerMobArea(RpgWorldManager.RegionType region, int w, int h, int offset) {
+		RpgWorldManager.RegionBounds bounds = RpgWorldManager.getBounds(region);
+		RpgWorldManager.registerMobArea(region, bounds.centerX() + (offset % 2 == 0 ? 4 : -4),
+				bounds.centerY() + (offset % 3 == 0 ? 3 : -3), 7, 4);
+	}
+
 	/** Distribui inimigos e itens no chão livre. */
 	private static void placeEntities(BufferedImage map, int w, int h, Random rng, int depth) {
 		// Spawn do jogador fixo no tile (3,3) da sala de entrada — sempre
@@ -234,18 +328,22 @@ public final class ProceduralLevelGenerator {
 		int attempts = 0;
 		while (placed < enemyTarget && attempts < 4000) {
 			attempts++;
-			int x = 2 + rng.nextInt(w - 4);
-			int y = 2 + rng.nextInt(h - 4);
-			if (!isFloor(map, w, x, y)) {
-				continue;
-			}
-			// Zona segura do spawn fixo do jogador.
+				RpgWorldManager.MobArea area = RpgWorldManager.getMobAreas().isEmpty()
+						? null : RpgWorldManager.getMobAreas().get(placed % RpgWorldManager.getMobAreas().size());
+				int x = area == null ? 2 + rng.nextInt(w - 4)
+						: area.getCenterX() + rng.nextInt(area.getRadius() * 2 + 1) - area.getRadius();
+				int y = area == null ? 2 + rng.nextInt(h - 4)
+						: area.getCenterY() + rng.nextInt(area.getRadius() * 2 + 1) - area.getRadius();
+				if (!isFloor(map, w, x, y) || isNearReservedPoi(x, y, 3)) {
+					continue;
+				}
+				// Zona segura do spawn fixo do jogador.
 			if (Math.hypot(x - PLAYER_SPAWN_X, y - PLAYER_SPAWN_Y) < 6) {
 				continue;
 			}
-				if (map.getRGB(x, y) != BLACK.getRGB()) {
-					continue;
-				}
+					if (!isWalkableColor(map.getRGB(x, y))) {
+						continue;
+					}
 				// Rolagem da ocupação: a maioria inimigos, alguns itens.
 				// Rodada 24b: tropas de elite (amarelo-dourado) entram a partir da
 				// profundidade 3, com cap progressivo de 1 + depth/3 por mapa.
@@ -316,7 +414,22 @@ public final class ProceduralLevelGenerator {
 		if (x <= 0 || y <= 0 || x >= w - 1 || y >= map.getHeight() - 1) {
 			return false;
 		}
-		return map.getRGB(x, y) == BLACK.getRGB();
+		return isWalkableColor(map.getRGB(x, y));
+	}
+
+	private static boolean isWalkableColor(int rgb) {
+		return rgb == BLACK.getRGB() || rgb == GRASS.getRGB() || rgb == MUD.getRGB() || rgb == ICE.getRGB();
+	}
+
+	private static boolean isNearReservedPoi(int x, int y, int radius) {
+		for (RpgWorldManager.PointOfInterest poi : RpgWorldManager.getPointsOfInterest()) {
+			int dx = x - poi.getTileX();
+			int dy = y - poi.getTileY();
+			if (dx * dx + dy * dy <= radius * radius) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private static void fill(BufferedImage map, int w, int h, Color color) {
@@ -345,12 +458,13 @@ public final class ProceduralLevelGenerator {
 					playerSpawn = true;
 				} else if (rgb == GUARDIAN.getRGB() || rgb == WARBRINGER.getRGB() || rgb == OVERSEER_PRIME.getRGB()) {
 					bossCount++;
-				} else if (rgb == BLACK.getRGB() || rgb == WALL.getRGB() || rgb == DESTRUCT.getRGB()
-						|| rgb == ENEMY.getRGB() || rgb == WARDEN.getRGB() || rgb == SENTINEL.getRGB()
+					} else if (rgb == BLACK.getRGB() || rgb == GRASS.getRGB() || rgb == MUD.getRGB()
+							|| rgb == ICE.getRGB() || rgb == WALL.getRGB() || rgb == DESTRUCT.getRGB()
+							|| rgb == ENEMY.getRGB() || rgb == WARDEN.getRGB() || rgb == SENTINEL.getRGB()
 						|| rgb == RAVAGER.getRGB() || rgb == ELITE.getRGB() || rgb == LIFEPACK.getRGB() || rgb == NANO.getRGB()) {
-					if (rgb == BLACK.getRGB()) {
-						floorCount++;
-					}
+						if (isWalkableColor(rgb)) {
+							floorCount++;
+						}
 				}
 			}
 		}

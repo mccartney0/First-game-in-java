@@ -38,6 +38,7 @@ import com.traduvertgames.graficos.MissionBanner;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
+import com.traduvertgames.world.RpgWorldManager;
 import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.dialogue.DialogueManager;
 
@@ -721,8 +722,19 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				QuestManager.update();
 				ParticleSystem.update();
 				FloatingText.update();
-				MissionBanner.update();
-				// Rodada 29 — regeneração passiva do metagame: os upgrades
+					MissionBanner.update();
+					if (RpgWorldManager.isActive() && player != null) {
+						boolean enteredRegion = RpgWorldManager.updatePlayerPosition(
+								(int) player.getX(), (int) player.getY());
+						if (enteredRegion && !isTransitionCooldown() && !isTransitioning()) {
+							MissionBanner.show("REGIÃO DESCOBERTA",
+									RpgWorldManager.getCurrentRegionName() + " — "
+											+ RpgWorldManager.getCurrentRegionSubtitle(),
+									new java.awt.Color(129, 199, 132), java.awt.Color.WHITE, 150);
+						}
+						RpgWorldManager.tick();
+					}
+					// Rodada 29 — regeneração passiva do metagame: os upgrades
 				// permanentes de regeneração recuperam vida a cada tick,
 				// respeitando o máximo e sem ressuscitar o piloto abatido.
 				com.traduvertgames.state.PilotUpgrades.regenTick();

@@ -17,6 +17,7 @@ javac -cp "$ROOT/build/classes/java/main:$ROOT/build/resources/main" \
 
 classes=(
   AutoValidate
+  RpgWorldMapTest
   AvaFirstObjectiveTest
   BannerHintTest
   BranchingNpcTest
