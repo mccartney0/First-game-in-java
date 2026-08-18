@@ -76,10 +76,13 @@ for yy in range(2, 5):
         if (xx, yy) != (3, 3):
             px[xx, yy] = GRASS
 
-# Curandeiro Léo em alcova protegida a oeste do vale
+# Curandeiro Léo em posto de triagem a noroeste do vale. As paredes não podem
+# encostar no tile de spawn do jogador (5,5) — a validação do playthrough
+# mostrou que o jogador nascia preso entre elas.
 px[6, 6] = HEALER
-px[5, 6] = WALLD
-px[6, 5] = WALLD
+px[7, 6] = WALLD
+px[6, 7] = WALLD
+px[7, 7] = WALLD
 
 # Lídera dos refugiados (QuestNPC) no centro do acampamento
 px[24, 15] = QNPC
