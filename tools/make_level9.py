@@ -101,15 +101,12 @@ px[30, 27] = LIFE
 px[5, 8] = SHIELD
 px[16, 9] = LIFE
 
-# Inimigos: Sentinels dentro do vale, Ravagers na trilha sul e nos flancos.
-# A área de chegada (NW) é segura — o desafio real fica no vale central.
-# Wardens patrulham o corredor entre a muralha norte e o vale
-for x in (12, 18, 24, 30, 36):
-    px[x, 12] = WARDEN
-# Dentro do vale (sobre lama)
-for x in (11, 15, 20, 28, 33, 36):
+# Inimigos: a fase 9 é narrativa (resgate) — poucas ameaças na rota até o
+# resgate. O desafio real fica na trilha sul e na sobrevivência pós-beacon.
+# Dentro do vale (sobre lama), sentinelas posicionadas longe da rota de chegada
+for x in (28, 33, 36):
     px[x, 13] = SENTINEL
-for x in (12, 16, 22, 28, 34):
+for x in (22, 28, 34):
     px[x, 17] = SENTINEL
 # Trilha sul
 for x in (15, 19, 23, 27, 31):
