@@ -59,6 +59,7 @@ public final class SaveManager {
 
 	/** Arquivo temporário usado na gravação atômica. */
 	private static final File SAVE_TMP = new File("saves.tmp");
+
 	/** Última versão válida antes de uma nova gravação. */
 	public static final File SAVE_BACKUP = new File("saves.backup.json");
 

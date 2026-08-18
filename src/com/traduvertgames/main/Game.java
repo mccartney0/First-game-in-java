@@ -1122,7 +1122,6 @@ if (!hidingHud) {
 	@Override
 	public void keyTyped(KeyEvent e) {
 		// TODO Auto-generated method stub
-
 	}
 
 	@Override
