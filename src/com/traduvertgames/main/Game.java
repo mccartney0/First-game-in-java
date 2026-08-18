@@ -1408,13 +1408,20 @@ if (!hidingHud) {
 			menu.shift = true;
 		}
 
-		if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
-			// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
-			// do menu de pausa ao segurar a tecla).
-			if (ShopManager.isEscOnCooldown()) {
-				return;
-			}
-			if ("MENU".equals(gameState)) {
+					if(e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+				// Key-repeat do ESC ignorado logo após fechar a loja (evita o "brilho"
+				// do menu de pausa ao segurar a tecla).
+				if (ShopManager.isEscOnCooldown()) {
+					return;
+				}
+				// Diálogos congelam o mundo. ESC fecha a conversa primeiro para não
+				// abrir a pausa por baixo e deixar a escolta aparentemente travada.
+				if (DialogueManager.isActive()) {
+					DialogueManager.close();
+					return;
+				}
+				if ("MENU".equals(gameState)) {
+
 				// ESC nas telas do menu fecha a tela atual voltando ao nível
 				// anterior (pausa, opções, carregar, confirmação de saída).
 				menu.escape = true;
