@@ -34,6 +34,11 @@ public class Menu {
 	private static final int OPTION_UPGRADES = 5;
 	private static final int OPTION_EXIT = 6;
 
+	// Rodada 31 — conteúdo pós-campanha: a Nova campanha+ entra no menu
+	// principal após a conclusão da campanha (herda armas e créditos e concede
+	// o bônus de +25% de vida e mana na campanha reiniciada).
+	private static final int OPTION_NEW_GAME_PLUS = 7;
+
 	private static final String[] MAIN_OPTIONS = {
 			"novo jogo",
 			"continuar",
@@ -41,6 +46,7 @@ public class Menu {
 			"como jogar",
 			"opções",
 			"melhorias do piloto",
+			"nova campanha+",
 			"sair"
 	};
 
@@ -334,6 +340,19 @@ public class Menu {
 		case OPTION_UPGRADES:
 			com.traduvertgames.graficos.PilotUpgradesScreen.open();
 			break;
+		// Rodada 31 — conteúdo pós-campanha: a Nova campanha+ ativa a flag do
+		// bônus persistente e reinicia a campanha do zero (herdando o arsenal).
+		case OPTION_NEW_GAME_PLUS:
+			if (SaveManager.hasCampaignCompleted()) {
+				SaveManager.setNewGamePlus(true);
+				Game game = Game.getInstance();
+				if (game != null) {
+					game.startNewGamePlus();
+				} else {
+					closePauseScreen();
+				}
+			}
+			break;
 		case OPTION_EXIT:
 			currentScreen = Screen.EXIT_CONFIRM;
 			exitConfirmSelection = 0;
@@ -609,6 +628,11 @@ public class Menu {
 		if ("continuar".equals(option)) {
 			return pause || saveExists;
 		}
+		// Rodada 31: a Nova campanha+ só fica disponível após concluir a
+		// campanha completa.
+		if ("nova campanha+".equals(option)) {
+			return SaveManager.hasCampaignCompleted();
+		}
 		return true;
 	}
 
@@ -626,6 +650,10 @@ public class Menu {
 			return "Opções";
 		case OPTION_UPGRADES:
 			return "Melhorias do piloto";
+		// Rodada 31: a Nova campanha+ fica invisível enquanto a campanha não
+		// for concluída (a opção é desabilitada em isOptionAvailable).
+		case OPTION_NEW_GAME_PLUS:
+			return "Nova campanha+";
 		case OPTION_EXIT:
 			return "Sair";
 		default:
