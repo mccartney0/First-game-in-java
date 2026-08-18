@@ -56,12 +56,15 @@ public class Rodada26BeaconLockTest {
 		check("beacon rastreado pelo objetivo", QuestManager.isObjectiveComplete() == false
 				&& (QuestManager.getObjectiveProgress().contains("beacon")
 						|| QuestManager.getObjectiveProgress().startsWith("Permaneça")));
-		if (beacon != null) {
-			Game.player.setX(beacon.getX());
-			Game.player.setY(beacon.getY());
-		}
+			if (beacon != null) {
+				Game.player.setX(beacon.getX());
+				Game.player.setY(beacon.getY());
+				for (int i = 0; i < 100; i++) {
+					beacon.update();
+				}
+			}
 
-		// Cenário 2: canal parcial, morte + autosave + reload.
+			// Cenário 2: canal parcial, morte + autosave + reload.
 		int channelBefore = 0;
 		if (findBeacon() != null) {
 			for (int i = 0; i < 90; i++) {

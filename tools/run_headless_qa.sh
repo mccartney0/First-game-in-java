@@ -21,6 +21,7 @@ classes=(
   RegionalQuestTest
   DungeonSystemTest
   OptionsTransitionRegressionTest
+  RpgExperienceBalanceTest
   AvaFirstObjectiveTest
   BannerHintTest
   BranchingNpcTest

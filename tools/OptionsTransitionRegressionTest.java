@@ -82,6 +82,10 @@ public final class OptionsTransitionRegressionTest {
         initialSelect.setBoolean(null, false);
         menu.clearPendingInput();
         Game.gameState = "NORMAL";
+        Menu.pause = false;
+        game.keyPressed(new KeyEvent(new Canvas(), KeyEvent.KEY_PRESSED,
+                System.currentTimeMillis(), 0, KeyEvent.VK_ESCAPE, KeyEvent.CHAR_UNDEFINED));
+        check("ESC abre a pausa depois dos overlays", Menu.pause && "MENU".equals(Game.gameState));
 
         System.out.println("OptionsTransitionRegressionTest: " + passed + " pass, " + failed + " fail");
         System.exit(failed == 0 ? 0 : 1);

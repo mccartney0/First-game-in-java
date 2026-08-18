@@ -113,6 +113,11 @@ public class ObjectivesVariadosTest {
 				.newInstance(0, 0, new java.awt.Color(0x4CAF50));
 		holdClass.getMethod("onBeaconSpawned", beaconClass).invoke(hold, beacon);
 		check((boolean) holdClass.getMethod("isActive").invoke(hold), "canal ativo após spawn do beacon");
+		Method beaconUpdate = beaconClass.getMethod("update");
+		for (int i = 0; i < 100; i++) {
+			beaconUpdate.invoke(beacon);
+		}
+		check((boolean) beaconClass.getMethod("isActivated").invoke(beacon), "beacon ativado antes do canal");
 
 		Method updateHold = holdClass.getMethod("update");
 		for (int i = 0; i < 10; i++) {

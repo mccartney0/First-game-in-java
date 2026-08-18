@@ -44,6 +44,8 @@ public class HoldObjective extends BaseObjective {
 	private final Set<QuestBeacon> trackedBeacons = new HashSet<QuestBeacon>();
 	private int channel = 0;
 	private int invaders = 0;
+	private int defenseEncounterTimer;
+	private int defenseEncounterNumber;
 	private boolean spawned = false;
 	private String lastProgress = "";
 	private boolean completionSoundPlayed = false;
@@ -64,6 +66,8 @@ public class HoldObjective extends BaseObjective {
 		trackedBeacons.clear();
 		channel = 0;
 		invaders = 0;
+		defenseEncounterTimer = 60;
+		defenseEncounterNumber = 0;
 		spawned = false;
 		completionSoundPlayed = false;
 	}
@@ -190,6 +194,27 @@ public class HoldObjective extends BaseObjective {
 			}
 		}
 		invaders = nearby;
+		boolean activated = true;
+		for (QuestBeacon beacon : trackedBeacons) {
+			if (!beacon.isActivated()) {
+				activated = false;
+				break;
+			}
+		}
+		if (!activated) {
+			return;
+		}
+		if (activated) {
+			if (defenseEncounterTimer > 0) {
+				defenseEncounterTimer--;
+			}
+			if (defenseEncounterTimer <= 0 && channel < getChannelLimit()) {
+				defenseEncounterNumber++;
+				int requested = QuestManager.getCurrentLevel() == 2 ? 2 : 2 + defenseEncounterNumber / 3;
+				com.traduvertgames.main.WaveManager.spawnResistanceWave(Math.min(3, requested));
+				defenseEncounterTimer = QuestManager.getCurrentLevel() == 2 ? 120 : 150;
+			}
+		}
 		int limit = getChannelLimit();
 		if (invaders == 0) {
 			channel = Math.min(limit, channel + CHANNEL_ADVANCE);
@@ -219,8 +244,8 @@ public class HoldObjective extends BaseObjective {
 			// Rodada 22b: enquanto o beacon não for ativado, a dica orienta o
 			// jogador a permanecer encostado nele (ele é pequeno e silencioso).
 			text = "Permaneça junto ao beacon para ativar";
-		} else if (invaders > 0) {
-							text = "Defenda! " + invaders + " invasor" + (invaders == 1 ? "" : "es") + " na zona";
+			} else if (invaders > 0) {
+								text = "Defenda! " + invaders + " invasor" + (invaders == 1 ? "" : "es") + " na zona";
 			} else {
 				int percent = (int) Math.round(100.0 * channel / getChannelLimit());
 				text = "Canal: " + percent + "% — área segura";

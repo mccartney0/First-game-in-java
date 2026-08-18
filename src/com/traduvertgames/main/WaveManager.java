@@ -55,6 +55,32 @@ public final class WaveManager {
 		spawnedCount = 0;
 	}
 
+	/**
+	 * Gera um lote dedicado para objetivos de resistência fora da arena.
+	 * Mapas sem fila de spawn própria ainda recebem combate periódico.
+	 */
+	public static int spawnResistanceWave(int requestedCount) {
+		if (Game.player == null || World.WIDTH <= 0 || World.HEIGHT <= 0) {
+			return 0;
+		}
+		int count = Math.max(0, requestedCount);
+		int spawned = 0;
+		for (int i = 0; i < count && Game.enemies.size() < MAX_ENEMIES_ON_MAP; i++) {
+			int[] spot = findSpawnSpot();
+			if (spot == null) {
+				break;
+			}
+			Enemy enemy = Enemy.spawnRandomVariant(spot[0], spot[1]);
+			Game.entities.add(enemy);
+			Game.enemies.add(enemy);
+			spawned++;
+		}
+		if (spawned > 0) {
+			announce("INVASORES APROXIMANDO-SE", new Color(255, 152, 0));
+		}
+		return spawned;
+	}
+
 	/** Enfileira uma posição de spawn. */
 	public static void queueSpawn(int x, int y) {
 		spawnQueue.add(new int[] { x, y });

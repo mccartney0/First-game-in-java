@@ -74,7 +74,19 @@ public class CampaignBeaconTest {
 		QuestManager.notifyDialogueFinished(nia);
 	}
 
-	private int channelOf() {
+			private void activateBeacon() {
+			QuestBeacon beacon = findBeacon();
+			assertNotNull(beacon, "o beacon deve existir para ativação");
+			Game.player.setX(beacon.getX());
+			Game.player.setY(beacon.getY());
+			for (int i = 0; i < 100; i++) {
+				beacon.update();
+			}
+			assertTrue(beacon.isActivated(), "o beacon deve ser ativado após permanecer junto");
+		}
+
+		private int channelOf() {
+
 		String state = QuestManager.serializeObjectiveState();
 		int idx = state.indexOf("CHANNEL=");
 		if (idx < 0) {
@@ -107,7 +119,9 @@ public class CampaignBeaconTest {
 		GameTestFixture.advanceToLevel(2);
 		QuestManager.onLevelLoaded();
 		clearInvaders();
+		talkToNia();
 		assertNotNull(findBeacon(), "o beacon deve existir");
+		activateBeacon();
 		for (int i = 0; i < 90; i++) {
 			QuestManager.update();
 		}
@@ -143,6 +157,7 @@ public class CampaignBeaconTest {
 		QuestManager.onLevelLoaded();
 		clearInvaders();
 		talkToNia();
+		activateBeacon();
 		for (int i = 0; i < 90; i++) {
 			QuestManager.update();
 		}

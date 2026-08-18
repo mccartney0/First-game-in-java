@@ -51,12 +51,12 @@ public final class MissionHud {
 			return;
 		}
 
-		Font titleFont = new Font("SansSerif", Font.BOLD, 9 * s / 4 + 2);
-		Font smallFont = new Font("SansSerif", Font.PLAIN, 7 * s / 4 + 2);
+		Font titleFont = new Font("SansSerif", Font.BOLD, 12 * s / 4 + 4);
+		Font smallFont = new Font("SansSerif", Font.PLAIN, 8 * s / 4 + 3);
 
 		g2.setColor(new Color(6, 9, 16, 180));
-		int cardHeight = 26 * s / 4 + 6;
-		int cardWidth = Math.min(screenWidth - margin * 2, 250 * s / 4 + 40);
+		int cardHeight = 44 * s / 4 + 10;
+		int cardWidth = Math.min(screenWidth - margin * 2, 300 * s / 4 + 48);
 		g2.fillRoundRect(margin, margin, cardWidth, cardHeight, 8, 8);
 		g2.setColor(new Color(255, 235, 59, 160));
 		g2.setStroke(new java.awt.BasicStroke(1.5f));
@@ -64,14 +64,14 @@ public final class MissionHud {
 
 		g2.setColor(new Color(255, 235, 59));
 		g2.setFont(titleFont);
-		g2.drawString("Missão", margin + 8, margin + 12 * s / 4 + 2);
+		g2.drawString("MISSÃO PRINCIPAL", margin + 8, margin + 15 * s / 4 + 3);
 
 		// Largura disponível para o título (respeita o espaço do progresso)
 		int maxTitleChars = Math.max(5, (cardWidth - 64) / g2.getFontMetrics(smallFont).stringWidth("m"));
 		String shortTitle = title.length() > maxTitleChars ? title.substring(0, maxTitleChars - 3) + "..." : title;
 		g2.setColor(Color.WHITE);
 		g2.setFont(smallFont);
-		g2.drawString(shortTitle, margin + 8, margin + cardHeight - 6);
+		g2.drawString(shortTitle, margin + 8, margin + 29 * s / 4 + 3);
 
 		// Progresso no lado direito do card, medido pela largura real da fonte
 		String shortProgress = progress;
@@ -84,10 +84,10 @@ public final class MissionHud {
 		}
 		int progW = g2.getFontMetrics().stringWidth(shortProgress);
 		g2.setColor(new Color(129, 199, 132));
-		g2.drawString(shortProgress, margin + cardWidth - progW - 8, margin + cardHeight - 6);
+		g2.drawString(shortProgress, margin + cardWidth - progW - 8, margin + 41 * s / 4 + 6);
 
 			// --- Missão secundária regional ---
-			drawRegionalQuest(g2, s, margin + cardHeight + 4);
+			drawRegionalQuest(g2, s, margin + cardHeight + 8);
 
 			// --- Barra de canal (objetivo de defesa) e timer (sobrevivência) ---
 			drawObjectiveWidgets(g2, s, screenWidth);
@@ -138,13 +138,13 @@ public final class MissionHud {
 		}
 		String progress = SideQuestManager.getActiveQuestProgressLabel();
 		int margin = 10 * s / 4 + 2;
-		int width = Math.min(Game.WIDTH * s - margin * 2, 220 * s / 4 + 28);
-		int height = 20 * s / 4 + 4;
+		int width = Math.min(Game.WIDTH * s - margin * 2, 270 * s / 4 + 36);
+		int height = 32 * s / 4 + 8;
 		g2.setColor(new Color(24, 12, 36, 190));
 		g2.fillRoundRect(margin, y, width, height, 8, 8);
 		g2.setColor(new Color(206, 147, 216, 180));
 		g2.drawRoundRect(margin, y, width, height, 8, 8);
-		Font font = new Font("SansSerif", Font.PLAIN, 7 * s / 4 + 2);
+		Font font = new Font("SansSerif", Font.PLAIN, 8 * s / 4 + 3);
 		g2.setFont(font);
 		String shortTitle = title;
 		int maxWidth = width - 70;
@@ -152,12 +152,12 @@ public final class MissionHud {
 			shortTitle = shortTitle.substring(0, shortTitle.length() - 4) + "...";
 		}
 		g2.setColor(new Color(230, 190, 255));
-		g2.drawString("Secundária", margin + 7, y + 10 * s / 4 + 2);
+		g2.drawString("MISSÃO SECUNDÁRIA", margin + 7, y + 13 * s / 4 + 3);
 		g2.setColor(Color.WHITE);
-		g2.drawString(shortTitle, margin + 7, y + height - 5);
+		g2.drawString(shortTitle, margin + 7, y + 25 * s / 4 + 5);
 		g2.setColor(new Color(188, 245, 200));
 		int progressWidth = g2.getFontMetrics().stringWidth(progress);
-		g2.drawString(progress, margin + width - progressWidth - 7, y + height - 5);
+		g2.drawString(progress, margin + width - progressWidth - 7, y + 25 * s / 4 + 5);
 	}
 
 	private static void drawObjectiveWidgets(Graphics2D g2, int s, int screenWidth) {

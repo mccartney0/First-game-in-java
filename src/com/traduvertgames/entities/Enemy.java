@@ -579,21 +579,17 @@ public class Enemy extends Entity {
         if (!canSeePlayer) {
             return;
         }
-        // Ao ficar próximo do piloto, drena parte do escudo e da mana.
-        if (distanceToPlayer < 96 && Game.player != null) {
-            double drainAmount = 2.0;
+        // Ao ficar próximo do piloto, drena um pulso pequeno de escudo ou mana.
+        // Antes o valor era descontado a cada frame (120 recursos/s), tornando
+        // qualquer contato com um Fantasma praticamente uma derrota automática.
+        if (distanceToPlayer < 96 && Game.player != null && frames % 12 == 0) {
+            double drainAmount = 1.0;
             if (Game.player.shield > 0) {
                 Game.player.shield = Math.max(0, Game.player.shield - drainAmount);
-                // Feedback visual: texto flutuante e partículas indicando o dreno de escudo.
-                if (frames % 12 == 0) {
-                    FloatingText.show("-ESCUDO", (int) Game.player.getX() + 8, (int) Game.player.getY(), new Color(121, 134, 203));
-                }
+                FloatingText.show("-ESCUDO", (int) Game.player.getX() + 8, (int) Game.player.getY(), new Color(121, 134, 203));
             } else if (Game.player.mana > 0) {
                 Game.player.mana = Math.max(0, Game.player.mana - drainAmount);
-                // Feedback visual: texto flutuante e partículas indicando o dreno de mana.
-                if (frames % 12 == 0) {
-                    FloatingText.show("-MANA", (int) Game.player.getX() + 8, (int) Game.player.getY(), new Color(33, 150, 243));
-                }
+                FloatingText.show("-MANA", (int) Game.player.getX() + 8, (int) Game.player.getY(), new Color(33, 150, 243));
             }
             ParticleSystem.burst((int) x, (int) y, variant.getAuraColor(), 4, 1.2);
         }

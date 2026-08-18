@@ -557,8 +557,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			frame.setLocationRelativeTo(null);
 			fullscreen = false;
 		}
-		recomputeScale();
-	}
+			recomputeScale();
+			if (instance != null) {
+				instance.requestInputFocus();
+			}
+		}
 
 		public void initFrame() {
 		frame = new JFrame("Game 2 RPG");
@@ -582,8 +585,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		thread.start();
 	}
 
-	public synchronized void stop() {
-		isRunning = false;
+		/** Recoloca o foco no Canvas, que é o receptor do teclado do jogo. */
+		public void requestInputFocus() {
+			if (isDisplayable()) {
+				requestFocusInWindow();
+			}
+		}
+
+		public synchronized void stop() {
+			isRunning = false;
 		try {
 			thread.join();
 		} catch (InterruptedException e) {
@@ -1135,8 +1145,9 @@ if (!hidingHud) {
 		@SuppressWarnings("unused")
 		int frames = 0;
 		double timer = System.currentTimeMillis();
-		requestFocus();
-		while (isRunning) {
+			requestFocus();
+			requestInputFocus();
+			while (isRunning) {
 			long now = System.nanoTime();
 			delta += (now - lastTime) / ns;
 			lastTime = now;
@@ -1552,6 +1563,9 @@ if (!hidingHud) {
 
 		@Override
 		public void mousePressed(MouseEvent e) {
+			// O Canvas é o único receptor de teclado; recuperar o foco após cada
+			// clique evita que o ESC pare de responder depois de usar a interface.
+			requestInputFocus();
 			// Clique não confirma nem dispara enquanto overlays modais estiverem
 			// visíveis. Antes, PhaseStatsScreen usava gameState=MENU e este bloco
 			// transformava qualquer clique em menu.enter.

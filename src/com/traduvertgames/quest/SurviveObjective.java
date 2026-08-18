@@ -22,6 +22,9 @@ public class SurviveObjective extends BaseObjective {
 
 	private final int durationFrames;
 	private int survivedFrames;
+	private int encounterTimer;
+	private int encounterNumber;
+	private int activeThreats;
 	private boolean started = false;
 	private boolean completionSoundPlayed = false;
 
@@ -50,6 +53,9 @@ public class SurviveObjective extends BaseObjective {
 	@Override
 	public void onLevelStart() {
 		survivedFrames = 0;
+		encounterTimer = 90;
+		encounterNumber = 0;
+		activeThreats = 0;
 		started = false;
 		completionSoundPlayed = false;
 	}
@@ -64,6 +70,16 @@ public class SurviveObjective extends BaseObjective {
 		if (survivedFrames < durationFrames) {
 			survivedFrames++;
 		}
+		if (encounterTimer > 0) {
+			encounterTimer--;
+		}
+		if (encounterTimer <= 0 && survivedFrames < durationFrames) {
+			encounterNumber++;
+			int requested = encounterNumber <= 2 ? 2 : Math.min(4, 2 + encounterNumber / 3);
+			activeThreats = com.traduvertgames.main.WaveManager.spawnResistanceWave(requested);
+			encounterTimer = 150;
+		}
+		activeThreats = com.traduvertgames.main.Game.enemies.size();
 		if (survivedFrames >= durationFrames && !completionSoundPlayed) {
 			completionSoundPlayed = true;
 			SoundManager.play(SoundManager.Event.LEVELUP);
@@ -78,7 +94,7 @@ public class SurviveObjective extends BaseObjective {
 		if (survivedFrames >= durationFrames) {
 			return "Evacuação autorizada!";
 		}
-		return "Resistir: " + getRemainingSeconds() + "s";
+		return "Resistir: " + getRemainingSeconds() + "s — ameaças: " + Math.max(0, activeThreats);
 	}
 
 	@Override
@@ -111,6 +127,7 @@ public class SurviveObjective extends BaseObjective {
 						// se o mapa mudou, usa-se a configuração atual.
 						if (duration == durationFrames) {
 							started = survivedFrames > 0;
+					encounterTimer = 90;
 						} else {
 							survivedFrames = 0;
 							started = false;
