@@ -81,6 +81,14 @@ public final class QuestManager {
         currentObjective.onLevelLoaded();
     }
 
+    /**
+     * Variante pública do {@link #createObjectiveForLevel(int)} para os
+     * testes validarem a missão associada a cada fase sem depender do mapa.
+     */
+    public static RPGObjective objectiveForLevel(int level) {
+        return createObjectiveForLevel(level);
+    }
+
     private static RPGObjective createObjectiveForLevel(int level) {
         switch (level) {
         case 1:
