@@ -101,12 +101,12 @@ px[30, 27] = LIFE
 px[5, 8] = SHIELD
 px[16, 9] = LIFE
 
-# Inimigos: a fase 9 é narrativa (resgate) — poucas ameaças na rota até o
-# resgate. O desafio real fica na trilha sul e na sobrevivência pós-beacon.
-# Dentro do vale (sobre lama): três sentinelas, bem posicionadas. A fase 9 é
-# narrativa (resgate); a dificuldade da sobrevivência fica para o pós-beacon.
-for x in (20, 28, 36):
-    px[x, 13] = SENTINEL
+# Inimigos: a fase 9 é narrativa (resgate) — as ameaças ficam longe da rota
+# de chegada e do resgate. Três sentinelas patrulham o canto sudoeste do vale,
+# longe da entrada norte e da líder dos refugiados; a dificuldade real de
+# sobrevivência fica para a trilha sul e o pós-beacon.
+for (x, y) in ((12, 18), (14, 19), (16, 18)):
+    px[x, y] = SENTINEL
 
 img.save('/home/ubuntu/First-game-in-java/res/level9.png')
 print('level9.png gerado:', img.size)
