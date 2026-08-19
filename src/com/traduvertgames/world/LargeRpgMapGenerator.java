@@ -44,6 +44,8 @@ public final class LargeRpgMapGenerator {
 
     public static final int DEFAULT_WIDTH = 192;
     public static final int DEFAULT_HEIGHT = 128;
+    public static final int OPEN_WORLD_WIDTH = 512;
+    public static final int OPEN_WORLD_HEIGHT = 320;
     private static final int MIN_WIDTH = 96;
     private static final int MIN_HEIGHT = 64;
     private static final int PLAYER_X = 4;
@@ -55,6 +57,14 @@ public final class LargeRpgMapGenerator {
     public static File generateDefault(int depth) throws IOException {
         return generate(DEFAULT_WIDTH, DEFAULT_HEIGHT, depth,
                 0x5EEDL + Math.max(1, depth) * 997L, new File("bin/large_rpg_maps"));
+    }
+
+    /** Gera o mapa do modo Mundo Aberto, maior que a aventura RPG regional. */
+    public static File generateOpenWorldDefault(int depth) throws IOException {
+        int safeDepth = Math.max(1, depth);
+        long seed = 0x0F3A0B1DL + safeDepth * 4099L;
+        return generate(OPEN_WORLD_WIDTH, OPEN_WORLD_HEIGHT, safeDepth, seed,
+                new File("bin/open_world_maps"));
     }
 
     public static File generate(int width, int height, int depth, long seed, File outputDir) throws IOException {
