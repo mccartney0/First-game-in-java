@@ -145,6 +145,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 				com.traduvertgames.graficos.ContractBoardScreen.reset();
 				DynamicEventManager.reset();
 				com.traduvertgames.quest.ContractManager.reset();
+				com.traduvertgames.world.RegionalChainManager.reset();
 		}
 
 	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
@@ -1837,6 +1838,7 @@ if (!hidingHud) {
 		regionalAdventureMode = regionalAdventure;
 			com.traduvertgames.world.RegionalProgressionManager.reset();
 			com.traduvertgames.quest.ContractManager.reset();
+			com.traduvertgames.world.RegionalChainManager.reset();
 			resetGameOverState();
 		// Novo jogo: remove o companion ativo (persistência apenas por save).
 		com.traduvertgames.entities.Companion.clear();
@@ -1881,6 +1883,7 @@ if (!hidingHud) {
 			loadRegionalAdventure(1);
 			DynamicEventManager.reset();
 			com.traduvertgames.quest.ContractManager.reset();
+			com.traduvertgames.world.RegionalChainManager.reset();
 			SaveManager.saveCurrentGame();
 		}
 

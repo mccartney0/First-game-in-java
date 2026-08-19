@@ -174,6 +174,7 @@ public final class SideQuestManager {
 		}
 		completed.put(id, true);
 		quest.reward.grant();
+		com.traduvertgames.world.RegionalChainManager.onNpcQuestCompleted(id);
 		ContractManager.onSideQuestCompleted(id);
 		SoundManager.play(SoundManager.Event.TUTORIAL_DONE);
 	}

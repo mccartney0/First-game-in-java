@@ -180,6 +180,7 @@ public final class DungeonManager {
 		bossDefeated = true;
 		completed.put(dungeonRegion.name(), true);
 		RegionalProgressionManager.registerDungeonComplete(dungeonRegion);
+		RegionalChainManager.onDungeonCompleted(dungeonRegion);
 		com.traduvertgames.quest.ContractManager.onDungeonCompleted(dungeonRegion);
 		PilotUpgrades.addCredits(350);
         Game.addScore(500);

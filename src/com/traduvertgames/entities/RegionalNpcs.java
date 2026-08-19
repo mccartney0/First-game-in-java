@@ -84,6 +84,19 @@ public final class RegionalNpcs {
         return specFor(region).questId;
     }
 
+    /** Localiza a região de uma missão para callbacks de progressão. */
+    public static RpgWorldManager.RegionType getRegionForQuestId(String questId) {
+        if (questId == null) {
+            return null;
+        }
+        for (RpgWorldManager.RegionType region : RpgWorldManager.RegionType.values()) {
+            if (specFor(region).questId.equals(questId)) {
+                return region;
+            }
+        }
+        return null;
+    }
+
     private static QuestSpec specFor(RpgWorldManager.RegionType region) {
         switch (region) {
         case REFUGE:

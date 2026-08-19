@@ -14,6 +14,7 @@ import com.traduvertgames.world.DungeonManager;
 import com.traduvertgames.world.DynamicEventManager;
 import com.traduvertgames.world.RpgWorldManager;
 import com.traduvertgames.world.RegionalProgressionManager;
+import com.traduvertgames.world.RegionalChainManager;
 
 /**
  * Hub de atividades do mundo RPG. O painel congela a exploração sem criar uma
@@ -23,7 +24,7 @@ import com.traduvertgames.world.RegionalProgressionManager;
 public final class HubScreen {
 
     private enum Activity {
-		MAIN_MISSION("Missão principal", "Continuar a campanha e avançar o objetivo atual"),
+		MAIN_MISSION("Próximo passo da cadeia", "Seguir a trilha regional: resgate, NPC, comboio e dungeon"),
 		CONTRACTS("Quadro de contratos", "Escolher uma oferta com bônus e modificador regional"),
 		SIDE_QUEST("Missão do NPC regional", "Aceitar a tarefa do representante da região"),
 		DYNAMIC_EVENT("Evento regional", "Escolher emboscada, caça, resgate ou comboio"),
@@ -120,11 +121,15 @@ public final class HubScreen {
 			return;
 		}
 		if (activity == Activity.MAIN_MISSION) {
+			if (RegionalChainManager.startNextStep(region)) {
+				close();
+				return;
+			}
 			MissionBanner.show("MISSÃO PRINCIPAL", QuestManager.getObjectiveTitle(),
-                    new Color(255, 235, 59), Color.WHITE, 150);
-            close();
-            return;
-        }
+					new Color(255, 235, 59), Color.WHITE, 150);
+			close();
+			return;
+		}
         if (activity == Activity.SIDE_QUEST) {
             RegionalNpcs.activateQuestForRegion(region);
             MissionBanner.show("MISSÃO REGIONAL", RegionalNpcs.getQuestTitleForRegion(region),
@@ -197,7 +202,8 @@ public final class HubScreen {
 		drawCentered(g2, regionName, panelX, panelWidth, panelY + 41 * unit);
 		g2.setColor(new Color(190, 220, 190));
 		g2.setFont(new Font("Arial", Font.PLAIN, 8 * unit));
-		String regionSummary = RegionalProgressionManager.getSummary(region);
+			String regionSummary = RegionalProgressionManager.getSummary(region) + " | "
+					+ RegionalChainManager.getProgressLabel(region);
 		while (regionSummary.length() > 58 && g2.getFontMetrics().stringWidth(regionSummary) > panelWidth - 24 * unit) {
 			regionSummary = regionSummary.substring(0, regionSummary.length() - 4) + "...";
 		}

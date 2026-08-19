@@ -392,8 +392,13 @@ public final class DynamicEventManager {
                 Game.player.getX(), Game.player.getY() - 20, new Color(255, 235, 59), 120);
 		MissionBanner.show("EVENTO CONCLUÍDO", activeType.getTitle() + " — recompensa permanente recebida.",
 				new Color(129, 199, 132), Color.WHITE, 180);
-		RegionalProgressionManager.registerEventOutcome(activeRegion, true);
-		com.traduvertgames.quest.ContractManager.onEventCompleted(activeRegion, activeType);
+			RegionalProgressionManager.registerEventOutcome(activeRegion, true);
+			if (activeType == Type.RESCUE) {
+				RegionalChainManager.onRescueCompleted(activeRegion);
+			} else if (activeType == Type.SUPPLY_CONVOY) {
+				RegionalChainManager.onConvoyCompleted(activeRegion);
+			}
+			com.traduvertgames.quest.ContractManager.onEventCompleted(activeRegion, activeType);
 		clearActive();
 		com.traduvertgames.main.SaveManager.saveCurrentGame();
 	}
