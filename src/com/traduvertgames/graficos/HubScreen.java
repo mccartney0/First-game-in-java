@@ -63,6 +63,7 @@ public final class HubScreen {
         selection = 0;
         feedback = "";
         feedbackFrames = 0;
+        Game.clearRegionalHubTransition();
         Game.gameState = "REGIONAL_HUB";
         return true;
     }

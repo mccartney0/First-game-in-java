@@ -207,10 +207,26 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 transitionCooldown = RESPIRO_FRAMES;
         }
 
-        /** True enquanto o cooldown pós-transição estiver ativo. */
-        public static boolean isTransitionCooldown() {
-                return transitionCooldown > 0;
-        }
+		/** True enquanto o cooldown pós-transição estiver ativo. */
+		public static boolean isTransitionCooldown() {
+			return transitionCooldown > 0;
+		}
+
+		/**
+		 * Remove apenas o overlay de entrada da Aventura RPG ao abrir o hub. O
+		 * cooldown era criado ao carregar a superfície e bloqueava H mesmo quando
+		 * o jogador já estava em exploração; o hub é um ponto seguro e pode
+		 * interromper esse respiro sem afetar a campanha narrativa.
+		 */
+		public static void clearRegionalHubTransition() {
+			if (!regionalAdventureMode) {
+				return;
+			}
+			clearQuestPending();
+			transitionCooldown = 0;
+			GameState.transitionCooldown = 0;
+		}
+
 	/** Opacidade do fade preto da transição de fase (255 = totalmente escuro). */
 	private static int transitionAlpha = 0;
 
@@ -1561,12 +1577,13 @@ if (!hidingHud) {
                         }
                 }
 
-			// H abre o hub somente no mundo procedural de superfície. A tecla não
-			// interfere na campanha fixa nem durante diálogos ou transições.
+			// H abre o hub somente no mundo procedural de superfície. O cooldown
+			// visual de entrada da Aventura RPG não deve bloquear o primeiro acesso;
+			// HubScreen.open() remove esse overlay antes de assumir o foco modal.
 			if (e.getKeyCode() == KeyEvent.VK_H) {
-				if ("NORMAL".equals(gameState) && !DialogueManager.isActive()
-						&& !InventoryManager.isOpen() && !isTransitioning()
-						&& !isTransitionCooldown()) {
+				if ("NORMAL".equals(gameState) && isRegionalAdventureMode()
+						&& RpgWorldManager.isActive() && !DialogueManager.isActive()
+						&& !InventoryManager.isOpen() && !questCompletedPending) {
 					HubScreen.open();
 				}
 				return;
