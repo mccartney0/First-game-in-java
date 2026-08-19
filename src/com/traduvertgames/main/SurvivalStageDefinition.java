@@ -142,10 +142,7 @@ public final class SurvivalStageDefinition {
             return AcidPoolHazard.isPoolAt(x, y, wave);
         }
         if (specialRule == SpecialRule.ORBITAL_LASERS) {
-            int tileX = Math.floorDiv(x, 32);
-            int tileY = Math.floorDiv(y, 32);
-            return Math.floorMod(tileX + Math.max(0, wave - 1), 5) == 0
-                    || Math.floorMod(tileY * 2 + wave, 7) == 0;
+            return OrbitalLaserHazard.isLaserAt(x, y, wave);
         }
         return false;
     }

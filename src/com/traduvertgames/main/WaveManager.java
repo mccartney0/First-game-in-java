@@ -454,7 +454,7 @@ public final class WaveManager {
 			com.traduvertgames.graficos.MissionBanner.show("PÂNTANO ÁCIDO", "Saia da poça corrosiva!",
 					new Color(124, 179, 66), Color.WHITE, 45);
 		} else if (stage.hasRule(SurvivalStageDefinition.SpecialRule.ORBITAL_LASERS)) {
-			Game.player.applyDamage(2.4 + Math.max(0, getSurvivalPhase() - 7) * 0.45);
+			Game.player.applyDamage(OrbitalLaserHazard.damageForStage(getSurvivalPhase()));
 			com.traduvertgames.graficos.MissionBanner.show("LASER ORBITAL", "Atravesse a linha de disparo!",
 					new Color(0, 188, 212), Color.WHITE, 45);
 		}
@@ -483,11 +483,7 @@ public final class WaveManager {
 		if (stage.hasRule(SurvivalStageDefinition.SpecialRule.ACID_POOLS)) {
 			AcidPoolHazard.render(g, Camera.x, Camera.y, screenWidth, screenHeight, arenaWave, Game.SCALE);
 		} else if (stage.hasRule(SurvivalStageDefinition.SpecialRule.ORBITAL_LASERS)) {
-			int lane = Math.floorMod(arenaWave * 43, Math.max(1, screenWidth));
-			g.setColor(new Color(0, 229, 255, 125));
-			g.fillRect(lane, 0, 3 * Game.SCALE, screenHeight);
-			g.setColor(new Color(255, 82, 82, 105));
-			g.fillRect(0, Math.floorMod(arenaWave * 29, Math.max(1, screenHeight)), screenWidth, 2 * Game.SCALE);
+			OrbitalLaserHazard.render(g, screenWidth, screenHeight, arenaWave, Game.SCALE);
 		}
 	}
 }
