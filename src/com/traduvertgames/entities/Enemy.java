@@ -7,6 +7,7 @@ import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.util.List;
 
+import com.traduvertgames.graficos.AssetCatalog;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.entities.FloatingText;
 import com.traduvertgames.main.Game;
@@ -1374,10 +1375,18 @@ public class Enemy extends Entity {
         if (com.traduvertgames.main.Game.isTransitioning()) {
             return;
         }
+        int drawSize = boss ? 24 : variant == Variant.GUARDIAN ? 20 : 16;
+        int drawX = this.getX() + (16 - drawSize) / 2 - Camera.x;
+        int drawY = this.getY() + (16 - drawSize) / 2 - Camera.y;
+        BufferedImage generatedSprite = AssetCatalog.enemySprite(variant);
         if (!isDamaged) {
-            g.drawImage(sprites[index], this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
+            if (generatedSprite != null) {
+                g.drawImage(generatedSprite, drawX, drawY, drawSize, drawSize, null);
+            } else {
+                g.drawImage(sprites[index], this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
+            }
         } else {
-            g.drawImage(Entity.ENEMY_FEEDBACK, this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
+            g.drawImage(Entity.ENEMY_FEEDBACK, drawX, drawY, drawSize, drawSize, null);
         }
 
         // Aura distinta por variante, mais evidente para os novos mobs.

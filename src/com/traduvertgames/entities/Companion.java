@@ -3,6 +3,7 @@ package com.traduvertgames.entities;
 import java.awt.Color;
 import java.awt.Graphics;
 
+import com.traduvertgames.graficos.AssetCatalog;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.Camera;
@@ -390,29 +391,17 @@ public class Companion extends Entity {
 		// Aura de suporte.
 		g.setColor(new Color(color.getRed(), color.getGreen(), color.getBlue(), 80));
 		g.fillOval(renderX - 5, renderY - 5, width + 10, height + 10);
-		// Corpo (círculo colorido).
-		g.setColor(color);
-		g.fillOval(renderX + 2, renderY + 2, width - 4, height - 4);
-		// Ícone interno conforme o tipo.
-		switch (type) {
-		case SCOUT:
-			g.setColor(Color.WHITE);
-			g.fillRect(renderX + 4, renderY + 5, 4, 2);
-			break;
-		case SHIELD_BOT:
-			g.setColor(Color.WHITE);
-			g.fillOval(renderX + 4, renderY + 3, 5, 5);
-			g.setColor(new Color(20, 60, 140));
-			g.fillRect(renderX + 5, renderY + 6, 3, 2);
-			break;
-		case FAIRY:
-			g.setColor(new Color(255, 240, 120));
-			g.fillOval(renderX + 4, renderY + 2, 3, 3);
-			g.fillOval(renderX + 6, renderY + 3, 2, 2);
-			break;
-		default:
-			break;
-		}
+			// Sprite gerado por tipo; o desenho procedural continua como fallback para
+			// builds antigas ou quando o pacote visual é substituído/removido.
+			java.awt.image.BufferedImage visual = AssetCatalog.companionSprite(type);
+			if (visual != null) {
+				g.drawImage(visual, renderX, renderY, width, height, null);
+			} else {
+				g.setColor(color);
+				g.fillOval(renderX + 2, renderY + 2, width - 4, height - 4);
+				g.setColor(Color.WHITE);
+				g.fillOval(renderX + 4, renderY + 4, 4, 4);
+			}
 		// Barra de HP do companion.
 		double percent = Math.max(0, Math.min(1, hp / BASE_HP));
 		g.setColor(Color.DARK_GRAY);

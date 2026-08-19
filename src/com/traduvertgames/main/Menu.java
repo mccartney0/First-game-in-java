@@ -77,15 +77,17 @@ public class Menu {
 	private static final int OPTIONS_INDEX_SOUND = 2;
 	private static final int OPTIONS_INDEX_SOUND_VOLUME = 3;
 	private static final int OPTIONS_INDEX_DIFFICULTY = 4;
-	private static final int OPTIONS_INDEX_BACK = 5;
+	private static final int OPTIONS_INDEX_LANGUAGE = 5;
+	private static final int OPTIONS_INDEX_BACK = 6;
 
 	private static final String[] OPTIONS_LABELS = {
 			"musica",
 			"volume da trilha",
 			"efeitos sonoros",
 			"volume dos efeitos",
-			"dificuldade",
-			"voltar"
+		"dificuldade",
+		"idioma",
+		"voltar"
 	};
 
 	private static final int LINE_HEIGHT = 40;
@@ -513,6 +515,10 @@ private void handlePauseSelection() {
 			break;
 		case OPTIONS_INDEX_DIFFICULTY:
 			OptionsConfig.cycleDifficulty();
+			break;
+		case OPTIONS_INDEX_LANGUAGE:
+			Localization.cycleLanguage();
+			SoundManager.play(SoundManager.Event.MENU_SELECT);
 			break;
 		case OPTIONS_INDEX_BACK:
 			currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
@@ -1057,7 +1063,7 @@ private void handlePauseSelection() {
 
 		Font headerFont = new Font("arial", Font.BOLD, 28);
 		g.setFont(headerFont);
-		String header = "Opções";
+		String header = Localization.tr("menu.options");
 		int headerWidth = g.getFontMetrics().stringWidth(header);
 
 		Font optionFont = new Font("arial", Font.PLAIN, 22);
@@ -1066,13 +1072,14 @@ private void handlePauseSelection() {
 		int musicDb = (int) Math.round(OptionsConfig.getMusicVolume() / 2);
 			int soundDb = (int) Math.round(OptionsConfig.getSoundVolume() / 2);
 			String[] lines = {
-					"Música: " + (OptionsConfig.isMusicEnabled() ? "Ligada" : "Desligada"),
-					"Trilha sonora: " + (musicDb > 0 ? "+" : "") + musicDb + " dB",
-					"Efeitos sonoros: " + (OptionsConfig.isSoundEnabled() ? "Ligados" : "Desligados"),
-					"Volume dos efeitos: " + (soundDb > 0 ? "+" : "") + soundDb + " dB",
-					"Dificuldade: " + OptionsConfig.getDifficulty().getDisplayName(),
-					"Voltar"
-			};
+					Localization.tr("menu.music") + ": " + (OptionsConfig.isMusicEnabled() ? (Localization.getLanguage() == Localization.Language.PT_BR ? "Ligada" : "On") : (Localization.getLanguage() == Localization.Language.PT_BR ? "Desligada" : "Off")),
+					Localization.tr("menu.music_volume", (musicDb > 0 ? "+" : "") + musicDb),
+					Localization.tr("menu.sound") + ": " + (OptionsConfig.isSoundEnabled() ? (Localization.getLanguage() == Localization.Language.PT_BR ? "Ligados" : "On") : (Localization.getLanguage() == Localization.Language.PT_BR ? "Desligados" : "Off")),
+					Localization.tr("menu.sound_volume", (soundDb > 0 ? "+" : "") + soundDb),
+					Localization.tr("menu.difficulty") + ": " + OptionsConfig.getDifficulty().getDisplayName(),
+					Localization.tr("menu.language") + ": " + Localization.getLanguageLabel(),
+					Localization.tr("menu.back")
+				};
 
 		int maxWidth = headerWidth;
 		for (String line : lines) {

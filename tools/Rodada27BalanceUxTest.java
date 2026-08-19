@@ -46,7 +46,7 @@ public class Rodada27BalanceUxTest {
 
         Field labels = Menu.class.getDeclaredField("OPTIONS_LABELS");
         labels.setAccessible(true);
-        check("opções: música, efeitos, volumes e dificuldade", ((String[]) labels.get(null)).length == 6);
+        check("opções: música, efeitos, volumes, dificuldade e idioma", ((String[]) labels.get(null)).length == 7);
 
         float before = OptionsConfig.getSoundVolume();
         OptionsConfig.adjustSoundVolume(2);

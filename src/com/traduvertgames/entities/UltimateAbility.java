@@ -5,6 +5,7 @@ import java.awt.Graphics;
 
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.main.Game;
+import com.traduvertgames.main.SoundManager;
 import com.traduvertgames.world.Camera;
 
 /**
@@ -60,6 +61,7 @@ public final class UltimateAbility {
 		cooldown = COOLDOWN_FRAMES;
 
 		ParticleSystem.explode(originX, originY, new Color(255, 220, 60));
+		SoundManager.play(SoundManager.Event.MAGIC_CAST);
 
 		for (Enemy enemy : Game.enemies) {
 			double dx = (enemy.getX() + 8) - originX;

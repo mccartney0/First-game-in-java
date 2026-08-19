@@ -5,7 +5,9 @@ import java.awt.Font;
 import java.awt.Graphics;
 
 import com.traduvertgames.main.Game;
+import com.traduvertgames.main.Localization;
 import com.traduvertgames.main.SoundManager;
+import com.traduvertgames.main.VoiceManager;
 import com.traduvertgames.quest.QuestManager;
 
 /**
@@ -73,12 +75,13 @@ public final class DialogueManager {
 		target = nearest;
 		// Rodada 22: diálogos ramificados definem a própria árvore de nós
 		// (BranchingNpc); falas lineares continuam via buildLines().
-		if (nearest instanceof BranchingNpc) {
-			lines = new String[] { ((BranchingNpc) nearest).getNodeText() };
-		} else {
-			lines = buildLines(target);
-		}
-		currentLine = 0;
+			if (nearest instanceof BranchingNpc) {
+				lines = new String[] { ((BranchingNpc) nearest).getNodeText() };
+			} else {
+				lines = buildLines(target);
+			}
+			lines = Localization.localizeLines(target.getName(), lines);
+			currentLine = 0;
 		active = true;
 		target.startInteraction();
 		// Início de diálogo com NPC: som curto de confirmação no momento em
@@ -86,8 +89,9 @@ public final class DialogueManager {
 		// diálogo da rodada 15.
 		SoundManager.play(SoundManager.Event.NPC_INTERACT);
 		SoundManager.play(SoundManager.Event.DIALOGUE_START);
-		QuestManager.notifyDialogueStarted(target);
-		return target;
+			QuestManager.notifyDialogueStarted(target);
+			VoiceManager.playDialogueLine(target.getName(), currentLine);
+			return target;
 	}
 
 	/**
@@ -113,10 +117,11 @@ public final class DialogueManager {
 		currentLine++;
 		if (currentLine >= lines.length) {
 			close();
-		} else {
-			SoundManager.play(SoundManager.Event.TUTORIAL_STEP);
+			} else {
+				SoundManager.play(SoundManager.Event.TUTORIAL_STEP);
+				VoiceManager.playDialogueLine(target.getName(), currentLine);
+			}
 		}
-	}
 
 	/**
 	 * Aplica a escolha numerada (0..2) no nó atual de um BranchingNpc:
@@ -132,10 +137,11 @@ public final class DialogueManager {
 		if (branch.isTerminal()) {
 			close();
 		} else {
-			lines = new String[] { branch.getNodeText() };
-			currentLine = 0;
+				lines = Localization.localizeLines(target.getName(), new String[] { branch.getNodeText() });
+				currentLine = 0;
+				VoiceManager.playDialogueLine(target.getName(), currentLine);
+			}
 		}
-	}
 
 	/** Fecha o diálogo, reativa o mundo e notifica a missão da conclusão. */
 	public static void close() {
@@ -147,8 +153,9 @@ public final class DialogueManager {
 		lines = new String[0];
 		currentLine = 0;
 		active = false;
-		SoundManager.play(SoundManager.Event.TUTORIAL_DONE);
-		QuestManager.notifyDialogueFinished(npc);
+			SoundManager.play(SoundManager.Event.TUTORIAL_DONE);
+			VoiceManager.stop();
+			QuestManager.notifyDialogueFinished(npc);
 		npc.onDialogueClosed();
 	}
 
@@ -160,9 +167,10 @@ public final class DialogueManager {
 			lines = new String[0];
 			currentLine = 0;
 			active = false;
-			npc.onDialogueClosed();
+				npc.onDialogueClosed();
+				VoiceManager.stop();
+			}
 		}
-	}
 
 	/** Inimigos ficam paralisados enquanto o diálogo está ativo. */
 	public static boolean isEnemyPaused() {
@@ -170,7 +178,7 @@ public final class DialogueManager {
 	}
 
 	public static String getSpeakerName() {
-		return target != null ? target.getName() : "";
+		return target != null ? Localization.localizeCharacter(target.getName()) : "";
 	}
 
 	public static String getCurrentLine() {

@@ -194,8 +194,9 @@ public final class SaveManager {
 						com.traduvertgames.quest.ContractManager.serializeCompleted()));
 				session.put("weaponBuilds", new HashMap<String, Object>(
 						com.traduvertgames.main.WeaponBuildManager.serialize()));
-				session.put("regionalChains", new HashMap<String, Object>(
-						com.traduvertgames.world.RegionalChainManager.serialize()));
+					 session.put("regionalChains", new HashMap<String, Object>(
+							com.traduvertgames.world.RegionalChainManager.serialize()));
+					 session.put("language", Localization.serialize());
 								session.put("sideQuestsDone", new HashMap<String, Boolean>(
 
 					com.traduvertgames.quest.SideQuestManager.getCompleted()));
@@ -575,6 +576,7 @@ public final class SaveManager {
 
 					// Migração v1→v2: se o slot é flat (v1), a sessão é o próprio slot.
 			Map<String, Object> session = getSession(slot);
+			Localization.deserialize(session.get("language"));
 			// Saves anteriores ao campo levelUpBonuses não devem herdar escolhas
 			// da partida que estava aberta antes do carregamento.
 			LevelUpManager.resetProgress();

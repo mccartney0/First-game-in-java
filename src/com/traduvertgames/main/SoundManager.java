@@ -47,8 +47,17 @@ public final class SoundManager {
 		DIALOGUE_START,
 		PURCHASE,
 		MENU_SELECT,
-		NPC_INTERACT
-	}
+		NPC_INTERACT,
+		MAGIC_CAST,
+		MAGIC_HIT,
+		EXPERIENCE_ORB,
+		SURVIVAL_PHASE,
+		DUNGEON_OPEN,
+		WEAPON_ION,
+		WEAPON_SCATTER,
+		WEAPON_FUSION,
+		WEAPON_VOID
+		}
 
 	private static final Map<Event, String> FILES = new HashMap<>();
 
@@ -86,7 +95,16 @@ public final class SoundManager {
 		FILES.put(Event.MENU_SELECT, "/sounds/menu_select.wav");
 		// Som de interação com NPC ao pressionar R (follow-up rodada 20):
 		// tom curto de confirmação que avisa que a conversa abriu.
-		FILES.put(Event.NPC_INTERACT, "/sounds/npc_interact.wav");
+			FILES.put(Event.NPC_INTERACT, "/sounds/npc_interact.wav");
+			FILES.put(Event.MAGIC_CAST, "/sounds/magic_cast.wav");
+			FILES.put(Event.MAGIC_HIT, "/sounds/magic_hit.wav");
+			FILES.put(Event.EXPERIENCE_ORB, "/sounds/experience_orb.wav");
+			FILES.put(Event.SURVIVAL_PHASE, "/sounds/survival_phase.wav");
+			FILES.put(Event.DUNGEON_OPEN, "/sounds/dungeon_open.wav");
+			FILES.put(Event.WEAPON_ION, "/sounds/weapon_ion.wav");
+			FILES.put(Event.WEAPON_SCATTER, "/sounds/weapon_scatter.wav");
+			FILES.put(Event.WEAPON_FUSION, "/sounds/weapon_fusion.wav");
+			FILES.put(Event.WEAPON_VOID, "/sounds/weapon_void.wav");
 	}
 
 	/** Pool de clips por evento: cada chamada play() devolve o clip ao pool. */
@@ -96,6 +114,23 @@ public final class SoundManager {
 	private static final int POOL_SIZE = 4;
 
 	private SoundManager() {
+	}
+
+	/** Permite substituir um arquivo de áudio sem alterar os call sites do jogo. */
+	public static synchronized void registerFile(Event event, String resourcePath) {
+		if (event == null || resourcePath == null || resourcePath.isEmpty()) {
+			return;
+		}
+		FILES.put(event, resourcePath);
+		Clip[] previous = pools.remove(event);
+		poolIdx.remove(event);
+		if (previous != null) {
+			for (Clip clip : previous) {
+				if (clip != null) {
+					clip.close();
+				}
+			}
+		}
 	}
 
 	/**

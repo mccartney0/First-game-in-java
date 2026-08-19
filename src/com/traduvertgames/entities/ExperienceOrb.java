@@ -47,7 +47,7 @@ public final class ExperienceOrb extends Entity {
         y += vy;
         if (Entity.isColliding(this, Game.player)) {
             LevelUpManager.collectXp(amount);
-            com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.PICKUP);
+			com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.EXPERIENCE_ORB);
             Game.entities.remove(this);
         }
     }

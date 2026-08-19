@@ -15,6 +15,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import com.traduvertgames.engine.RpgExpansionEngine;
+import com.traduvertgames.entities.Companion.CompanionType;
+import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.graficos.AssetCatalog;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.world.LargeRpgMapGenerator;
@@ -57,5 +59,11 @@ class LargeMapEngineTest {
         assertNotNull(AssetCatalog.weaponIcon(WeaponType.SCATTER_CANNON));
         assertNotNull(AssetCatalog.weaponIcon(WeaponType.FUSION_LANCE));
         assertNotNull(AssetCatalog.weaponIcon(WeaponType.VOID_MORTAR));
+        assertNotNull(AssetCatalog.companionSprite(CompanionType.SCOUT));
+        assertNotNull(AssetCatalog.companionSprite(CompanionType.SHIELD_BOT));
+        assertNotNull(AssetCatalog.companionSprite(CompanionType.FAIRY));
+        assertNotNull(AssetCatalog.enemySprite(Enemy.Variant.SCOUT));
+        assertNotNull(AssetCatalog.enemySprite(Enemy.Variant.BOMBER));
+        assertNotNull(AssetCatalog.enemySprite(Enemy.Variant.OVERSEER_PRIME));
     }
 }
