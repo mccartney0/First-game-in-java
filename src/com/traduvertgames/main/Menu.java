@@ -109,6 +109,14 @@ public class Menu {
 
 	public static boolean saveExists = false;
 
+	public Menu() {
+		// O estado persistente é carregado uma vez ao abrir a sessão. Recarregar
+		// o disco em todo frame revertia compras feitas poucos milissegundos antes.
+		SaveManager.refreshBestRun();
+		SaveManager.refreshMetagame();
+		SaveManager.refreshPostCampaignFlags();
+	}
+
 	/** Renderiza a tela de pausa sobre o jogo (usado quando o jogo continua atrás). */
 	public static void renderPauseScreen(Graphics g) {
 		// A tela de pausa só aparece quando o jogador pausa de verdade (ESC/P) e
@@ -186,11 +194,9 @@ public class Menu {
 			// Rodada 29 — metagame: Enter compra o upgrade selecionado quando
 				// a tela de melhorias do piloto estiver aberta.
 			if (upgradesOpen) {
-				// Enter confirma a compra do upgrade selecionado e fecha a tela
-				// de melhorias (o jogador retorna ao menu principal pelo banner
-				// de feedback, sem precisar de um passo extra de navegação).
+				// Mantém a tela aberta para exibir imediatamente o novo nível, o
+				// saldo restante e permitir compras consecutivas.
 				com.traduvertgames.graficos.PilotUpgradesScreen.confirm();
-				com.traduvertgames.graficos.PilotUpgradesScreen.close();
 				return;
 			}
 			switch (currentScreen) {
@@ -741,13 +747,8 @@ private void handlePauseSelection() {
 			g.drawString(labels[i], textX, baselineY);
 		}
 
-		// Rodada 29 — metagame: saldo de créditos do piloto exibido no menu
-		// principal (atualizado a partir do disco a cada render).
-		SaveManager.refreshMetagame();
-		// Rodada 31 — recarrega as flags pós-campanha a cada render do menu,
-		// para que "Nova campanha+" reflita o estado gravado no disco mesmo
-		// antes de carregar um slot (mesmo padrão do refreshMetagame).
-		SaveManager.refreshPostCampaignFlags();
+		// Saldo em memória: compras e recompensas aparecem imediatamente. O
+		// estado do disco é carregado no construtor e nas rotinas de load.
 		int credits = com.traduvertgames.state.PilotUpgrades.getCredits();
 		Font creditFont = new Font("arial", Font.BOLD, 16);
 		g.setFont(creditFont);

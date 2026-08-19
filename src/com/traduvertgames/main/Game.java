@@ -1192,6 +1192,23 @@ if (!hidingHud) {
 		@Override
 		// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
 			public void keyPressed(KeyEvent e) {
+			// A tela de melhorias é modal. Enter e Space compram sem fechar a
+			// tela; ESC volta ao menu e nenhuma tecla vaza para outras telas.
+			if (com.traduvertgames.graficos.PilotUpgradesScreen.isOpen()) {
+				if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+					com.traduvertgames.graficos.PilotUpgradesScreen.up();
+				} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+					com.traduvertgames.graficos.PilotUpgradesScreen.down();
+				} else if (e.getKeyCode() == KeyEvent.VK_ENTER
+						|| e.getKeyCode() == KeyEvent.VK_SPACE) {
+					com.traduvertgames.graficos.PilotUpgradesScreen.confirm();
+				} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					com.traduvertgames.graficos.PilotUpgradesScreen.close();
+				} else if (e.getKeyCode() == KeyEvent.VK_F11) {
+					toggleFullscreen();
+				}
+				return;
+			}
 			// Overlays de conclusão/vitória têm prioridade absoluta: nenhuma tecla
 			// deve alcançar o menu de pausa ou a seleção inicial por baixo deles.
 			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
@@ -2390,6 +2407,7 @@ if (!hidingHud) {
 		VictoryCutscene.stop();
 		DialogueManager.stop();
 		MissionBanner.reset();
+		SaveManager.saveMetagame();
 		InventoryManager.close();
 		LevelSelectScreen.close();
 		gameState = "MENU";

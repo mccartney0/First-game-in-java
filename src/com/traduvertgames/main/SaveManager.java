@@ -259,6 +259,18 @@ public final class SaveManager {
 		return saveCurrentGame();
 	}
 
+	/**
+	 * Persiste somente créditos e melhorias permanentes, sem criar nem alterar
+	 * uma sessão de gameplay. Usado pela loja de melhorias no menu principal.
+	 */
+	public static boolean saveMetagame() {
+		Map<String, Object> root = loadRoot();
+		root.put("activeSlot", activeSlot);
+		root.put("metagame", new HashMap<String, Object>(
+				com.traduvertgames.state.PilotUpgrades.serialize()));
+		return writeRoot(root);
+	}
+
 	/** Progresso narrativo da fase atual (estado da missão) por nível. */
 	private static Map<String, Object> buildProgressMap(Game game) {
 		Map<String, Object> progress = new HashMap<String, Object>();

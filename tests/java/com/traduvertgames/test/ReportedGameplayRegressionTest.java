@@ -18,12 +18,15 @@ import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.EscortNpc;
 import com.traduvertgames.entities.Player;
+import com.traduvertgames.graficos.PilotUpgradesScreen;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.main.InventoryManager;
 import com.traduvertgames.main.LevelSelectScreen;
 import com.traduvertgames.main.Menu;
 import com.traduvertgames.main.SaveManager;
 import com.traduvertgames.quest.QuestManager;
+import com.traduvertgames.state.PilotUpgrades;
+import com.traduvertgames.state.PilotUpgrades.Upgrade;
 import com.traduvertgames.world.World;
 
 /** Regressões dos bugs reportados na escolta, overlays e slots de save. */
@@ -34,6 +37,8 @@ public class ReportedGameplayRegressionTest {
 	@BeforeEach
 	void setUp() throws Exception {
 		GameTestFixture.cleanSaveFiles();
+		PilotUpgrades.resetCredits();
+		PilotUpgradesScreen.close();
 		InventoryManager.reset();
 		LevelSelectScreen.close();
 		game = GameTestFixture.initHeadless();
@@ -135,6 +140,29 @@ public class ReportedGameplayRegressionTest {
 		assertTrue(java.util.Arrays.asList(options).contains("salvar em novo slot"));
 		assertTrue(java.util.Arrays.asList(options).contains("reiniciar missão atual"));
 		assertTrue(java.util.Arrays.asList(options).contains("voltar ao menu principal"));
+	}
+
+	@Test
+	void spacePurchaseUpdatesLevelImmediatelyAndPersistsMetagame() {
+		PilotUpgrades.addCredits(200);
+		assertTrue(SaveManager.saveMetagame());
+		Game.gameState = "MENU";
+		PilotUpgradesScreen.open();
+		PilotUpgradesScreen.down(); // CELLS -> REGEN
+
+		press(KeyEvent.VK_SPACE);
+
+		assertTrue(PilotUpgradesScreen.isOpen(), "a tela deve permanecer aberta após comprar");
+		assertEquals(1, PilotUpgrades.getLevel(Upgrade.REGEN));
+		assertEquals(0, PilotUpgrades.getCredits());
+
+		PilotUpgrades.resetCredits();
+		SaveManager.refreshMetagame();
+		assertEquals(1, PilotUpgrades.getLevel(Upgrade.REGEN), "a compra deve sobreviver ao reload");
+		assertEquals(0, PilotUpgrades.getCredits());
+
+		press(KeyEvent.VK_ESCAPE);
+		assertFalse(PilotUpgradesScreen.isOpen());
 	}
 
 	@Test

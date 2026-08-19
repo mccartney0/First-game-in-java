@@ -54,6 +54,8 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 
 O jogo mantém até três slots em `saves.json`. Cada slot registra os recursos do jogador, arsenal, inventário, inimigos derrotados, fase, pontuação e o estado das missões; metagame e recordes globais ficam na raiz do arquivo. A gravação usa um arquivo temporário, valida o JSON escrito e mantém `saves.backup.json`; se o arquivo principal estiver truncado ou inválido, o último backup válido é restaurado automaticamente. No menu de pausa, **Salvar jogo** atualiza o slot ativo e **Salvar em novo slot** cria uma cópia do estado atual somente em um slot vazio, sem sobrescrever outro progresso.
 
+As compras em **Melhorias do piloto** são aplicadas e persistidas imediatamente. A tela permanece aberta após cada compra para mostrar o novo nível e o saldo restante; `Enter` e `Espaço` confirmam a compra.
+
 ## HUD, áudio e recursos
 
 - **HUD** – A classe `UI` exibe barras compactas dentro do canvas (agora incluindo a barra de escudo) e, após o escalonamento, projeta painéis translúcidos com status do piloto, a missão ativa com texto resumido, placar e arsenal desbloqueado. O canvas opera em 384×216 pixels (1 152×648 após o `SCALE`), com espaçamento ampliado, valores numéricos nas barras e cartões reposicionados para aproveitar a área extra.【F:src/com/traduvertgames/main/Game.java†L37-L320】【F:src/com/traduvertgames/graficos/UI.java†L18-L210】
