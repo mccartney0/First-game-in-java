@@ -1379,22 +1379,31 @@ public class Enemy extends Entity {
         int drawX = this.getX() + (16 - drawSize) / 2 - Camera.x;
         int drawY = this.getY() + (16 - drawSize) / 2 - Camera.y;
         BufferedImage generatedSprite = AssetCatalog.enemySprite(variant);
-        if (!isDamaged) {
-            if (generatedSprite != null) {
-                g.drawImage(generatedSprite, drawX, drawY, drawSize, drawSize, null);
-            } else {
-                g.drawImage(sprites[index], this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
-            }
+        if (generatedSprite != null) {
+            g.drawImage(generatedSprite, drawX, drawY, drawSize, drawSize, null);
         } else {
-            g.drawImage(Entity.ENEMY_FEEDBACK, drawX, drawY, drawSize, drawSize, null);
+            g.drawImage(sprites[index], this.getX() + 4 - Camera.x, this.getY() + 4 - Camera.y, null);
         }
 
-        // Aura distinta por variante, mais evidente para os novos mobs.
-        int auraSize = (variant == Variant.GUARDIAN) ? 14 : 12;
+        // O feedback de dano não substitui mais o sprite por um quadrado opaco.
+        // O monstro permanece legível e recebe apenas um flash de contorno.
+        if (isDamaged) {
+            g.setColor(new Color(255, 238, 238, 215));
+            g.drawOval(drawX - 1, drawY - 1, drawSize + 2, drawSize + 2);
+            g.setColor(new Color(255, 82, 82, 175));
+            g.drawRect(drawX, drawY, drawSize - 1, drawSize - 1);
+        }
+
+        // Auras são informação secundária: menores e mais transparentes para
+        // inimigos comuns; elites e chefes continuam distinguíveis.
+        int auraSize = boss ? drawSize + 8 : elite ? drawSize + 5 : drawSize + 2;
         if (variant != Variant.SCOUT) {
-            Color aura = new Color(auraColor.getRed(), auraColor.getGreen(), auraColor.getBlue(), 120);
+            int auraAlpha = boss ? 170 : elite ? 125 : 78;
+            Color aura = new Color(auraColor.getRed(), auraColor.getGreen(), auraColor.getBlue(), auraAlpha);
             g.setColor(aura);
-            g.drawOval(this.getX() + 1 - Camera.x, this.getY() + 1 - Camera.y, auraSize, auraSize);
+            int auraX = this.getX() + 8 - auraSize / 2 - Camera.x;
+            int auraY = this.getY() + 8 - auraSize / 2 - Camera.y;
+            g.drawOval(auraX, auraY, auraSize, auraSize);
         }
         int markerX = this.getX() - Camera.x;
         int markerY = this.getY() - Camera.y;
