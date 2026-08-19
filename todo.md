@@ -8,3 +8,8 @@
 - [x] Implementar telemetria ambiental, ciclo visual e persistência de estado.
 - [x] Aplicar regras de clima e período aos monstros gigantes.
 - [x] Validar regressões, balanceamento e QA headless antes do commit.
+- [x] Auditar sons, música e roteiro do playthrough climático do Mundo Aberto.
+- [x] Executar playthrough controlado pelos setores e registrar achados de clima e gigantes.
+- [x] Definir camadas de ambiente e trilhas adaptativas por período e condição climática.
+- [x] Integrar assets substituíveis, crossfades e telemetria de áudio no jogo.
+- [x] Validar regressões, QA e playthrough final antes de publicar.

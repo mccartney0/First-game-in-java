@@ -78,6 +78,20 @@ def make_assets():
     write_wav("weapon_scatter", mix(noise(0.20, 0.24, 10, 23), tone(0.18, 120, 70, 0.24, 9)))
     write_wav("weapon_fusion", mix(tone(0.28, 420, 920, 0.28, 4, 2), tone(0.28, 840, 1680, 0.12, 5, 2)))
     write_wav("weapon_void", mix(tone(0.54, 150, 42, 0.34, 3.2, 3), noise(0.42, 0.13, 4, 24)))
+    # Camadas ambientais do Mundo Aberto. São efeitos curtos disparados em
+    # intervalos variáveis pelo WeatherAudioManager, portanto podem ser
+    # substituídos sem exigir clips longos em loop.
+    write_wav("weather_breeze", mix(noise(0.90, 0.10, 0.8, 40), tone(0.90, 140, 96, 0.04, 1.1, 2)))
+    write_wav("weather_rain", mix(noise(0.78, 0.18, 0.55, 41), tone(0.30, 1800, 920, 0.03, 6.0, 1)))
+    write_wav("weather_fog", mix(tone(1.05, 210, 175, 0.08, 1.0, 2), noise(1.05, 0.045, 0.6, 42)))
+    write_wav("weather_ash", mix(noise(0.84, 0.14, 1.3, 43), tone(0.52, 630, 410, 0.06, 2.4, 2)))
+    write_wav("weather_storm", mix(noise(0.92, 0.18, 0.9, 44), tone(0.65, 68, 42, 0.15, 1.2, 2), tone(0.18, 950, 1650, 0.08, 8.0, 1)))
+    write_wav("weather_acid", mix(noise(0.72, 0.10, 1.7, 45), tone(0.70, 390, 260, 0.09, 1.7, 3)))
+    write_wav("weather_crystal", sequence(tone(0.18, 1220, 1580, 0.12, 7.0, 1), silence(0.05), tone(0.30, 980, 670, 0.09, 4.0, 2)))
+    write_wav("weather_void", mix(tone(1.18, 82, 38, 0.16, 0.9, 3), noise(1.18, 0.055, 1.0, 46)))
+    write_wav("time_dusk", sequence(tone(0.22, 440, 392, 0.14, 5.0, 2), silence(0.06), tone(0.34, 330, 247, 0.14, 3.8, 2)))
+    write_wav("time_night", mix(tone(0.72, 196, 110, 0.16, 1.8, 2), tone(0.22, 740, 620, 0.08, 6.0, 1)))
+    write_wav("time_dawn", sequence(tone(0.18, 330, 494, 0.12, 7.0, 2), silence(0.04), tone(0.38, 494, 740, 0.15, 4.6, 2)))
 
 
 if __name__ == "__main__":

@@ -56,7 +56,18 @@ public final class SoundManager {
 		WEAPON_ION,
 		WEAPON_SCATTER,
 		WEAPON_FUSION,
-		WEAPON_VOID
+		WEAPON_VOID,
+		WEATHER_BREEZE,
+		WEATHER_RAIN,
+		WEATHER_FOG,
+		WEATHER_ASH,
+		WEATHER_STORM,
+		WEATHER_ACID,
+		WEATHER_CRYSTAL,
+		WEATHER_VOID,
+		TIME_DUSK,
+		TIME_NIGHT,
+		TIME_DAWN
 		}
 
 	private static final Map<Event, String> FILES = new HashMap<>();
@@ -105,6 +116,17 @@ public final class SoundManager {
 			FILES.put(Event.WEAPON_SCATTER, "/sounds/weapon_scatter.wav");
 			FILES.put(Event.WEAPON_FUSION, "/sounds/weapon_fusion.wav");
 			FILES.put(Event.WEAPON_VOID, "/sounds/weapon_void.wav");
+			FILES.put(Event.WEATHER_BREEZE, "/sounds/weather_breeze.wav");
+			FILES.put(Event.WEATHER_RAIN, "/sounds/weather_rain.wav");
+			FILES.put(Event.WEATHER_FOG, "/sounds/weather_fog.wav");
+			FILES.put(Event.WEATHER_ASH, "/sounds/weather_ash.wav");
+			FILES.put(Event.WEATHER_STORM, "/sounds/weather_storm.wav");
+			FILES.put(Event.WEATHER_ACID, "/sounds/weather_acid.wav");
+			FILES.put(Event.WEATHER_CRYSTAL, "/sounds/weather_crystal.wav");
+			FILES.put(Event.WEATHER_VOID, "/sounds/weather_void.wav");
+			FILES.put(Event.TIME_DUSK, "/sounds/time_dusk.wav");
+			FILES.put(Event.TIME_NIGHT, "/sounds/time_night.wav");
+			FILES.put(Event.TIME_DAWN, "/sounds/time_dawn.wav");
 	}
 
 	/** Pool de clips por evento: cada chamada play() devolve o clip ao pool. */

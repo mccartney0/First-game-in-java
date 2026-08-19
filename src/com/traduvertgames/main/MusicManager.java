@@ -22,7 +22,13 @@ public final class MusicManager {
 		FOREST("/sounds/music_forest.wav"),
 		TENSION("/sounds/music_tension.wav"),
 		BOSS("/sounds/music_boss.wav"),
-		ARENA("/sounds/music_arena.wav");
+		ARENA("/sounds/music_arena.wav"),
+		OPEN_WORLD_DAY("/sounds/music_open_world_day.wav"),
+		OPEN_WORLD_DUSK("/sounds/music_open_world_dusk.wav"),
+		OPEN_WORLD_NIGHT("/sounds/music_open_world_night.wav"),
+		OPEN_WORLD_DAWN("/sounds/music_open_world_dawn.wav"),
+		OPEN_WORLD_STORM("/sounds/music_open_world_storm.wav"),
+		OPEN_WORLD_ECLIPSE("/sounds/music_open_world_eclipse.wav");
 
 		private final String path;
 
@@ -78,6 +84,11 @@ public final class MusicManager {
 		fadingIn = next;
 		crossfadeRemaining = CROSSFADE_FRAMES;
 		startAt(fadingIn, -60.0f); // entra em silêncio
+	}
+
+	/** Zona requisitada atualmente, útil para telemetria e testes headless. */
+	public static Zone getCurrentZone() {
+		return currentZone;
 	}
 
 	/**

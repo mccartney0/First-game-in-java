@@ -727,8 +727,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			// é MENU (seleção de arma) e o update só rodava dentro do bloco
 			// NORMAL, o que deixava a música muda até o primeiro jogo
 			// carregado via loadSlot (que pula direto para NORMAL). Agora o
-			// tema da fase inicial entra em crossfade desde o menu.
-			MusicManager.update();
+				// tema da fase inicial entra em crossfade desde o menu.
+				MusicManager.update();
 			if ("NORMAL".equals(gameState)) {
 // Salvar o jogo (formato JSON correto com slots)
                         if (Game.saveGame) {
@@ -817,6 +817,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 								&& com.traduvertgames.world.OpenWorldManager.updatePlayerPosition(
 										(int) player.getX(), (int) player.getY());
 						com.traduvertgames.world.WorldWeatherManager.update();
+						WeatherAudioManager.update();
 						if (enteredRegion && !isTransitionCooldown() && !isTransitioning()) {
 							MissionBanner.show("REGIÃO DESCOBERTA",
 									RpgWorldManager.getCurrentRegionName() + " — "
