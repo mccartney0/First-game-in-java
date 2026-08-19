@@ -4,9 +4,10 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
+import java.util.Map;
 
 import com.traduvertgames.main.Game;
-import com.traduvertgames.main.Menu;
+import com.traduvertgames.main.SaveManager;
 import com.traduvertgames.state.PilotUpgrades;
 import com.traduvertgames.state.PilotUpgrades.Upgrade;
 
@@ -21,6 +22,8 @@ public final class PilotUpgradesScreen {
 
 	private static boolean open = false;
 	private static int selection = 0;
+	private static String feedback = "";
+	private static Color feedbackColor = Color.WHITE;
 
 	private PilotUpgradesScreen() {
 	}
@@ -34,12 +37,14 @@ public final class PilotUpgradesScreen {
 	public static void open() {
 		open = true;
 		selection = 0;
+		feedback = "";
 	}
 
 	/** Fecha a tela. */
 	public static void close() {
 		open = false;
 		selection = 0;
+		feedback = "";
 	}
 
 	/** Alterna a tela (enter/ESC do menu principal). */
@@ -64,24 +69,31 @@ public final class PilotUpgradesScreen {
 	}
 
 	/** Confirma a compra do upgrade selecionado. */
-	public static void confirm() {
+	public static boolean confirm() {
 		Upgrade upgrade = Upgrade.values()[selection];
 		if (PilotUpgrades.canAfford(upgrade)) {
-			PilotUpgrades.buy(upgrade);
+			Map<String, Object> beforePurchase = PilotUpgrades.serialize();
+			if (!PilotUpgrades.buy(upgrade)) {
+				return false;
+			}
+			if (!SaveManager.saveMetagame()) {
+				PilotUpgrades.deserialize(beforePurchase);
+				feedback = "Falha ao salvar a compra. Nenhum crédito foi gasto.";
+				feedbackColor = new Color(244, 67, 54);
+				return false;
+			}
 			com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.LEVELUP);
-			MissionBanner.show(
-					"UPGRADE: " + upgrade.name().toUpperCase(),
-					"Piloto aprimorado — " + PilotUpgrades.summary(),
-					new Color(255, 214, 10), Color.WHITE, 180);
+			feedback = "Compra concluída: " + PilotUpgrades.labels()[selection]
+					+ " nível " + PilotUpgrades.getLevel(upgrade);
+			feedbackColor = new Color(100, 255, 120);
+			return true;
 		} else {
 			int cost = PilotUpgrades.getNextCost(upgrade);
-			String hint = cost < 0
+			feedback = cost < 0
 					? "Nível máximo alcançado"
 					: "Créditos insuficientes (" + cost + " necessários)";
-			MissionBanner.show(
-					"SEM CRÉDITOS",
-					hint,
-					new Color(244, 67, 54), Color.WHITE, 200);
+			feedbackColor = new Color(244, 67, 54);
+			return false;
 		}
 	}
 
@@ -152,5 +164,12 @@ public final class PilotUpgradesScreen {
 		g2.setColor(new Color(200, 200, 200));
 		String footer = "ENTER/SPACE: comprar  |  ESC: voltar";
 		g2.drawString(footer, w / 2 - g2.getFontMetrics().stringWidth(footer) / 2, y + 30);
+		if (!feedback.isEmpty()) {
+			g2.setFont(new Font("Dialog", Font.BOLD, 18));
+			g2.setColor(feedbackColor);
+			g2.drawString(feedback,
+					w / 2 - g2.getFontMetrics().stringWidth(feedback) / 2,
+					y + 62);
+		}
 	}
 }

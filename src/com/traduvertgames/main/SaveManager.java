@@ -1,10 +1,7 @@
 package com.traduvertgames.main;
 
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -239,24 +236,39 @@ public final class SaveManager {
 	}
 
 	/**
-	 * Salva automaticamente no slot ativo em checkpoints explícitos.
+	 * Grava o estado atual em outro slot e o torna ativo somente depois de uma
+	 * escrita bem-sucedida. A UI usa este método apenas para slots vazios.
 	 */
-	/** Salva explicitamente no slot escolhido e torna esse slot o ativo. */
-	public static boolean saveToSlot(int slotId) {
+	public static boolean saveCurrentGameToSlot(int slotId) {
 		if (slotId < 1 || slotId > SLOT_COUNT) {
 			return false;
 		}
 		int previousSlot = activeSlot;
 		activeSlot = slotId;
-		boolean saved = saveCurrentGame();
-		if (!saved) {
-			activeSlot = previousSlot;
+		if (saveCurrentGame()) {
+			return true;
 		}
-		return saved;
+		activeSlot = previousSlot;
+		return false;
 	}
 
+	/**
+	 * Salva automaticamente no slot ativo em checkpoints explícitos.
+	 */
 	public static boolean saveAutoSave() {
 		return saveCurrentGame();
+	}
+
+	/**
+	 * Persiste somente créditos e melhorias permanentes, sem criar nem alterar
+	 * uma sessão de gameplay. Usado pela loja de melhorias no menu principal.
+	 */
+	public static boolean saveMetagame() {
+		Map<String, Object> root = loadRoot();
+		root.put("activeSlot", activeSlot);
+		root.put("metagame", new HashMap<String, Object>(
+				com.traduvertgames.state.PilotUpgrades.serialize()));
+		return writeRoot(root);
 	}
 
 	/** Progresso narrativo da fase atual (estado da missão) por nível. */
@@ -370,13 +382,16 @@ public final class SaveManager {
 		restorePostCampaignFlags(loadRoot());
 	}
 
-	/** Restaura o último slot usado ao entrar no menu, sem carregar a partida. */
+	/** Restaura o último slot usado ao abrir uma nova sessão do jogo. */
 	public static void refreshActiveSlot() {
 		Map<String, Object> root = loadRoot();
-		int savedSlot = toInt(root.get("activeSlot"));
-		if (savedSlot >= 1 && savedSlot <= SLOT_COUNT) {
-			activeSlot = savedSlot;
+		int persisted = toInt(root.get("activeSlot"));
+		List<Map<String, Object>> slots = getSlots(root);
+		if (persisted >= 1 && persisted <= SLOT_COUNT && findSlot(slots, persisted) != null) {
+			activeSlot = persisted;
+			return;
 		}
+		activeSlot = firstSavedSlot(slots, -1);
 	}
 
 	// ---------- Flags de diálogos por NPC/fase ----------
@@ -935,18 +950,38 @@ public final class SaveManager {
 
 	/** Apaga o conteúdo de um slot específico. */
 	public static boolean clearSlot(int slotId) {
+		if (slotId < 1 || slotId > SLOT_COUNT) {
+			return false;
+		}
 		Map<String, Object> root = loadRoot();
 		List<Map<String, Object>> slots = getSlots(root);
 		Map<String, Object> slot = findSlot(slots, slotId);
 		if (slot != null) {
-			// Limpeza completa: o progresso narrativo não pode sobreviver a um
-			// slot apagado, senão a missão principal reaparece como já avançada.
 			slot.clear();
 			slot.put("id", slotId);
 			slot.put("timestamp", "");
 		}
+		if (activeSlot == slotId) {
+			activeSlot = firstSavedSlot(slots, slotId);
+		}
+		root.put("activeSlot", activeSlot);
 		root.put("slots", slots);
 		return writeRoot(root);
+	}
+
+	private static int firstSavedSlot(List<Map<String, Object>> slots, int excludedSlot) {
+		for (Map<String, Object> candidate : slots) {
+			Object id = candidate.get("id");
+			if (!(id instanceof Number)) {
+				continue;
+			}
+			int candidateId = ((Number) id).intValue();
+			if (candidateId != excludedSlot && (getSession(candidate).containsKey("vida")
+					|| getSession(candidate).containsKey("level"))) {
+				return candidateId;
+			}
+		}
+		return 1;
 	}
 
 	/** ---------- Serialização JSON manual (sem dependências externas) ---------- */
@@ -992,30 +1027,38 @@ public final class SaveManager {
 	}
 
 	private static Map<String, Object> loadRoot() {
-		if (!SAVE_FILE.exists()) {
-			return emptyRoot();
+		Map<String, Object> primary = readRootFile(SAVE_FILE);
+		if (primary != null) {
+			return primary;
 		}
-		try {
-			BufferedReader reader = new BufferedReader(new FileReader(SAVE_FILE));
-			StringBuilder builder = new StringBuilder();
-			String line;
-			while ((line = reader.readLine()) != null) {
-				builder.append(line).append('\n');
+		Map<String, Object> backup = readRootFile(SAVE_BACKUP);
+		if (backup != null) {
+			try {
+				java.nio.file.Files.copy(SAVE_BACKUP.toPath(), SAVE_FILE.toPath(),
+						java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			} catch (IOException ignored) {
+				// O estado recuperado ainda pode ser usado nesta sessão.
 			}
-			reader.close();
-			Object parsed = JsonParser.parse(builder.toString());
-			Map<String, Object> parsedRoot = asMap(parsed);
-			if (parsedRoot != null) {
-				return parsedRoot;
-			}
-		} catch (Exception ignored) {
-			// Arquivo malformado (ex.: corrupção por queda de energia):
-			// tratar como ausência de save em vez de derrubar o jogo.
-			if (SAVE_FILE.exists()) {
-				SAVE_FILE.delete();
-			}
+			return backup;
 		}
 		return emptyRoot();
+	}
+
+	private static Map<String, Object> readRootFile(File file) {
+		if (file == null || !file.exists()) {
+			return null;
+		}
+		try {
+			byte[] bytes = java.nio.file.Files.readAllBytes(file.toPath());
+			String json = new String(bytes, java.nio.charset.StandardCharsets.UTF_8);
+			Map<String, Object> parsedRoot = asMap(JsonParser.parse(json));
+			if (parsedRoot == null || !(parsedRoot.get("slots") instanceof List<?>)) {
+				return null;
+			}
+			return parsedRoot;
+		} catch (Exception ignored) {
+			return null;
+		}
 	}
 
 	private static List<Map<String, Object>> getSlots(Map<String, Object> root) {
@@ -1082,14 +1125,15 @@ public final class SaveManager {
 			if (SAVE_TMP.exists() && !SAVE_TMP.delete()) {
 				return false;
 			}
-			writer = new BufferedWriter(new FileWriter(SAVE_TMP));
+			writer = java.nio.file.Files.newBufferedWriter(SAVE_TMP.toPath(),
+					java.nio.charset.StandardCharsets.UTF_8);
 			writer.write(JsonWriter.write(root));
 			writer.flush();
 			writer.close();
 			writer = null;
 			java.nio.file.Path target = SAVE_FILE.toPath();
 			java.nio.file.Path temporary = SAVE_TMP.toPath();
-			if (SAVE_FILE.exists()) {
+			if (readRootFile(SAVE_FILE) != null) {
 				java.nio.file.Files.copy(target, SAVE_BACKUP.toPath(),
 						java.nio.file.StandardCopyOption.REPLACE_EXISTING);
 			}
@@ -1100,6 +1144,9 @@ public final class SaveManager {
 			} catch (java.nio.file.AtomicMoveNotSupportedException unsupported) {
 				java.nio.file.Files.move(temporary, target,
 						java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			}
+			if (readRootFile(SAVE_FILE) == null) {
+				throw new IOException("Falha ao validar o save após a gravação");
 			}
 			return true;
 		} catch (IOException e) {

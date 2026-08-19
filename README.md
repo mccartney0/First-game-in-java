@@ -28,7 +28,7 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 - **Pulo:** `Espaço` ativa o salto 2D simulado do personagem.【F:src/com/traduvertgames/main/Game.java†L323-L363】【F:src/com/traduvertgames/entities/Player.java†L43-L118】
 - **Ataque:** `X` dispara projéteis enquanto houver munição e mana; o mouse também pode ser usado para mirar e atirar.【F:src/com/traduvertgames/main/Game.java†L452-L516】【F:src/com/traduvertgames/entities/Player.java†L101-L242】
 - **Troca de arma:** `Q`/`E` alternam entre as armas desbloqueadas e as teclas `1` a `4` selecionam diretamente um arquétipo específico.【F:src/com/traduvertgames/main/Game.java†L452-L497】【F:src/com/traduvertgames/entities/Player.java†L484-L512】
-- **Menu:** `Enter` confirma opções, `Esc` retorna ao menu/pausa, `T` salva o progresso quando em jogo.【F:src/com/traduvertgames/main/Game.java†L339-L372】【F:src/com/traduvertgames/main/Menu.java†L42-L103】
+- **Menu:** `Enter` confirma opções, `Esc` fecha primeiro o painel modal ativo ou abre a pausa e `T` salva no slot ativo. A pausa também permite reiniciar a missão atual, salvar em um slot vazio e voltar ao menu principal.
 - **Painel tático:** `Tab` alterna entre ocultar e exibir os cartões informativos avançados da HUD, liberando a visão do campo de batalha quando minimizados.【F:src/com/traduvertgames/main/Game.java†L133-L140】【F:src/com/traduvertgames/main/Game.java†L465-L519】【F:src/com/traduvertgames/graficos/UI.java†L52-L77】
 - **Opções:** O submenu "Opções" do menu principal permite ligar ou desligar a música ambiente e alternar a dificuldade entre Fácil, Normal e Difícil; a configuração ajusta automaticamente a vida, mana, capacidade de munição e o dano sofrido pelo jogador.【F:src/com/traduvertgames/main/Menu.java†L25-L230】【F:src/com/traduvertgames/main/OptionsConfig.java†L1-L92】【F:src/com/traduvertgames/main/Game.java†L180-L357】【F:src/com/traduvertgames/entities/BulletShoot.java†L1-L60】【F:src/com/traduvertgames/entities/Enemy.java†L320-L420】
 
@@ -52,7 +52,9 @@ Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enq
 
 ## Sistema de salvamento
 
-O jogo grava vida, mana, escudo, quantidade de munição (arma), inimigos derrotados, progresso de `levelPlus`, fase atual, pontuação, recorde e os melhores combos em `save.txt`, aplicando uma codificação simples. A opção "carregar jogo" do menu lê esse arquivo, restaura atributos do jogador, atualiza o placar e recarrega o mapa correspondente. Ao morrer, pressionar `Enter` recarrega automaticamente o último save disponível; caso o arquivo não exista, um novo jogo é iniciado do nível 1 com todos os recursos resetados.【F:src/com/traduvertgames/main/Game.java†L228-L309】【F:src/com/traduvertgames/main/Game.java†L624-L704】【F:src/com/traduvertgames/main/Menu.java†L150-L247】
+O jogo mantém até três slots em `saves.json`. Cada slot registra os recursos do jogador, arsenal, inventário, inimigos derrotados, fase, pontuação e o estado das missões; metagame e recordes globais ficam na raiz do arquivo. A gravação usa um arquivo temporário, valida o JSON escrito e mantém `saves.backup.json`; se o arquivo principal estiver truncado ou inválido, o último backup válido é restaurado automaticamente. No menu de pausa, **Salvar jogo** atualiza o slot ativo e **Salvar em novo slot** cria uma cópia do estado atual somente em um slot vazio, sem sobrescrever outro progresso.
+
+As compras em **Melhorias do piloto** são aplicadas e persistidas imediatamente. A tela permanece aberta após cada compra para mostrar o novo nível e o saldo restante; `Enter` e `Espaço` confirmam a compra.
 
 ## HUD, áudio e recursos
 

@@ -207,6 +207,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public Game() throws IOException {
 		instance = this;
+		SaveManager.refreshActiveSlot();
 		rand = new Random();
 		addKeyListener(this);
 		addMouseListener(this);
@@ -1065,9 +1066,8 @@ if (!hidingHud) {
 			drawCenteredString(overlayG, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 72 * unit);
 			drawCenteredString(overlayG, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 96 * unit);
 
-					} else if ("MENU".equals(gameState)) {
+                		} else if ("MENU".equals(gameState)) {
 				// Rodada 21: durante a transição de fase (card de estatísticas
-
 				// ou aviso de conclusão) o menu principal não é desenhado —
 				// antes ele aparecia por trás do aviso, com textos sobrepostos.
 				if (!showInitialWeaponSelect && showLevelTransition <= 0
@@ -1192,6 +1192,23 @@ if (!hidingHud) {
 		@Override
 		// Aqui só trocamos as variáveis. A lógica fica no UPDATE || Tick
 			public void keyPressed(KeyEvent e) {
+			// A tela de melhorias é modal. Enter e Space compram sem fechar a
+			// tela; ESC volta ao menu e nenhuma tecla vaza para outras telas.
+			if (com.traduvertgames.graficos.PilotUpgradesScreen.isOpen()) {
+				if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+					com.traduvertgames.graficos.PilotUpgradesScreen.up();
+				} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+					com.traduvertgames.graficos.PilotUpgradesScreen.down();
+				} else if (e.getKeyCode() == KeyEvent.VK_ENTER
+						|| e.getKeyCode() == KeyEvent.VK_SPACE) {
+					com.traduvertgames.graficos.PilotUpgradesScreen.confirm();
+				} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+					com.traduvertgames.graficos.PilotUpgradesScreen.close();
+				} else if (e.getKeyCode() == KeyEvent.VK_F11) {
+					toggleFullscreen();
+				}
+				return;
+			}
 			// Overlays de conclusão/vitória têm prioridade absoluta: nenhuma tecla
 			// deve alcançar o menu de pausa ou a seleção inicial por baixo deles.
 			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
@@ -1221,7 +1238,7 @@ if (!hidingHud) {
 				}
 				// O hub regional é modal e consome todo o teclado antes de qualquer
 				// flag de movimento, tiro, arma ou pausa.
-				if ("REGIONAL_HUB".equals(gameState)) {
+			if ("REGIONAL_HUB".equals(gameState)) {
 					if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
 						HubScreen.navigateUp();
 					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
@@ -1230,6 +1247,44 @@ if (!hidingHud) {
 						HubScreen.confirm();
 					} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 						HubScreen.cancel();
+					}
+					return;
+				}
+				// Overlays modais consomem o teclado antes do jogador e de qualquer
+				// tela que esteja atrás. Isso também recupera sessões antigas que
+				// conseguiram abrir inventário e seleção de fase ao mesmo tempo.
+				if (LevelSelectScreen.isOpen()) {
+					InventoryManager.close();
+					if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+						LevelSelectScreen.navigateUp();
+					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+						LevelSelectScreen.navigateDown();
+					} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						LevelSelectScreen.confirmSelection();
+					} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE
+							|| e.getKeyCode() == KeyEvent.VK_TAB) {
+						LevelSelectScreen.close();
+					} else if (e.getKeyCode() == KeyEvent.VK_F11) {
+						toggleFullscreen();
+					}
+					return;
+				}
+				if (InventoryManager.isOpen()) {
+					if (e.getKeyCode() == KeyEvent.VK_ESCAPE || e.getKeyCode() == KeyEvent.VK_I) {
+						InventoryManager.close();
+					} else if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+						InventoryManager.navigateUp();
+					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+						InventoryManager.navigateDown();
+					} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
+						InventoryManager.navigateLeft();
+					} else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
+						InventoryManager.navigateRight();
+					} else if (e.getKeyCode() == KeyEvent.VK_ENTER
+							|| e.getKeyCode() == KeyEvent.VK_SPACE) {
+						InventoryManager.useSelected();
+					} else if (e.getKeyCode() == KeyEvent.VK_F11) {
+						toggleFullscreen();
 					}
 					return;
 				}
@@ -1441,7 +1496,7 @@ if (!hidingHud) {
 				// Rodada 22b: o ESC fecha o inventário antes de abrir a pausa —
 				// sem isso o painel ficava preso aberto (tela escura e HUD
 				// oculta), como reportado pelo jogador.
-				InventoryManager.toggle();
+				InventoryManager.close();
 				return;
 			}
 			if ("NORMAL".equals(gameState)) {
@@ -1491,7 +1546,7 @@ if (!hidingHud) {
 					}
 
 		if (e.getKeyCode() == KeyEvent.VK_L) {
-			if ("NORMAL".equals(gameState)) {
+			if ("NORMAL".equals(gameState) && !InventoryManager.isOpen()) {
 				LevelSelectScreen.open();
 			}
 		}
@@ -2315,66 +2370,46 @@ if (!hidingHud) {
 		}
 	}
 
+	/**
+	 * Reinicia somente a fase e a missão principal atuais. O progresso global,
+	 * o slot ativo, o arsenal e o metagame são preservados; inimigos abatidos e
+	 * o estado parcial do objetivo desta fase são recriados do zero.
+	 */
+	public void restartCurrentMission() {
+		int phase = Math.max(1, Math.min(CUR_LEVEL, MAX_LEVEL));
+		DialogueManager.stop();
+		InventoryManager.close();
+		LevelSelectScreen.close();
+		clearQuestPending();
+		clearPendingOverlayInput();
+		OnboardingManager.stop();
+		Menu.closePauseScreen();
+		Menu.pause = false;
+		gameState = "NORMAL";
+		restorePhase = false;
+		GameState.restorePhase = false;
+		World.restartGame("level" + phase + ".png");
+		setCurrentLevel(phase);
+		applyPostLoadAdjustments();
+		clearInitialWeaponSelect();
+		SaveManager.saveCurrentGame();
+		MissionBanner.show(
+				"MISSÃO REINICIADA",
+				"A missão principal da fase " + phase + " voltou ao início",
+				new java.awt.Color(255, 193, 7), java.awt.Color.WHITE, 240);
+	}
+
 	/** Volta ao menu principal mantendo o autosave do progresso da partida. */
-			/** Reinicia somente a missão principal da fase atual, sem apagar o metagame. */
-		public void restartCurrentMissionFromMenu() {
-			int phase = Math.max(1, Math.min(CUR_LEVEL, MAX_LEVEL));
-			if (CUR_LEVEL > MAX_LEVEL) {
-				com.traduvertgames.graficos.MissionBanner.show(
-						"SEM MISSÃO PRINCIPAL",
-						"O modo sobrevivência não possui missão de campanha para reiniciar.",
-						new java.awt.Color(255, 193, 7), java.awt.Color.WHITE, 180);
-				return;
-			}
-			DialogueManager.stop();
-			VictoryCutscene.stop();
-			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
-				com.traduvertgames.graficos.PhaseStatsScreen.dismiss();
-			}
-			if (ShopManager.isOpen()) {
-				ShopManager.close();
-			}
-			if (LevelUpManager.isShowingLevelUp()) {
-				LevelUpManager.dismiss();
-			}
-			HubScreen.close();
-			clearQuestPending();
-			CUR_LEVEL = phase;
-			GameState.currentLevel = phase;
-			QuestManager.prepareForLevel(phase);
-			World.restartGame("level" + phase + ".png");
-			Game.gameState = "NORMAL";
-			GameState.gameState = "NORMAL";
-			Menu.pause = false;
-			if (menu != null) {
-				menu.resetToMain();
-			}
-			com.traduvertgames.graficos.MissionBanner.show(
-					"MISSÃO REINICIADA",
-					"A fase " + phase + " voltou ao início. Upgrades permanentes foram preservados.",
-					new java.awt.Color(255, 193, 7), java.awt.Color.WHITE, 210);
-			SaveManager.saveCurrentGame();
-		}
-
-		public void returnToMainMenu() {
-
+	public void returnToMainMenu() {
 		// Parar overlays ANTES de definir o estado de menu: as paradas
 		// podem sobrescrever gameState (por exemplo, VictoryCutscene.stop
 		// restaura NORMAL); o MENU é definido depois para valer como final.
-			VictoryCutscene.stop();
-			DialogueManager.stop();
-			if (ShopManager.isOpen()) {
-				ShopManager.close();
-			}
-			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
-				com.traduvertgames.graficos.PhaseStatsScreen.dismiss();
-			}
-			if (LevelUpManager.isShowingLevelUp()) {
-				LevelUpManager.dismiss();
-			}
-			HubScreen.close();
-			clearQuestPending();
-			MissionBanner.reset();
+		VictoryCutscene.stop();
+		DialogueManager.stop();
+		MissionBanner.reset();
+		SaveManager.saveMetagame();
+		InventoryManager.close();
+		LevelSelectScreen.close();
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();

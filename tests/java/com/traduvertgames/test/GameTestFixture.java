@@ -27,7 +27,7 @@ public final class GameTestFixture {
 
 	/** Arquivos voláteis que o jogo grava no diretório de trabalho. */
 	private static final String[] SCRATCH_FILES = {
-		"saves.json", "saves.backup.json", "save.txt"
+		"saves.json", "saves.backup.json", "saves.tmp", "save.txt"
 	};
 
 	/**

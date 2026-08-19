@@ -19,9 +19,9 @@ public class Menu {
 		MAIN,
 		PAUSE,
 		OPTIONS,
-			LOAD,
-			SAVE,
-			HOW_TO_PLAY,
+		LOAD,
+		SAVE,
+		HOW_TO_PLAY,
 		EXIT_CONFIRM
 	}
 
@@ -54,10 +54,10 @@ public class Menu {
 	private static final int PAUSE_CONTINUE = 0;
 	private static final int PAUSE_LOAD_GAME = 1;
 	private static final int PAUSE_SAVE_GAME = 2;
-	private static final int PAUSE_SAVE_AS = 3;
-	private static final int PAUSE_RESET_MISSION = 4;
-	private static final int PAUSE_RETURN_MAIN = 5;
-	private static final int PAUSE_OPTIONS = 6;
+	private static final int PAUSE_SAVE_NEW_SLOT = 3;
+	private static final int PAUSE_RESTART_MISSION = 4;
+	private static final int PAUSE_OPTIONS = 5;
+	private static final int PAUSE_MAIN_MENU = 6;
 	private static final int PAUSE_EXIT = 7;
 
 	private static final String[] PAUSE_OPTIONS_LIST = {
@@ -65,15 +65,14 @@ public class Menu {
 			"carregar jogo",
 			"salvar jogo",
 			"salvar em novo slot",
-			"reiniciar missão principal",
-			"salvar e voltar ao menu principal",
+			"reiniciar missão atual",
 			"opções",
+			"voltar ao menu principal",
 			"sair do jogo"
 	};
 
 	private static final String[] LOAD_SLOT_LABELS = { "Slot 1", "Slot 2", "Slot 3" };
 	private static final int LOAD_BACK = SaveManager.SLOT_COUNT;
-	private static final int SAVE_BACK = SaveManager.SLOT_COUNT;
 
 	private static final int OPTIONS_INDEX_MUSIC = 0;
 	private static final int OPTIONS_INDEX_MUSIC_VOLUME = 1;
@@ -98,6 +97,8 @@ public class Menu {
 	private Screen currentScreen = Screen.MAIN;
 	private int currentOption = 0;
 	private int exitConfirmSelection = 0; // 0 = Não, 1 = Sim
+	private String saveFeedback = "";
+	private int saveFeedbackFrames = 0;
 
 	public boolean up, down, enter, left, right, escape;
 
@@ -107,6 +108,14 @@ public class Menu {
 	public static boolean pause = false;
 
 	public static boolean saveExists = false;
+
+	public Menu() {
+		// O estado persistente é carregado uma vez ao abrir a sessão. Recarregar
+		// o disco em todo frame revertia compras feitas poucos milissegundos antes.
+		SaveManager.refreshBestRun();
+		SaveManager.refreshMetagame();
+		SaveManager.refreshPostCampaignFlags();
+	}
 
 	/** Renderiza a tela de pausa sobre o jogo (usado quando o jogo continua atrás). */
 	public static void renderPauseScreen(Graphics g) {
@@ -122,8 +131,13 @@ public class Menu {
 	}
 
 	public void update() {
-		SaveManager.refreshActiveSlot();
 		saveExists = SaveManager.hasAnySave();
+		if (saveFeedbackFrames > 0) {
+			saveFeedbackFrames--;
+			if (saveFeedbackFrames == 0) {
+				saveFeedback = "";
+			}
+		}
 
 		// Rodada 29 — metagame: enquanto a tela de melhorias do piloto estiver
 		// aberta, a navegação vertical e a confirmação operam sobre ela — o
@@ -180,11 +194,9 @@ public class Menu {
 			// Rodada 29 — metagame: Enter compra o upgrade selecionado quando
 				// a tela de melhorias do piloto estiver aberta.
 			if (upgradesOpen) {
-				// Enter confirma a compra do upgrade selecionado e fecha a tela
-				// de melhorias (o jogador retorna ao menu principal pelo banner
-				// de feedback, sem precisar de um passo extra de navegação).
+				// Mantém a tela aberta para exibir imediatamente o novo nível, o
+				// saldo restante e permitir compras consecutivas.
 				com.traduvertgames.graficos.PilotUpgradesScreen.confirm();
-				com.traduvertgames.graficos.PilotUpgradesScreen.close();
 				return;
 			}
 			switch (currentScreen) {
@@ -240,8 +252,8 @@ public class Menu {
 			currentOption = 0;
 			break;
 		case SAVE:
-			currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
-			currentOption = PAUSE_SAVE_AS;
+			currentScreen = Screen.PAUSE;
+			currentOption = 0;
 			break;
 		case HOW_TO_PLAY:
 			currentScreen = Screen.MAIN;
@@ -300,6 +312,8 @@ public class Menu {
 
 	/** Inicia a tela de pausa sem sair do jogo. */
 	public static void openPauseScreen() {
+		InventoryManager.close();
+		LevelSelectScreen.close();
 		pause = true;
 		Game.gameState = "MENU";
 		Game game = Game.getInstance();
@@ -424,28 +438,27 @@ private void handlePauseSelection() {
 			}
 			closePauseScreen();
 			break;
-			case PAUSE_SAVE_AS:
-				currentScreen = Screen.SAVE;
-				currentOption = 0;
-				break;
-			case PAUSE_RESET_MISSION:
-				Game gameToReset = Game.getInstance();
-				if (gameToReset != null) {
-					gameToReset.restartCurrentMissionFromMenu();
-				}
-				break;
-			case PAUSE_RETURN_MAIN:
-				SaveManager.saveCurrentGame();
-				Game gameToMenu = Game.getInstance();
-				if (gameToMenu != null) {
-					gameToMenu.returnToMainMenu();
-				}
-				break;
-			case PAUSE_OPTIONS:
-				currentScreen = Screen.OPTIONS;
-				currentOption = 0;
-				break;
-			case PAUSE_EXIT:
+		case PAUSE_SAVE_NEW_SLOT:
+			currentScreen = Screen.SAVE;
+			currentOption = 0;
+			break;
+		case PAUSE_RESTART_MISSION:
+			Game game = Game.getInstance();
+			if (game != null) {
+				game.restartCurrentMission();
+			}
+			break;
+		case PAUSE_OPTIONS:
+			currentScreen = Screen.OPTIONS;
+			currentOption = 0;
+			break;
+		case PAUSE_MAIN_MENU:
+			Game currentGame = Game.getInstance();
+			if (currentGame != null) {
+				currentGame.returnToMainMenu();
+			}
+			break;
+		case PAUSE_EXIT:
 			currentScreen = Screen.EXIT_CONFIRM;
 			exitConfirmSelection = 0;
 			break;
@@ -508,30 +521,7 @@ private void handlePauseSelection() {
 		}
 	}
 
-			private void handleSaveSelection() {
-			if (currentOption >= SAVE_BACK) {
-				currentScreen = Screen.PAUSE;
-				currentOption = PAUSE_SAVE_AS;
-				return;
-			}
-			int slotId = currentOption + 1;
-			if (SaveManager.saveToSlot(slotId)) {
-				com.traduvertgames.graficos.MissionBanner.show(
-						"JOGO SALVO",
-						"Progresso gravado no slot " + slotId,
-						new Color(76, 175, 80), Color.WHITE, 180);
-				currentScreen = Screen.PAUSE;
-				currentOption = 0;
-			} else {
-				com.traduvertgames.graficos.MissionBanner.show(
-						"ERRO AO SALVAR",
-						"Não foi possível gravar o slot " + slotId,
-						new Color(244, 67, 54), Color.WHITE, 240);
-			}
-		}
-
-		private void handleLoadSelection() {
-
+	private void handleLoadSelection() {
 		if (currentOption >= LOAD_SLOT_LABELS.length) {
 			currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
 			currentOption = 0;
@@ -561,56 +551,34 @@ private void handlePauseSelection() {
 		currentOption = 0;
 	}
 
-
-			private void renderSaveMenu(Graphics g) {
-			int screenWidth = Game.WIDTH * Game.SCALE;
-			int screenHeight = Game.HEIGHT * Game.SCALE;
-			Font headerFont = new Font("arial", Font.BOLD, 28);
-			Font optionFont = new Font("arial", Font.BOLD, 22);
-			g.setFont(headerFont);
-			String header = "Salvar em novo slot";
-			int headerWidth = g.getFontMetrics().stringWidth(header);
-			String[] lines = new String[LOAD_SLOT_LABELS.length + 1];
-			for (int i = 0; i < LOAD_SLOT_LABELS.length; i++) {
-				int slotId = i + 1;
-				if (SaveManager.hasSlotSave(slotId)) {
-					lines[i] = LOAD_SLOT_LABELS[i] + "  (substituir — fase "
-							+ SaveManager.getSlotLevel(slotId) + ")";
-				} else {
-					lines[i] = LOAD_SLOT_LABELS[i] + "  (vazio)";
-				}
-			}
-			lines[SAVE_BACK] = "Voltar";
-			int maxWidth = headerWidth;
-			g.setFont(optionFont);
-			for (String line : lines) {
-				maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(line));
-			}
-			int textX = (screenWidth - maxWidth) / 2;
-			int headerBaseline = screenHeight / 2 - 90;
-			g.setFont(headerFont);
-			g.setColor(Color.white);
-			g.drawString(header, (screenWidth - headerWidth) / 2, headerBaseline);
-			g.setFont(optionFont);
-			int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
-			for (int i = 0; i < lines.length; i++) {
-				int baselineY = headerBaseline + 42 * (i + 1);
-				if (currentOption == i) {
-					g.setColor(Color.yellow);
-					g.drawString(">", arrowX, baselineY);
-				}
-				g.setColor(Color.white);
-				g.drawString(lines[i], textX, baselineY);
-			}
-			g.setFont(new Font("arial", Font.PLAIN, 15));
-			g.setColor(new Color(180, 200, 255));
-			String hint = "ENTER grava no slot escolhido — ESC volta à pausa";
-			g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2,
-					headerBaseline + 42 * (lines.length + 1));
+	private void handleSaveSelection() {
+		if (currentOption >= LOAD_SLOT_LABELS.length) {
+			currentScreen = Screen.PAUSE;
+			currentOption = 0;
+			return;
 		}
+		int slotId = currentOption + 1;
+		// "Novo slot" nunca sobrescreve progresso existente sem confirmação.
+		if (SaveManager.hasSlotSave(slotId)) {
+			saveFeedback = "Slot ocupado: escolha um slot vazio";
+			saveFeedbackFrames = 180;
+			SoundManager.play(SoundManager.Event.PICKUP);
+			return;
+		}
+		if (SaveManager.saveCurrentGameToSlot(slotId)) {
+			com.traduvertgames.graficos.MissionBanner.show(
+					"JOGO SALVO",
+					"Novo progresso gravado no slot " + slotId,
+					new Color(76, 175, 80), Color.WHITE, 180);
+			closePauseScreen();
+		} else {
+			saveFeedback = "Não foi possível gravar o slot " + slotId;
+			saveFeedbackFrames = 240;
+		}
+	}
 
-		private void renderExitConfirm(Graphics g) {
 
+	private void renderExitConfirm(Graphics g) {
 		int screenWidth = Game.WIDTH * Game.SCALE;
 		int screenHeight = Game.HEIGHT * Game.SCALE;
 		Font headerFont = new Font("arial", Font.BOLD, 28);
@@ -661,6 +629,8 @@ private void handlePauseSelection() {
 	public void resetToMain() {
 		currentScreen = Screen.MAIN;
 		currentOption = 0;
+		saveFeedback = "";
+		saveFeedbackFrames = 0;
 		pause = false;
 		clearPendingInput();
 	}
@@ -708,7 +678,8 @@ private void handlePauseSelection() {
 		// tela de overlay, forçar a tela principal. As telas de overlay (PAUSE,
 		// LOAD, OPTIONS, HOW_TO_PLAY, EXIT_CONFIRM) são válidas no estado MENU.
 		boolean isOverlay = (currentScreen == Screen.PAUSE || currentScreen == Screen.LOAD
-				|| currentScreen == Screen.SAVE || currentScreen == Screen.OPTIONS || currentScreen == Screen.HOW_TO_PLAY
+				|| currentScreen == Screen.SAVE
+				|| currentScreen == Screen.OPTIONS || currentScreen == Screen.HOW_TO_PLAY
 				|| currentScreen == Screen.EXIT_CONFIRM);
 		if (!pause && currentScreen != Screen.MAIN && !isOverlay) {
 			currentScreen = Screen.MAIN;
@@ -721,13 +692,13 @@ private void handlePauseSelection() {
 		case OPTIONS:
 			renderOptionsMenu(g);
 			break;
-			case LOAD:
-				renderLoadMenu(g);
-				break;
-			case SAVE:
-				renderSaveMenu(g);
-				break;
-			case HOW_TO_PLAY:
+		case LOAD:
+			renderLoadMenu(g);
+			break;
+		case SAVE:
+			renderSaveMenu(g);
+			break;
+		case HOW_TO_PLAY:
 			renderHowToPlay(g);
 			break;
 		case EXIT_CONFIRM:
@@ -776,13 +747,8 @@ private void handlePauseSelection() {
 			g.drawString(labels[i], textX, baselineY);
 		}
 
-		// Rodada 29 — metagame: saldo de créditos do piloto exibido no menu
-		// principal (atualizado a partir do disco a cada render).
-		SaveManager.refreshMetagame();
-		// Rodada 31 — recarrega as flags pós-campanha a cada render do menu,
-		// para que "Nova campanha+" reflita o estado gravado no disco mesmo
-		// antes de carregar um slot (mesmo padrão do refreshMetagame).
-		SaveManager.refreshPostCampaignFlags();
+		// Saldo em memória: compras e recompensas aparecem imediatamente. O
+		// estado do disco é carregado no construtor e nas rotinas de load.
 		int credits = com.traduvertgames.state.PilotUpgrades.getCredits();
 		Font creditFont = new Font("arial", Font.BOLD, 16);
 		g.setFont(creditFont);
@@ -952,6 +918,29 @@ private void handlePauseSelection() {
 					}
 				}
 			}
+		}
+	}
+
+	private void renderSaveMenu(Graphics g) {
+		String[] lines = new String[LOAD_SLOT_LABELS.length + 1];
+		for (int i = 0; i < LOAD_SLOT_LABELS.length; i++) {
+			int slotId = i + 1;
+			if (SaveManager.hasSlotSave(slotId)) {
+				lines[i] = LOAD_SLOT_LABELS[i] + "  (ocupado — Fase "
+						+ SaveManager.getSlotLevel(slotId) + ")";
+			} else {
+				lines[i] = LOAD_SLOT_LABELS[i] + "  (vazio)";
+			}
+		}
+		lines[LOAD_SLOT_LABELS.length] = "Voltar";
+		renderOptionList(g, lines, "Salvar em novo slot");
+		if (!saveFeedback.isEmpty()) {
+			g.setFont(new Font("arial", Font.BOLD, 15));
+			g.setColor(new Color(255, 152, 0));
+			int screenWidth = Game.WIDTH * Game.SCALE;
+			g.drawString(saveFeedback,
+					(screenWidth - g.getFontMetrics().stringWidth(saveFeedback)) / 2,
+					Game.HEIGHT * Game.SCALE - 48);
 		}
 	}
 

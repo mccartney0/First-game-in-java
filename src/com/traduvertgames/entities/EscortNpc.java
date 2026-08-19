@@ -76,8 +76,8 @@ public class EscortNpc extends Entity {
 
 	/** @return distância em pixels do escoltado a um ponto qualquer. */
 	public double distanceTo(double x, double y) {
-		double dx = x - getX();
-		double dy = y - getY();
+		double dx = x - this.x;
+		double dy = y - this.y;
 		return Math.sqrt(dx * dx + dy * dy);
 	}
 
@@ -133,8 +133,8 @@ public class EscortNpc extends Entity {
 
 		if (fearTimer == 0) {
 			walkFrame++;
-			double dx = escapeX - getX();
-			double dy = escapeY - getY();
+			double dx = escapeX - x;
+			double dy = escapeY - y;
 			double distance = Math.sqrt(dx * dx + dy * dy);
 			if (distance < 2) {
 				arrived = true;
@@ -144,8 +144,11 @@ public class EscortNpc extends Entity {
 				}
 				return;
 			}
-			setX((int) (getX() + (dx / distance) * SPEED));
-			setY((int) (getY() + (dy / distance) * SPEED));
+			// Entity mantém a posição internamente como double. Arredondar para int
+			// em todo frame descartava os 0,75 px de avanço e deixava o informante
+			// parado para sempre quando o destino ficava à direita/abaixo.
+			x += (dx / distance) * SPEED;
+			y += (dy / distance) * SPEED;
 		}
 	}
 
