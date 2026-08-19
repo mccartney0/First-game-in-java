@@ -57,7 +57,7 @@ public final class MissionHud {
 					progress = DynamicEventManager.isActive()
 							? DynamicEventManager.getActiveTitle() + " — " + DynamicEventManager.getProgressLabel()
 							: (Game.isOpenWorldMode()
-									? OpenWorldManager.getExplorationLabel() + " — H: hub, procure POIs e eventos"
+									? OpenWorldManager.getExplorationLabel() + " — H: hub, M: marcar objetivo"
 									: "H: abrir hub — procure POIs, NPCs e eventos");
 				} else {
 				title = QuestManager.getObjectiveTitle();

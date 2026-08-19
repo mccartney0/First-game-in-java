@@ -140,6 +140,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			regionalAdventureMode = false;
 			openWorldMode = false;
 			com.traduvertgames.world.OpenWorldManager.reset();
+			com.traduvertgames.world.OpenWorldMarkerManager.reset();
+			com.traduvertgames.graficos.SectorEntryOverlay.reset();
 			com.traduvertgames.world.RegionalProgressionManager.reset();
 			GameState.resetAll();
 		clearQuestPending();
@@ -804,9 +806,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 
 				QuestManager.update();
 				ParticleSystem.update();
-				FloatingText.update();
-					MissionBanner.update();
-					if (RpgWorldManager.isActive() && player != null) {
+					FloatingText.update();
+						MissionBanner.update();
+						com.traduvertgames.graficos.SectorEntryOverlay.update();
+						if (RpgWorldManager.isActive() && player != null) {
 						boolean enteredRegion = RpgWorldManager.updatePlayerPosition(
 								(int) player.getX(), (int) player.getY());
 						boolean enteredChunk = isOpenWorldMode()
@@ -817,10 +820,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 									RpgWorldManager.getCurrentRegionName() + " — "
 											+ RpgWorldManager.getCurrentRegionSubtitle(),
 									new java.awt.Color(129, 199, 132), java.awt.Color.WHITE, 150);
-						} else if (enteredChunk && !isTransitionCooldown() && !isTransitioning()) {
-							MissionBanner.show("SETOR DESCOBERTO",
-									com.traduvertgames.world.OpenWorldManager.getExplorationLabel(),
-									new java.awt.Color(38, 198, 218), java.awt.Color.WHITE, 100);
+						}
+						if (enteredChunk && !isTransitionCooldown() && !isTransitioning()) {
+							com.traduvertgames.graficos.SectorEntryOverlay.show(
+									com.traduvertgames.world.OpenWorldManager.getActiveSectorCode(),
+									RpgWorldManager.getCurrentRegionName());
 						}
 						RpgWorldManager.tick();
 						DynamicEventManager.update();
@@ -1062,7 +1066,8 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				|| com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
 				|| InventoryManager.isOpen();
 if (!hidingHud) {
-	MiniMap.render(overlayG);
+			MiniMap.render(overlayG);
+			com.traduvertgames.graficos.SectorEntryOverlay.render(overlayG);
 	// Texto do banner central renderizado no overlay (espaço escalado): letras
 	// nítidas e proporcionais, sem depender do zoom pixelado do buffer.
 	MissionBanner.render(overlayG);
@@ -1641,6 +1646,30 @@ if (!hidingHud) {
 				return;
 			}
 
+			// M alterna um marcador pessoal no setor atual. Um segundo toque remove
+			// a marca, sem modal e sem interromper o combate.
+			if (e.getKeyCode() == KeyEvent.VK_M) {
+				if ("NORMAL".equals(gameState) && isOpenWorldMode() && player != null
+						&& !DialogueManager.isActive() && !InventoryManager.isOpen()) {
+					com.traduvertgames.world.OpenWorldMarkerManager.Change change =
+							com.traduvertgames.world.OpenWorldMarkerManager.toggleAtPixel(
+										(int) player.getX(), (int) player.getY());
+					if (change == com.traduvertgames.world.OpenWorldMarkerManager.Change.ADDED) {
+						MissionBanner.show("MARCADOR SALVO",
+								com.traduvertgames.world.OpenWorldManager.getActiveSectorCode()
+										+ " — objetivo pessoal destacado no mini-mapa",
+								new java.awt.Color(255, 183, 77), java.awt.Color.WHITE, 90);
+					} else if (change == com.traduvertgames.world.OpenWorldMarkerManager.Change.REMOVED) {
+						MissionBanner.show("MARCADOR REMOVIDO", "O setor atual voltou ao estado normal.",
+								new java.awt.Color(255, 214, 10), java.awt.Color.WHITE, 75);
+					} else if (change == com.traduvertgames.world.OpenWorldMarkerManager.Change.LIMIT_REACHED) {
+						MissionBanner.show("LIMITE DE MARCADORES", "Remova um marcador antes de registrar outro.",
+								new java.awt.Color(255, 152, 0), java.awt.Color.WHITE, 90);
+					}
+				}
+				return;
+			}
+
 			// B abre a tela de build da arma equipada.
 			if (e.getKeyCode() == KeyEvent.VK_B) {
 				if ("NORMAL".equals(gameState) && !DialogueManager.isActive()
@@ -1925,6 +1954,8 @@ if (!hidingHud) {
 	/** Inicia uma sessão nova no modo Mundo Aberto gigante. */
 	public void startOpenWorld() {
 		setOpenWorldMode(true);
+		com.traduvertgames.world.OpenWorldMarkerManager.reset();
+		com.traduvertgames.graficos.SectorEntryOverlay.reset();
 		com.traduvertgames.world.RegionalProgressionManager.reset();
 		com.traduvertgames.quest.ContractManager.reset();
 		WeaponBuildManager.reset();
@@ -1957,6 +1988,8 @@ if (!hidingHud) {
 		regionalAdventureMode = regionalAdventure;
 		openWorldMode = false;
 		com.traduvertgames.world.OpenWorldManager.reset();
+		com.traduvertgames.world.OpenWorldMarkerManager.reset();
+		com.traduvertgames.graficos.SectorEntryOverlay.reset();
 			com.traduvertgames.world.RegionalProgressionManager.reset();
 				com.traduvertgames.quest.ContractManager.reset();
 				WeaponBuildManager.reset();
@@ -2018,6 +2051,8 @@ if (!hidingHud) {
 			regionalAdventureMode = true;
 			openWorldMode = false;
 			com.traduvertgames.world.OpenWorldManager.reset();
+			com.traduvertgames.world.OpenWorldMarkerManager.reset();
+			com.traduvertgames.graficos.SectorEntryOverlay.reset();
 			int safeDepth = Math.max(1, depth);
 			levelPlus = safeDepth;
 			setCurrentLevel(MAX_LEVEL + 1);
@@ -2410,6 +2445,8 @@ if (!hidingHud) {
 		regionalAdventureMode = false;
 		openWorldMode = false;
 		com.traduvertgames.world.OpenWorldManager.reset();
+		com.traduvertgames.world.OpenWorldMarkerManager.reset();
+		com.traduvertgames.graficos.SectorEntryOverlay.reset();
 		if (instance != null) {
 			instance.levelPlus = 1;
 		}
@@ -2694,9 +2731,11 @@ if (!hidingHud) {
 	}
 
 	/** Volta ao menu principal mantendo o autosave do progresso da partida. */
-			public void returnToMainMenu() {
+		public void returnToMainMenu() {
 			openWorldMode = false;
 			com.traduvertgames.world.OpenWorldManager.reset();
+			com.traduvertgames.world.OpenWorldMarkerManager.reset();
+			com.traduvertgames.graficos.SectorEntryOverlay.reset();
 			// Parar overlays ANTES de definir o estado de menu: as paradas
 		// podem sobrescrever gameState (por exemplo, VictoryCutscene.stop
 		// restaura NORMAL); o MENU é definido depois para valer como final.

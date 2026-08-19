@@ -72,6 +72,18 @@ public final class OpenWorldManager {
         return activeChunkY;
     }
 
+    /** Código de referência humano para a grade do atlas, como B1 ou H5. */
+    public static String getSectorCode(int chunkX, int chunkY) {
+        if (chunkX < 0 || chunkY < 0 || chunkX >= getChunkColumns() || chunkY >= getChunkRows()) {
+            return "--";
+        }
+        return String.valueOf((char) ('A' + chunkX)) + (chunkY + 1);
+    }
+
+    public static String getActiveSectorCode() {
+        return getSectorCode(activeChunkX, activeChunkY);
+    }
+
     /** Atualiza a célula lógica atual e retorna true ao entrar em um chunk novo. */
     public static boolean updatePlayerPosition(int pixelX, int pixelY) {
         if (!active) {

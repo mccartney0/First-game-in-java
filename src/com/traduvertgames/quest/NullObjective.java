@@ -28,7 +28,7 @@ public final class NullObjective extends BaseObjective {
             if (DynamicEventManager.isActive()) {
                 return DynamicEventManager.getActiveTitle() + " — " + DynamicEventManager.getProgressLabel();
             }
-            return region + " — " + OpenWorldManager.getExplorationLabel() + " — H: hub";
+            return region + " — " + OpenWorldManager.getExplorationLabel() + " — H: hub, M: marcador";
         }
         if (Game.isRegionalAdventureMode()) {
             String region = RpgWorldManager.getCurrentRegionName();

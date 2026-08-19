@@ -12,6 +12,7 @@ import com.traduvertgames.world.DynamicEventManager;
 import com.traduvertgames.world.IceTile;
 import com.traduvertgames.world.MudTile;
 import com.traduvertgames.world.OpenWorldManager;
+import com.traduvertgames.world.OpenWorldMarkerManager;
 import com.traduvertgames.world.RpgWorldManager;
 import com.traduvertgames.world.Tile;
 import com.traduvertgames.world.WallTile;
@@ -169,6 +170,11 @@ public final class MiniMap {
                     poi.getTileX(), poi.getTileY(), colorForPoi(poi.getType()), Math.max(3, scale));
         }
 
+        for (OpenWorldMarkerManager.Marker marker : OpenWorldMarkerManager.getMarkers()) {
+            drawCustomMarker(g2, panelX, panelY, cellW, cellH,
+                    marker.getTileX(), marker.getTileY(), Math.max(4, scale + 1));
+        }
+
         if (DynamicEventManager.isActive() && DynamicEventManager.getActiveRegion() != null) {
             RpgWorldManager.RegionBounds eventBounds = RpgWorldManager.getBounds(DynamicEventManager.getActiveRegion());
             drawMapMarker(g2, panelX, panelY, cellW, cellH, eventBounds.centerX(), eventBounds.centerY(),
@@ -229,6 +235,19 @@ public final class MiniMap {
             return new Color(120, 220, 255);
         }
         return COLOR_POI;
+    }
+
+    private static void drawCustomMarker(Graphics2D g2, int panelX, int panelY,
+            double cellW, double cellH, int tileX, int tileY, int size) {
+        int x = panelX + (int) ((tileX + 0.5) * cellW);
+        int y = panelY + (int) ((tileY + 0.5) * cellH);
+        int half = Math.max(2, size / 2);
+        int[] xs = { x, x + half, x, x - half };
+        int[] ys = { y - half, y, y + half, y };
+        g2.setColor(new Color(255, 183, 77, 245));
+        g2.fillPolygon(xs, ys, 4);
+        g2.setColor(new Color(255, 245, 220, 245));
+        g2.drawPolygon(xs, ys, 4);
     }
 
     private static void drawMapMarker(Graphics2D g2, int panelX, int panelY,

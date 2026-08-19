@@ -1,0 +1,5 @@
+- [x] Auditar atalhos de entrada, HUD, mini-mapa e schema de save do Mundo Aberto.
+- [x] Criar marcadores personalizados no setor atual, com remoção e persistência por slot.
+- [x] Renderizar marcadores personalizados e dicas de uso no mini-mapa.
+- [x] Exibir aviso suave com código e nome do setor ao cruzar uma nova área.
+- [x] Cobrir os novos fluxos com regressões, build limpo e QA headless.
