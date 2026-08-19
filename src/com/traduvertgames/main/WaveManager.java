@@ -450,7 +450,7 @@ public final class WaveManager {
 			return;
 		}
 		if (stage.hasRule(SurvivalStageDefinition.SpecialRule.ACID_POOLS)) {
-			Game.player.applyDamage(1.8 + Math.max(0, getSurvivalPhase() - 6) * 0.35);
+			Game.player.applyDamage(AcidPoolHazard.damageForStage(getSurvivalPhase()));
 			com.traduvertgames.graficos.MissionBanner.show("PÂNTANO ÁCIDO", "Saia da poça corrosiva!",
 					new Color(124, 179, 66), Color.WHITE, 45);
 		} else if (stage.hasRule(SurvivalStageDefinition.SpecialRule.ORBITAL_LASERS)) {
@@ -481,20 +481,7 @@ public final class WaveManager {
 	private static void renderSpecialRule(Graphics g, int screenWidth, int screenHeight) {
 		SurvivalStageDefinition stage = getSurvivalStageDefinition();
 		if (stage.hasRule(SurvivalStageDefinition.SpecialRule.ACID_POOLS)) {
-			int startX = Math.max(0, Camera.x / 32 * 32 - 32);
-			int startY = Math.max(0, Camera.y / 32 * 32 - 32);
-			for (int worldX = startX; worldX < Camera.x + screenWidth + 32; worldX += 32) {
-				for (int worldY = startY; worldY < Camera.y + screenHeight + 32; worldY += 32) {
-					if (stage.isHazardAt(worldX, worldY, arenaWave)) {
-						int drawX = (worldX - Camera.x) * Game.SCALE;
-						int drawY = (worldY - Camera.y) * Game.SCALE;
-						g.setColor(new Color(124, 179, 66, 70));
-						g.fillOval(drawX, drawY, 24 * Game.SCALE, 16 * Game.SCALE);
-						g.setColor(new Color(205, 220, 57, 160));
-						g.drawOval(drawX, drawY, 24 * Game.SCALE, 16 * Game.SCALE);
-					}
-				}
-			}
+			AcidPoolHazard.render(g, Camera.x, Camera.y, screenWidth, screenHeight, arenaWave, Game.SCALE);
 		} else if (stage.hasRule(SurvivalStageDefinition.SpecialRule.ORBITAL_LASERS)) {
 			int lane = Math.floorMod(arenaWave * 43, Math.max(1, screenWidth));
 			g.setColor(new Color(0, 229, 255, 125));

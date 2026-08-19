@@ -138,13 +138,12 @@ public final class SurvivalStageDefinition {
 
     /** Retorna true quando o tile lógico da fase contém o perigo especial. */
     public boolean isHazardAt(int x, int y, int wave) {
-        int tileX = Math.floorDiv(x, 32);
-        int tileY = Math.floorDiv(y, 32);
-        int signature = Math.floorMod(tileX * 31 + tileY * 17 + Math.max(0, wave - 1) * 7, 11);
         if (specialRule == SpecialRule.ACID_POOLS) {
-            return signature == 2 || signature == 7;
+            return AcidPoolHazard.isPoolAt(x, y, wave);
         }
         if (specialRule == SpecialRule.ORBITAL_LASERS) {
+            int tileX = Math.floorDiv(x, 32);
+            int tileY = Math.floorDiv(y, 32);
             return Math.floorMod(tileX + Math.max(0, wave - 1), 5) == 0
                     || Math.floorMod(tileY * 2 + wave, 7) == 0;
         }
