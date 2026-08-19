@@ -1065,8 +1065,9 @@ if (!hidingHud) {
 			drawCenteredString(overlayG, "Recorde: " + Game.getHighScore(), scaledHeight / 2 + 72 * unit);
 			drawCenteredString(overlayG, "Melhor combo da partida: x" + Game.getBestComboThisRun(), scaledHeight / 2 + 96 * unit);
 
-                		} else if ("MENU".equals(gameState)) {
+					} else if ("MENU".equals(gameState)) {
 				// Rodada 21: durante a transição de fase (card de estatísticas
+
 				// ou aviso de conclusão) o menu principal não é desenhado —
 				// antes ele aparecia por trás do aviso, com textos sobrepostos.
 				if (!showInitialWeaponSelect && showLevelTransition <= 0
@@ -2315,13 +2316,65 @@ if (!hidingHud) {
 	}
 
 	/** Volta ao menu principal mantendo o autosave do progresso da partida. */
-	public void returnToMainMenu() {
+			/** Reinicia somente a missão principal da fase atual, sem apagar o metagame. */
+		public void restartCurrentMissionFromMenu() {
+			int phase = Math.max(1, Math.min(CUR_LEVEL, MAX_LEVEL));
+			if (CUR_LEVEL > MAX_LEVEL) {
+				com.traduvertgames.graficos.MissionBanner.show(
+						"SEM MISSÃO PRINCIPAL",
+						"O modo sobrevivência não possui missão de campanha para reiniciar.",
+						new java.awt.Color(255, 193, 7), java.awt.Color.WHITE, 180);
+				return;
+			}
+			DialogueManager.stop();
+			VictoryCutscene.stop();
+			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
+				com.traduvertgames.graficos.PhaseStatsScreen.dismiss();
+			}
+			if (ShopManager.isOpen()) {
+				ShopManager.close();
+			}
+			if (LevelUpManager.isShowingLevelUp()) {
+				LevelUpManager.dismiss();
+			}
+			HubScreen.close();
+			clearQuestPending();
+			CUR_LEVEL = phase;
+			GameState.currentLevel = phase;
+			QuestManager.prepareForLevel(phase);
+			World.restartGame("level" + phase + ".png");
+			Game.gameState = "NORMAL";
+			GameState.gameState = "NORMAL";
+			Menu.pause = false;
+			if (menu != null) {
+				menu.resetToMain();
+			}
+			com.traduvertgames.graficos.MissionBanner.show(
+					"MISSÃO REINICIADA",
+					"A fase " + phase + " voltou ao início. Upgrades permanentes foram preservados.",
+					new java.awt.Color(255, 193, 7), java.awt.Color.WHITE, 210);
+			SaveManager.saveCurrentGame();
+		}
+
+		public void returnToMainMenu() {
+
 		// Parar overlays ANTES de definir o estado de menu: as paradas
 		// podem sobrescrever gameState (por exemplo, VictoryCutscene.stop
 		// restaura NORMAL); o MENU é definido depois para valer como final.
-		VictoryCutscene.stop();
-		DialogueManager.stop();
-		MissionBanner.reset();
+			VictoryCutscene.stop();
+			DialogueManager.stop();
+			if (ShopManager.isOpen()) {
+				ShopManager.close();
+			}
+			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
+				com.traduvertgames.graficos.PhaseStatsScreen.dismiss();
+			}
+			if (LevelUpManager.isShowingLevelUp()) {
+				LevelUpManager.dismiss();
+			}
+			HubScreen.close();
+			clearQuestPending();
+			MissionBanner.reset();
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();

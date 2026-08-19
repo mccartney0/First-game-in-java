@@ -60,6 +60,9 @@ public final class ShopManager {
 		selection = 0;
 		feedback = "";
 		feedbackTimer = 0;
+		closeOnNextEnter = false;
+		purchaseSelection = -1;
+		escCooldown = 0;
 		Game.gameState = "SHOP";
 		SoundManager.play(SoundManager.Event.SHOP);
 	}
@@ -69,6 +72,8 @@ public final class ShopManager {
 			return;
 		}
 		open = false;
+		closeOnNextEnter = false;
+		purchaseSelection = -1;
 		Game.gameState = "NORMAL";
 		// Evita que o key-repeat do ESC reabra o menu de pausa imediatamente.
 		escCooldown = 15;

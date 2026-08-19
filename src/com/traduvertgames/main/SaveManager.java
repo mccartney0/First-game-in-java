@@ -241,6 +241,20 @@ public final class SaveManager {
 	/**
 	 * Salva automaticamente no slot ativo em checkpoints explícitos.
 	 */
+	/** Salva explicitamente no slot escolhido e torna esse slot o ativo. */
+	public static boolean saveToSlot(int slotId) {
+		if (slotId < 1 || slotId > SLOT_COUNT) {
+			return false;
+		}
+		int previousSlot = activeSlot;
+		activeSlot = slotId;
+		boolean saved = saveCurrentGame();
+		if (!saved) {
+			activeSlot = previousSlot;
+		}
+		return saved;
+	}
+
 	public static boolean saveAutoSave() {
 		return saveCurrentGame();
 	}
@@ -354,6 +368,15 @@ public final class SaveManager {
 	 */
 	public static void refreshPostCampaignFlags() {
 		restorePostCampaignFlags(loadRoot());
+	}
+
+	/** Restaura o último slot usado ao entrar no menu, sem carregar a partida. */
+	public static void refreshActiveSlot() {
+		Map<String, Object> root = loadRoot();
+		int savedSlot = toInt(root.get("activeSlot"));
+		if (savedSlot >= 1 && savedSlot <= SLOT_COUNT) {
+			activeSlot = savedSlot;
+		}
 	}
 
 	// ---------- Flags de diálogos por NPC/fase ----------
@@ -916,14 +939,10 @@ public final class SaveManager {
 		List<Map<String, Object>> slots = getSlots(root);
 		Map<String, Object> slot = findSlot(slots, slotId);
 		if (slot != null) {
-			Map<String, Object> session = getSession(slot);
-			session.clear();
-			Object progress = slot.get("progress");
+			// Limpeza completa: o progresso narrativo não pode sobreviver a um
+			// slot apagado, senão a missão principal reaparece como já avançada.
 			slot.clear();
 			slot.put("id", slotId);
-			if (progress instanceof Map) {
-				slot.put("progress", progress);
-			}
 			slot.put("timestamp", "");
 		}
 		root.put("slots", slots);

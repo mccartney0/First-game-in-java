@@ -63,6 +63,17 @@ public final class VictoryCutscene {
 		if (game != null) {
 			game.clearPendingOverlayInput();
 		}
+		// A vitória é um overlay exclusivo: nenhuma loja, estatística ou level-up
+		// pode permanecer aberta por baixo dela.
+		if (com.traduvertgames.main.ShopManager.isOpen()) {
+			com.traduvertgames.main.ShopManager.close();
+		}
+		if (com.traduvertgames.main.LevelUpManager.isShowingLevelUp()) {
+			com.traduvertgames.main.LevelUpManager.dismiss();
+		}
+		if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()) {
+			com.traduvertgames.graficos.PhaseStatsScreen.dismiss();
+		}
 		showing = true;
 		fadeIn = 0;
 		framesElapsed = 0;
@@ -85,6 +96,7 @@ public final class VictoryCutscene {
 		}
 		Game.gameState = "NORMAL";
 		Menu.pause = false;
+		refugeeEnding = false;
 	}
 
 	/** Volta ao menu principal (ESC durante a cutscene). */
@@ -154,9 +166,8 @@ public final class VictoryCutscene {
 				y += 20 * scale / 4;
 			}
 		}
-		refugeeEnding = false;
 
-		// Estatísticas da campanha.
+			// Estatísticas da campanha.
 		y += 26 * scale / 4;
 		g.setFont(new Font("arial", Font.BOLD, 14 * scale / 4));
 		g.setColor(new Color(130, 210, 255, alpha));
