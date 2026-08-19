@@ -37,6 +37,7 @@ import com.traduvertgames.graficos.VictoryCutscene;
 import com.traduvertgames.graficos.MissionBanner;
 import com.traduvertgames.graficos.HubScreen;
 import com.traduvertgames.graficos.ContractBoardScreen;
+import com.traduvertgames.graficos.WeaponBuildScreen;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
@@ -143,8 +144,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			VictoryCutscene.setRefugeeEnding(false);
 				HubScreen.reset();
 				com.traduvertgames.graficos.ContractBoardScreen.reset();
+				WeaponBuildScreen.reset();
 				DynamicEventManager.reset();
 				com.traduvertgames.quest.ContractManager.reset();
+				WeaponBuildManager.reset();
 				com.traduvertgames.world.RegionalChainManager.reset();
 		}
 
@@ -423,8 +426,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		        if (level < 1)
 		                level = 1;
 		        int regionalLevel = MAX_LEVEL + 1;
-		        if (level > MAX_LEVEL && !(regionalAdventureMode && level == regionalLevel))
-		                level = MAX_LEVEL;
+		if (level > MAX_LEVEL && level != regionalLevel)
+				level = MAX_LEVEL;
                 GameState.currentLevel = level;
                 CUR_LEVEL = level;
         }
@@ -459,7 +462,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         }
 
 	public static void registerEnemyKill() {
-		LevelUpManager.grantKillXp();
+		if (!com.traduvertgames.quest.QuestManager.isSurvivalMode()) {
+			LevelUpManager.grantKillXp();
+		}
+		WeaponBuildManager.onEnemyDefeated();
 		// Rodada 28 — o registro do kill opera sobre o GameState; os campos
 		// locais do Game são espelhados para manter compatibilidade com o
 		// restante do código que ainda lê as cópias estáticas.
@@ -810,6 +816,8 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 					HubScreen.update();
 				} else if ("REGIONAL_CONTRACTS".equals(gameState)) {
 					ContractBoardScreen.update();
+				} else if ("WEAPON_BUILD".equals(gameState)) {
+					// Tela modal: nenhum inimigo ou objetivo avança atrás da build.
 				} else if ("GAMEOVER".equals(gameState)) {
 //Forma de Fazer animação - Game over
 			this.framesGameOver++;
@@ -1129,6 +1137,8 @@ if (!hidingHud) {
 					HubScreen.render(overlayG);
 				} else if ("REGIONAL_CONTRACTS".equals(gameState)) {
 					ContractBoardScreen.render(overlayG);
+				} else if ("WEAPON_BUILD".equals(gameState)) {
+					WeaponBuildScreen.render(overlayG);
 	                }
 
                 // Aviso de transição de fase: a fase atual foi concluída e o jogo
@@ -1278,6 +1288,18 @@ if (!hidingHud) {
 				}
 				// O hub regional é modal e consome todo o teclado antes de qualquer
 				// flag de movimento, tiro, arma ou pausa.
+			if ("WEAPON_BUILD".equals(gameState)) {
+					if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+						WeaponBuildScreen.navigateUp();
+					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+						WeaponBuildScreen.navigateDown();
+					} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						WeaponBuildScreen.confirm();
+					} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE || e.getKeyCode() == KeyEvent.VK_B) {
+						WeaponBuildScreen.close();
+					}
+					return;
+				}
 			if ("REGIONAL_HUB".equals(gameState)) {
 					if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
 						HubScreen.navigateUp();
@@ -1589,6 +1611,25 @@ if (!hidingHud) {
 				return;
 			}
 
+			// B abre a tela de build da arma equipada.
+			if (e.getKeyCode() == KeyEvent.VK_B) {
+				if ("NORMAL".equals(gameState) && !DialogueManager.isActive()
+						&& !InventoryManager.isOpen() && !isTransitioning()) {
+					WeaponBuildScreen.open();
+				}
+				return;
+			}
+
+			// C ativa a habilidade do companion; a criatura permanece opcional.
+			if (e.getKeyCode() == KeyEvent.VK_C) {
+				if ("NORMAL".equals(gameState) && !DialogueManager.isActive()
+						&& !InventoryManager.isOpen()
+						&& com.traduvertgames.entities.Companion.getActive() != null) {
+					com.traduvertgames.entities.Companion.getActive().activateAbility();
+				}
+				return;
+			}
+
 				if (e.getKeyCode() == KeyEvent.VK_P) {
 
 						if ("NORMAL".equals(gameState)) {
@@ -1854,9 +1895,10 @@ if (!hidingHud) {
 	private void startNewGameInternal(boolean regionalAdventure) {
 		regionalAdventureMode = regionalAdventure;
 			com.traduvertgames.world.RegionalProgressionManager.reset();
-			com.traduvertgames.quest.ContractManager.reset();
-			com.traduvertgames.world.RegionalChainManager.reset();
-			resetGameOverState();
+				com.traduvertgames.quest.ContractManager.reset();
+				WeaponBuildManager.reset();
+				com.traduvertgames.world.RegionalChainManager.reset();
+				resetGameOverState();
 		// Novo jogo: remove o companion ativo (persistência apenas por save).
 		com.traduvertgames.entities.Companion.clear();
 		this.levelPlus = 0;
@@ -2263,6 +2305,12 @@ if (!hidingHud) {
 		com.traduvertgames.main.SaveManager.setDeepRecord(1);
 		QuestManager.prepareForLevel(MAX_LEVEL + 1);
 		startProceduralLevel(1);
+		// O restart do mapa pode reconstruir o estado da fase; reafirmar o modo
+		// procedural depois dele evita voltar silenciosamente para a fase 9.
+		CUR_LEVEL = MAX_LEVEL + 1;
+		GameState.currentLevel = MAX_LEVEL + 1;
+		QuestManager.prepareForLevel(MAX_LEVEL + 1);
+		applyProgressBonuses();
 		WaveManager.startArena();
 		// Cooldown de respiro (rodada 21): inimigos não atacam de imediato.
 		// Rodada 28 — as flags de transição espelham no GameState.
@@ -2305,10 +2353,17 @@ if (!hidingHud) {
 		// Rodada 21: no modo infinito o card fecha sozinho (auto-dismiss), e o
 		// cooldown de respiro impede que os mobs ataquem de imediato.
 		com.traduvertgames.graficos.PhaseStatsScreen.show();
-		startProceduralLevel(depth);
-		transitionCooldown = RESPIRO_FRAMES;
-		showLevelTransition = 90 + RESPIRO_FRAMES;
-		transitionAlpha = 255;
+			startProceduralLevel(depth);
+			CUR_LEVEL = MAX_LEVEL + 1;
+			GameState.currentLevel = MAX_LEVEL + 1;
+			QuestManager.prepareForLevel(MAX_LEVEL + 1);
+			WaveManager.startArena();
+			transitionCooldown = RESPIRO_FRAMES;
+			GameState.transitionCooldown = RESPIRO_FRAMES;
+			showLevelTransition = 90 + RESPIRO_FRAMES;
+			GameState.showLevelTransition = 90 + RESPIRO_FRAMES;
+			transitionAlpha = 255;
+			GameState.transitionAlpha = 255;
 		// Rodada 24: cada nova profundidade exibe o banner de lore progressivo
 		// da trama das Profundezas (títulos de ciclo-chave em dourado).
 		com.traduvertgames.graficos.MissionBanner.reset();

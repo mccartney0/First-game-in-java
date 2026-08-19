@@ -260,6 +260,11 @@ public class Player extends Entity {
                         fireCooldown--;
                 }
 
+                if (com.traduvertgames.quest.QuestManager.isSurvivalMode()
+                                && !shoot && !mouseShoot) {
+                        attemptSurvivalAutoShot();
+                }
+
                 if (shoot) {
                         attemptDirectionalShot();
                 }
@@ -319,6 +324,26 @@ public class Player extends Entity {
                 fireWeapon(angle);
         }
 
+        private void attemptSurvivalAutoShot() {
+                if (!hasWeaponReady() || fireCooldown > 0 || Game.enemies.isEmpty()) {
+                        return;
+                }
+                Enemy nearest = null;
+                double bestDistance = Double.MAX_VALUE;
+                for (Enemy enemy : Game.enemies) {
+                        double distance = Math.hypot((enemy.getX() + enemy.mwidth / 2.0) - (getX() + 8),
+                                (enemy.getY() + enemy.mheight / 2.0) - (getY() + 8));
+                        if (distance < bestDistance && distance <= 360) {
+                                bestDistance = distance;
+                                nearest = enemy;
+                        }
+                }
+                if (nearest != null) {
+                        fireWeapon(Math.atan2((nearest.getY() + nearest.mheight / 2.0) - (getY() + 8),
+                                (nearest.getX() + nearest.mwidth / 2.0) - (getX() + 8)));
+                }
+        }
+
         private void attemptMouseShot() {
                 mouseShoot = false;
                 if (!hasWeaponReady() || fireCooldown > 0) {
@@ -341,7 +366,7 @@ public class Player extends Entity {
                 if (weapon <= 0) {
                         return false;
                 }
-                return mana >= currentWeapon.getManaCost();
+                return mana >= com.traduvertgames.main.WeaponBuildManager.getManaCost(currentWeapon);
         }
 
 	private void fireWeapon(double angle) {
@@ -366,11 +391,12 @@ public class Player extends Entity {
                 if (currentWeapon == WeaponType.DRONE_SENTINEL) {
                         // O drone é uma entidade autônoma que orbita e atira sozinho.
                         Game.entities.add(new DroneSentinel((int) originX() - 5, (int) originY() - 5));
-                        fireCooldown = Math.max(0, currentWeapon.getFireDelayFrames());
+                        fireCooldown = com.traduvertgames.main.WeaponBuildManager
+                                        .getFireDelayFrames(currentWeapon);
                         return;
                 }
 
-                int projectiles = Math.max(1, currentWeapon.getProjectilesPerShot());
+                int projectiles = com.traduvertgames.main.WeaponBuildManager.getProjectilesPerShot(currentWeapon);
                 double spreadRadians = Math.toRadians(currentWeapon.getSpreadDegrees());
                 double originX = originX();
                 double originY = originY();
@@ -388,22 +414,26 @@ public class Player extends Entity {
                         int size = currentWeapon.getProjectileSize();
                         if (currentWeapon == WeaponType.BOOMERANG_ARCANO) {
                                 BoomerangProjectile boomerang = new BoomerangProjectile((int) originX, (int) originY, size, dx, dy,
-                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage());
+                                                currentWeapon.getProjectileSpeed(),
+                                                com.traduvertgames.main.WeaponBuildManager.getDamage(currentWeapon));
                                 boomerang.setMask(0, 0, size, size);
                                 Game.bullets.add(boomerang);
                         } else if (currentWeapon == WeaponType.CHAIN_ARC) {
                                 ChainArcProjectile arc = new ChainArcProjectile((int) originX, (int) originY, size, dx, dy,
-                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage());
+                                                currentWeapon.getProjectileSpeed(),
+                                                com.traduvertgames.main.WeaponBuildManager.getDamage(currentWeapon));
                                 arc.setMask(0, 0, size, size);
                                 Game.bullets.add(arc);
                         } else {
                                 BulletShoot bullet = new BulletShoot((int) originX, (int) originY, size, size, null, dx, dy,
-                                                currentWeapon.getProjectileSpeed(), currentWeapon.getDamage(), false);
+                                                currentWeapon.getProjectileSpeed(),
+                                                com.traduvertgames.main.WeaponBuildManager.getDamage(currentWeapon), false);
                                 bullet.setMask(0, 0, size, size);
                                 Game.bullets.add(bullet);
                         }
                 }
-                fireCooldown = Math.max(0, currentWeapon.getFireDelayFrames());
+                fireCooldown = com.traduvertgames.main.WeaponBuildManager
+                                .getFireDelayFrames(currentWeapon);
         }
 
         private double originX() {
@@ -418,14 +448,14 @@ public class Player extends Entity {
                 if (weaponType == null) {
                         return false;
                 }
-                if (mana < weaponType.getManaCost()) {
+                if (mana < com.traduvertgames.main.WeaponBuildManager.getManaCost(weaponType)) {
                         return false;
                 }
-                if (weapon < weaponType.getDurabilityCost()) {
+                if (weapon < com.traduvertgames.main.WeaponBuildManager.getDurabilityCost(weaponType)) {
                         return false;
                 }
-                mana -= weaponType.getManaCost();
-                weapon -= weaponType.getDurabilityCost();
+                mana -= com.traduvertgames.main.WeaponBuildManager.getManaCost(weaponType);
+                weapon -= com.traduvertgames.main.WeaponBuildManager.getDurabilityCost(weaponType);
                 if (weapon < 0) {
                         weapon = 0;
                 }

@@ -161,6 +161,7 @@ public final class SaveManager {
 			if (activeCompanion != null) {
 				slot.put("companionType", activeCompanion.getType().name());
 				slot.put("companionHp", clampDouble(activeCompanion.getHp()));
+				slot.put("companionAbilityLevel", activeCompanion.getAbilityLevel());
 				// Skin de customização do companion (v3).
 				slot.put("companionSkin", activeCompanion.getSkin().name());
 			} else {
@@ -191,7 +192,9 @@ public final class SaveManager {
 						com.traduvertgames.world.RegionalProgressionManager.serialize()));
 					session.put("contractsCompleted", new HashMap<String, Boolean>(
 						com.traduvertgames.quest.ContractManager.serializeCompleted()));
-					session.put("regionalChains", new HashMap<String, Object>(
+				session.put("weaponBuilds", new HashMap<String, Object>(
+						com.traduvertgames.main.WeaponBuildManager.serialize()));
+				session.put("regionalChains", new HashMap<String, Object>(
 						com.traduvertgames.world.RegionalChainManager.serialize()));
 								session.put("sideQuestsDone", new HashMap<String, Boolean>(
 
@@ -642,6 +645,7 @@ public final class SaveManager {
 				com.traduvertgames.world.RegionalProgressionManager.deserialize(session.get("regionalProgression"));
 					com.traduvertgames.quest.ContractManager.deserializeCompleted(
 							toBooleanMap(asMap(session.get("contractsCompleted"))));
+					com.traduvertgames.main.WeaponBuildManager.deserialize(session.get("weaponBuilds"));
 					com.traduvertgames.world.RegionalChainManager.deserialize(session.get("regionalChains"));
 
 			Enemy.enemies = savedEnemies;
@@ -785,7 +789,8 @@ public final class SaveManager {
 			com.traduvertgames.entities.Companion.CompanionType companionType =
 					com.traduvertgames.entities.Companion.CompanionType.valueOf(type);
 			double savedHp = toDouble(session.get("companionHp"));
-			com.traduvertgames.entities.Companion.spawn(companionType, savedHp);
+			int savedAbilityLevel = toInt(session.get("companionAbilityLevel"));
+			com.traduvertgames.entities.Companion.spawn(companionType, savedHp, savedAbilityLevel <= 0 ? 1 : savedAbilityLevel);
 			// Skin de customização (v3): padrão se o campo estiver ausente.
 			Object skinRaw = session.get("companionSkin");
 			String skin = skinRaw instanceof String ? (String) skinRaw : "";

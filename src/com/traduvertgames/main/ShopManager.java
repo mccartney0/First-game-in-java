@@ -22,6 +22,7 @@ public final class ShopManager {
 			DRONE_SCOUT("Drone batedor (atira sozinho)", 3200),
 			SHIELD_BOT("Drone de escudo (+2 escudo/s)", 2600),
 			FAIRY("Fada curadora (+1 vida/s)", 2800),
+			COMPANION_CORE("Núcleo de habilidade do companion (+1 nível)", 3000),
 			SKIN_DOURADO("Skin do companion: Dourado", 1200),
 			SKIN_NEON("Skin do companion: Neon ciano", 1500),
 			SKIN_CARMESIM("Skin do companion: Carmesim", 1800);
@@ -201,13 +202,26 @@ public final class ShopManager {
 					com.traduvertgames.entities.Companion.CompanionType.SHIELD_BOT, -1);
 			purchaseFeedback = "Drone de escudo acoplado!";
 			break;
-		case FAIRY:
-			Game.addScore(-item.price);
-			com.traduvertgames.entities.Companion.spawn(
-					com.traduvertgames.entities.Companion.CompanionType.FAIRY, -1);
-			purchaseFeedback = "Fada curadora acoplada!";
-			break;
-		case SKIN_DOURADO:
+			case FAIRY:
+				Game.addScore(-item.price);
+				com.traduvertgames.entities.Companion.spawn(
+						com.traduvertgames.entities.Companion.CompanionType.FAIRY, -1);
+				purchaseFeedback = "Fada curadora acoplada!";
+				break;
+			case COMPANION_CORE:
+				com.traduvertgames.entities.Companion active =
+						com.traduvertgames.entities.Companion.getActive();
+				if (active != null && active.getAbilityLevel() < 5) {
+					Game.addScore(-item.price);
+					active.upgradeAbility();
+					purchaseFeedback = "Habilidade do companion evoluiu para Nv." + active.getAbilityLevel() + "!";
+				} else {
+					purchaseSucceeded = false;
+					purchaseFeedback = active == null ? "Compre um companion antes do núcleo!"
+							: "Habilidade já está no nível máximo!";
+				}
+				break;
+			case SKIN_DOURADO:
 				if (applyCompanionSkin(com.traduvertgames.entities.Companion.CompanionSkin.DOURADO)) {
 					Game.addScore(-item.price);
 					purchaseFeedback = "Skin Dourado aplicada ao companion!";

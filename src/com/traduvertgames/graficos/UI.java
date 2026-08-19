@@ -143,12 +143,19 @@ public class UI {
 		String dashLabel = "[SHIFT] Dash " + (dashReady >= 1 ? "PRONTO" : String.format("%d%%", (int) (dashReady * 100)));
 		g2.drawString(dashLabel, baseX, baseY + 16);
 
-		if (WaveManager.isArenaMode()) {
-			g2.setColor(new Color(255, 152, 0));
-			String arenaLabel = "ARENA — Onda " + WaveManager.getArenaWave();
-			int metricsWidth = g2.getFontMetrics().stringWidth(arenaLabel);
-			g2.drawString(arenaLabel, baseX, baseY + 32);
-		}
+			if (WaveManager.isArenaMode()) {
+				g2.setColor(new Color(255, 152, 0));
+				String arenaLabel = WaveManager.getSurvivalSummary();
+				g2.drawString(arenaLabel, baseX, baseY + 32);
+			}
+			com.traduvertgames.entities.Companion companion = com.traduvertgames.entities.Companion.getActive();
+			if (companion != null) {
+				double ready = companion.getAbilityReadyPercentage();
+				g2.setColor(ready >= 1 ? new Color(255, 214, 10) : new Color(150, 150, 150));
+				String label = "[C] " + companion.abilityLabel() + " "
+						+ (ready >= 1 ? "PRONTO" : String.format("%d%%", (int) (ready * 100)));
+				g2.drawString(label, baseX, baseY + 48);
+			}
 	}
 
 	/** HUD compacta em coordenadas de tela cheia (buffer * SCALE), em tamanho reduzido. */
@@ -364,6 +371,10 @@ public class UI {
 				: WeaponType.BLASTER;
 		String weaponLabel = String.format("Arma: %s", currentWeapon.getDisplayName());
 		g2.drawString(weaponLabel, x + 24, textY);
+		textY += 22;
+		g2.setColor(new Color(255, 214, 10));
+		g2.setFont(new Font("SansSerif", Font.BOLD, 14));
+		g2.drawString("Build: " + com.traduvertgames.main.WeaponBuildManager.getSummary(currentWeapon), x + 24, textY);
 		textY += 26;
 		g2.setFont(new Font("SansSerif", Font.PLAIN, 16));
 		g2.setColor(new Color(200, 200, 200));
@@ -458,7 +469,8 @@ public class UI {
 				g2.setColor(unlocked ? new Color(220, 220, 220) : new Color(160, 160, 160));
 			}
 
-			String status = unlocked ? String.format("%d%%", percentage) : "Bloq.";
+			String status = unlocked ? String.format("%d%% Nv.%d", percentage,
+					com.traduvertgames.main.WeaponBuildManager.getLevel(type)) : "Bloq.";
 			g2.drawString(String.format("%s %s", type.getDisplayName(), status), cellX + 6, lineY);
 			col++;
 			if (col >= cols) {
@@ -469,6 +481,6 @@ public class UI {
 
 		g2.setFont(new Font("SansSerif", Font.PLAIN, 13));
 		g2.setColor(new Color(200, 200, 200));
-		g2.drawString("Q/E alternam • 1-6 selecionam", x + 20, y + height - 14);
+		g2.drawString("Q/E alternam • 1-6 selecionam • B: build", x + 20, y + height - 14);
 	}
 }

@@ -49,6 +49,8 @@ public class Companion extends Entity {
 	private static final double BASE_HP = 40.0;
 	/** Frames entre regenerações de suporte (1s a 60 FPS). */
 	private static final int SUPPORT_INTERVAL_FRAMES = 60;
+	private static final int ABILITY_BASE_COOLDOWN_FRAMES = 12 * 60;
+	private static final int MAX_ABILITY_LEVEL = 5;
 
 	private CompanionType type;
 	private CompanionSkin skin;
@@ -56,6 +58,8 @@ public class Companion extends Entity {
 	private int fireCooldown;
 	private int supportCooldown;
 	private int pulseFrame;
+	private int abilityCooldown;
+	private int abilityLevel;
 	private double hp;
 
 	private static Companion active;
@@ -68,6 +72,8 @@ public class Companion extends Entity {
 		this.fireCooldown = 0;
 		this.supportCooldown = 0;
 		this.pulseFrame = 0;
+		this.abilityCooldown = 0;
+		this.abilityLevel = 1;
 		this.hp = BASE_HP;
 		active = this;
 	}
@@ -91,11 +97,17 @@ public class Companion extends Entity {
 	 * qualquer outro ativo. O HP pode ser restaurado do save.
 	 */
 	public static void spawn(CompanionType type, double savedHp) {
+		spawn(type, savedHp, 1);
+	}
+
+	/** Cria um companion restaurando também o nível da habilidade ativa. */
+	public static void spawn(CompanionType type, double savedHp, int savedAbilityLevel) {
 		clear();
 		if (Game.player == null) {
 			return;
 		}
 		Companion companion = new Companion(type);
+		companion.abilityLevel = Math.max(1, Math.min(MAX_ABILITY_LEVEL, savedAbilityLevel));
 		companion.hp = savedHp > 0 ? Math.min(savedHp, BASE_HP) : BASE_HP;
 		companion.x = Game.player.getX();
 		companion.y = Game.player.getY();
@@ -116,6 +128,83 @@ public class Companion extends Entity {
 	/** @return skin de customização atual deste companion. */
 	public CompanionSkin getSkin() {
 		return skin;
+	}
+
+	public int getAbilityLevel() {
+		return abilityLevel;
+	}
+
+	public void setAbilityLevel(int level) {
+		abilityLevel = Math.max(1, Math.min(MAX_ABILITY_LEVEL, level));
+	}
+
+	public int getAbilityCooldownFrames() {
+		return abilityCooldown;
+	}
+
+	public double getAbilityReadyPercentage() {
+		int total = abilityCooldownTotal();
+		return abilityCooldown <= 0 ? 1.0 : 1.0 - ((double) abilityCooldown / total);
+	}
+
+	public String abilityLabel() {
+		switch (type) {
+		case SHIELD_BOT:
+			return "PULSO DE ESCUDO";
+		case FAIRY:
+			return "SURTO DE CURA";
+		case SCOUT:
+		default:
+			return "RAJADA DE CAÇA";
+		}
+	}
+
+	/** Ativa a habilidade do companion. Retorna false quando ainda está recarregando. */
+	public boolean activateAbility() {
+		if (Game.player == null || abilityCooldown > 0 || hp <= 0) {
+			return false;
+		}
+		int level = abilityLevel;
+		switch (type) {
+		case SCOUT:
+			int hits = 0;
+			for (Enemy enemy : new java.util.ArrayList<Enemy>(Game.enemies)) {
+				if (Math.hypot(enemy.getX() - getX(), enemy.getY() - getY()) <= 190) {
+					enemy.takeDamageDirect(16 + level * 6);
+					ParticleSystem.spark(enemy.getX() + 8, enemy.getY() + 8, colorForType());
+					if (++hits >= 5) {
+						break;
+					}
+				}
+			}
+			break;
+		case SHIELD_BOT:
+			Player.shield = Math.min(Player.maxShield, Player.shield + 25 + level * 10);
+			for (com.traduvertgames.entities.BulletShoot bullet : new java.util.ArrayList<com.traduvertgames.entities.BulletShoot>(Game.bullets)) {
+				if (bullet.isFromEnemy() && Math.hypot(bullet.getX() - Game.player.getX(), bullet.getY() - Game.player.getY()) <= 120) {
+					Game.bullets.remove(bullet);
+				}
+			}
+			ParticleSystem.pulse(Game.player.getX() + 8, Game.player.getY() + 8, colorForType());
+			break;
+		case FAIRY:
+		default:
+			Player.life = Math.min(Player.maxLife, Player.life + 20 + level * 6);
+			Player.mana = Math.min(Player.maxMana, Player.mana + 30 + level * 10);
+			ParticleSystem.explode(Game.player.getX() + 8, Game.player.getY() + 8, colorForType());
+			break;
+		}
+		abilityCooldown = abilityCooldownTotal();
+		com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.COMPANION_SPAWN);
+		return true;
+	}
+
+	public void upgradeAbility() {
+		setAbilityLevel(abilityLevel + 1);
+	}
+
+	private int abilityCooldownTotal() {
+		return Math.max(180, ABILITY_BASE_COOLDOWN_FRAMES - (abilityLevel - 1) * 60);
 	}
 
 	/** Aplica a skin de customização (persistida no save). */
@@ -153,6 +242,9 @@ public class Companion extends Entity {
 			ParticleSystem.trail((int) (x + width / 2.0), (int) (y + height / 2.0), colorForType());
 		}
 		pulseFrame = (pulseFrame + 1) % PULSE_INTERVAL_FRAMES;
+		if (abilityCooldown > 0) {
+			abilityCooldown--;
+		}
 
 		switch (type) {
 		case SCOUT:

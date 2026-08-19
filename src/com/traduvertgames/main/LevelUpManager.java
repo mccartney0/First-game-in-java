@@ -28,8 +28,9 @@ public final class LevelUpManager {
 		MANA_MAXIMA("+100 mana máxima", new Color(33, 150, 243)),
 		ESCUDO_MAXIMO("+30 escudo máximo", new Color(121, 134, 203)),
 		VELOCIDADE("+12% velocidade", new Color(76, 175, 80)),
-		ENERGIA("+80 energia da arma atual", new Color(255, 183, 77)),
-		ESCUDO_INICIAL("+40 escudo agora", new Color(186, 104, 200));
+			ENERGIA("+80 energia da arma atual", new Color(255, 183, 77)),
+			ESCUDO_INICIAL("+40 escudo agora", new Color(186, 104, 200)),
+			MAGNETISMO("+35 raio de coleta de XP", new Color(255, 214, 10));
 
 		public final String label;
 		public final Color accent;
@@ -47,6 +48,7 @@ public final class LevelUpManager {
 	private static int maxLifeBonus = 0;
 	private static int maxManaBonus = 0;
 	private static int maxShieldBonus = 0;
+	private static int magnetRadiusBonus = 0;
 
 	private static int toInt(Object value) {
 		return value instanceof Number ? ((Number) value).intValue() : 0;
@@ -60,13 +62,18 @@ public final class LevelUpManager {
 	}
 
 	public static void grantKillXp() {
-		if (showingLevelUp || playerLevel >= MAX_PLAYER_LEVEL) {
+		collectXp(XP_PER_KILL * Game.getComboMultiplier());
+	}
+
+	/** Coleta XP de abate ou de cristal; dispara no máximo um level up por coleta. */
+	public static void collectXp(int amount) {
+		if (showingLevelUp || playerLevel >= MAX_PLAYER_LEVEL || amount <= 0) {
 			return;
 		}
-		xp += XP_PER_KILL * Game.getComboMultiplier();
+		xp += amount;
 		double required = xpForNextLevel();
 		if (xp >= required) {
-			xp = 0;
+			xp -= required;
 			playerLevel++;
 			offerChoices();
 		}
@@ -102,6 +109,10 @@ public final class LevelUpManager {
 	/** Bônus acumulado de escudo máximo das escolhas de level up. */
 	public static int getMaxShieldBonus() {
 		return maxShieldBonus;
+	}
+
+	public static int getMagnetRadius() {
+		return 72 + magnetRadiusBonus;
 	}
 
 	public static boolean isShowingLevelUp() {
@@ -163,13 +174,16 @@ public final class LevelUpManager {
 				Game.player.addWeaponEnergy(80);
 			}
 			break;
-		case ESCUDO_INICIAL:
-			Player.shield += 40;
-			if (Player.shield > Player.maxShield) {
-				Player.shield = Player.maxShield;
-			}
-			break;
-		default:
+			case ESCUDO_INICIAL:
+				Player.shield += 40;
+				if (Player.shield > Player.maxShield) {
+					Player.shield = Player.maxShield;
+				}
+				break;
+			case MAGNETISMO:
+				magnetRadiusBonus += 35;
+				break;
+			default:
 			break;
 		}
 		Game.gameState = "NORMAL";
@@ -316,6 +330,7 @@ public final class LevelUpManager {
 		maxLifeBonus = 0;
 		maxManaBonus = 0;
 		maxShieldBonus = 0;
+		magnetRadiusBonus = 0;
 	}
 
 	/** Serializa os bônus de máximos escolhidos na campanha atual. */
@@ -324,6 +339,7 @@ public final class LevelUpManager {
 		map.put("maxLifeBonus", maxLifeBonus);
 		map.put("maxManaBonus", maxManaBonus);
 		map.put("maxShieldBonus", maxShieldBonus);
+		map.put("magnetRadiusBonus", magnetRadiusBonus);
 		map.put("xp", xp);
 		map.put("playerLevel", playerLevel);
 		return map;
@@ -338,6 +354,7 @@ public final class LevelUpManager {
 		maxLifeBonus = Math.max(0, toInt(map.get("maxLifeBonus")));
 		maxManaBonus = Math.max(0, toInt(map.get("maxManaBonus")));
 		maxShieldBonus = Math.max(0, toInt(map.get("maxShieldBonus")));
+		magnetRadiusBonus = Math.max(0, toInt(map.get("magnetRadiusBonus")));
 		if (map.get("xp") instanceof Number) {
 			xp = Math.max(0.0, ((Number) map.get("xp")).doubleValue());
 		}

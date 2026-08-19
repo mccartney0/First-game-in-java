@@ -1209,10 +1209,13 @@ public class Enemy extends Entity {
 	com.traduvertgames.graficos.ParticleSystem.explode(this.getX() + 8, this.getY() + 8, auraColor);
 	// Feedback de XP: mostra a experiência ganha ao derrotar o inimigo.
 	int xpGain = calculateXpGain();
-	if (xpGain > 0) {
-		FloatingText.show("+" + xpGain + " XP", (int) this.getX() + 8, (int) this.getY(),
-				new Color(255, 214, 0), 45);
-	}
+		if (xpGain > 0) {
+			FloatingText.show("+" + xpGain + " XP", (int) this.getX() + 8, (int) this.getY(),
+					new Color(255, 214, 0), 45);
+			if (com.traduvertgames.quest.QuestManager.isSurvivalMode()) {
+				Game.entities.add(new ExperienceOrb((int) this.getX() + 5, (int) this.getY() + 5, xpGain));
+			}
+		}
         // Rodada 25: registrar a morte para o reinício não ressuscitar este
         // inimigo (o mapa é recriado do PNG, e o conjunto de mortos é pulado).
         // Rodada 25: marca o TILE DE SPAWN (não a posição atual) para que o

@@ -3,6 +3,7 @@ package com.traduvertgames.quest;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.world.DynamicEventManager;
 import com.traduvertgames.world.RpgWorldManager;
+import com.traduvertgames.main.WaveManager;
 
 /**
  * Objetivo aberto da superfície RPG ou do modo sobrevivência. Não tem conclusão
@@ -25,7 +26,7 @@ public final class NullObjective extends BaseObjective {
             }
             return region + " — H: abrir hub";
         }
-        return "Ondas: " + WaveTracker.getCurrentWave();
+        return WaveManager.getSurvivalSummary() + " — auto-fire, colete XP e sobreviva ao chefe";
     }
 
     @Override
@@ -33,17 +34,4 @@ public final class NullObjective extends BaseObjective {
         return false;
     }
 
-    /** Acesso simples ao contador de ondas do WaveManager para o texto de progresso. */
-    private static final class WaveTracker {
-        private WaveTracker() {
-        }
-
-        private static int getCurrentWave() {
-            try {
-                return com.traduvertgames.main.WaveManager.getCurrentWaveNumber();
-            } catch (Throwable ex) {
-                return 0;
-            }
-        }
-    }
 }

@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.traduvertgames.entities.Enemy;
+import com.traduvertgames.entities.Entity;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.world.World;
 
@@ -20,6 +21,16 @@ public final class WaveManager {
 	private static final int SPAWN_INTERVAL_FRAMES = 90;
 	private static final int SPAWN_COUNT_PER_WAVE = 3;
 	private static final int MAX_ENEMIES_ON_MAP = 12;
+	private static final String[] SURVIVAL_PHASE_NAMES = {
+			"PRIMEIRA ONDA", "FLORESTA INFECTADA", "CIDADE DOS ENXAMES", "RUÍNAS DE GUERRA", "NÚCLEO DO VAZIO"
+	};
+	private static final String[] SURVIVAL_PHASE_DESCRIPTIONS = {
+			"Aprenda a se mover e construa seu primeiro arsenal.",
+			"Bombardeiros e escudos começam a fechar o mapa.",
+			"Enxames velozes pressionam a coleta de XP.",
+			"Snipers, teleportadores e elites dominam as rotas.",
+			"A arena final mistura todas as ameaças regionais."
+	};
 
 	private static final List<int[]> spawnQueue = new ArrayList<int[]>();
 	private static int waveIndex = 0;
@@ -108,7 +119,7 @@ public final class WaveManager {
 		// A arena começa com um período de preparação; a primeira área vazia
 		// não conta como uma onda concluída nem concede recompensa.
 		waveClearedAnnounced = true;
-		announce("ARENA INFINITA — PREPARE-SE", new Color(255, 87, 34));
+		announce("FASE " + getSurvivalPhase() + " — " + getSurvivalPhaseName(), new Color(255, 87, 34));
 	}
 
 	/** Registra uma onda concluída: atualiza placar, drops e escalada. */
@@ -194,6 +205,26 @@ public final class WaveManager {
 	/** Número atual da onda no modo sobrevivência (alias de getArenaWave). */
 	public static int getCurrentWaveNumber() {
 		return arenaWave;
+	}
+
+	public static int getSurvivalPhase() {
+		Game game = Game.getInstance();
+		return Math.max(1, game != null ? game.getLevelPlus() : 1);
+	}
+
+	public static String getSurvivalPhaseName() {
+		int index = Math.min(SURVIVAL_PHASE_NAMES.length - 1, getSurvivalPhase() - 1);
+		return SURVIVAL_PHASE_NAMES[index];
+	}
+
+	public static String getSurvivalPhaseDescription() {
+		int index = Math.min(SURVIVAL_PHASE_DESCRIPTIONS.length - 1, getSurvivalPhase() - 1);
+		return SURVIVAL_PHASE_DESCRIPTIONS[index];
+	}
+
+	public static String getSurvivalSummary() {
+		return "Fase " + getSurvivalPhase() + " — " + getSurvivalPhaseName()
+				+ " | Onda " + getArenaWave();
 	}
 
 	public static void reset() {
@@ -293,8 +324,9 @@ public final class WaveManager {
 
 	private static boolean waveClearedAnnounced = false;
 
-	private static void spawnArenaEnemies() {
-		int count = 2 + arenaWave / 2;
+		private static void spawnArenaEnemies() {
+			int phase = getSurvivalPhase();
+			int count = Math.min(MAX_ENEMIES_ON_MAP, 2 + arenaWave / 2 + Math.max(0, phase - 1));
 		boolean spawnedAny = false;
 		for (int i = 0; i < count; i++) {
 			if (Game.enemies.size() >= MAX_ENEMIES_ON_MAP) {
@@ -304,17 +336,9 @@ public final class WaveManager {
 			if (spot == null) {
 				return;
 			}
-				Enemy enemy = Enemy.spawnRandomVariant(spot[0], spot[1]);
-				spawnedAny = true;
-				// Escalada de dificuldade: mais vida e dano conforme a onda atual.
-			// Rodada 20: curva sub-linear (raiz quadrada da onda) — a linear
-			// (0.22/0.09 por onda) tornava ondas profundas impossíveis; agora a
-			// dificuldade cresce rápido no início e desacelera, mantendo o
-			// desafio sem teto artificial. Ondas altas permanecem mais fortes
-			// que antes a partir da onda 6.
-			double depth = Math.sqrt(Math.max(1, wavesSurvived));
-			enemy.boost(1.0 + depth * 0.20, 1.0 + depth * 0.07);
-							Game.entities.add(enemy);
+				Enemy enemy = spawnSurvivalEnemy(spot[0], spot[1], i, phase);
+					spawnedAny = true;
+					Game.entities.add(enemy);
 				Game.enemies.add(enemy);
 			}
 			if (spawnedAny) {
@@ -323,7 +347,24 @@ public final class WaveManager {
 			}
 		}
 
+				private static Enemy spawnSurvivalEnemy(int x, int y, int index, int phase) {
+			Enemy.Variant[] early = { Enemy.Variant.SCOUT, Enemy.Variant.SWARM, Enemy.Variant.BOMBER };
+			Enemy.Variant[] mid = { Enemy.Variant.SWARM, Enemy.Variant.BOMBER, Enemy.Variant.SHIELDER,
+					Enemy.Variant.SNIPER };
+			Enemy.Variant[] late = { Enemy.Variant.SHIELDER, Enemy.Variant.SNIPER, Enemy.Variant.TELEPORTER,
+					Enemy.Variant.RAVAGER, Enemy.Variant.PHANTOM };
+			Enemy.Variant[] pool = phase <= 1 ? early : (phase == 2 ? mid : late);
+			Enemy.Variant variant = pool[Math.floorMod(arenaWave + index + phase, pool.length)];
+			Enemy enemy = new Enemy(x, y, 16, 16, Entity.ENEMY_EN, variant, false,
+					arenaWave >= 4 && (index + arenaWave) % 7 == 0);
+			double depth = Math.sqrt(Math.max(1, wavesSurvived));
+			enemy.boost(1.0 + depth * 0.20 + Math.max(0, phase - 1) * 0.08,
+				1.0 + depth * 0.07 + Math.max(0, phase - 1) * 0.025);
+			return enemy;
+		}
+
 		public static void spawnEnemyAt(int x, int y) {
+
 		Enemy enemy = Enemy.spawnRandomVariant(x, y);
 		Game.entities.add(enemy);
 		Game.enemies.add(enemy);
