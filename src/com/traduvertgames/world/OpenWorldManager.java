@@ -104,6 +104,14 @@ public final class OpenWorldManager {
         return discoveredChunks.size();
     }
 
+    /** Consulta direta usada pelo HUD para mascarar setores ainda não explorados. */
+    public static boolean isChunkDiscovered(int chunkX, int chunkY) {
+        if (chunkX < 0 || chunkY < 0 || chunkX >= getChunkColumns() || chunkY >= getChunkRows()) {
+            return false;
+        }
+        return discoveredChunks.contains(key(chunkX, chunkY));
+    }
+
     public static double getExplorationPercent() {
         int total = getTotalChunkCount();
         return total <= 0 ? 0.0 : discoveredChunks.size() * 100.0 / total;

@@ -52,6 +52,8 @@ class OpenWorldManagerTest {
         assertTrue(OpenWorldManager.updatePlayerPosition(8 * 16, 8 * 16));
         assertTrue(OpenWorldManager.updatePlayerPosition(64 * 16, 0));
         assertEquals(2, OpenWorldManager.getDiscoveredChunkCount());
+        assertTrue(OpenWorldManager.isChunkDiscovered(0, 0));
+        assertTrue(OpenWorldManager.isChunkDiscovered(1, 0));
 
         Map<String, Object> snapshot = OpenWorldManager.serialize();
         OpenWorldManager.reset();
