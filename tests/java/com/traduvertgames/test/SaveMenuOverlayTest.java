@@ -30,14 +30,14 @@ public class SaveMenuOverlayTest {
     void saveToSlotChangesActiveSlotWithoutOverwritingAnotherSlot() {
         Game.setCurrentLevel(2);
         QuestManager.prepareForLevel(2);
-        assertTrue(SaveManager.saveToSlot(2));
+        assertTrue(SaveManager.saveCurrentGameToSlot(2));
         assertEquals(2, SaveManager.activeSlot);
         assertEquals(2, SaveManager.getSlotLevel(2));
         assertEquals(-1, SaveManager.getSlotLevel(1));
 
         Game.setCurrentLevel(3);
         QuestManager.prepareForLevel(3);
-        assertTrue(SaveManager.saveToSlot(3));
+        assertTrue(SaveManager.saveCurrentGameToSlot(3));
         assertEquals(3, SaveManager.activeSlot);
         assertEquals(2, SaveManager.getSlotLevel(2));
         assertEquals(3, SaveManager.getSlotLevel(3));
@@ -47,7 +47,7 @@ public class SaveMenuOverlayTest {
     void clearingSlotRemovesNarrativeProgressToo() {
         Game.setCurrentLevel(8);
         QuestManager.prepareForLevel(8);
-        assertTrue(SaveManager.saveToSlot(2));
+        assertTrue(SaveManager.saveCurrentGameToSlot(2));
         assertNotEquals("", SaveManager.getSlotObjectiveText(2));
 
         assertTrue(SaveManager.clearSlot(2));
