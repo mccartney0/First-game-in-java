@@ -12,7 +12,7 @@ Este documento detalha o fluxo das principais rotas de execução do jogo, descr
 - O atributo `Game.gameState` define as rotas possíveis: `MENU`, `NORMAL` e `GAMEOVER`. Cada estado ativa lógicas diferentes em `update()` e `render()`, como interação com o menu, execução do jogo ou exibição da tela de derrota.【F:src/com/traduvertgames/main/Game.java†L53-L206】
 - No estado `MENU`, a classe `Menu` controla navegação (`up`, `down`, `enter`), habilita música ambiente, abre o submenu de opções e decide entre iniciar, continuar ou carregar o jogo salvo, redirecionando o fluxo para `NORMAL` ou finalizando a aplicação.【F:src/com/traduvertgames/main/Menu.java†L23-L230】
 - O submenu "Opções" permite ativar/desativar a música (`OptionsConfig.toggleMusic`) e ciclar a dificuldade; `Game.applyDifficultyToPlayerStats()` recalcula vida, mana e munição máximas enquanto o dano sofrido é escalado via `Game.getDamageTakenMultiplier()`.【F:src/com/traduvertgames/main/Menu.java†L93-L230】【F:src/com/traduvertgames/main/OptionsConfig.java†L1-L92】【F:src/com/traduvertgames/main/Game.java†L200-L360】【F:src/com/traduvertgames/entities/BulletShoot.java†L1-L60】【F:src/com/traduvertgames/entities/Enemy.java†L320-L420】
-- Em `GAMEOVER`, o loop aguarda `Enter` para reiniciar o estado `NORMAL`, recarregando o mundo conforme o progresso salvo (se existir `save.txt`).【F:src/com/traduvertgames/main/Game.java†L124-L206】
+- Em `GAMEOVER`, o jogador pode recarregar o slot ativo ou voltar ao menu principal. O progresso persistido fica em `saves.json`.
 
 ## 3. Progressão de níveis
 
@@ -27,8 +27,8 @@ Este documento detalha o fluxo das principais rotas de execução do jogo, descr
 
 ## 5. Salvamento e carregamento
 
-- O menu oferece a opção "carregar jogo" quando `save.txt` existe. O método `Menu.loadGame` decodifica os valores com um deslocamento definido (encode) e `applySave` restaura vida, mana, contagem de inimigos e fase atual antes de reabrir o mundo correto.【F:src/com/traduvertgames/main/Menu.java†L58-L158】
-- Durante o estado `NORMAL`, pressionar `T` define `Game.saveGame = true`. A rotina no `update()` registra atributos atuais com `Menu.saveGame`, codificando números e gravando no arquivo de texto.【F:src/com/traduvertgames/main/Game.java†L87-L154】【F:src/com/traduvertgames/main/Menu.java†L126-L158】
+- `SaveManager` mantém três slots em `saves.json`, com sessão, progresso de missão e timestamp. O carregamento restaura o mapa e o objetivo do slot selecionado; gravações são atômicas e possuem recuperação por `saves.backup.json`.
+- Durante `NORMAL`, `T` atualiza o slot ativo. Pela pausa, o jogador também pode salvar o estado atual em um slot vazio, reiniciar a missão principal da fase ou voltar ao menu principal.
 
 ## 6. Interface e áudio
 

@@ -115,6 +115,11 @@ public final class InventoryManager {
 		}
 	}
 
+	/** Fecha o painel independentemente do estado global do jogo. */
+	public static void close() {
+		open = false;
+	}
+
 	public static void navigateUp() {
 		if (!open) {
 			return;

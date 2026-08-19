@@ -66,6 +66,8 @@ public final class LevelSelectScreen {
 	}
 
 	public static void open() {
+		// A seleção de fases é modal: nunca pode coexistir com o inventário.
+		InventoryManager.close();
 		open = true;
 		selection = Math.max(0, Math.min(TOTAL_LEVELS - 1, QuestManager.getCurrentLevel() - 1));
 		// Garante que a seleção inicial nunca cai em uma fase travada.

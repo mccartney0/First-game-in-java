@@ -207,6 +207,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	public Game() throws IOException {
 		instance = this;
+		SaveManager.refreshActiveSlot();
 		rand = new Random();
 		addKeyListener(this);
 		addMouseListener(this);
@@ -1220,7 +1221,7 @@ if (!hidingHud) {
 				}
 				// O hub regional é modal e consome todo o teclado antes de qualquer
 				// flag de movimento, tiro, arma ou pausa.
-				if ("REGIONAL_HUB".equals(gameState)) {
+			if ("REGIONAL_HUB".equals(gameState)) {
 					if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
 						HubScreen.navigateUp();
 					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
@@ -1229,6 +1230,44 @@ if (!hidingHud) {
 						HubScreen.confirm();
 					} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 						HubScreen.cancel();
+					}
+					return;
+				}
+				// Overlays modais consomem o teclado antes do jogador e de qualquer
+				// tela que esteja atrás. Isso também recupera sessões antigas que
+				// conseguiram abrir inventário e seleção de fase ao mesmo tempo.
+				if (LevelSelectScreen.isOpen()) {
+					InventoryManager.close();
+					if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+						LevelSelectScreen.navigateUp();
+					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+						LevelSelectScreen.navigateDown();
+					} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						LevelSelectScreen.confirmSelection();
+					} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE
+							|| e.getKeyCode() == KeyEvent.VK_TAB) {
+						LevelSelectScreen.close();
+					} else if (e.getKeyCode() == KeyEvent.VK_F11) {
+						toggleFullscreen();
+					}
+					return;
+				}
+				if (InventoryManager.isOpen()) {
+					if (e.getKeyCode() == KeyEvent.VK_ESCAPE || e.getKeyCode() == KeyEvent.VK_I) {
+						InventoryManager.close();
+					} else if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+						InventoryManager.navigateUp();
+					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+						InventoryManager.navigateDown();
+					} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
+						InventoryManager.navigateLeft();
+					} else if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
+						InventoryManager.navigateRight();
+					} else if (e.getKeyCode() == KeyEvent.VK_ENTER
+							|| e.getKeyCode() == KeyEvent.VK_SPACE) {
+						InventoryManager.useSelected();
+					} else if (e.getKeyCode() == KeyEvent.VK_F11) {
+						toggleFullscreen();
 					}
 					return;
 				}
@@ -1440,7 +1479,7 @@ if (!hidingHud) {
 				// Rodada 22b: o ESC fecha o inventário antes de abrir a pausa —
 				// sem isso o painel ficava preso aberto (tela escura e HUD
 				// oculta), como reportado pelo jogador.
-				InventoryManager.toggle();
+				InventoryManager.close();
 				return;
 			}
 			if ("NORMAL".equals(gameState)) {
@@ -1490,7 +1529,7 @@ if (!hidingHud) {
 					}
 
 		if (e.getKeyCode() == KeyEvent.VK_L) {
-			if ("NORMAL".equals(gameState)) {
+			if ("NORMAL".equals(gameState) && !InventoryManager.isOpen()) {
 				LevelSelectScreen.open();
 			}
 		}
@@ -2314,6 +2353,35 @@ if (!hidingHud) {
 		}
 	}
 
+	/**
+	 * Reinicia somente a fase e a missão principal atuais. O progresso global,
+	 * o slot ativo, o arsenal e o metagame são preservados; inimigos abatidos e
+	 * o estado parcial do objetivo desta fase são recriados do zero.
+	 */
+	public void restartCurrentMission() {
+		int phase = Math.max(1, Math.min(CUR_LEVEL, MAX_LEVEL));
+		DialogueManager.stop();
+		InventoryManager.close();
+		LevelSelectScreen.close();
+		clearQuestPending();
+		clearPendingOverlayInput();
+		OnboardingManager.stop();
+		Menu.closePauseScreen();
+		Menu.pause = false;
+		gameState = "NORMAL";
+		restorePhase = false;
+		GameState.restorePhase = false;
+		World.restartGame("level" + phase + ".png");
+		setCurrentLevel(phase);
+		applyPostLoadAdjustments();
+		clearInitialWeaponSelect();
+		SaveManager.saveCurrentGame();
+		MissionBanner.show(
+				"MISSÃO REINICIADA",
+				"A missão principal da fase " + phase + " voltou ao início",
+				new java.awt.Color(255, 193, 7), java.awt.Color.WHITE, 240);
+	}
+
 	/** Volta ao menu principal mantendo o autosave do progresso da partida. */
 	public void returnToMainMenu() {
 		// Parar overlays ANTES de definir o estado de menu: as paradas
@@ -2322,6 +2390,8 @@ if (!hidingHud) {
 		VictoryCutscene.stop();
 		DialogueManager.stop();
 		MissionBanner.reset();
+		InventoryManager.close();
+		LevelSelectScreen.close();
 		gameState = "MENU";
 		Menu.pause = false;
 		Menu.closePauseScreen();
