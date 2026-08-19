@@ -11,8 +11,9 @@ import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.quest.SideQuestManager;
 import com.traduvertgames.world.Camera;
-import com.traduvertgames.world.DynamicEventManager;
-import com.traduvertgames.world.RpgWorldManager;
+	import com.traduvertgames.world.DynamicEventManager;
+	import com.traduvertgames.world.OpenWorldManager;
+	import com.traduvertgames.world.RpgWorldManager;
 
 /**
  * Card compacto da missão atual, sempre visível durante a partida (exceto em
@@ -49,14 +50,16 @@ public final class MissionHud {
 		// --- Card compacto da missão (canto superior esquerdo) ---
 			String title;
 			String progress;
-			if (Game.isRegionalAdventureMode()) {
-				RpgWorldManager.RegionType region = RpgWorldManager.getCurrentRegion();
-				String regionName = region == null ? "mapeando a região" : region.getDisplayName();
-				title = "Explorar " + regionName;
-				progress = DynamicEventManager.isActive()
-						? DynamicEventManager.getActiveTitle() + " — " + DynamicEventManager.getProgressLabel()
-						: "H: abrir hub — procure POIs, NPCs e eventos";
-			} else {
+				if (Game.isRegionalAdventureMode() || Game.isOpenWorldMode()) {
+					RpgWorldManager.RegionType region = RpgWorldManager.getCurrentRegion();
+					String regionName = region == null ? "mapeando a região" : region.getDisplayName();
+					title = Game.isOpenWorldMode() ? "Mundo Aberto — " + regionName : "Explorar " + regionName;
+					progress = DynamicEventManager.isActive()
+							? DynamicEventManager.getActiveTitle() + " — " + DynamicEventManager.getProgressLabel()
+							: (Game.isOpenWorldMode()
+									? OpenWorldManager.getExplorationLabel() + " — H: hub, procure POIs e eventos"
+									: "H: abrir hub — procure POIs, NPCs e eventos");
+				} else {
 				title = QuestManager.getObjectiveTitle();
 				progress = QuestManager.getObjectiveProgress();
 				if (title == null || title.isEmpty()) {

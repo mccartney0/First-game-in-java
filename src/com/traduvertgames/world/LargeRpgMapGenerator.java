@@ -63,8 +63,10 @@ public final class LargeRpgMapGenerator {
     public static File generateOpenWorldDefault(int depth) throws IOException {
         int safeDepth = Math.max(1, depth);
         long seed = 0x0F3A0B1DL + safeDepth * 4099L;
-        return generate(OPEN_WORLD_WIDTH, OPEN_WORLD_HEIGHT, safeDepth, seed,
+        File map = generate(OPEN_WORLD_WIDTH, OPEN_WORLD_HEIGHT, safeDepth, seed,
                 new File("bin/open_world_maps"));
+        OpenWorldManager.configure(OPEN_WORLD_WIDTH, OPEN_WORLD_HEIGHT, seed);
+        return map;
     }
 
     public static File generate(int width, int height, int depth, long seed, File outputDir) throws IOException {

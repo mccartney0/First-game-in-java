@@ -63,7 +63,8 @@ public final class QuestManager {
     }
 
     public static boolean isSurvivalMode() {
-        return currentLevel >= PHASE_TITLES.length - 1;
+        return !Game.isOpenWorldMode() && !Game.isRegionalAdventureMode()
+                && currentLevel >= PHASE_TITLES.length - 1;
     }
 
     public static int getCurrentLevel() {

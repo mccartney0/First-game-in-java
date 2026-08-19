@@ -25,19 +25,21 @@ public class Menu {
 		EXIT_CONFIRM
 	}
 
-		private static final int OPTION_RPG_ADVENTURE = 0;
-		private static final int OPTION_CAMPAIGN = 1;
-		private static final int OPTION_CONTINUE = 2;
-		private static final int OPTION_LOAD_GAME = 3;
-		private static final int OPTION_HOW_TO_PLAY = 4;
-		private static final int OPTION_SETTINGS = 5;
+		private static final int OPTION_OPEN_WORLD = 0;
+		private static final int OPTION_RPG_ADVENTURE = 1;
+		private static final int OPTION_CAMPAIGN = 2;
+		private static final int OPTION_CONTINUE = 3;
+		private static final int OPTION_LOAD_GAME = 4;
+		private static final int OPTION_HOW_TO_PLAY = 5;
+		private static final int OPTION_SETTINGS = 6;
 		// Rodada 29 — metagame: opção do menu principal para as melhorias
 		// permanentes do piloto, compráveis com os créditos persistentes.
-		private static final int OPTION_UPGRADES = 6;
-		private static final int OPTION_NEW_GAME_PLUS = 7;
-		private static final int OPTION_EXIT = 8;
+		private static final int OPTION_UPGRADES = 7;
+		private static final int OPTION_NEW_GAME_PLUS = 8;
+		private static final int OPTION_EXIT = 9;
 
 		private static final String[] MAIN_OPTIONS = {
+				"mundo aberto gigante",
 				"aventura RPG",
 				"campanha narrativa",
 				"continuar",
@@ -340,6 +342,14 @@ public class Menu {
 
 	private void handleMainMenuSelection() {
 		switch (currentOption) {
+		case OPTION_OPEN_WORLD:
+			if (!pause) {
+				Game openWorldGame = Game.getInstance();
+				if (openWorldGame != null) {
+					openWorldGame.startOpenWorld();
+				}
+			}
+			break;
 		case OPTION_RPG_ADVENTURE:
 			if (!pause) {
 				Game adventureGame = Game.getInstance();

@@ -376,7 +376,8 @@ Enemy en = new Enemy(xx * 16, yy * 16, 16, 16, Entity.ENEMY_EN, Enemy.Variant.AR
 	
 	        /** Reinicia um mapa procedural, distinguindo aventura RPG de sobrevivência. */
         public static void restartGameFromFile(String absolutePath) {
-                int proceduralLevel = com.traduvertgames.main.Game.isRegionalAdventureMode() ? 10 : 9;
+                int proceduralLevel = com.traduvertgames.main.Game.isOpenWorldMode() ? 11
+                        : com.traduvertgames.main.Game.isRegionalAdventureMode() ? 10 : 9;
                 restartGameCommon(proceduralLevel, absolutePath);
         }
 

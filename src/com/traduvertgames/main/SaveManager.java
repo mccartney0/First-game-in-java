@@ -131,8 +131,9 @@ public final class SaveManager {
 		slot.put("inimigosMortosSet", com.traduvertgames.main.EnemyKillTracker.serialize());
 			slot.put("levelPlus", game != null ? game.getLevelPlus() : 0);
 			slot.put("level", game != null ? game.getCurrentLevel() : 1);
-			slot.put("gameMode", game != null && game.isRegionalAdventureMode()
-					? "RPG_ADVENTURE" : "CAMPAIGN");
+				slot.put("gameMode", game != null && game.isOpenWorldMode()
+						? "OPEN_WORLD" : game != null && game.isRegionalAdventureMode()
+								? "RPG_ADVENTURE" : "CAMPAIGN");
 		slot.put("pontuacao", Game.getScore());
 		slot.put("recorde", Game.getHighScore());
 		slot.put("melhorCombo", Game.getBestComboRecord());
@@ -194,9 +195,11 @@ public final class SaveManager {
 						com.traduvertgames.quest.ContractManager.serializeCompleted()));
 				session.put("weaponBuilds", new HashMap<String, Object>(
 						com.traduvertgames.main.WeaponBuildManager.serialize()));
-					 session.put("regionalChains", new HashMap<String, Object>(
-							com.traduvertgames.world.RegionalChainManager.serialize()));
-					 session.put("language", Localization.serialize());
+						 session.put("regionalChains", new HashMap<String, Object>(
+								 com.traduvertgames.world.RegionalChainManager.serialize()));
+						 session.put("openWorld", new HashMap<String, Object>(
+								 com.traduvertgames.world.OpenWorldManager.serialize()));
+						 session.put("language", Localization.serialize());
 								session.put("sideQuestsDone", new HashMap<String, Boolean>(
 
 					com.traduvertgames.quest.SideQuestManager.getCompleted()));
@@ -457,7 +460,7 @@ public final class SaveManager {
 			root.put("campaign", campaign);
 		}
 		Game current = game != null ? game : Game.getInstance();
-		if (current != null && !current.isRegionalAdventureMode()) {
+		if (current != null && !current.isRegionalAdventureMode() && !current.isOpenWorldMode()) {
 			int reached = current.getCurrentLevel();
 			int previousMax = toInt(campaign.get("maxLevelReached"));
 			campaign.put("maxLevelReached", Math.max(previousMax, reached));
@@ -591,8 +594,10 @@ public final class SaveManager {
 		int savedEnemies = toInt(session.get("inimigosMortos"));
 			int savedLevelPlus = toInt(session.get("levelPlus"));
 			int savedLevel = toInt(session.get("level"));
+			boolean savedOpenWorld = "OPEN_WORLD".equals(String.valueOf(session.get("gameMode")));
 			boolean savedRegionalAdventure = "RPG_ADVENTURE".equals(
 					String.valueOf(session.get("gameMode")));
+			com.traduvertgames.world.OpenWorldManager.deserialize(session.get("openWorld"));
 		// Rodada 25: o conjunto de inimigos abatidos — salvo antes do reload
 		// do mundo (restoreObjectiveState abaixo) para o applyMapPixels pular
 		// as posições registradas e não ressuscitar os mobs já derrotados.
@@ -660,19 +665,23 @@ public final class SaveManager {
 			// Troca de fase completa: recarrega o mapa, a quest e o chefe da fase
 			// salva (sem reabrir o onboarding), garantindo que o jogo retorne
 			// exatamente à fase em que foi salvo — e não à fase atual.
+						Game.setOpenWorldMode(savedOpenWorld);
 						Game.setRegionalAdventureMode(savedRegionalAdventure);
 						game.setLevelPlus(savedLevelPlus);
-						game.setCurrentLevel(savedRegionalAdventure ? Game.MAX_LEVEL + 1 : savedLevel);
+						game.setCurrentLevel(savedOpenWorld ? Game.MAX_LEVEL + 2
+								: savedRegionalAdventure ? Game.MAX_LEVEL + 1 : savedLevel);
 						// Rodada 25: a restauração de save recarrega a mesma fase;
 						// o tracker de mortos (restaurado acima) não pode ser
 						// zerado pelo restart — senão os mobs abatidos voltam.
 						com.traduvertgames.main.Game.restorePhase = true;
 						try {
-							if (savedRegionalAdventure) {
-								game.loadRegionalAdventure(Math.max(1, savedLevelPlus));
-							} else {
-								World.restartGame("level" + Math.min(Math.max(1, savedLevel), Game.MAX_LEVEL) + ".png");
-							}
+								if (savedOpenWorld) {
+									game.loadOpenWorld(Math.max(1, savedLevelPlus));
+								} else if (savedRegionalAdventure) {
+									game.loadRegionalAdventure(Math.max(1, savedLevelPlus));
+								} else {
+									World.restartGame("level" + Math.min(Math.max(1, savedLevel), Game.MAX_LEVEL) + ".png");
+								}
 						} finally {
 							com.traduvertgames.main.Game.restorePhase = false;
 						}
@@ -904,6 +913,11 @@ public final class SaveManager {
 			return "";
 		}
 		Map<String, Object> session = getSession(slot);
+		if ("OPEN_WORLD".equals(String.valueOf(session.get("gameMode")))) {
+			int sectors = com.traduvertgames.world.OpenWorldManager.getDiscoveredChunkCount();
+			int depth = Math.max(1, toInt(session.get("levelPlus")));
+			return "Mundo Aberto gigante — setores descobertos: " + sectors + " (profundidade " + depth + ")";
+		}
 		if ("RPG_ADVENTURE".equals(String.valueOf(session.get("gameMode")))) {
 			int depth = Math.max(1, toInt(session.get("levelPlus")));
 			return "Aventura RPG — exploração regional (profundidade " + depth + ")";

@@ -123,6 +123,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 		/** True quando a sessão atual usa o mundo regional como aventura principal. */
 		private static boolean regionalAdventureMode = false;
+		/** True quando a sessão atual usa o mapa gigante de exploração contínua. */
+		private static boolean openWorldMode = false;
 
 		/** True enquanto a loja está aberta por causa de um objetivo concluído. */
 		private static boolean questCompletedPending = false;
@@ -136,6 +138,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	 */
 		public static void resetAllForTest() {
 			regionalAdventureMode = false;
+			openWorldMode = false;
+			com.traduvertgames.world.OpenWorldManager.reset();
 			com.traduvertgames.world.RegionalProgressionManager.reset();
 			GameState.resetAll();
 		clearQuestPending();
@@ -427,8 +431,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		        public static void setCurrentLevel(int level) {
 		        if (level < 1)
 		                level = 1;
-		        int regionalLevel = MAX_LEVEL + 1;
-		if (level > MAX_LEVEL && level != regionalLevel)
+			int regionalLevel = MAX_LEVEL + 1;
+			int openWorldLevel = MAX_LEVEL + 2;
+		if (level > MAX_LEVEL && level != regionalLevel && level != openWorldLevel)
 				level = MAX_LEVEL;
                 GameState.currentLevel = level;
                 CUR_LEVEL = level;
@@ -445,6 +450,22 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
         /** Define o modo da sessão antes de recriar o mapa ou salvar o slot. */
         public static void setRegionalAdventureMode(boolean enabled) {
                 regionalAdventureMode = enabled;
+                if (enabled) {
+                        openWorldMode = false;
+                }
+        }
+
+        /** Indica se a sessão atual é o modo Mundo Aberto gigante. */
+        public static boolean isOpenWorldMode() {
+                return openWorldMode;
+        }
+
+        /** Define o modo Mundo Aberto antes de carregar ou restaurar o mapa. */
+        public static void setOpenWorldMode(boolean enabled) {
+                openWorldMode = enabled;
+                if (enabled) {
+                        regionalAdventureMode = false;
+                }
         }
 
         public void setLevelPlus(int value) {
@@ -788,11 +809,18 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 					if (RpgWorldManager.isActive() && player != null) {
 						boolean enteredRegion = RpgWorldManager.updatePlayerPosition(
 								(int) player.getX(), (int) player.getY());
+						boolean enteredChunk = isOpenWorldMode()
+								&& com.traduvertgames.world.OpenWorldManager.updatePlayerPosition(
+										(int) player.getX(), (int) player.getY());
 						if (enteredRegion && !isTransitionCooldown() && !isTransitioning()) {
 							MissionBanner.show("REGIÃO DESCOBERTA",
 									RpgWorldManager.getCurrentRegionName() + " — "
 											+ RpgWorldManager.getCurrentRegionSubtitle(),
 									new java.awt.Color(129, 199, 132), java.awt.Color.WHITE, 150);
+						} else if (enteredChunk && !isTransitionCooldown() && !isTransitioning()) {
+							MissionBanner.show("SETOR DESCOBERTO",
+									com.traduvertgames.world.OpenWorldManager.getExplorationLabel(),
+									new java.awt.Color(38, 198, 218), java.awt.Color.WHITE, 100);
 						}
 						RpgWorldManager.tick();
 						DynamicEventManager.update();
@@ -1605,7 +1633,7 @@ if (!hidingHud) {
 			// visual de entrada da Aventura RPG não deve bloquear o primeiro acesso;
 			// HubScreen.open() remove esse overlay antes de assumir o foco modal.
 			if (e.getKeyCode() == KeyEvent.VK_H) {
-				if ("NORMAL".equals(gameState) && isRegionalAdventureMode()
+				if ("NORMAL".equals(gameState) && (isRegionalAdventureMode() || isOpenWorldMode())
 						&& RpgWorldManager.isActive() && !DialogueManager.isActive()
 						&& !InventoryManager.isOpen() && !questCompletedPending) {
 					HubScreen.open();
@@ -1894,8 +1922,41 @@ if (!hidingHud) {
 		startNewGameInternal(false);
 	}
 
+	/** Inicia uma sessão nova no modo Mundo Aberto gigante. */
+	public void startOpenWorld() {
+		setOpenWorldMode(true);
+		com.traduvertgames.world.RegionalProgressionManager.reset();
+		com.traduvertgames.quest.ContractManager.reset();
+		WeaponBuildManager.reset();
+		com.traduvertgames.world.RegionalChainManager.reset();
+		resetGameOverState();
+		com.traduvertgames.entities.Companion.clear();
+		this.levelPlus = 1;
+		SaveManager.resetDeepRecord();
+		GameState.resetAll();
+		CUR_LEVEL = MAX_LEVEL + 2;
+		Enemy.enemies = 0;
+		Menu.pause = false;
+		resetPlayerToDefaults();
+		LevelUpManager.resetProgress();
+		applyDifficultyToPlayerStats();
+		resetTraitorTalked();
+		WaveManager.reset();
+		DynamicEventManager.reset();
+		InventoryManager.reset();
+		MusicManager.setZone(MusicManager.Zone.FOREST);
+		DashAbility.reset();
+		UltimateAbility.reset();
+		LootGuarantee.reset();
+		ParticleSystem.clear();
+		FloatingText.clear();
+		startInitialWeaponSelect();
+	}
+
 	private void startNewGameInternal(boolean regionalAdventure) {
 		regionalAdventureMode = regionalAdventure;
+		openWorldMode = false;
+		com.traduvertgames.world.OpenWorldManager.reset();
 			com.traduvertgames.world.RegionalProgressionManager.reset();
 				com.traduvertgames.quest.ContractManager.reset();
 				WeaponBuildManager.reset();
@@ -1955,9 +2016,38 @@ if (!hidingHud) {
 		 */
 		public void loadRegionalAdventure(int depth) {
 			regionalAdventureMode = true;
+			openWorldMode = false;
+			com.traduvertgames.world.OpenWorldManager.reset();
 			int safeDepth = Math.max(1, depth);
 			levelPlus = safeDepth;
 			setCurrentLevel(MAX_LEVEL + 1);
+			clearQuestPending();
+			DialogueManager.stop();
+			InventoryManager.close();
+			LevelSelectScreen.close();
+			ShopManager.close();
+			LevelUpManager.dismiss();
+			OnboardingManager.stop();
+			Menu.pause = false;
+			WaveManager.reset();
+			startProceduralLevel(safeDepth);
+			gameState = "NORMAL";
+			GameState.gameState = "NORMAL";
+			MusicManager.setZone(MusicManager.Zone.FOREST);
+			transitionCooldown = RESPIRO_FRAMES;
+			GameState.transitionCooldown = RESPIRO_FRAMES;
+			showLevelTransition = 90 + RESPIRO_FRAMES;
+			GameState.showLevelTransition = 90 + RESPIRO_FRAMES;
+			transitionAlpha = 255;
+			GameState.transitionAlpha = 255;
+		}
+
+		/** Recria uma sessão salva no Mundo Aberto sem abrir onboarding. */
+		public void loadOpenWorld(int depth) {
+			setOpenWorldMode(true);
+			int safeDepth = Math.max(1, depth);
+			levelPlus = safeDepth;
+			setCurrentLevel(MAX_LEVEL + 2);
 			clearQuestPending();
 			DialogueManager.stop();
 			InventoryManager.close();
@@ -2072,6 +2162,25 @@ if (!hidingHud) {
 		}
 		showInitialWeaponSelect = false;
 		Menu.pause = false;
+		if (openWorldMode) {
+			levelPlus = 1;
+			CUR_LEVEL = MAX_LEVEL + 2;
+			startProceduralLevel(levelPlus);
+			Player.life = Player.maxLife;
+			Player.mana = Player.maxMana;
+			Player.shield = Player.maxShield;
+			Player.weapon = Player.maxWeapon;
+			if (player != null) {
+				player.syncFromPersistentState();
+				player.refillCurrentWeapon();
+			}
+			gameState = "NORMAL";
+			GameState.gameState = "NORMAL";
+			MusicManager.setZone(MusicManager.Zone.FOREST);
+			MissionBanner.show("MUNDO ABERTO", "Explore setores gigantes, encontre POIs e aceite eventos regionais.",
+					new Color(38, 198, 218), Color.WHITE, 300);
+			return;
+		}
 		// O onboarding roda em uma arena de treino separada (sem itens de
 		// missão nem inimigos); ao concluir, loadFirstPhase() carrega a fase 1 real.
 		World.restartGame("training.png");
@@ -2299,6 +2408,8 @@ if (!hidingHud) {
 		public static void enterInfiniteMode() {
 		// Sobrevivência é uma trilha separada; o slot não deve ser salvo como RPG.
 		regionalAdventureMode = false;
+		openWorldMode = false;
+		com.traduvertgames.world.OpenWorldManager.reset();
 		if (instance != null) {
 			instance.levelPlus = 1;
 		}
@@ -2380,9 +2491,11 @@ if (!hidingHud) {
 			com.traduvertgames.world.DynamicEventManager.abortActiveEventForMapChange();
 			try {
 
-			java.io.File mapFile = regionalAdventureMode
-					? com.traduvertgames.world.LargeRpgMapGenerator.generateDefault(depth)
-					: com.traduvertgames.world.ProceduralLevelGenerator.generate(depth);
+			java.io.File mapFile = openWorldMode
+					? com.traduvertgames.world.LargeRpgMapGenerator.generateOpenWorldDefault(depth)
+					: regionalAdventureMode
+							? com.traduvertgames.world.LargeRpgMapGenerator.generateDefault(depth)
+							: com.traduvertgames.world.ProceduralLevelGenerator.generate(depth);
 			String absPath = mapFile.getAbsolutePath();
 			com.traduvertgames.world.World.restartGameFromFile(absPath);
 		} catch (Exception error) {
@@ -2416,8 +2529,15 @@ if (!hidingHud) {
                 int baseMaxMana;
                 int baseMaxShield;
                 double baseCapacityMultiplier;
-		if (CUR_LEVEL > MAX_LEVEL) {
-			// Fase final: a cada ciclo de sobrevivência (levelPlus),
+			if (openWorldMode) {
+				// O Mundo Aberto usa recursos de aventura, não os valores inflados
+				// da arena infinita; a dificuldade vem das regiões e eventos.
+				baseMaxLife = 220;
+				baseMaxMana = 700;
+				baseMaxShield = 220;
+				baseCapacityMultiplier = 1.75;
+			} else if (CUR_LEVEL > MAX_LEVEL) {
+				// Fase final: a cada ciclo de sobrevivência (levelPlus),
 			// os recursos máximos do piloto crescem para compensar
 			// as ondas cada vez mais agressivas.
 			int survivalDepth = Math.max(0, instance != null ? instance.levelPlus - 1 : 0);
@@ -2574,8 +2694,10 @@ if (!hidingHud) {
 	}
 
 	/** Volta ao menu principal mantendo o autosave do progresso da partida. */
-	public void returnToMainMenu() {
-		// Parar overlays ANTES de definir o estado de menu: as paradas
+			public void returnToMainMenu() {
+			openWorldMode = false;
+			com.traduvertgames.world.OpenWorldManager.reset();
+			// Parar overlays ANTES de definir o estado de menu: as paradas
 		// podem sobrescrever gameState (por exemplo, VictoryCutscene.stop
 		// restaura NORMAL); o MENU é definido depois para valer como final.
 		VictoryCutscene.stop();
