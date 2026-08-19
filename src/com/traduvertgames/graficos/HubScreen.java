@@ -13,6 +13,7 @@ import com.traduvertgames.entities.RegionalNpcs;
 import com.traduvertgames.world.DungeonManager;
 import com.traduvertgames.world.DynamicEventManager;
 import com.traduvertgames.world.RpgWorldManager;
+import com.traduvertgames.world.RegionalProgressionManager;
 
 /**
  * Hub de atividades do mundo RPG. O painel congela a exploração sem criar uma
@@ -172,7 +173,7 @@ public final class HubScreen {
         g2.fillRect(0, 0, width, height);
 
         int panelWidth = Math.min(width - 24 * unit, 310 * unit);
-        int panelHeight = Math.min(height - 20 * unit, 178 * unit);
+		int panelHeight = Math.min(height - 20 * unit, 196 * unit);
         int panelX = (width - panelWidth) / 2;
         int panelY = (height - panelHeight) / 2;
         g2.setColor(new Color(15, 27, 43, 248));
@@ -185,12 +186,19 @@ public final class HubScreen {
         g2.setColor(new Color(129, 199, 132));
         g2.setFont(new Font("Arial", Font.BOLD, 18 * unit));
         drawCentered(g2, "HUB REGIONAL", panelX, panelWidth, panelY + 25 * unit);
-        g2.setColor(Color.WHITE);
-        g2.setFont(new Font("Arial", Font.PLAIN, 11 * unit));
-        drawCentered(g2, regionName, panelX, panelWidth, panelY + 41 * unit);
+		g2.setColor(Color.WHITE);
+		g2.setFont(new Font("Arial", Font.PLAIN, 11 * unit));
+		drawCentered(g2, regionName, panelX, panelWidth, panelY + 41 * unit);
+		g2.setColor(new Color(190, 220, 190));
+		g2.setFont(new Font("Arial", Font.PLAIN, 8 * unit));
+		String regionSummary = RegionalProgressionManager.getSummary(region);
+		while (regionSummary.length() > 58 && g2.getFontMetrics().stringWidth(regionSummary) > panelWidth - 24 * unit) {
+			regionSummary = regionSummary.substring(0, regionSummary.length() - 4) + "...";
+		}
+		drawCentered(g2, regionSummary, panelX, panelWidth, panelY + 53 * unit);
 
-        Activity[] activities = Activity.values();
-        int listY = panelY + 57 * unit;
+		Activity[] activities = Activity.values();
+		int listY = panelY + 68 * unit;
         for (int i = 0; i < activities.length; i++) {
             Activity activity = activities[i];
             int rowY = listY + i * 21 * unit;

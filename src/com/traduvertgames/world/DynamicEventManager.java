@@ -390,17 +390,20 @@ public final class DynamicEventManager {
 		Game.addScore(score);
         FloatingText.show("EVENTO CONCLUÍDO +" + credits + " CRÉDITOS",
                 Game.player.getX(), Game.player.getY() - 20, new Color(255, 235, 59), 120);
-        MissionBanner.show("EVENTO CONCLUÍDO", activeType.getTitle() + " — recompensa permanente recebida.",
-                new Color(129, 199, 132), Color.WHITE, 180);
+		MissionBanner.show("EVENTO CONCLUÍDO", activeType.getTitle() + " — recompensa permanente recebida.",
+				new Color(129, 199, 132), Color.WHITE, 180);
+		RegionalProgressionManager.registerEventOutcome(activeRegion, true);
 		clearActive();
 		com.traduvertgames.main.SaveManager.saveCurrentGame();
 	}
 
 	private static void expireEvent() {
-        if (activeType != null) {
-            MissionBanner.show("EVENTO ENCERRADO", "A oportunidade regional foi perdida; continue explorando.",
-                    new Color(176, 190, 197), Color.WHITE, 120);
-        }
+		RpgWorldManager.RegionType failedRegion = activeRegion;
+		if (activeType != null) {
+			MissionBanner.show("EVENTO ENCERRADO", "A oportunidade regional foi perdida; continue explorando.",
+					new Color(176, 190, 197), Color.WHITE, 120);
+		}
+		RegionalProgressionManager.registerEventOutcome(failedRegion, false);
 		clearActive();
 		com.traduvertgames.main.SaveManager.saveCurrentGame();
 	}

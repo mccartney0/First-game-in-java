@@ -176,9 +176,10 @@ public final class DungeonManager {
         if (enemy.getVariant() != expected || bossDefeated) {
             return;
         }
-        bossDefeated = true;
-        completed.put(dungeonRegion.name(), true);
-        PilotUpgrades.addCredits(350);
+		bossDefeated = true;
+		completed.put(dungeonRegion.name(), true);
+		RegionalProgressionManager.registerDungeonComplete(dungeonRegion);
+		PilotUpgrades.addCredits(350);
         Game.addScore(500);
         WeaponType reward = rewardForRegion(dungeonRegion);
         if (Game.player != null && reward != null && !Game.player.hasWeaponUnlocked(reward)) {

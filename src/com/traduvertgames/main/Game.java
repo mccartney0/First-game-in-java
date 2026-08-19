@@ -133,6 +133,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	 */
 		public static void resetAllForTest() {
 			regionalAdventureMode = false;
+			com.traduvertgames.world.RegionalProgressionManager.reset();
 			GameState.resetAll();
 		clearQuestPending();
 		resetTraitorTalked();
@@ -1815,6 +1816,7 @@ if (!hidingHud) {
 
 	private void startNewGameInternal(boolean regionalAdventure) {
 		regionalAdventureMode = regionalAdventure;
+		com.traduvertgames.world.RegionalProgressionManager.reset();
 		resetGameOverState();
 		// Novo jogo: remove o companion ativo (persistência apenas por save).
 		com.traduvertgames.entities.Companion.clear();
