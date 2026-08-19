@@ -14,6 +14,7 @@ import com.traduvertgames.main.Game;
 import com.traduvertgames.main.SaveManager;
 import com.traduvertgames.quest.SideQuestManager;
 import com.traduvertgames.world.DynamicEventManager;
+import com.traduvertgames.world.DungeonManager;
 import com.traduvertgames.world.RegionalChainManager;
 import com.traduvertgames.world.RpgWorldManager;
 
@@ -30,12 +31,14 @@ public class RegionalChainManagerTest {
         RpgWorldManager.updatePlayerPosition(Game.player.getX(), Game.player.getY());
         RegionalChainManager.reset();
         DynamicEventManager.reset();
+        DungeonManager.reset();
     }
 
     @AfterEach
     void tearDown() {
         RegionalChainManager.reset();
         DynamicEventManager.reset();
+        DungeonManager.reset();
         Game.resetAllForTest();
         GameTestFixture.cleanSaveFiles();
     }
@@ -65,6 +68,22 @@ public class RegionalChainManagerTest {
         RegionalChainManager.onDungeonCompleted(region);
         assertEquals(RegionalChainManager.Stage.COMPLETE, RegionalChainManager.getStage(region));
         assertEquals("Cadeia regional: 4/4", RegionalChainManager.getProgressLabel(region));
+    }
+
+    @Test
+    void npcAndConvoyCompletionUnlocksAndEntersRegionalDungeon() {
+        RpgWorldManager.RegionType region = RpgWorldManager.getCurrentRegion();
+        RegionalChainManager.onRescueCompleted(region);
+        RegionalChainManager.onNpcQuestCompleted(
+                com.traduvertgames.entities.RegionalNpcs.getQuestIdForRegion(region));
+        RegionalChainManager.onConvoyCompleted(region);
+
+        assertEquals(RegionalChainManager.Stage.DUNGEON, RegionalChainManager.getStage(region));
+        assertTrue(RegionalChainManager.startNextStep(region));
+        DungeonManager.processPendingTransition();
+
+        assertTrue(DungeonManager.isInDungeon());
+        assertEquals(region, DungeonManager.getDungeonRegion());
     }
 
     @Test
