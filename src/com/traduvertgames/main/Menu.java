@@ -27,20 +27,22 @@ public class Menu {
 
 		private static final int OPTION_OPEN_WORLD = 0;
 		private static final int OPTION_RPG_ADVENTURE = 1;
-		private static final int OPTION_CAMPAIGN = 2;
-		private static final int OPTION_CONTINUE = 3;
-		private static final int OPTION_LOAD_GAME = 4;
-		private static final int OPTION_HOW_TO_PLAY = 5;
-		private static final int OPTION_SETTINGS = 6;
+		private static final int OPTION_CLASSIC_RPG = 2;
+		private static final int OPTION_CAMPAIGN = 3;
+		private static final int OPTION_CONTINUE = 4;
+		private static final int OPTION_LOAD_GAME = 5;
+		private static final int OPTION_HOW_TO_PLAY = 6;
+		private static final int OPTION_SETTINGS = 7;
 		// Rodada 29 — metagame: opção do menu principal para as melhorias
 		// permanentes do piloto, compráveis com os créditos persistentes.
-		private static final int OPTION_UPGRADES = 7;
-		private static final int OPTION_NEW_GAME_PLUS = 8;
-		private static final int OPTION_EXIT = 9;
+		private static final int OPTION_UPGRADES = 8;
+		private static final int OPTION_NEW_GAME_PLUS = 9;
+		private static final int OPTION_EXIT = 10;
 
 		private static final String[] MAIN_OPTIONS = {
 				"mundo aberto gigante",
 				"aventura RPG",
+				"rpg clássico",
 				"campanha narrativa",
 				"continuar",
 				"carregar jogo",
@@ -350,15 +352,23 @@ public class Menu {
 				}
 			}
 			break;
-		case OPTION_RPG_ADVENTURE:
-			if (!pause) {
-				Game adventureGame = Game.getInstance();
-				if (adventureGame != null) {
-					adventureGame.startNewGame();
+			case OPTION_RPG_ADVENTURE:
+				if (!pause) {
+					Game adventureGame = Game.getInstance();
+					if (adventureGame != null) {
+						adventureGame.startNewGame();
+					}
 				}
-			}
-			break;
-		case OPTION_CAMPAIGN:
+				break;
+			case OPTION_CLASSIC_RPG:
+				if (!pause) {
+					Game classicGame = Game.getInstance();
+					if (classicGame != null) {
+						classicGame.startClassicRpg();
+					}
+				}
+				break;
+			case OPTION_CAMPAIGN:
 			if (!pause) {
 				Game campaignGame = Game.getInstance();
 				if (campaignGame != null) {
@@ -794,8 +804,10 @@ private void handlePauseSelection() {
 	private String getMainMenuLabel(int index) {
 		switch (index) {
 		case OPTION_RPG_ADVENTURE:
-			return pause ? "Continuar" : "Aventura RPG";
-		case OPTION_CAMPAIGN:
+				return pause ? "Continuar" : "Aventura RPG";
+			case OPTION_CLASSIC_RPG:
+				return "RPG Clássico";
+			case OPTION_CAMPAIGN:
 			return "Campanha narrativa";
 		case OPTION_CONTINUE:
 			return "Continuar";

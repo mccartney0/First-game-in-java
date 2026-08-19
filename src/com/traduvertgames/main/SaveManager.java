@@ -131,9 +131,10 @@ public final class SaveManager {
 		slot.put("inimigosMortosSet", com.traduvertgames.main.EnemyKillTracker.serialize());
 			slot.put("levelPlus", game != null ? game.getLevelPlus() : 0);
 			slot.put("level", game != null ? game.getCurrentLevel() : 1);
-				slot.put("gameMode", game != null && game.isOpenWorldMode()
-						? "OPEN_WORLD" : game != null && game.isRegionalAdventureMode()
-								? "RPG_ADVENTURE" : "CAMPAIGN");
+				slot.put("gameMode", game != null && game.isClassicRpgMode()
+						? "CLASSIC_RPG" : game != null && game.isOpenWorldMode()
+								? "OPEN_WORLD" : game != null && game.isRegionalAdventureMode()
+										? "RPG_ADVENTURE" : "CAMPAIGN");
 		slot.put("pontuacao", Game.getScore());
 		slot.put("recorde", Game.getHighScore());
 		slot.put("melhorCombo", Game.getBestComboRecord());
@@ -172,16 +173,21 @@ public final class SaveManager {
 			slot.put("companionType", "");
 		}
 
-		Map<String, Object> session = new HashMap<String, Object>();
-		for (Map.Entry<String, Object> entry : slot.entrySet()) {
+				Map<String, Object> session = new HashMap<String, Object>();
+				for (Map.Entry<String, Object> entry : slot.entrySet()) {
 			String key = entry.getKey();
 			if (!"id".equals(key) && !"session".equals(key)
 					&& !"progress".equals(key) && !"timestamp".equals(key)) {
 				session.put(key, entry.getValue());
 			}
-		}
-		// Inventário (rodada 22): quantidades persistidas na sessão.
-		session.put("inventario", new HashMap<String, Object>(InventoryManager.serialize()));
+				}
+				// O modo clássico persiste uma árvore própria: personagem, posição,
+				// mapa e objetivo. Nenhum arsenal ou recurso sci-fi é consumido ao ler.
+				if (game != null && game.isClassicRpgMode()) {
+					session.put("classicRpg", new HashMap<String, Object>(game.serializeClassicRpg()));
+				}
+				// Inventário (rodada 22): quantidades persistidas na sessão.
+				session.put("inventario", new HashMap<String, Object>(InventoryManager.serialize()));
 				// Missões secundárias (rodada 22): progresso e concluídas persistidas.
 				session.put("sideQuests", new HashMap<String, Object>(
 					com.traduvertgames.quest.SideQuestManager.serialize()));
@@ -598,9 +604,10 @@ public final class SaveManager {
 		int savedEnemies = toInt(session.get("inimigosMortos"));
 			int savedLevelPlus = toInt(session.get("levelPlus"));
 			int savedLevel = toInt(session.get("level"));
-			boolean savedOpenWorld = "OPEN_WORLD".equals(String.valueOf(session.get("gameMode")));
-			boolean savedRegionalAdventure = "RPG_ADVENTURE".equals(
-					String.valueOf(session.get("gameMode")));
+				boolean savedClassicRpg = "CLASSIC_RPG".equals(String.valueOf(session.get("gameMode")));
+				boolean savedOpenWorld = "OPEN_WORLD".equals(String.valueOf(session.get("gameMode")));
+				boolean savedRegionalAdventure = "RPG_ADVENTURE".equals(
+						String.valueOf(session.get("gameMode")));
 				com.traduvertgames.world.OpenWorldManager.deserialize(session.get("openWorld"));
 				com.traduvertgames.world.OpenWorldMarkerManager.deserialize(session.get("openWorldMarkers"));
 				com.traduvertgames.world.WorldWeatherManager.deserialize(session.get("worldClimate"));
@@ -667,8 +674,18 @@ public final class SaveManager {
 		Game.setBestComboRecord(Math.max(1, savedBestComboRecord));
 		Game.setBestComboThisRun(Math.max(1, savedBestComboSession));
 
-		if (game != null) {
-			// Troca de fase completa: recarrega o mapa, a quest e o chefe da fase
+			if (game != null) {
+				if (savedClassicRpg) {
+					// O RPG Clássico não toca no World.restartGame nem recria o
+					// Player shooter; sua cena restaura somente o snapshot próprio.
+					game.loadClassicRpg(asMap(session.get("classicRpg")));
+					Game.gameState = "NORMAL";
+					Menu.pause = false;
+					activeSlot = slotId;
+					Game.clearInitialWeaponSelect();
+					return true;
+				}
+				// Troca de fase completa: recarrega o mapa, a quest e o chefe da fase
 			// salva (sem reabrir o onboarding), garantindo que o jogo retorne
 			// exatamente à fase em que foi salvo — e não à fase atual.
 						Game.setOpenWorldMode(savedOpenWorld);
@@ -924,11 +941,17 @@ public final class SaveManager {
 			int depth = Math.max(1, toInt(session.get("levelPlus")));
 			return "Mundo Aberto gigante — setores descobertos: " + sectors + " (profundidade " + depth + ")";
 		}
-		if ("RPG_ADVENTURE".equals(String.valueOf(session.get("gameMode")))) {
-			int depth = Math.max(1, toInt(session.get("levelPlus")));
-			return "Aventura RPG — exploração regional (profundidade " + depth + ")";
-		}
-		Map<String, Object> progress = asMap(slot.get("progress"));
+			if ("RPG_ADVENTURE".equals(String.valueOf(session.get("gameMode")))) {
+				int depth = Math.max(1, toInt(session.get("levelPlus")));
+				return "Aventura RPG — exploração regional (profundidade " + depth + ")";
+			}
+			if ("CLASSIC_RPG".equals(String.valueOf(session.get("gameMode")))) {
+				Map<String, Object> classic = asMap(session.get("classicRpg"));
+				String mapId = classic == null ? "vale_brumafolha" : String.valueOf(classic.get("mapId"));
+				String objective = classic == null ? "jornada em andamento" : String.valueOf(classic.get("objective"));
+				return "RPG Clássico — " + mapId + " (" + objective + ")";
+			}
+			Map<String, Object> progress = asMap(slot.get("progress"));
 		if (progress == null) {
 			return "";
 		}

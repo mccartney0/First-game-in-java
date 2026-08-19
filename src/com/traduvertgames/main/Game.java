@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 import javax.swing.JFrame;
@@ -46,6 +47,7 @@ import com.traduvertgames.world.RpgWorldManager;
 import com.traduvertgames.world.DynamicEventManager;
 import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.dialogue.DialogueManager;
+import com.traduvertgames.rpg.ClassicRpgMode;
 
 public class Game extends Canvas implements Runnable, KeyListener, MouseListener {
 
@@ -125,6 +127,8 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		private static boolean regionalAdventureMode = false;
 		/** True quando a sessão atual usa o mapa gigante de exploração contínua. */
 		private static boolean openWorldMode = false;
+		/** Controller isolado da experiência de fantasia do RPG Clássico. */
+		private static ClassicRpgMode classicRpgMode;
 
 		/** True enquanto a loja está aberta por causa de um objetivo concluído. */
 		private static boolean questCompletedPending = false;
@@ -138,7 +142,18 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	 */
 		public static void resetAllForTest() {
 			regionalAdventureMode = false;
-			openWorldMode = false;
+				openWorldMode = false;
+				showInitialWeaponSelect = false;
+				com.traduvertgames.graficos.PhaseStatsScreen.dismiss();
+				VictoryCutscene.stop();
+				HubScreen.reset();
+				ContractBoardScreen.reset();
+				WeaponBuildScreen.reset();
+				com.traduvertgames.graficos.PilotUpgradesScreen.close();
+				if (classicRpgMode != null) {
+				classicRpgMode.reset();
+				classicRpgMode = null;
+			}
 			com.traduvertgames.world.OpenWorldManager.reset();
 			com.traduvertgames.world.OpenWorldMarkerManager.reset();
 			com.traduvertgames.graficos.SectorEntryOverlay.reset();
@@ -471,6 +486,16 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 }
         }
 
+        /** Indica se a sessão atual pertence ao modo RPG Clássico. */
+        public static boolean isClassicRpgMode() {
+                return classicRpgMode != null && classicRpgMode.isActive();
+        }
+
+        /** Controller do modo clássico, exposto para persistência e testes headless. */
+        public static ClassicRpgMode getClassicRpgMode() {
+                return classicRpgMode;
+        }
+
         public void setLevelPlus(int value) {
                 if (value < 0)
                         value = 0;
@@ -729,7 +754,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			// carregado via loadSlot (que pula direto para NORMAL). Agora o
 				// tema da fase inicial entra em crossfade desde o menu.
 				MusicManager.update();
-			if ("NORMAL".equals(gameState)) {
+				// O RPG Clássico possui seu próprio update e não passa pelo loop de
+				// ondas, projéteis, armas ou level-up roguelite da engine shooter.
+				if (isClassicRpgMode()) {
+					if ("NORMAL".equals(gameState)) {
+						classicRpgMode.update();
+					}
+					return;
+				}
+				if ("NORMAL".equals(gameState)) {
 // Salvar o jogo (formato JSON correto com slots)
                         if (Game.saveGame) {
                                 Game.saveGame = false;
@@ -969,7 +1002,11 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 
 // Renderizar jogo //
-			world.render(g);
+				boolean classicRpg = isClassicRpgMode();
+				if (classicRpg) {
+					classicRpgMode.render(g);
+				} else {
+					world.render(g);
 			// Fase concluída: inimigos e seus projéteis ficam invisíveis — a
 			// próxima fase carrega limpa, sem "ruído" herdado da anterior.
 			// Cooldown pós-transição (rodada 21): inimigos também permanecem
@@ -1000,10 +1037,14 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		// A HUD compacta é desenhada exclusivamente pelo overlay (por cima de tudo),
 		// evitando HUD duplicada/esmaecida em menus, loja e game over.
 		// ui.render(g) (coordenadas do buffer, por baixo dos overlays) foi removido.
-		ParticleSystem.render(g);
-		FloatingText.render(g, SCALE);
-		UltimateAbility.render(g);
-		g.dispose();
+					ParticleSystem.render(g);
+					FloatingText.render(g, SCALE);
+					UltimateAbility.render(g);
+				}
+				if (classicRpg) {
+					classicRpgMode.renderOverlay(g);
+				}
+			g.dispose();
 
                 g = bs.getDrawGraphics();
                 int scaledWidth = WIDTH * SCALE;
@@ -1324,6 +1365,12 @@ if (!hidingHud) {
 					returnToMainMenu();
 				}
 									return;
+				}
+				// O modo clássico recebe seus atalhos antes do input do shooter.
+				// ESC/P/F11 continuam disponíveis para o dispatcher global.
+				if (isClassicRpgMode() && "NORMAL".equals(gameState)
+						&& classicRpgMode.handleInput(e)) {
+					return;
 				}
 				// O hub regional é modal e consome todo o teclado antes de qualquer
 				// flag de movimento, tiro, arma ou pausa.
@@ -1796,8 +1843,11 @@ if (!hidingHud) {
 
 
 	@Override
-			public void keyReleased(KeyEvent e) {
-		if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
+				public void keyReleased(KeyEvent e) {
+			if (isClassicRpgMode() && classicRpgMode.handleKeyReleased(e)) {
+				return;
+			}
+			if (e.getKeyCode() == KeyEvent.VK_RIGHT || e.getKeyCode() == KeyEvent.VK_D) {
 			// execute tal ação!
 			player.right = false;
 		} else if (e.getKeyCode() == KeyEvent.VK_LEFT || e.getKeyCode() == KeyEvent.VK_A) {
@@ -1829,11 +1879,14 @@ if (!hidingHud) {
 			// Clique não confirma nem dispara enquanto overlays modais estiverem
 			// visíveis. Antes, PhaseStatsScreen usava gameState=MENU e este bloco
 			// transformava qualquer clique em menu.enter.
-			if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
-					|| VictoryCutscene.isShowing() || showInitialWeaponSelect) {
-				return;
-			}
-			if ("NORMAL".equals(gameState) && player != null) {
+				if (com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
+						|| VictoryCutscene.isShowing() || showInitialWeaponSelect) {
+					return;
+				}
+				if (isClassicRpgMode()) {
+					return;
+				}
+				if ("NORMAL".equals(gameState) && player != null) {
 				player.mouseShoot = true;
 				// A posição do clique é convertida do espaço da janela para o espaço do
 				// buffer do jogo, desconsiderando o deslocamento de letterboxing.
@@ -1945,12 +1998,76 @@ if (!hidingHud) {
 				return false;
         }
 
-	/** Inicia a Aventura RPG regional, que é o modo padrão do jogo. */
-	public void startNewGame() {
-		startNewGameInternal(true);
-	}
+		/** Inicia uma nova sessão isolada do RPG Clássico. */
+		public void startClassicRpg() {
+			setRegionalAdventureMode(false);
+			setOpenWorldMode(false);
+			com.traduvertgames.world.OpenWorldManager.reset();
+			com.traduvertgames.world.OpenWorldMarkerManager.reset();
+			com.traduvertgames.world.WorldWeatherManager.reset();
+			clearQuestPending();
+			DialogueManager.stop();
+			InventoryManager.close();
+			LevelSelectScreen.close();
+			ShopManager.close();
+			LevelUpManager.dismiss();
+			OnboardingManager.stop();
+			Menu.pause = false;
+			showInitialWeaponSelect = false;
+			com.traduvertgames.graficos.PhaseStatsScreen.dismiss();
+			VictoryCutscene.stop();
+			HubScreen.reset();
+			ContractBoardScreen.reset();
+			WeaponBuildScreen.reset();
+			com.traduvertgames.graficos.PilotUpgradesScreen.close();
+			MissionBanner.reset();
+			GameState.resetAll();
+			if (classicRpgMode == null) classicRpgMode = new ClassicRpgMode();
+			classicRpgMode.startNew(this);
+			gameState = "NORMAL";
+			GameState.gameState = "NORMAL";
+			MusicManager.setZone(MusicManager.Zone.FOREST);
+		}
 
-	/** Inicia a campanha narrativa fixa das fases 1–9. */
+		/** Restaura exclusivamente os dados do modo CLASSIC_RPG. */
+		public void loadClassicRpg(Map<String, Object> data) {
+			setRegionalAdventureMode(false);
+			setOpenWorldMode(false);
+			clearQuestPending();
+			DialogueManager.stop();
+			InventoryManager.close();
+			LevelSelectScreen.close();
+			ShopManager.close();
+			LevelUpManager.dismiss();
+			OnboardingManager.stop();
+			Menu.pause = false;
+			showInitialWeaponSelect = false;
+			com.traduvertgames.graficos.PhaseStatsScreen.dismiss();
+			VictoryCutscene.stop();
+			HubScreen.reset();
+			ContractBoardScreen.reset();
+			WeaponBuildScreen.reset();
+			com.traduvertgames.graficos.PilotUpgradesScreen.close();
+			MissionBanner.reset();
+			if (classicRpgMode == null) classicRpgMode = new ClassicRpgMode();
+			classicRpgMode.load(this, data);
+			gameState = "NORMAL";
+			GameState.gameState = "NORMAL";
+			MusicManager.setZone(MusicManager.Zone.FOREST);
+		}
+
+		/** Snapshot do modo clássico para o SaveManager sem contaminar outros modos. */
+		public Map<String, Object> serializeClassicRpg() {
+			return classicRpgMode == null ? new java.util.HashMap<String, Object>()
+					: classicRpgMode.serialize();
+		}
+
+		/** Inicia a Aventura RPG regional, que é o modo padrão do jogo. */
+		public void startNewGame() {
+			startNewGameInternal(true);
+		}
+
+		/** Inicia a campanha narrativa fixa das fases 1–9. */
 	public void startNarrativeCampaign() {
 		startNewGameInternal(false);
 	}
@@ -2742,6 +2859,11 @@ if (!hidingHud) {
 
 	/** Volta ao menu principal mantendo o autosave do progresso da partida. */
 		public void returnToMainMenu() {
+			if (isClassicRpgMode()) {
+				SaveManager.saveCurrentGame();
+				classicRpgMode.reset();
+				classicRpgMode = null;
+			}
 			openWorldMode = false;
 			com.traduvertgames.world.OpenWorldManager.reset();
 			com.traduvertgames.world.OpenWorldMarkerManager.reset();
