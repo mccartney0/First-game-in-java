@@ -446,10 +446,11 @@ public class UI {
 		g2.setFont(new Font("SansSerif", Font.BOLD, 18));
 		g2.drawString("Arsenal", x + 20, y + 28);
 
-		Player player = Game.player;
-		WeaponType currentWeapon = player != null ? player.getCurrentWeaponType() : WeaponType.BLASTER;
+					Player player = Game.player;
+			WeaponType currentWeapon = player != null ? player.getCurrentWeaponType() : WeaponType.BLASTER;
+			AssetCatalog.drawWeaponIcon(g2, currentWeapon, x + width - 82, y + 8, 62, 42);
 
-		// Grade em duas colunas para caber todas as armas em menos altura.
+			// Grade em duas colunas para caber todas as armas em menos altura.
 		g2.setFont(new Font("SansSerif", Font.PLAIN, 14));
 		int cols = 2;
 		int cellWidth = (width - 40) / cols;

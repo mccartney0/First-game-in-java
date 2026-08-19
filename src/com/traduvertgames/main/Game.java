@@ -32,6 +32,7 @@ import com.traduvertgames.entities.FloatingText;
 import com.traduvertgames.entities.Player;
 import com.traduvertgames.entities.WeaponType;
 import com.traduvertgames.graficos.Spritesheet;
+import com.traduvertgames.graficos.AssetCatalog;
 import com.traduvertgames.graficos.MiniMap;
 import com.traduvertgames.graficos.VictoryCutscene;
 import com.traduvertgames.graficos.MissionBanner;
@@ -255,8 +256,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	bullet = GameState.newPlayerBullets();
 	bullets = GameState.newEnemyBullets();
 
-	spritesheet = new Spritesheet("/spritesheet.png");
-	GameState.spritesheet = spritesheet;
+		spritesheet = new Spritesheet("/spritesheet.png");
+		GameState.spritesheet = spritesheet;
+		AssetCatalog.initialize();
 // Passando tamanho dele e posições
                 player = new Player(0, 0, 16, 16, spritesheet.getSprite(32, 0, 16, 16));
                 GameState.player = player;
@@ -2378,7 +2380,9 @@ if (!hidingHud) {
 			com.traduvertgames.world.DynamicEventManager.abortActiveEventForMapChange();
 			try {
 
-			java.io.File mapFile = com.traduvertgames.world.ProceduralLevelGenerator.generate(depth);
+			java.io.File mapFile = regionalAdventureMode
+					? com.traduvertgames.world.LargeRpgMapGenerator.generateDefault(depth)
+					: com.traduvertgames.world.ProceduralLevelGenerator.generate(depth);
 			String absPath = mapFile.getAbsolutePath();
 			com.traduvertgames.world.World.restartGameFromFile(absPath);
 		} catch (Exception error) {

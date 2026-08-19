@@ -96,6 +96,8 @@ public final class WeaponBuildScreen {
         g2.setColor(new Color(255, 214, 10));
         g2.setFont(new Font("Arial", Font.PLAIN, 9 * unit));
         drawCentered(g2, WeaponBuildManager.getSummary(weapon), panelX, panelWidth, panelY + 39 * unit);
+        AssetCatalog.drawWeaponIcon(g2, weapon, panelX + panelWidth - 62 * unit, panelY + 8 * unit,
+                48 * unit, 32 * unit);
 
         WeaponBuildManager.BuildPath[] paths = WeaponBuildManager.BuildPath.values();
         for (int i = 0; i < paths.length; i++) {
