@@ -5,6 +5,7 @@ import java.awt.Font;
 import java.awt.Graphics2D;
 
 import com.traduvertgames.main.Game;
+import com.traduvertgames.world.WorldWeatherManager;
 
 /** Aviso curto e suave ao entrar em um setor do Mundo Aberto. */
 public final class SectorEntryOverlay {
@@ -14,6 +15,7 @@ public final class SectorEntryOverlay {
     private static int frames;
     private static String sectorCode = "--";
     private static String regionName = "Mundo Aberto";
+    private static String climateLabel = "DIA · CÉU LIMPO";
 
     private SectorEntryOverlay() {
     }
@@ -21,6 +23,7 @@ public final class SectorEntryOverlay {
     public static void show(String code, String region) {
         sectorCode = code == null || code.isEmpty() ? "--" : code;
         regionName = region == null || region.isEmpty() ? "Mundo Aberto" : region;
+        climateLabel = WorldWeatherManager.getCurrentClimateLabel();
         frames = TOTAL_FRAMES;
     }
 
@@ -28,6 +31,7 @@ public final class SectorEntryOverlay {
         frames = 0;
         sectorCode = "--";
         regionName = "Mundo Aberto";
+        climateLabel = "DIA · CÉU LIMPO";
     }
 
     public static boolean isShowing() {
@@ -49,7 +53,7 @@ public final class SectorEntryOverlay {
                 : frames < FADE_FRAMES ? frames / (float) FADE_FRAMES : 1.0f;
         int scale = Game.SCALE;
         int width = 160 * scale;
-        int height = 34 * scale;
+        int height = 40 * scale;
         int targetY = 12 * scale;
         int y = targetY - (int) ((1.0f - alpha) * 10 * scale);
         int x = (Game.WIDTH * scale - width) / 2;
@@ -67,5 +71,7 @@ public final class SectorEntryOverlay {
         g2.setFont(new Font("SansSerif", Font.PLAIN, 7 * scale / 4 + 2));
         g2.setColor(new Color(163, 205, 198, Math.max(0, Math.min(255, (int) (220 * alpha)))));
         g2.drawString("SETOR DESCOBERTO", x + 48 * scale, y + 27 * scale);
+        g2.setColor(new Color(66, 232, 222, Math.max(0, Math.min(255, (int) (220 * alpha)))));
+        g2.drawString(climateLabel, x + 48 * scale, y + 35 * scale);
     }
 }

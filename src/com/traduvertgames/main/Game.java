@@ -142,6 +142,7 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 			com.traduvertgames.world.OpenWorldManager.reset();
 			com.traduvertgames.world.OpenWorldMarkerManager.reset();
 			com.traduvertgames.graficos.SectorEntryOverlay.reset();
+			com.traduvertgames.world.WorldWeatherManager.reset();
 			com.traduvertgames.world.RegionalProgressionManager.reset();
 			GameState.resetAll();
 		clearQuestPending();
@@ -815,6 +816,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 						boolean enteredChunk = isOpenWorldMode()
 								&& com.traduvertgames.world.OpenWorldManager.updatePlayerPosition(
 										(int) player.getX(), (int) player.getY());
+						com.traduvertgames.world.WorldWeatherManager.update();
 						if (enteredRegion && !isTransitionCooldown() && !isTransitioning()) {
 							MissionBanner.show("REGIÃO DESCOBERTA",
 									RpgWorldManager.getCurrentRegionName() + " — "
@@ -966,7 +968,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		g.fillRect(0, 0, WIDTH, HEIGHT);
 
 // Renderizar jogo //
-		world.render(g);
+			world.render(g);
 			// Fase concluída: inimigos e seus projéteis ficam invisíveis — a
 			// próxima fase carrega limpa, sem "ruído" herdado da anterior.
 			// Cooldown pós-transição (rodada 21): inimigos também permanecem
@@ -985,9 +987,10 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 		for (int i = 0; i < bullets.size(); i++) {
 			bullets.get(i).render(g);
 		}
-		for (int i = 0; i < bullet.size(); i++) {
-			bullet.get(i).render(g);
-		}
+			for (int i = 0; i < bullet.size(); i++) {
+				bullet.get(i).render(g);
+			}
+			com.traduvertgames.world.WorldWeatherManager.renderAmbient(g);
 		// Fade preto da transição de fase (desenha por cima do jogo).
 		if (transitionAlpha > 0) {
 			g.setColor(new Color(0, 0, 0, transitionAlpha));
@@ -1067,7 +1070,7 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 				|| InventoryManager.isOpen();
 if (!hidingHud) {
 			MiniMap.render(overlayG);
-			com.traduvertgames.graficos.SectorEntryOverlay.render(overlayG);
+		com.traduvertgames.graficos.SectorEntryOverlay.render(overlayG);
 	// Texto do banner central renderizado no overlay (espaço escalado): letras
 	// nítidas e proporcionais, sem depender do zoom pixelado do buffer.
 	MissionBanner.render(overlayG);
@@ -1956,6 +1959,7 @@ if (!hidingHud) {
 		setOpenWorldMode(true);
 		com.traduvertgames.world.OpenWorldMarkerManager.reset();
 		com.traduvertgames.graficos.SectorEntryOverlay.reset();
+		com.traduvertgames.world.WorldWeatherManager.reset();
 		com.traduvertgames.world.RegionalProgressionManager.reset();
 		com.traduvertgames.quest.ContractManager.reset();
 		WeaponBuildManager.reset();
@@ -1990,6 +1994,7 @@ if (!hidingHud) {
 		com.traduvertgames.world.OpenWorldManager.reset();
 		com.traduvertgames.world.OpenWorldMarkerManager.reset();
 		com.traduvertgames.graficos.SectorEntryOverlay.reset();
+		com.traduvertgames.world.WorldWeatherManager.reset();
 			com.traduvertgames.world.RegionalProgressionManager.reset();
 				com.traduvertgames.quest.ContractManager.reset();
 				WeaponBuildManager.reset();
@@ -2053,6 +2058,7 @@ if (!hidingHud) {
 			com.traduvertgames.world.OpenWorldManager.reset();
 			com.traduvertgames.world.OpenWorldMarkerManager.reset();
 			com.traduvertgames.graficos.SectorEntryOverlay.reset();
+			com.traduvertgames.world.WorldWeatherManager.reset();
 			int safeDepth = Math.max(1, depth);
 			levelPlus = safeDepth;
 			setCurrentLevel(MAX_LEVEL + 1);
@@ -2093,6 +2099,8 @@ if (!hidingHud) {
 			Menu.pause = false;
 			WaveManager.reset();
 			startProceduralLevel(safeDepth);
+			com.traduvertgames.world.WorldWeatherManager.configure(
+					com.traduvertgames.world.OpenWorldManager.getSeed());
 			gameState = "NORMAL";
 			GameState.gameState = "NORMAL";
 			MusicManager.setZone(MusicManager.Zone.FOREST);
@@ -2447,6 +2455,7 @@ if (!hidingHud) {
 		com.traduvertgames.world.OpenWorldManager.reset();
 		com.traduvertgames.world.OpenWorldMarkerManager.reset();
 		com.traduvertgames.graficos.SectorEntryOverlay.reset();
+		com.traduvertgames.world.WorldWeatherManager.reset();
 		if (instance != null) {
 			instance.levelPlus = 1;
 		}
@@ -2736,6 +2745,7 @@ if (!hidingHud) {
 			com.traduvertgames.world.OpenWorldManager.reset();
 			com.traduvertgames.world.OpenWorldMarkerManager.reset();
 			com.traduvertgames.graficos.SectorEntryOverlay.reset();
+			com.traduvertgames.world.WorldWeatherManager.reset();
 			// Parar overlays ANTES de definir o estado de menu: as paradas
 		// podem sobrescrever gameState (por exemplo, VictoryCutscene.stop
 		// restaura NORMAL); o MENU é definido depois para valer como final.

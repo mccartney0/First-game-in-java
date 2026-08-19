@@ -249,16 +249,16 @@ public class Enemy extends Entity {
             return;
         }
         double ratio = getLifePercentage();
-        if (variant == Variant.WARBRINGER && ratio < 0.5) {
+	        if (variant == Variant.WARBRINGER && ratio < 0.5) {
             // Fase furiosa: persegue sempre (mesmo longe) e atira mais rápido.
             if (distanceToPlayer > LOSE_INTEREST_RADIUS * 2) {
                 state = EnemyState.CHASING;
                 path = null;
             }
-            if (attackCooldown == 0) {
-                attemptShootAtPlayer(distanceToPlayer);
-                attackCooldown = attackCooldownBase / 2;
-            }
+	            if (attackCooldown == 0) {
+	                attemptShootAtPlayer(distanceToPlayer);
+	                attackCooldown = climateAdjustedCooldown(attackCooldownBase / 2);
+	            }
         } else if (variant == Variant.OVERSEER && ratio < 0.4) {
             // Modo de fúria: rajada dupla com burst de velocidade + reforços.
             if (!furyAnnounced) {
@@ -267,7 +267,7 @@ public class Enemy extends Entity {
                         (int) this.getX(), (int) this.getY() - 24, new Color(255, 61, 61), 90);
                 com.traduvertgames.main.SoundManager.play(com.traduvertgames.main.SoundManager.Event.BOSS_ALERT);
             }
-        } else if (variant == Variant.OVERSEER_PRIME && ratio < 0.55) {
+	        } else if (variant == Variant.OVERSEER_PRIME && ratio < 0.55) {
             // A mente da colônia reage à perda de poder: rajada dupla mais
             // agressiva e alertas visuais do núcleo sendo desativado.
             if (!furyAnnounced) {
@@ -283,7 +283,7 @@ public class Enemy extends Entity {
                     attemptShootAtPlayer(distanceToPlayer + 18);
                     furySpreadCooldown = 6;
                 }
-                attackCooldown = attackCooldownBase / 2;
+	                attackCooldown = climateAdjustedCooldown(attackCooldownBase / 2);
             }
             if (furySpreadCooldown > 0) {
                 furySpreadCooldown--;
@@ -415,10 +415,11 @@ public class Enemy extends Entity {
         return this.lifeBoost;
     }
 
-	/** @return dano efetivo de projétil considerando o reforço do modo sobrevivência. */
-	public double getEffectiveProjectileDamage() {
-		return this.projectileDamage * this.damageBoost * this.damageMultiplierElite;
-	}
+		/** @return dano efetivo de projétil considerando o reforço do modo sobrevivência. */
+		public double getEffectiveProjectileDamage() {
+			return this.projectileDamage * this.damageBoost * this.damageMultiplierElite
+					* getClimateGiantModifier().getDamageMultiplier();
+		}
 
 	/** XP base concedido ao derrotar este inimigo (bônus para chefes e reforçados). */
 	private int calculateXpGain() {
@@ -506,9 +507,13 @@ public class Enemy extends Entity {
             }
         }
 
-        updateVariantAbilities(distanceToPlayer, canSeePlayer);
+	        updateVariantAbilities(distanceToPlayer, canSeePlayer);
+	        double climateRegen = getClimateGiantModifier().getRegenPerTick();
+	        if (climateRegen > 0.0 && life > 0.0 && life < maxLife) {
+	            life = Math.min(maxLife, life + climateRegen);
+	        }
 
-        animate();
+	        animate();
 
         applyBossPhaseBehavior(distanceToPlayer, canSeePlayer);
 
@@ -984,19 +989,19 @@ public class Enemy extends Entity {
             chooseNewPatrolTarget();
         }
 
-        if (path != null && !path.isEmpty()) {
-            moveAlongPath(patrolSpeed);
-        }
+	        if (path != null && !path.isEmpty()) {
+	            moveAlongPath(patrolSpeed * getClimateGiantModifier().getSpeedMultiplier());
+	        }
     }
 
     private void handleChase(double distanceToPlayer, boolean canSeePlayer) {
-        if (distanceToPlayer > STRAFE_RANGE) {
-            if (canSeePlayer) {
-                moveDirectlyTowardsPlayer(chaseSpeed);
-            } else {
-                recalculatePathToPlayer();
-                if (path != null && !path.isEmpty()) {
-                    moveAlongPath(chaseSpeed);
+	        if (distanceToPlayer > STRAFE_RANGE) {
+	            if (canSeePlayer) {
+	                moveDirectlyTowardsPlayer(chaseSpeed * getClimateGiantModifier().getSpeedMultiplier());
+	            } else {
+	                recalculatePathToPlayer();
+	                if (path != null && !path.isEmpty()) {
+	                    moveAlongPath(chaseSpeed * getClimateGiantModifier().getSpeedMultiplier());
                 }
             }
         } else {
@@ -1015,7 +1020,8 @@ public class Enemy extends Entity {
             int contactChance = variant == Variant.SWARM ? 42 : 20;
             if (Game.rand.nextInt(100) < contactChance) {
                 double baseDamage = variant == Variant.SWARM ? 1.35 : 2.0;
-                double scaledDamage = baseDamage * Game.getDamageTakenMultiplier();
+	                double scaledDamage = baseDamage * getClimateGiantModifier().getDamageMultiplier()
+	                        * Game.getDamageTakenMultiplier();
                 Game.player.applyDamage(scaledDamage);
                 Game.player.damage = true;
                 Game.registerPlayerDamage();
@@ -1066,12 +1072,14 @@ public class Enemy extends Entity {
 
         double angle = Math.atan2(Game.player.getY() - this.getY(), Game.player.getX() - this.getX());
         double perpendicular = angle + (Math.PI / 2) * strafeDirection;
-        double stepX = Math.cos(perpendicular) * strafeSpeed;
-        double stepY = Math.sin(perpendicular) * strafeSpeed;
+	        double climateSpeed = getClimateGiantModifier().getSpeedMultiplier();
+	        double stepX = Math.cos(perpendicular) * strafeSpeed * climateSpeed;
+	        double stepY = Math.sin(perpendicular) * strafeSpeed * climateSpeed;
 
         if (!tryMove(stepX, stepY)) {
             strafeDirection *= -1;
-            tryMove(Math.cos(angle) * chaseSpeed * 0.5, Math.sin(angle) * chaseSpeed * 0.5);
+	            tryMove(Math.cos(angle) * chaseSpeed * 0.5 * climateSpeed,
+	                    Math.sin(angle) * chaseSpeed * 0.5 * climateSpeed);
             strafeTimer = 15;
         }
     }
@@ -1177,9 +1185,11 @@ public class Enemy extends Entity {
         }
 
         double angle = Math.atan2(Game.player.getY() - this.getY(), Game.player.getX() - this.getX());
-        spawnProjectile(angle, projectileSpeed, projectileDamage, projectileSize, projectileColor);
+	        spawnProjectile(angle, projectileSpeed,
+	                projectileDamage * getClimateGiantModifier().getDamageMultiplier(), projectileSize, projectileColor);
 
-        attackCooldown = attackCooldownBase - Game.rand.nextInt(Math.max(1, attackCooldownBase / 3));
+	        attackCooldown = climateAdjustedCooldown(
+	                attackCooldownBase - Game.rand.nextInt(Math.max(1, attackCooldownBase / 3)));
     }
 
     private void spawnProjectile(double angle, double speed, double damage, int size, Color color) {
@@ -1360,9 +1370,26 @@ public class Enemy extends Entity {
         return enemyX < playerX + 16 && enemyX + mwidth > playerX && enemyY < playerY + 16 && enemyY + mheight > playerY;
     }
 
-    public boolean isBoss() {
-        return boss;
-    }
+	    public boolean isBoss() {
+	        return boss;
+	    }
+
+	    /** Chefes e variantes pesadas recebem os efeitos do ambiente no Mundo Aberto. */
+	    public boolean isClimateGiant() {
+	        return boss || elite || variant == Variant.GUARDIAN || variant == Variant.WARBRINGER
+	                || variant == Variant.OVERSEER || variant == Variant.OVERSEER_PRIME;
+	    }
+
+	    private com.traduvertgames.world.WorldWeatherManager.GiantModifier getClimateGiantModifier() {
+	        if (!isClimateGiant()) {
+	            return com.traduvertgames.world.WorldWeatherManager.neutralGiantModifier();
+	        }
+	        return com.traduvertgames.world.WorldWeatherManager.getGiantModifier(getX(), getY());
+	    }
+
+	    private int climateAdjustedCooldown(int baseCooldown) {
+	        return Math.max(20, (int) Math.round(baseCooldown * getClimateGiantModifier().getCooldownMultiplier()));
+	    }
 
     /** Status de elite (rodada 24b): tropas de choque procedurais do modo infinito. */
     public boolean isElite() {
@@ -1397,14 +1424,19 @@ public class Enemy extends Entity {
         // Auras são informação secundária: menores e mais transparentes para
         // inimigos comuns; elites e chefes continuam distinguíveis.
         int auraSize = boss ? drawSize + 8 : elite ? drawSize + 5 : drawSize + 2;
-        if (variant != Variant.SCOUT) {
+	        if (variant != Variant.SCOUT) {
             int auraAlpha = boss ? 170 : elite ? 125 : 78;
             Color aura = new Color(auraColor.getRed(), auraColor.getGreen(), auraColor.getBlue(), auraAlpha);
             g.setColor(aura);
             int auraX = this.getX() + 8 - auraSize / 2 - Camera.x;
             int auraY = this.getY() + 8 - auraSize / 2 - Camera.y;
-            g.drawOval(auraX, auraY, auraSize, auraSize);
-        }
+	            g.drawOval(auraX, auraY, auraSize, auraSize);
+	        }
+	        if (isClimateGiant() && com.traduvertgames.world.WorldWeatherManager.isActive()) {
+	            Color weatherAura = getClimateGiantModifier().getWeather().getSignalColor();
+	            g.setColor(new Color(weatherAura.getRed(), weatherAura.getGreen(), weatherAura.getBlue(), 155));
+	            g.drawOval(drawX - 3, drawY - 3, drawSize + 6, drawSize + 6);
+	        }
         int markerX = this.getX() - Camera.x;
         int markerY = this.getY() - Camera.y;
         if (variant == Variant.BOMBER) {

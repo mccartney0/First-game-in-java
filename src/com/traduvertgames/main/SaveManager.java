@@ -201,6 +201,8 @@ public final class SaveManager {
 								 com.traduvertgames.world.OpenWorldManager.serialize()));
 						 session.put("openWorldMarkers", new HashMap<String, Object>(
 								 com.traduvertgames.world.OpenWorldMarkerManager.serialize()));
+						 session.put("worldClimate", new HashMap<String, Object>(
+								 com.traduvertgames.world.WorldWeatherManager.serialize()));
 						 session.put("language", Localization.serialize());
 								session.put("sideQuestsDone", new HashMap<String, Boolean>(
 
@@ -601,6 +603,7 @@ public final class SaveManager {
 					String.valueOf(session.get("gameMode")));
 				com.traduvertgames.world.OpenWorldManager.deserialize(session.get("openWorld"));
 				com.traduvertgames.world.OpenWorldMarkerManager.deserialize(session.get("openWorldMarkers"));
+				com.traduvertgames.world.WorldWeatherManager.deserialize(session.get("worldClimate"));
 		// Rodada 25: o conjunto de inimigos abatidos — salvo antes do reload
 		// do mundo (restoreObjectiveState abaixo) para o applyMapPixels pular
 		// as posições registradas e não ressuscitar os mobs já derrotados.

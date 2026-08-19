@@ -14,6 +14,7 @@ import com.traduvertgames.world.MudTile;
 import com.traduvertgames.world.OpenWorldManager;
 import com.traduvertgames.world.OpenWorldMarkerManager;
 import com.traduvertgames.world.RpgWorldManager;
+import com.traduvertgames.world.WorldWeatherManager;
 import com.traduvertgames.world.Tile;
 import com.traduvertgames.world.WallTile;
 import com.traduvertgames.world.World;
@@ -187,6 +188,11 @@ public final class MiniMap {
                     COLOR_PLAYER, Math.max(4, scale + 1));
         }
 
+        g2.setColor(new Color(4, 20, 23, 185));
+        g2.fillRect(panelX, panelY, panelW, Math.max(8, 3 * scale));
+        g2.setColor(WorldWeatherManager.getCurrentSignalColor());
+        g2.setFont(g2.getFont().deriveFont(Math.max(8f, 2.2f * scale)));
+        g2.drawString(WorldWeatherManager.getCurrentClimateLabel(), panelX + 4 * scale, panelY + 3 * scale - 1);
         g2.setColor(new Color(226, 255, 248, 210));
         g2.setFont(g2.getFont().deriveFont(Math.max(9f, 2.5f * scale)));
         g2.drawString(OpenWorldManager.getExplorationLabel(), panelX + 4 * scale, panelY + panelH - 3 * scale);

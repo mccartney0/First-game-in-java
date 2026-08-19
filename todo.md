@@ -3,3 +3,8 @@
 - [x] Renderizar marcadores personalizados e dicas de uso no mini-mapa.
 - [x] Exibir aviso suave com código e nome do setor ao cruzar uma nova área.
 - [x] Cobrir os novos fluxos com regressões, build limpo e QA headless.
+- [x] Auditar monstros gigantes, spawns por setor, HUD e renderização ambiental.
+- [x] Definir clima, fases de dia/noite e modificadores legíveis para cada setor.
+- [x] Implementar telemetria ambiental, ciclo visual e persistência de estado.
+- [x] Aplicar regras de clima e período aos monstros gigantes.
+- [x] Validar regressões, balanceamento e QA headless antes do commit.
