@@ -13,17 +13,22 @@ import java.util.Set;
 
 import com.traduvertgames.entities.Enemy;
 import com.traduvertgames.entities.Entity;
+import com.traduvertgames.entities.EscortNpc;
+import com.traduvertgames.entities.SupplyConvoy;
 import com.traduvertgames.entities.FloatingText;
 import com.traduvertgames.graficos.MissionBanner;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.state.PilotUpgrades;
+import com.traduvertgames.world.World;
 
 /** Eventos temporários que dão propósito à exploração entre hubs e dungeons. */
 public final class DynamicEventManager {
 
     public enum Type {
-        AMBUSH("Emboscada regional", "Derrote o grupo que cercou a rota de exploração."),
-        ELITE_HUNT("Caça à elite", "Encontre e elimine o alvo de elite antes que ele recue.");
+		AMBUSH("Emboscada regional", "Derrote o grupo que cercou a rota de exploração."),
+		ELITE_HUNT("Caça à elite", "Encontre e elimine o alvo de elite antes que ele recue."),
+		RESCUE("Resgate regional", "Proteja o sobrevivente até o refúgio da região."),
+		SUPPLY_CONVOY("Comboio de suprimentos", "Escolte a carga por toda a rota regional.");
 
         private final String title;
         private final String description;
@@ -54,7 +59,10 @@ public final class DynamicEventManager {
     private static int explorationFrames;
     private static RpgWorldManager.RegionType observedRegion;
     private static boolean needsSpawn;
-    private static int eventSequence;
+	private static int eventSequence;
+	private static EscortNpc rescueTarget;
+	private static SupplyConvoy activeConvoy;
+	private static int targetHitTimer;
 
     private DynamicEventManager() {
     }
@@ -70,9 +78,12 @@ public final class DynamicEventManager {
         observedRegion = null;
         needsSpawn = false;
         eventSequence = 0;
+        rescueTarget = null;
+        activeConvoy = null;
+        targetHitTimer = 0;
     }
 
-    /** Encerra apenas a atividade corrente ao trocar de mapa/camada. */
+	/** Encerra apenas a atividade corrente ao trocar de mapa/camada. */
     public static void abortActiveEventForMapChange() {
         eventEnemies.clear();
         activeType = null;
@@ -81,9 +92,12 @@ public final class DynamicEventManager {
         activeTimer = 0;
         explorationFrames = 0;
         needsSpawn = false;
+        rescueTarget = null;
+        activeConvoy = null;
+        targetHitTimer = 0;
     }
 
-    public static boolean isActive() {
+	public static boolean isActive() {
         return activeType != null;
     }
 
@@ -111,10 +125,18 @@ public final class DynamicEventManager {
         if (activeType == null) {
             return "";
         }
-        if (activeType == Type.ELITE_HUNT) {
-            return eventEnemies.isEmpty() ? "alvo localizado" : "alvo ativo";
-        }
-        return eventEnemies.size() + " ameaças restantes";
+		if (activeType == Type.ELITE_HUNT) {
+			return eventEnemies.isEmpty() ? "alvo localizado" : "alvo ativo";
+		}
+		if (activeType == Type.RESCUE) {
+			return rescueTarget == null ? "sobrevivente procurando ajuda"
+					: "sobrevivente " + rescueTarget.getHp() + "/4 — " + eventEnemies.size() + " ameaças";
+		}
+		if (activeType == Type.SUPPLY_CONVOY) {
+			return activeConvoy == null ? "comboio preparando rota"
+					: "carga " + activeConvoy.getHp() + "/6 — rota " + activeConvoy.getRoutePercent() + "%";
+		}
+		return eventEnemies.size() + " ameaças restantes";
     }
 
     /** Indica se pelo menos um dos eventos regionais ainda está disponível. */
@@ -199,11 +221,12 @@ public final class DynamicEventManager {
             }
             return;
         }
-        if (needsSpawn) {
-            spawnEventEnemies();
-            needsSpawn = false;
-        }
-        if (activeTimer > 0) {
+		if (needsSpawn) {
+			spawnEventEnemies();
+			needsSpawn = false;
+		}
+		updateProtectedTarget();
+		if (activeTimer > 0) {
             activeTimer--;
         }
         if (activeTimer == 0) {
@@ -218,20 +241,55 @@ public final class DynamicEventManager {
             spawnVariant(Enemy.Variant.SWARM, false);
             spawnVariant(Enemy.Variant.SHIELDER, false);
             spawnVariant(Enemy.Variant.SNIPER, false);
-        } else if (activeType == Type.ELITE_HUNT) {
-            Enemy target = spawnVariant(Enemy.Variant.SNIPER, true);
-            if (target == null) {
-                target = spawnVariant(Enemy.Variant.SHIELDER, true);
-            }
-            spawnVariant(Enemy.Variant.SWARM, false);
-            spawnVariant(Enemy.Variant.BOMBER, false);
-            if (target == null) {
-                expireEvent();
-            }
-        }
+		} else if (activeType == Type.ELITE_HUNT) {
+			Enemy target = spawnVariant(Enemy.Variant.SNIPER, true);
+			if (target == null) {
+				target = spawnVariant(Enemy.Variant.SHIELDER, true);
+			}
+			spawnVariant(Enemy.Variant.SWARM, false);
+			spawnVariant(Enemy.Variant.BOMBER, false);
+			if (target == null) {
+				expireEvent();
+			}
+		} else if (activeType == Type.RESCUE) {
+			spawnRescueTarget();
+			spawnVariant(Enemy.Variant.SWARM, false);
+			spawnVariant(Enemy.Variant.SWARM, false);
+			spawnVariant(Enemy.Variant.BOMBER, false);
+			spawnVariant(Enemy.Variant.SHIELDER, false);
+		} else if (activeType == Type.SUPPLY_CONVOY) {
+			spawnSupplyConvoy();
+			spawnVariant(Enemy.Variant.SWARM, false);
+			spawnVariant(Enemy.Variant.BOMBER, false);
+			spawnVariant(Enemy.Variant.SNIPER, false);
+		}
     }
 
-    private static Enemy spawnVariant(Enemy.Variant variant, boolean elite) {
+	private static void updateProtectedTarget() {
+		if (activeType != Type.RESCUE && activeType != Type.SUPPLY_CONVOY) {
+			return;
+		}
+		targetHitTimer++;
+		if (targetHitTimer < 75) {
+			return;
+		}
+		targetHitTimer = 0;
+		for (Enemy enemy : new ArrayList<Enemy>(Game.enemies)) {
+			if (activeType == Type.RESCUE && rescueTarget != null
+					&& rescueTarget.distanceTo(enemy.getX(), enemy.getY()) <= 70) {
+				rescueTarget.takeHit();
+				return;
+			}
+			if (activeType == Type.SUPPLY_CONVOY && activeConvoy != null
+					&& activeConvoy.calculateDistance(activeConvoy.getX(), activeConvoy.getY(),
+							enemy.getX(), enemy.getY()) <= 70) {
+				activeConvoy.takeHit();
+				return;
+			}
+		}
+	}
+
+	private static Enemy spawnVariant(Enemy.Variant variant, boolean elite) {
         int[] spot = findSpawnSpot();
         if (spot == null || Game.enemies.size() >= 12) {
             return null;
@@ -243,7 +301,36 @@ public final class DynamicEventManager {
         return enemy;
     }
 
-    private static int[] findSpawnSpot() {
+	private static void spawnRescueTarget() {
+		int[] spot = findSpawnSpot();
+		if (spot == null) {
+			expireEvent();
+			return;
+		}
+		int[] destination = destinationForRegion(activeRegion);
+		rescueTarget = new EscortNpc(spot[0], spot[1], destination[0], destination[1]);
+		Game.entities.add(rescueTarget);
+	}
+
+	private static void spawnSupplyConvoy() {
+		int[] spot = findSpawnSpot();
+		if (spot == null) {
+			expireEvent();
+			return;
+		}
+		int[] destination = destinationForRegion(activeRegion);
+		activeConvoy = new SupplyConvoy(spot[0], spot[1], destination[0], destination[1]);
+		Game.entities.add(activeConvoy);
+	}
+
+	private static int[] destinationForRegion(RpgWorldManager.RegionType region) {
+		RpgWorldManager.RegionType targetRegion = region == RpgWorldManager.RegionType.REFUGE
+				? RpgWorldManager.RegionType.RUINS : RpgWorldManager.RegionType.REFUGE;
+		RpgWorldManager.RegionBounds bounds = RpgWorldManager.getBounds(targetRegion);
+		return new int[] { bounds.centerX() * World.TILE_SIZE, bounds.centerY() * World.TILE_SIZE };
+	}
+
+	private static int[] findSpawnSpot() {
         for (int attempt = 0; attempt < 24; attempt++) {
             int tileX = 2 + Game.rand.nextInt(Math.max(1, World.WIDTH - 4));
             int tileY = 2 + Game.rand.nextInt(Math.max(1, World.HEIGHT - 4));
@@ -279,27 +366,61 @@ public final class DynamicEventManager {
         }
         String key = key(activeRegion, activeDepth, activeType);
         completed.put(key, true);
-        int credits = activeType == Type.ELITE_HUNT ? 300 : 180;
-        PilotUpgrades.addCredits(credits);
-        Game.addScore(activeType == Type.ELITE_HUNT ? 450 : 250);
+		int credits;
+		int score;
+		switch (activeType) {
+		case ELITE_HUNT:
+			credits = 300;
+			score = 450;
+			break;
+		case RESCUE:
+			credits = 240;
+			score = 350;
+			break;
+		case SUPPLY_CONVOY:
+			credits = 220;
+			score = 320;
+			break;
+		default:
+			credits = 180;
+			score = 250;
+			break;
+		}
+		PilotUpgrades.addCredits(credits);
+		Game.addScore(score);
         FloatingText.show("EVENTO CONCLUÍDO +" + credits + " CRÉDITOS",
                 Game.player.getX(), Game.player.getY() - 20, new Color(255, 235, 59), 120);
         MissionBanner.show("EVENTO CONCLUÍDO", activeType.getTitle() + " — recompensa permanente recebida.",
                 new Color(129, 199, 132), Color.WHITE, 180);
-        clearActive();
-    }
+		clearActive();
+		com.traduvertgames.main.SaveManager.saveCurrentGame();
+	}
 
-    private static void expireEvent() {
+	private static void expireEvent() {
         if (activeType != null) {
             MissionBanner.show("EVENTO ENCERRADO", "A oportunidade regional foi perdida; continue explorando.",
                     new Color(176, 190, 197), Color.WHITE, 120);
         }
-        clearActive();
-    }
+		clearActive();
+		com.traduvertgames.main.SaveManager.saveCurrentGame();
+	}
 
-    private static void clearActive() {
-        eventEnemies.clear();
-        activeType = null;
+	private static void clearActive() {
+		for (Enemy enemy : new ArrayList<Enemy>(eventEnemies)) {
+			Game.enemies.remove(enemy);
+			Game.entities.remove(enemy);
+		}
+		eventEnemies.clear();
+		if (rescueTarget != null) {
+			Game.entities.remove(rescueTarget);
+		}
+		if (activeConvoy != null) {
+			Game.entities.remove(activeConvoy);
+		}
+		rescueTarget = null;
+		activeConvoy = null;
+		targetHitTimer = 0;
+		activeType = null;
         activeRegion = null;
         activeDepth = 0;
         activeTimer = 0;
@@ -307,7 +428,36 @@ public final class DynamicEventManager {
         explorationFrames = 0;
     }
 
-    private static String key(RpgWorldManager.RegionType region, int depth, Type type) {
+	/** Callback da escolta regional; a escolta da campanha fixa é ignorada. */
+	public static void onEscortArrived(EscortNpc npc) {
+		if (activeType == Type.RESCUE && rescueTarget == npc) {
+			completeEvent();
+		}
+	}
+
+	public static void onEscortFailed(EscortNpc npc) {
+		if (activeType == Type.RESCUE && rescueTarget == npc) {
+			MissionBanner.show("RESGATE PERDIDO", "O sobrevivente não resistiu ao caminho.",
+					new Color(244, 67, 54), Color.WHITE, 150);
+			expireEvent();
+		}
+	}
+
+	public static void onConvoyArrived(SupplyConvoy convoy) {
+		if (activeType == Type.SUPPLY_CONVOY && activeConvoy == convoy) {
+			completeEvent();
+		}
+	}
+
+	public static void onConvoyFailed(SupplyConvoy convoy) {
+		if (activeType == Type.SUPPLY_CONVOY && activeConvoy == convoy) {
+			MissionBanner.show("CARGA PERDIDA", "O comboio foi destruído antes do refúgio.",
+					new Color(244, 67, 54), Color.WHITE, 150);
+			expireEvent();
+		}
+	}
+
+	private static String key(RpgWorldManager.RegionType region, int depth, Type type) {
         return region.name() + ":" + Math.max(1, depth) + ":" + type.name();
     }
 

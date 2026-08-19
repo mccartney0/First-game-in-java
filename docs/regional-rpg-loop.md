@@ -2,7 +2,7 @@
 
 ## Visão geral
 
-A expansão transforma o mundo procedural pós-campanha em um ciclo de exploração com decisões opcionais. A campanha fixa continua usando as fases 1–9 e não exige o novo hub. No modo procedural de superfície, o jogador pode abrir o hub regional, aceitar a tarefa do NPC da região, iniciar um evento, entrar em uma dungeon ou simplesmente voltar à exploração.
+A expansão transforma o modo padrão do jogo em um ciclo de aventura RPG regional. A campanha fixa continua usando as fases 1–9 como trilha narrativa alternativa, preservando objetivos, diálogos e Nova campanha+. Na superfície procedural, o jogador pode abrir o hub regional, aceitar a tarefa do NPC da região, iniciar um evento, entrar em uma dungeon ou simplesmente continuar explorando.
 
 > **Princípio de design:** atividades opcionais devem ampliar a exploração, não bloquear o objetivo principal nem obrigar o jogador a repetir telas entre fases.
 
@@ -66,7 +66,7 @@ Se a arma já estiver desbloqueada, a conclusão continua registrada e os crédi
 
 A sessão JSON mantém as conclusões de quests, dungeons e eventos. O novo campo `dynamicEvents` contém o histórico de conclusões e, quando aplicável, o tipo, região, profundidade, tempo e necessidade de geração do evento ativo. O carregamento restaura esse estado antes do retorno ao mapa e não reabre diálogos ou a tela de seleção de arma.
 
-Um novo jogo limpa eventos temporários e seu histórico de ciclo, mas não apaga as melhorias permanentes do piloto, créditos acumulados ou armas desbloqueadas. A campanha fixa continua abrindo seus estados originais (`NORMAL`, `MENU`, `SHOP`, `LEVELUP`, `LEVELSELECT` e `GAMEOVER`) sem depender de `REGIONAL_HUB`.
+Um novo jogo RPG limpa eventos temporários e seu histórico de ciclo, mas não apaga as melhorias permanentes do piloto, créditos acumulados ou armas desbloqueadas. O slot grava `gameMode=RPG_ADVENTURE`, e `Continuar` restaura a superfície procedural. A campanha narrativa usa `gameMode=CAMPAIGN` e continua abrindo seus estados originais (`NORMAL`, `MENU`, `SHOP`, `LEVELUP`, `LEVELSELECT` e `GAMEOVER`) sem depender de `REGIONAL_HUB`.
 
 ## Critérios de aceite verificados
 

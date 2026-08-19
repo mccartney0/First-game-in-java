@@ -25,31 +25,29 @@ public class Menu {
 		EXIT_CONFIRM
 	}
 
-	private static final int OPTION_NEW_GAME = 0;
-	private static final int OPTION_CONTINUE = 1;
-	private static final int OPTION_LOAD_GAME = 2;
-	private static final int OPTION_HOW_TO_PLAY = 3;
-	private static final int OPTION_SETTINGS = 4;
-	// Rodada 29 — metagame: opção do menu principal para as melhorias
-	// permanentes do piloto, compráveis com os créditos persistentes.
-	private static final int OPTION_UPGRADES = 5;
-	private static final int OPTION_EXIT = 6;
+		private static final int OPTION_RPG_ADVENTURE = 0;
+		private static final int OPTION_CAMPAIGN = 1;
+		private static final int OPTION_CONTINUE = 2;
+		private static final int OPTION_LOAD_GAME = 3;
+		private static final int OPTION_HOW_TO_PLAY = 4;
+		private static final int OPTION_SETTINGS = 5;
+		// Rodada 29 — metagame: opção do menu principal para as melhorias
+		// permanentes do piloto, compráveis com os créditos persistentes.
+		private static final int OPTION_UPGRADES = 6;
+		private static final int OPTION_NEW_GAME_PLUS = 7;
+		private static final int OPTION_EXIT = 8;
 
-	// Rodada 31 — conteúdo pós-campanha: a Nova campanha+ entra no menu
-	// principal após a conclusão da campanha (herda armas e créditos e concede
-	// o bônus de +25% de vida e mana na campanha reiniciada).
-	private static final int OPTION_NEW_GAME_PLUS = 7;
-
-	private static final String[] MAIN_OPTIONS = {
-			"novo jogo",
-			"continuar",
-			"carregar jogo",
-			"como jogar",
-			"opções",
-			"melhorias do piloto",
-			"nova campanha+",
-			"sair"
-	};
+		private static final String[] MAIN_OPTIONS = {
+				"aventura RPG",
+				"campanha narrativa",
+				"continuar",
+				"carregar jogo",
+				"como jogar",
+				"opções",
+				"melhorias do piloto",
+				"nova campanha+",
+				"sair"
+		};
 
 	private static final int PAUSE_CONTINUE = 0;
 	private static final int PAUSE_LOAD_GAME = 1;
@@ -340,15 +338,19 @@ public class Menu {
 
 	private void handleMainMenuSelection() {
 		switch (currentOption) {
-		case OPTION_NEW_GAME:
-			if (pause) {
-				closePauseScreen();
-			} else {
-				Game game = Game.getInstance();
-				if (game != null) {
-					game.startNewGame();
-				} else {
-					closePauseScreen();
+		case OPTION_RPG_ADVENTURE:
+			if (!pause) {
+				Game adventureGame = Game.getInstance();
+				if (adventureGame != null) {
+					adventureGame.startNewGame();
+				}
+			}
+			break;
+		case OPTION_CAMPAIGN:
+			if (!pause) {
+				Game campaignGame = Game.getInstance();
+				if (campaignGame != null) {
+					campaignGame.startNarrativeCampaign();
 				}
 			}
 			break;
@@ -775,8 +777,10 @@ private void handlePauseSelection() {
 
 	private String getMainMenuLabel(int index) {
 		switch (index) {
-		case OPTION_NEW_GAME:
-			return pause ? "Continuar" : "Novo jogo";
+		case OPTION_RPG_ADVENTURE:
+			return pause ? "Continuar" : "Aventura RPG";
+		case OPTION_CAMPAIGN:
+			return "Campanha narrativa";
 		case OPTION_CONTINUE:
 			return "Continuar";
 		case OPTION_LOAD_GAME:

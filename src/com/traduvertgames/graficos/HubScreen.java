@@ -24,7 +24,7 @@ public final class HubScreen {
     private enum Activity {
         MAIN_MISSION("Missão principal", "Continuar a campanha e avançar o objetivo atual"),
         SIDE_QUEST("Missão do NPC regional", "Aceitar a tarefa do representante da região"),
-        DYNAMIC_EVENT("Evento regional", "Iniciar uma emboscada ou caça a elite na exploração"),
+		DYNAMIC_EVENT("Evento regional", "Escolher emboscada, caça, resgate ou comboio"),
         DUNGEON("Masmorra opcional", "Entrar na instância e enfrentar o chefe regional"),
         FREE_ROAM("Exploração livre", "Sair do hub e procurar recursos, POIs e eventos"),
         CLOSE("Fechar hub", "Voltar à exploração sem iniciar atividade");

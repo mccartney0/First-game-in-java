@@ -95,9 +95,10 @@ public class EscortNpc extends Entity {
 		}
 		invulnTimer = HIT_INVULN_FRAMES;
 		hp--;
-		if (hp <= 0) {
-			QuestManager.escortFailed(this);
-		} else {
+			if (hp <= 0) {
+				QuestManager.escortFailed(this);
+				com.traduvertgames.world.DynamicEventManager.onEscortFailed(this);
+			} else {
 			FloatingText.show("-1", (int) getX() + 8, (int) getY(),
 					new Color(255, 90, 90), 50);
 		}
@@ -138,10 +139,12 @@ public class EscortNpc extends Entity {
 			double distance = Math.sqrt(dx * dx + dy * dy);
 			if (distance < 2) {
 				arrived = true;
-				if (!arrivedNotified) {
-					arrivedNotified = true;
-					QuestManager.escortArrived(this);
-				}
+									if (!arrivedNotified) {
+						arrivedNotified = true;
+						QuestManager.escortArrived(this);
+						com.traduvertgames.world.DynamicEventManager.onEscortArrived(this);
+					}
+
 				return;
 			}
 			// Entity mantém a posição internamente como double. Arredondar para int

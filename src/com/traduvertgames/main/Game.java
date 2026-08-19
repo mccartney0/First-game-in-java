@@ -118,8 +118,11 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 
 	private static boolean overlayExpanded = false;
 
-	/** True enquanto a loja está aberta por causa de um objetivo concluído. */
-	private static boolean questCompletedPending = false;
+		/** True quando a sessão atual usa o mundo regional como aventura principal. */
+		private static boolean regionalAdventureMode = false;
+
+		/** True enquanto a loja está aberta por causa de um objetivo concluído. */
+		private static boolean questCompletedPending = false;
 
 	/** Loja aguardando o level-up ser resolvido antes de abrir. */
 	private static boolean shopPendingOpened = false;
@@ -128,8 +131,9 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 	 * Reset completo para testes (rodada 31): reaproveita o reset central do
 	 * GameState e desliga as flags de pós-campanha em memória.
 	 */
-	public static void resetAllForTest() {
-		GameState.resetAll();
+		public static void resetAllForTest() {
+			regionalAdventureMode = false;
+			GameState.resetAll();
 		clearQuestPending();
 		resetTraitorTalked();
 		// Rodada 31: o epílogo dos refugiados é consumido na renderização da
@@ -394,16 +398,27 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
                 overlayExpanded = GameState.overlayExpanded;
         }
 
-                public static void setCurrentLevel(int level) {
-                if (level < 1)
-                        level = 1;
-                if (level > MAX_LEVEL)
-                        level = MAX_LEVEL;
+		        public static void setCurrentLevel(int level) {
+		        if (level < 1)
+		                level = 1;
+		        int regionalLevel = MAX_LEVEL + 1;
+		        if (level > MAX_LEVEL && !(regionalAdventureMode && level == regionalLevel))
+		                level = MAX_LEVEL;
                 GameState.currentLevel = level;
                 CUR_LEVEL = level;
         }
         public static int getCurrentLevel() {
                 return GameState.currentLevel;
+        }
+
+        /** Indica se a sessão atual é a Aventura RPG regional. */
+        public static boolean isRegionalAdventureMode() {
+                return regionalAdventureMode;
+        }
+
+        /** Define o modo da sessão antes de recriar o mapa ou salvar o slot. */
+        public static void setRegionalAdventureMode(boolean enabled) {
+                regionalAdventureMode = enabled;
         }
 
         public void setLevelPlus(int value) {
@@ -1788,7 +1803,18 @@ if (!hidingHud) {
 				return false;
         }
 
+	/** Inicia a Aventura RPG regional, que é o modo padrão do jogo. */
 	public void startNewGame() {
+		startNewGameInternal(true);
+	}
+
+	/** Inicia a campanha narrativa fixa das fases 1–9. */
+	public void startNarrativeCampaign() {
+		startNewGameInternal(false);
+	}
+
+	private void startNewGameInternal(boolean regionalAdventure) {
+		regionalAdventureMode = regionalAdventure;
 		resetGameOverState();
 		// Novo jogo: remove o companion ativo (persistência apenas por save).
 		com.traduvertgames.entities.Companion.clear();
@@ -1825,16 +1851,56 @@ if (!hidingHud) {
 			FloatingText.clear();
 		// Antes do onboarding, o jogador escolhe sua arma inicial entre as
 		// desbloqueadas — a escolha fica registrada no arsenal persistente.
-		startInitialWeaponSelect();
-	}
+					startInitialWeaponSelect();
+		}
 
-	/**
-	 * Nova campanha+ (rodada 31): inicia a campanha do zero herdando as armas
+		/** Entra na primeira superfície da Aventura RPG após o tutorial. */
+		public void startRegionalAdventure() {
+			loadRegionalAdventure(1);
+			DynamicEventManager.reset();
+			SaveManager.saveCurrentGame();
+		}
+
+		/**
+		 * Recria uma sessão RPG salva sem abrir onboarding, loja ou seleção de
+		 * fases. Eventos ativos são encerrados com segurança; o histórico concluído
+		 * já foi restaurado pelo SaveManager antes da troca de mapa.
+		 */
+		public void loadRegionalAdventure(int depth) {
+			regionalAdventureMode = true;
+			int safeDepth = Math.max(1, depth);
+			levelPlus = safeDepth;
+			setCurrentLevel(MAX_LEVEL + 1);
+			clearQuestPending();
+			DialogueManager.stop();
+			InventoryManager.close();
+			LevelSelectScreen.close();
+			ShopManager.close();
+			LevelUpManager.dismiss();
+			OnboardingManager.stop();
+			Menu.pause = false;
+			WaveManager.reset();
+			startProceduralLevel(safeDepth);
+			gameState = "NORMAL";
+			GameState.gameState = "NORMAL";
+			MusicManager.setZone(MusicManager.Zone.FOREST);
+			transitionCooldown = RESPIRO_FRAMES;
+			GameState.transitionCooldown = RESPIRO_FRAMES;
+			showLevelTransition = 90 + RESPIRO_FRAMES;
+			GameState.showLevelTransition = 90 + RESPIRO_FRAMES;
+			transitionAlpha = 255;
+			GameState.transitionAlpha = 255;
+		}
+
+		/**
+		 * Nova campanha+ (rodada 31): inicia a campanha do zero herdando as armas
 	 * desbloqueadas, os créditos e upgrades permanentes do metagame, com um
 	 * bônus de recursos de +25% sobre a vida e a mana base.
 	 */
 	public void startNewGamePlus() {
-		startNewGame();
+			// Nova campanha+ continua sendo a trilha narrativa fixa; a Aventura RPG
+			// padrão não deve alterar o contrato de bônus da campanha.
+			startNewGameInternal(false);
 		if (!SaveManager.isNewGamePlus()) {
 			return;
 		}
@@ -1994,9 +2060,13 @@ if (!hidingHud) {
 			Player.life = Math.max(Player.life, Player.maxLife);
 			Player.mana = Math.max(Player.mana, Player.maxMana);
 		}
-		clampPlayerResources();
-		LevelUpManager.reset();
-		com.traduvertgames.world.DungeonManager.reset();
+			clampPlayerResources();
+			if (regionalAdventureMode) {
+				startRegionalAdventure();
+				return;
+			}
+			LevelUpManager.reset();
+			com.traduvertgames.world.DungeonManager.reset();
 		WaveManager.reset();
 		DashAbility.reset();
 		UltimateAbility.reset();
@@ -2140,6 +2210,8 @@ if (!hidingHud) {
 	 * transição do modo.
 	 */
 		public static void enterInfiniteMode() {
+		// Sobrevivência é uma trilha separada; o slot não deve ser salvo como RPG.
+		regionalAdventureMode = false;
 		if (instance != null) {
 			instance.levelPlus = 1;
 		}

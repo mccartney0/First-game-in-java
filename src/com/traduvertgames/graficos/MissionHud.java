@@ -11,6 +11,8 @@ import com.traduvertgames.main.Game;
 import com.traduvertgames.quest.QuestManager;
 import com.traduvertgames.quest.SideQuestManager;
 import com.traduvertgames.world.Camera;
+import com.traduvertgames.world.DynamicEventManager;
+import com.traduvertgames.world.RpgWorldManager;
 
 /**
  * Card compacto da missão atual, sempre visível durante a partida (exceto em
@@ -45,11 +47,22 @@ public final class MissionHud {
 		int margin = 10 * s / 4 + 2;
 
 		// --- Card compacto da missão (canto superior esquerdo) ---
-		String title = QuestManager.getObjectiveTitle();
-		String progress = QuestManager.getObjectiveProgress();
-		if (title == null || title.isEmpty()) {
-			return;
-		}
+			String title;
+			String progress;
+			if (Game.isRegionalAdventureMode()) {
+				RpgWorldManager.RegionType region = RpgWorldManager.getCurrentRegion();
+				String regionName = region == null ? "mapeando a região" : region.getDisplayName();
+				title = "Explorar " + regionName;
+				progress = DynamicEventManager.isActive()
+						? DynamicEventManager.getActiveTitle() + " — " + DynamicEventManager.getProgressLabel()
+						: "H: abrir hub — procure POIs, NPCs e eventos";
+			} else {
+				title = QuestManager.getObjectiveTitle();
+				progress = QuestManager.getObjectiveProgress();
+				if (title == null || title.isEmpty()) {
+					return;
+				}
+			}
 
 		Font titleFont = new Font("SansSerif", Font.BOLD, 12 * s / 4 + 4);
 		Font smallFont = new Font("SansSerif", Font.PLAIN, 8 * s / 4 + 3);
