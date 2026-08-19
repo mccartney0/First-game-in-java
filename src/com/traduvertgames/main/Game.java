@@ -36,6 +36,7 @@ import com.traduvertgames.graficos.MiniMap;
 import com.traduvertgames.graficos.VictoryCutscene;
 import com.traduvertgames.graficos.MissionBanner;
 import com.traduvertgames.graficos.HubScreen;
+import com.traduvertgames.graficos.ContractBoardScreen;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
@@ -140,8 +141,10 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 		// Rodada 31: o epílogo dos refugiados é consumido na renderização da
 		// cutscene; desligar explicitamente para os testes partirem limpos.
 			VictoryCutscene.setRefugeeEnding(false);
-			HubScreen.reset();
-			DynamicEventManager.reset();
+				HubScreen.reset();
+				com.traduvertgames.graficos.ContractBoardScreen.reset();
+				DynamicEventManager.reset();
+				com.traduvertgames.quest.ContractManager.reset();
 		}
 
 	/** Cancela um avanço de fase pendente (usado ao trocar de fase manualmente). */
@@ -784,11 +787,13 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
                 } else if ("SHOP".equals(gameState)) {
                         ShopManager.update();
                         ParticleSystem.update();
-		} else if ("REGIONAL_HUB".equals(gameState)) {
-			// O hub é modal: nenhum inimigo, projétil ou objetivo avança atrás
-			// da escolha de atividade.
-			HubScreen.update();
-		} else if ("GAMEOVER".equals(gameState)) {
+				} else if ("REGIONAL_HUB".equals(gameState)) {
+					// O hub é modal: nenhum inimigo, projétil ou objetivo avança atrás
+					// da escolha de atividade.
+					HubScreen.update();
+				} else if ("REGIONAL_CONTRACTS".equals(gameState)) {
+					ContractBoardScreen.update();
+				} else if ("GAMEOVER".equals(gameState)) {
 //Forma de Fazer animação - Game over
 			this.framesGameOver++;
 			if (this.framesGameOver == 30) {
@@ -1105,6 +1110,8 @@ if (!hidingHud) {
 					LevelSelectScreen.render(overlayG);
 				} else if ("REGIONAL_HUB".equals(gameState)) {
 					HubScreen.render(overlayG);
+				} else if ("REGIONAL_CONTRACTS".equals(gameState)) {
+					ContractBoardScreen.render(overlayG);
 	                }
 
                 // Aviso de transição de fase: a fase atual foi concluída e o jogo
@@ -1263,6 +1270,18 @@ if (!hidingHud) {
 						HubScreen.confirm();
 					} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
 						HubScreen.cancel();
+					}
+					return;
+				}
+			if ("REGIONAL_CONTRACTS".equals(gameState)) {
+					if (e.getKeyCode() == KeyEvent.VK_UP || e.getKeyCode() == KeyEvent.VK_W) {
+						ContractBoardScreen.navigateUp();
+					} else if (e.getKeyCode() == KeyEvent.VK_DOWN || e.getKeyCode() == KeyEvent.VK_S) {
+						ContractBoardScreen.navigateDown();
+					} else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+						ContractBoardScreen.confirm();
+					} else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+						ContractBoardScreen.closeToHub();
 					}
 					return;
 				}
@@ -1816,8 +1835,9 @@ if (!hidingHud) {
 
 	private void startNewGameInternal(boolean regionalAdventure) {
 		regionalAdventureMode = regionalAdventure;
-		com.traduvertgames.world.RegionalProgressionManager.reset();
-		resetGameOverState();
+			com.traduvertgames.world.RegionalProgressionManager.reset();
+			com.traduvertgames.quest.ContractManager.reset();
+			resetGameOverState();
 		// Novo jogo: remove o companion ativo (persistência apenas por save).
 		com.traduvertgames.entities.Companion.clear();
 		this.levelPlus = 0;
@@ -1860,6 +1880,7 @@ if (!hidingHud) {
 		public void startRegionalAdventure() {
 			loadRegionalAdventure(1);
 			DynamicEventManager.reset();
+			com.traduvertgames.quest.ContractManager.reset();
 			SaveManager.saveCurrentGame();
 		}
 

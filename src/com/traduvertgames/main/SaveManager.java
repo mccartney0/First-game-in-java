@@ -189,6 +189,8 @@ public final class SaveManager {
 						com.traduvertgames.world.DynamicEventManager.serialize()));
 				session.put("regionalProgression", new HashMap<String, Object>(
 						com.traduvertgames.world.RegionalProgressionManager.serialize()));
+				session.put("contractsCompleted", new HashMap<String, Boolean>(
+						com.traduvertgames.quest.ContractManager.serializeCompleted()));
 								session.put("sideQuestsDone", new HashMap<String, Boolean>(
 
 					com.traduvertgames.quest.SideQuestManager.getCompleted()));
@@ -636,6 +638,8 @@ public final class SaveManager {
 					savedDungeonsRaw == null ? null : toBooleanMap(savedDungeonsRaw));
 				com.traduvertgames.world.DynamicEventManager.deserialize(session.get("dynamicEvents"));
 				com.traduvertgames.world.RegionalProgressionManager.deserialize(session.get("regionalProgression"));
+				com.traduvertgames.quest.ContractManager.deserializeCompleted(
+						toBooleanMap(asMap(session.get("contractsCompleted"))));
 
 			Enemy.enemies = savedEnemies;
 		Game.setScore(savedScore);

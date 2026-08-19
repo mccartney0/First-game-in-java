@@ -23,8 +23,9 @@ import com.traduvertgames.world.RegionalProgressionManager;
 public final class HubScreen {
 
     private enum Activity {
-        MAIN_MISSION("Missão principal", "Continuar a campanha e avançar o objetivo atual"),
-        SIDE_QUEST("Missão do NPC regional", "Aceitar a tarefa do representante da região"),
+		MAIN_MISSION("Missão principal", "Continuar a campanha e avançar o objetivo atual"),
+		CONTRACTS("Quadro de contratos", "Escolher uma oferta com bônus e modificador regional"),
+		SIDE_QUEST("Missão do NPC regional", "Aceitar a tarefa do representante da região"),
 		DYNAMIC_EVENT("Evento regional", "Escolher emboscada, caça, resgate ou comboio"),
         DUNGEON("Masmorra opcional", "Entrar na instância e enfrentar o chefe regional"),
         FREE_ROAM("Exploração livre", "Sair do hub e procurar recursos, POIs e eventos"),
@@ -113,8 +114,13 @@ public final class HubScreen {
             close();
             return;
         }
-        if (activity == Activity.MAIN_MISSION) {
-            MissionBanner.show("MISSÃO PRINCIPAL", QuestManager.getObjectiveTitle(),
+		if (activity == Activity.CONTRACTS) {
+			close();
+			ContractBoardScreen.open(region);
+			return;
+		}
+		if (activity == Activity.MAIN_MISSION) {
+			MissionBanner.show("MISSÃO PRINCIPAL", QuestManager.getObjectiveTitle(),
                     new Color(255, 235, 59), Color.WHITE, 150);
             close();
             return;

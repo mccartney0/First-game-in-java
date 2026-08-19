@@ -393,6 +393,7 @@ public final class DynamicEventManager {
 		MissionBanner.show("EVENTO CONCLUÍDO", activeType.getTitle() + " — recompensa permanente recebida.",
 				new Color(129, 199, 132), Color.WHITE, 180);
 		RegionalProgressionManager.registerEventOutcome(activeRegion, true);
+		com.traduvertgames.quest.ContractManager.onEventCompleted(activeRegion, activeType);
 		clearActive();
 		com.traduvertgames.main.SaveManager.saveCurrentGame();
 	}

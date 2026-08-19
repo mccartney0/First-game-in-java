@@ -71,13 +71,14 @@ public final class DungeonManager {
     }
 
     /** Solicita uma entrada; a troca real ocorre fora do loop de entidades. */
-    public static void requestEnter(RpgWorldManager.RegionType region) {
-        if (!RpgWorldManager.isActive() || RpgWorldManager.isDungeonMode() || region == null
-                || transitionCooldown > 0 || Game.player == null) {
-            return;
-        }
-        pendingEntry = region;
-    }
+	public static boolean requestEnter(RpgWorldManager.RegionType region) {
+		if (!RpgWorldManager.isActive() || RpgWorldManager.isDungeonMode() || region == null
+				|| transitionCooldown > 0 || Game.player == null) {
+			return false;
+		}
+		pendingEntry = region;
+		return true;
+	}
 
     public static void requestExit() {
         if (!inDungeon || !bossDefeated || transitionCooldown > 0) {
@@ -179,6 +180,7 @@ public final class DungeonManager {
 		bossDefeated = true;
 		completed.put(dungeonRegion.name(), true);
 		RegionalProgressionManager.registerDungeonComplete(dungeonRegion);
+		com.traduvertgames.quest.ContractManager.onDungeonCompleted(dungeonRegion);
 		PilotUpgrades.addCredits(350);
         Game.addScore(500);
         WeaponType reward = rewardForRegion(dungeonRegion);

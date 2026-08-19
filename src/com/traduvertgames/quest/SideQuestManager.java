@@ -174,6 +174,7 @@ public final class SideQuestManager {
 		}
 		completed.put(id, true);
 		quest.reward.grant();
+		ContractManager.onSideQuestCompleted(id);
 		SoundManager.play(SoundManager.Event.TUTORIAL_DONE);
 	}
 
