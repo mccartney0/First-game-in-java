@@ -43,6 +43,7 @@ import com.traduvertgames.graficos.WeaponBuildScreen;
 import com.traduvertgames.graficos.ParticleSystem;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.world.World;
+import com.traduvertgames.world.WorldActivityCulling;
 import com.traduvertgames.world.RpgWorldManager;
 import com.traduvertgames.world.DynamicEventManager;
 import com.traduvertgames.quest.QuestManager;
@@ -808,9 +809,15 @@ public class Game extends Canvas implements Runnable, KeyListener, MouseListener
 					// Cooldown pós-transição (rodada 21): inimigos também ficam
 					// congelados até o jogador se orientar na nova fase.
 if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.isEnemyPaused() || isTransitionCooldown() || isTransitioning())) {
-						continue;
-					}
-					e.update();
+							continue;
+						}
+						// Nos mapas RPG extensos, inimigos muito distantes entram em
+						// repouso: não executam IA nem pathfinding até o jogador se
+						// aproximar. Jogador, NPCs, pickups e portais permanecem ativos.
+						if (!WorldActivityCulling.shouldUpdate(e)) {
+							continue;
+						}
+						e.update();
 				}
 									OnboardingManager.update();
 					// Portais de dungeon agendam a troca para depois do loop de entidades;
@@ -1016,11 +1023,14 @@ if (e instanceof Enemy && (OnboardingManager.isEnemyPaused() || DialogueManager.
 			// Rodada 23: no game over os inimigos também ficam ocultos —
 			// antes a tela de Game Over mostrava o cenário de combate com
 			// mobs por trás do overlay, poluindo a leitura.
-			if ((questCompletedPending || isTransitionCooldown()
-					|| "GAMEOVER".equals(gameState)) && e instanceof Enemy) {
-				continue;
-			}
-				e.render(g);
+if ((questCompletedPending || isTransitionCooldown()
+						|| "GAMEOVER".equals(gameState)) && e instanceof Enemy) {
+					continue;
+				}
+				if (!WorldActivityCulling.shouldRender(e)) {
+					continue;
+				}
+					e.render(g);
 			}
 		for (int i = 0; i < bullets.size(); i++) {
 			bullets.get(i).render(g);
