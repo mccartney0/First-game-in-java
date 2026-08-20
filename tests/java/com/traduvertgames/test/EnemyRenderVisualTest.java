@@ -1,6 +1,7 @@
 package com.traduvertgames.test;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Graphics2D;
@@ -67,5 +68,17 @@ class EnemyRenderVisualTest {
         output.getParentFile().mkdirs();
         ImageIO.write(canvas, "png", output);
         assertTrue(output.isFile());
+    }
+
+    @Test
+    void generatedEnemySpritesUseTransparentNormalizedFramesForEveryCombatRole() {
+        for (Enemy.Variant variant : Enemy.Variant.values()) {
+            BufferedImage sprite = AssetCatalog.enemySprite(variant);
+            assertNotNull(sprite, "sprite ausente para " + variant);
+            assertEquals(32, sprite.getWidth(), "envelope de sprite inválido para " + variant);
+            assertEquals(32, sprite.getHeight(), "envelope de sprite inválido para " + variant);
+            assertEquals(0, sprite.getRGB(0, 0) >>> 24,
+                    "o canto do sprite deve ser transparente, sem quadrado de fundo: " + variant);
+        }
     }
 }

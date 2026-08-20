@@ -21,6 +21,7 @@ public final class AssetCatalog {
     private static final Map<WeaponType, BufferedImage> WEAPON_ICONS = new EnumMap<WeaponType, BufferedImage>(WeaponType.class);
     private static final Map<CompanionType, BufferedImage> COMPANION_SPRITES = new EnumMap<CompanionType, BufferedImage>(CompanionType.class);
     private static final Map<Enemy.Variant, BufferedImage> ENEMY_SPRITES = new EnumMap<Enemy.Variant, BufferedImage>(Enemy.Variant.class);
+    private static final Map<Enemy.Variant, String> ENEMY_PATHS = new EnumMap<Enemy.Variant, String>(Enemy.Variant.class);
     private static BufferedImage companionAtlas;
     private static BufferedImage enemyAtlas;
     private static boolean initialized;
@@ -45,6 +46,7 @@ public final class AssetCatalog {
         }
         companionAtlas = load("/assets/generated/companions/companion_set_clean.png");
         enemyAtlas = load("/assets/generated/enemies/enemy_set_clean.png");
+        configureEnemyPaths();
         initialized = true;
     }
 
@@ -81,12 +83,20 @@ public final class AssetCatalog {
 
     public static BufferedImage enemySprite(Enemy.Variant variant) {
         initialize();
-        if (variant == null || enemyAtlas == null) {
+        if (variant == null) {
             return null;
         }
         BufferedImage cached = ENEMY_SPRITES.get(variant);
         if (cached != null) {
             return cached;
+        }
+        cached = loadNormalizedEnemySprite(ENEMY_PATHS.get(variant));
+        if (cached != null) {
+            ENEMY_SPRITES.put(variant, cached);
+            return cached;
+        }
+        if (enemyAtlas == null) {
+            return null;
         }
         int cellWidth = enemyAtlas.getWidth() / 3;
         int cellHeight = enemyAtlas.getHeight() / 2;
@@ -98,9 +108,76 @@ public final class AssetCatalog {
                         || variant == Enemy.Variant.OVERSEER || variant == Enemy.Variant.OVERSEER_PRIME ? 5 : 0;
         int column = index % 3;
         int row = index / 3;
-        cached = crop(enemyAtlas, column * cellWidth, row * cellHeight, cellWidth, cellHeight);
+        cached = normalizeEnemySprite(crop(enemyAtlas, column * cellWidth, row * cellHeight, cellWidth, cellHeight));
         ENEMY_SPRITES.put(variant, cached);
         return cached;
+    }
+
+    /**
+     * Cada função de combate possui um arquivo de sprite próprio. A separação evita
+     * recortes de uma arte promocional grande que, reduzida para 16 pixels, podia
+     * virar um quadrado sem silhueta reconhecível.
+     */
+    private static void configureEnemyPaths() {
+        ENEMY_PATHS.put(Enemy.Variant.SCOUT, "/assets/generated/enemies/scout_ref.png");
+        ENEMY_PATHS.put(Enemy.Variant.TELEPORTER, "/assets/generated/enemies/enemy_artillery.png");
+        ENEMY_PATHS.put(Enemy.Variant.ARTILLERY, "/assets/generated/enemies/enemy_artillery.png");
+        ENEMY_PATHS.put(Enemy.Variant.WARDEN, "/assets/generated/enemies/enemy_shielder.png");
+        ENEMY_PATHS.put(Enemy.Variant.SENTINEL, "/assets/generated/enemies/enemy_shielder.png");
+        ENEMY_PATHS.put(Enemy.Variant.RAVAGER, "/assets/generated/enemies/scout_ref.png");
+        ENEMY_PATHS.put(Enemy.Variant.WARBRINGER, "/assets/generated/enemies/enemy_guardian.png");
+        ENEMY_PATHS.put(Enemy.Variant.OVERSEER, "/assets/generated/enemies/enemy_guardian.png");
+        ENEMY_PATHS.put(Enemy.Variant.OVERSEER_PRIME, "/assets/generated/enemies/enemy_guardian.png");
+        ENEMY_PATHS.put(Enemy.Variant.SAPPER, "/assets/generated/enemies/enemy_bomber.png");
+        ENEMY_PATHS.put(Enemy.Variant.PHANTOM, "/assets/generated/enemies/enemy_swarm.png");
+        ENEMY_PATHS.put(Enemy.Variant.GUARDIAN, "/assets/generated/enemies/enemy_guardian.png");
+        ENEMY_PATHS.put(Enemy.Variant.BOMBER, "/assets/generated/enemies/enemy_bomber.png");
+        ENEMY_PATHS.put(Enemy.Variant.SHIELDER, "/assets/generated/enemies/enemy_shielder.png");
+        ENEMY_PATHS.put(Enemy.Variant.SNIPER, "/assets/generated/enemies/enemy_artillery.png");
+        ENEMY_PATHS.put(Enemy.Variant.SWARM, "/assets/generated/enemies/enemy_swarm.png");
+    }
+
+    private static BufferedImage loadNormalizedEnemySprite(String path) {
+        BufferedImage source = path == null ? null : load(path);
+        // Enquanto um pacote específico é substituído, a silhueta base preserva
+        // leitura no jogo. Nunca se volta ao recorte grande e pouco legível só
+        // porque um único arquivo ainda não foi exportado.
+        if (source == null && !"/assets/generated/enemies/scout_ref.png".equals(path)) {
+            source = load("/assets/generated/enemies/scout_ref.png");
+        }
+        return source == null ? null : normalizeEnemySprite(source);
+    }
+
+    /**
+     * Garante que PNGs importados tenham transparência real e um envelope pequeno
+     * de pixels. O chroma verde é aceito apenas como proteção para editores que não
+     * preservem alfa; assets com alfa continuam inalterados.
+     */
+    private static BufferedImage normalizeEnemySprite(BufferedImage source) {
+        BufferedImage alphaSafe = new BufferedImage(source.getWidth(), source.getHeight(), BufferedImage.TYPE_INT_ARGB);
+        for (int y = 0; y < source.getHeight(); y++) {
+            for (int x = 0; x < source.getWidth(); x++) {
+                int argb = source.getRGB(x, y);
+                int red = (argb >>> 16) & 0xFF;
+                int green = (argb >>> 8) & 0xFF;
+                int blue = argb & 0xFF;
+                boolean chromaGreen = green > 220 && red < 45 && blue < 45;
+                alphaSafe.setRGB(x, y, chromaGreen ? 0x00000000 : argb);
+            }
+        }
+        BufferedImage trimmed = trimTransparent(alphaSafe);
+        BufferedImage normalized = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+        int available = 28;
+        double scale = Math.min((double) available / Math.max(1, trimmed.getWidth()),
+                (double) available / Math.max(1, trimmed.getHeight()));
+        int width = Math.max(1, (int) Math.round(trimmed.getWidth() * scale));
+        int height = Math.max(1, (int) Math.round(trimmed.getHeight() * scale));
+        Graphics2D graphics = normalized.createGraphics();
+        graphics.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_NEAREST_NEIGHBOR);
+        graphics.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_SPEED);
+        graphics.drawImage(trimmed, (32 - width) / 2, (32 - height) / 2, width, height, null);
+        graphics.dispose();
+        return normalized;
     }
 
     public static BufferedImage dungeonPortal() {
