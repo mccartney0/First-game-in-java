@@ -28,3 +28,8 @@
 - [x] Documentar o fluxo de criação, exportação e integração de inimigos e tiles do Content Studio ao Vale de Brumafolha.
 - [x] Registrar a recomendação técnica para evolução visual dos tiles sem alterar a lógica de colisão do RPG Clássico.
 - [x] Conectar o tile de grama exportado e o sprite Guardian do Content Studio ao renderizador do Vale de Brumafolha.
+- [x] Isolar a composição do RPG Clássico para impedir que HUDs do shooter e mini-mapa cubram sua cena.
+- [x] Substituir avisos de texto por diálogos com retrato, nome, falas e escolhas claras para Iara e o Guardião.
+- [x] Criar e integrar variações determinísticas de terreno 32×32 para grama, estrada e ruínas do Vale.
+- [x] Estender o Content Studio e seus manifestos com propriedades de inimigos e tiles personalizados.
+- [x] Atualizar a documentação e validar visualmente o novo fluxo do RPG Clássico.

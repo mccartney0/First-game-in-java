@@ -37,7 +37,7 @@ public final class MissionHud {
 	 * Coordenadas em espaço de janela (buffer * SCALE).
 	 */
 	public static void render(Graphics2D g2) {
-		if ("MENU".equals(Game.gameState) || "GAMEOVER".equals(Game.gameState)) {
+		if (Game.isClassicRpgMode() || "MENU".equals(Game.gameState) || "GAMEOVER".equals(Game.gameState)) {
 			return;
 		}
 		if (com.traduvertgames.main.OnboardingManager.isActive()) {

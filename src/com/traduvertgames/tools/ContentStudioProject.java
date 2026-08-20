@@ -23,8 +23,51 @@ import com.traduvertgames.world.LargeRpgMapGenerator;
 public final class ContentStudioProject {
 
     public enum MapKind { REGIONAL, OPEN_WORLD }
-    public enum TileStyle { GRAMA, PEDRA, AREIA, TECNOLOGIA }
+    public enum TileStyle { GRAMA, ESTRADA, RUINAS, PEDRA, AREIA, TECNOLOGIA }
     public enum EnemyRole { SCOUT, BOMBER, SHIELDER, ARTILLERY, SWARM, GUARDIAN }
+
+    public static final class TileProperties {
+        public final boolean walkable;
+        public final int movementCost;
+        public final String terrainTag;
+
+        public TileProperties(boolean walkable, int movementCost, String terrainTag) {
+            this.walkable = walkable;
+            this.movementCost = Math.max(1, movementCost);
+            this.terrainTag = safeTag(terrainTag, "ground");
+        }
+
+        public static TileProperties defaults(TileStyle style) {
+            if (style == TileStyle.RUINAS || style == TileStyle.PEDRA) {
+                return new TileProperties(true, 2, "ruins");
+            }
+            if (style == TileStyle.ESTRADA) return new TileProperties(true, 1, "road");
+            return new TileProperties(true, 1, "ground");
+        }
+    }
+
+    public static final class EnemyProperties {
+        public final int baseLife;
+        public final int baseDamage;
+        public final double speed;
+        public final String behaviorTag;
+
+        public EnemyProperties(int baseLife, int baseDamage, double speed, String behaviorTag) {
+            this.baseLife = Math.max(1, baseLife);
+            this.baseDamage = Math.max(0, baseDamage);
+            this.speed = Math.max(0.1, speed);
+            this.behaviorTag = safeTag(behaviorTag, "chase");
+        }
+
+        public static EnemyProperties defaults(EnemyRole role) {
+            if (role == EnemyRole.GUARDIAN) return new EnemyProperties(18, 5, 0.8, "guardian");
+            if (role == EnemyRole.ARTILLERY) return new EnemyProperties(7, 4, 1.1, "ranged");
+            if (role == EnemyRole.SHIELDER) return new EnemyProperties(10, 2, 0.9, "shield");
+            if (role == EnemyRole.BOMBER) return new EnemyProperties(6, 6, 1.2, "explosive");
+            if (role == EnemyRole.SWARM) return new EnemyProperties(3, 1, 1.7, "swarm");
+            return new EnemyProperties(5, 2, 1.4, "chase");
+        }
+    }
 
     private ContentStudioProject() {
     }
@@ -44,27 +87,68 @@ public final class ContentStudioProject {
     }
 
     public static File generateTile(TileStyle style, String name, File projectRoot) throws IOException {
+        return generateTile(style, name, 0, TileProperties.defaults(style == null ? TileStyle.GRAMA : style), projectRoot);
+    }
+
+    public static File generateTile(TileStyle style, String name, int variation, TileProperties properties, File projectRoot)
+            throws IOException {
+        TileStyle safeStyle = style == null ? TileStyle.GRAMA : style;
+        TileProperties safeProperties = properties == null ? TileProperties.defaults(safeStyle) : properties;
         File output = ensureDirectory(projectRoot, "res/assets/generated/tiles");
         File png = new File(output, safeName(name, "tile") + ".png");
         BufferedImage tile = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
         Graphics2D graphics = tile.createGraphics();
-        Color base = tileBase(style);
-        Color accent = tileAccent(style);
+        Color base = tileBase(safeStyle);
+        Color accent = tileAccent(safeStyle);
         graphics.setColor(base);
         graphics.fillRect(0, 0, 32, 32);
-        if (style == TileStyle.GRAMA) {
+        int variant = Math.floorMod(variation, 8);
+        if (safeStyle == TileStyle.GRAMA) {
+            int[][] tufts = {
+                {4, 5, 17, 3, 24, 17, 11, 23},
+                {2, 13, 12, 5, 22, 8, 27, 23},
+                {7, 3, 18, 13, 4, 24, 23, 25},
+                {3, 8, 13, 20, 26, 4, 24, 19}
+            };
+            int[] positions = tufts[variant % tufts.length];
             graphics.setColor(accent);
-            for (int x = 3; x < 32; x += 8) {
-                for (int y = 4 + (x % 3); y < 32; y += 9) graphics.fillRect(x, y, 2, 4);
+            for (int i = 0; i < positions.length; i += 2) {
+                int x = positions[i];
+                int y = positions[i + 1];
+                graphics.fillRect(x, y, 2, 5);
+                graphics.fillRect(x + 2, y + 2, 2, 3);
             }
-        } else if (style == TileStyle.PEDRA) {
+            graphics.setColor(new Color(48, 94, 57));
+            graphics.fillRect((variant * 9 + 5) % 26, (variant * 11 + 4) % 26, 4, 2);
+            graphics.setColor(new Color(144, 166, 91));
+            graphics.fillRect((variant * 7 + 11) % 28, (variant * 5 + 18) % 27, 2, 2);
+            if (variant == 2) {
+                graphics.setColor(new Color(205, 184, 113));
+                graphics.fillRect(15, 7, 2, 2);
+            }
+        } else if (safeStyle == TileStyle.ESTRADA) {
+            graphics.setColor(accent);
+            graphics.fillRect(0, 4 + variant % 3, 32, 2);
+            graphics.fillRect(0, 23 - variant % 4, 32, 2);
+            graphics.setColor(new Color(109, 82, 55));
+            for (int x = 3; x < 32; x += 9) graphics.fillRect(x, 12 + (x + variant) % 6, 5, 2);
+        } else if (safeStyle == TileStyle.RUINAS) {
+            graphics.setColor(accent);
+            graphics.fillRect(2, 3, 12, 7);
+            graphics.fillRect(17, 6, 13, 8);
+            graphics.fillRect(5, 18, 10, 10);
+            graphics.fillRect(19, 19, 9, 9);
+            graphics.setColor(new Color(42, 45, 54));
+            graphics.fillRect(14 + variant % 4, 0, 2, 15);
+            graphics.fillRect(0, 15 + variant % 3, 13, 2);
+        } else if (safeStyle == TileStyle.PEDRA) {
             graphics.setColor(accent);
             graphics.drawLine(0, 8, 31, 8);
             graphics.drawLine(0, 23, 31, 23);
             graphics.drawLine(10, 0, 7, 8);
             graphics.drawLine(22, 8, 25, 23);
             graphics.drawLine(15, 23, 12, 31);
-        } else if (style == TileStyle.AREIA) {
+        } else if (safeStyle == TileStyle.AREIA) {
             graphics.setColor(accent);
             for (int x = 2; x < 32; x += 7) {
                 for (int y = 3; y < 32; y += 8) graphics.fillRect(x, y, 2, 2);
@@ -78,12 +162,19 @@ public final class ContentStudioProject {
         }
         graphics.dispose();
         ImageIO.write(tile, "png", png);
-        writeAssetManifest(png, "tile", style == null ? TileStyle.GRAMA.name() : style.name(), 32, 32);
+        writeTileManifest(png, safeStyle, variant, safeProperties);
         return png;
     }
 
     public static File generateEnemySprite(EnemyRole role, Color body, Color accent, File projectRoot) throws IOException {
         EnemyRole safeRole = role == null ? EnemyRole.SCOUT : role;
+        return generateEnemySprite(safeRole, body, accent, EnemyProperties.defaults(safeRole), projectRoot);
+    }
+
+    public static File generateEnemySprite(EnemyRole role, Color body, Color accent, EnemyProperties properties,
+            File projectRoot) throws IOException {
+        EnemyRole safeRole = role == null ? EnemyRole.SCOUT : role;
+        EnemyProperties safeProperties = properties == null ? EnemyProperties.defaults(safeRole) : properties;
         File output = ensureDirectory(projectRoot, "res/assets/generated/enemies");
         String fileName = safeRole == EnemyRole.SCOUT ? "scout_ref.png"
                 : "enemy_" + safeRole.name().toLowerCase() + ".png";
@@ -97,7 +188,7 @@ public final class ContentStudioProject {
         drawEnemySilhouette(graphics, safeRole, primary, secondary);
         graphics.dispose();
         ImageIO.write(sprite, "png", png);
-        writeAssetManifest(png, "enemy", safeRole.name(), 32, 32);
+        writeEnemyManifest(png, safeRole, safeProperties);
         return png;
     }
 
@@ -162,6 +253,8 @@ public final class ContentStudioProject {
     }
 
     private static Color tileBase(TileStyle style) {
+        if (style == TileStyle.ESTRADA) return new Color(165, 130, 82);
+        if (style == TileStyle.RUINAS) return new Color(94, 95, 106);
         if (style == TileStyle.PEDRA) return new Color(100, 104, 110);
         if (style == TileStyle.AREIA) return new Color(192, 158, 96);
         if (style == TileStyle.TECNOLOGIA) return new Color(42, 56, 79);
@@ -169,6 +262,8 @@ public final class ContentStudioProject {
     }
 
     private static Color tileAccent(TileStyle style) {
+        if (style == TileStyle.ESTRADA) return new Color(211, 179, 119);
+        if (style == TileStyle.RUINAS) return new Color(146, 145, 153);
         if (style == TileStyle.PEDRA) return new Color(65, 70, 76);
         if (style == TileStyle.AREIA) return new Color(230, 195, 125);
         if (style == TileStyle.TECNOLOGIA) return new Color(81, 189, 206);
@@ -206,7 +301,22 @@ public final class ContentStudioProject {
         return candidate.isEmpty() ? fallback : candidate;
     }
 
-    private static void writeAssetManifest(File png, String kind, String variant, int width, int height) throws IOException {
+    private static void writeTileManifest(File png, TileStyle style, int variation, TileProperties properties)
+            throws IOException {
+        writeAssetManifest(png, "tile", style.name(), "  \"variation\": " + variation + ",\n"
+                + "  \"walkable\": " + properties.walkable + ",\n"
+                + "  \"movementCost\": " + properties.movementCost + ",\n"
+                + "  \"terrainTag\": \"" + properties.terrainTag + "\",\n");
+    }
+
+    private static void writeEnemyManifest(File png, EnemyRole role, EnemyProperties properties) throws IOException {
+        writeAssetManifest(png, "enemy", role.name(), "  \"baseLife\": " + properties.baseLife + ",\n"
+                + "  \"baseDamage\": " + properties.baseDamage + ",\n"
+                + "  \"speed\": " + properties.speed + ",\n"
+                + "  \"behaviorTag\": \"" + properties.behaviorTag + "\",\n");
+    }
+
+    private static void writeAssetManifest(File png, String kind, String variant, String propertiesJson) throws IOException {
         File manifest = new File(png.getParentFile(), png.getName().replaceFirst("\\.png$", ".json"));
         try (FileWriter writer = new FileWriter(manifest, StandardCharsets.UTF_8)) {
             writer.write("{\n");
@@ -214,10 +324,16 @@ public final class ContentStudioProject {
             writer.write("  \"kind\": \"" + kind + "\",\n");
             writer.write("  \"variant\": \"" + variant + "\",\n");
             writer.write("  \"file\": \"" + png.getName() + "\",\n");
-            writer.write("  \"width\": " + width + ",\n");
-            writer.write("  \"height\": " + height + ",\n");
+            writer.write("  \"width\": 32,\n");
+            writer.write("  \"height\": 32,\n");
+            writer.write(propertiesJson);
             writer.write("  \"alphaRequired\": true\n");
             writer.write("}\n");
         }
+    }
+
+    private static String safeTag(String value, String fallback) {
+        String candidate = value == null ? "" : value.trim().toLowerCase().replaceAll("[^a-z0-9_-]+", "_");
+        return candidate.isEmpty() ? fallback : candidate;
     }
 }

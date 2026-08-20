@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "tile",
+  "variant": "GRAMA",
+  "file": "brumafolha_grass_3.png",
+  "width": 32,
+  "height": 32,
+  "variation": 3,
+  "walkable": true,
+  "movementCost": 1,
+  "terrainTag": "ground",
+  "alphaRequired": true
+}

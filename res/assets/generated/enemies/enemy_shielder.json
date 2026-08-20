@@ -5,5 +5,9 @@
   "file": "enemy_shielder.png",
   "width": 32,
   "height": 32,
+  "baseLife": 10,
+  "baseDamage": 2,
+  "speed": 0.9,
+  "behaviorTag": "shield",
   "alphaRequired": true
 }

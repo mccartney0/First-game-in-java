@@ -63,7 +63,7 @@ public class UI {
 		// No menu o jogador ainda não tem valores de jogo; desenhar a HUD aqui
 		// mostraria "VIDA 0/100" por baixo dos painéis. A HUD só aparece durante
 		// a partida (NORMAL, SHOP, LEVELUP, LEVELSELECT).
-		if ("MENU".equals(Game.gameState) || "GAMEOVER".equals(Game.gameState)) {
+		if (Game.isClassicRpgMode() || "MENU".equals(Game.gameState) || "GAMEOVER".equals(Game.gameState)) {
 			return;
 		}
 

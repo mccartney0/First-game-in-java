@@ -60,19 +60,19 @@ public final class RpgMap {
         int firstY = Math.max(0, (int) Math.floor(cameraY / TILE_SIZE) - 1);
         int lastX = Math.min(WIDTH_TILES, firstX + viewportWidth / TILE_SIZE + 3);
         int lastY = Math.min(HEIGHT_TILES, firstY + viewportHeight / TILE_SIZE + 3);
-        BufferedImage grassTile = AssetCatalog.contentTile("brumafolha_grass");
         for (int y = firstY; y < lastY; y++) {
             for (int x = firstX; x < lastX; x++) {
                 char tile = tileAt(x, y);
                 int drawX = x * TILE_SIZE - (int) cameraX;
                 int drawY = y * TILE_SIZE - (int) cameraY;
-                if (tile == 'g' && grassTile != null) {
-                    g.drawImage(grassTile, drawX, drawY, TILE_SIZE, TILE_SIZE, null);
+                BufferedImage texture = terrainTexture(tile, x, y);
+                if (texture != null) {
+                    g.drawImage(texture, drawX, drawY, TILE_SIZE, TILE_SIZE, null);
                 } else {
                     g.setColor(colorFor(tile));
                     g.fillRect(drawX, drawY, TILE_SIZE + 1, TILE_SIZE + 1);
                 }
-                drawTileDetail(g, tile, drawX, drawY, x, y);
+                if (texture == null) drawTileDetail(g, tile, drawX, drawY, x, y);
             }
         }
         drawLandmarkLabels(g, cameraX, cameraY);
@@ -88,6 +88,37 @@ public final class RpgMap {
         case 'r': return new Color(103, 91, 87);
         default: return new Color(91, 139, 76);
         }
+    }
+
+    /**
+     * A variante é derivada apenas da posição. Assim não há cintilação entre
+     * frames, save/load ou máquinas, e a grade física continua 32×32.
+     */
+    public static int terrainVariantFor(char tile, int tileX, int tileY, int variantCount) {
+        if (variantCount <= 1) return 0;
+        int hash = tileX * 73856093 ^ tileY * 19349663 ^ tile * 83492791;
+        return Math.floorMod(hash, variantCount);
+    }
+
+    private BufferedImage terrainTexture(char tile, int tileX, int tileY) {
+        String prefix;
+        int variants;
+        if (tile == 'g') {
+            prefix = "brumafolha_grass";
+            variants = 4;
+        } else if (tile == '.') {
+            prefix = "brumafolha_road";
+            variants = 3;
+        } else if (tile == 'r') {
+            prefix = "brumafolha_ruins";
+            variants = 3;
+        } else {
+            return null;
+        }
+        int variant = terrainVariantFor(tile, tileX, tileY, variants);
+        BufferedImage texture = AssetCatalog.contentTile(prefix + "_" + variant);
+        if (texture == null && tile == 'g') texture = AssetCatalog.contentTile("brumafolha_grass");
+        return texture;
     }
 
     private void drawTileDetail(Graphics g, char tile, int x, int y, int tileX, int tileY) {

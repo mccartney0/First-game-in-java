@@ -26,6 +26,12 @@ public final class ClassicRpgMode {
         COMPLETE
     }
 
+    private enum DialogueOutcome {
+        NONE,
+        ACCEPT_GUARDIAN_HUNT,
+        COMPLETE_GUARDIAN_HUNT
+    }
+
     private final RpgMap map = new RpgMap();
     private RpgPlayerController player;
     private RpgCharacterStats character;
@@ -41,6 +47,11 @@ public final class ClassicRpgMode {
     private QuestStage questStage = QuestStage.FIND_GUIDE;
     private int wardenLife = 3;
     private int attackFrames;
+    private boolean dialogueActive;
+    private String dialogueSpeaker = "";
+    private String[] dialogueLines = new String[0];
+    private int dialogueLine;
+    private DialogueOutcome dialogueOutcome = DialogueOutcome.NONE;
 
     public void startNew(Game game) {
         active = true;
@@ -52,6 +63,7 @@ public final class ClassicRpgMode {
         questStage = QuestStage.FIND_GUIDE;
         wardenLife = 3;
         attackFrames = 0;
+        closeClassicDialogue();
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
         character = null;
@@ -70,6 +82,7 @@ public final class ClassicRpgMode {
         questStage = stageValue(data == null ? null : data.get("questStage"));
         wardenLife = Math.max(0, intValue(data == null ? null : data.get("wardenLife"), 3));
         attackFrames = 0;
+        closeClassicDialogue();
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
         character = RpgCharacterStats.deserialize(asMap(data == null ? null : data.get("character")));
@@ -83,7 +96,7 @@ public final class ClassicRpgMode {
     public void update() {
         if (!active) return;
         if (noticeFrames > 0) noticeFrames--;
-        if (choosingArchetype || characterSheetOpen || character == null) return;
+        if (choosingArchetype || characterSheetOpen || dialogueActive || character == null) return;
         player.update();
         playedFrames++;
         if (attackFrames > 0) attackFrames--;
@@ -126,6 +139,15 @@ public final class ClassicRpgMode {
             if (code == KeyEvent.VK_ESCAPE || code == KeyEvent.VK_C) {
                 characterSheetOpen = false;
                 return true;
+            }
+            return true;
+        }
+        if (dialogueActive) {
+            if (code == KeyEvent.VK_ESCAPE) {
+                closeClassicDialogue();
+            } else if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE
+                    || code == KeyEvent.VK_R || code == KeyEvent.VK_E) {
+                advanceClassicDialogue();
             }
             return true;
         }
@@ -182,6 +204,13 @@ public final class ClassicRpgMode {
     private void interact() {
         if (character == null || player == null) return;
         if (!isNearGuide()) {
+            if (questStage == QuestStage.DEFEAT_WARDEN && isNearWarden()) {
+                beginClassicDialogue("Guardião do Bosque", new String[] {
+                        "Raízes feridas. Pedras vazias. Ainda assim você caminha até mim.",
+                        "Mostre que sua vontade é mais forte que a corrupção."
+                }, DialogueOutcome.NONE);
+                return;
+            }
             if (questStage == QuestStage.DEFEAT_WARDEN) {
                 showNotice("Siga pela Estrada Antiga até o Bosque dos Sussurros.");
             } else if (questStage == QuestStage.RETURN_TO_GUIDE) {
@@ -194,20 +223,63 @@ public final class ClassicRpgMode {
             return;
         }
         if (questStage == QuestStage.FIND_GUIDE) {
+            beginClassicDialogue("Iara", new String[] {
+                    "Você chegou na hora certa. O Bosque dos Sussurros deixou de responder aos nossos chamados.",
+                    "O Guardião não nasceu cruel; a corrupção o prendeu às ruínas. Vá pela Estrada Antiga.",
+                    "Quando ele cair, volte para mim. Não o deixe sozinho na escuridão."
+            }, DialogueOutcome.ACCEPT_GUARDIAN_HUNT);
+        } else if (questStage == QuestStage.RETURN_TO_GUIDE) {
+            beginClassicDialogue("Iara", new String[] {
+                    "Eu ouvi o bosque respirar antes mesmo de você cruzar a ponte.",
+                    "O Guardião está livre. Brumafolha terá uma noite tranquila graças a você.",
+                    "Leve esta bênção: ela restaura suas forças e marca o começo da sua jornada."
+            }, DialogueOutcome.COMPLETE_GUARDIAN_HUNT);
+        } else if (questStage == QuestStage.COMPLETE) {
+            beginClassicDialogue("Iara", new String[] {
+                    "As Ruínas do Sino ainda guardam segredos. Quando estiver pronto, elas serão sua próxima expedição."
+            }, DialogueOutcome.NONE);
+        } else {
+            showNotice("Iara: siga a Estrada Antiga até o Bosque dos Sussurros.");
+        }
+    }
+
+    private void beginClassicDialogue(String speaker, String[] lines, DialogueOutcome outcome) {
+        dialogueSpeaker = speaker == null ? "" : speaker;
+        dialogueLines = lines == null ? new String[0] : lines;
+        dialogueLine = 0;
+        dialogueOutcome = outcome == null ? DialogueOutcome.NONE : outcome;
+        dialogueActive = dialogueLines.length > 0;
+        player.setUp(false);
+        player.setDown(false);
+        player.setLeft(false);
+        player.setRight(false);
+    }
+
+    private void advanceClassicDialogue() {
+        if (!dialogueActive) return;
+        dialogueLine++;
+        if (dialogueLine < dialogueLines.length) return;
+        DialogueOutcome outcome = dialogueOutcome;
+        closeClassicDialogue();
+        if (outcome == DialogueOutcome.ACCEPT_GUARDIAN_HUNT) {
             questStage = QuestStage.DEFEAT_WARDEN;
             objective = objectiveFor(questStage);
-            showNotice("Iara: algo corrompeu o bosque. Derrote o Guardião e volte aqui.");
-        } else if (questStage == QuestStage.RETURN_TO_GUIDE) {
+            showNotice("Nova missão: siga a Estrada Antiga até o Bosque dos Sussurros.");
+        } else if (outcome == DialogueOutcome.COMPLETE_GUARDIAN_HUNT) {
             questStage = QuestStage.COMPLETE;
             objective = objectiveFor(questStage);
             character.gainExperience(90);
             character.restoreResources();
-            showNotice("Iara: o vale respira de novo. +90 XP e recursos restaurados.");
-        } else if (questStage == QuestStage.COMPLETE) {
-            showNotice("Iara: as Ruínas do Sino serão a próxima expedição.");
-        } else {
-            showNotice("Iara: siga a Estrada Antiga até o Bosque dos Sussurros.");
+            showNotice("Missão concluída: +90 XP e recursos restaurados.");
         }
+    }
+
+    private void closeClassicDialogue() {
+        dialogueActive = false;
+        dialogueSpeaker = "";
+        dialogueLines = new String[0];
+        dialogueLine = 0;
+        dialogueOutcome = DialogueOutcome.NONE;
     }
 
     private void strikeWarden() {
@@ -332,6 +404,7 @@ public final class ClassicRpgMode {
         }
         if (character != null) drawHud(g, width, height);
         if (characterSheetOpen) renderCharacterSheet(g, width, height);
+        if (dialogueActive) renderClassicDialogue(g, width, height);
         if (noticeFrames > 0 && notice != null && !notice.isEmpty()) {
             g.setFont(new Font("Arial", Font.BOLD, 15));
             int textWidth = g.getFontMetrics().stringWidth(notice);
@@ -342,6 +415,32 @@ public final class ClassicRpgMode {
             g.setColor(new Color(248, 228, 167));
             g.drawString(notice, x, y);
         }
+    }
+
+    private void renderClassicDialogue(Graphics g, int width, int height) {
+        String line = dialogueLine >= 0 && dialogueLine < dialogueLines.length ? dialogueLines[dialogueLine] : "";
+        int panelX = 28;
+        int panelY = height - 174;
+        int panelWidth = width - 56;
+        int panelHeight = 142;
+        g.setColor(new Color(8, 15, 22, 236));
+        g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 12, 12);
+        g.setColor(new Color(223, 186, 104));
+        g.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 12, 12);
+        g.setColor("Iara".equals(dialogueSpeaker) ? new Color(151, 80, 111) : new Color(59, 69, 94));
+        g.fillRoundRect(panelX + 14, panelY + 16, 86, 86, 8, 8);
+        g.setColor(new Color(246, 213, 174));
+        g.fillOval(panelX + 39, panelY + 28, 36, 38);
+        g.setColor(new Color(238, 221, 161));
+        g.setFont(new Font("Arial", Font.BOLD, 18));
+        g.drawString(dialogueSpeaker, panelX + 116, panelY + 31);
+        g.setColor(Color.WHITE);
+        g.setFont(new Font("Arial", Font.PLAIN, 15));
+        drawWrapped(g, line, panelX + 116, panelY + 58, panelWidth - 140);
+        g.setColor(new Color(190, 203, 210));
+        g.setFont(new Font("Arial", Font.PLAIN, 12));
+        g.drawString("Enter / Espaço para continuar    " + (dialogueLine + 1) + "/" + dialogueLines.length,
+                panelX + 116, panelY + panelHeight - 18);
     }
 
     private void drawPlayer(Graphics g) {

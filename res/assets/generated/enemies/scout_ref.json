@@ -5,5 +5,9 @@
   "file": "scout_ref.png",
   "width": 32,
   "height": 32,
+  "baseLife": 5,
+  "baseDamage": 2,
+  "speed": 1.4,
+  "behaviorTag": "chase",
   "alphaRequired": true
 }

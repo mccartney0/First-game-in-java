@@ -1051,9 +1051,6 @@ if ((questCompletedPending || isTransitionCooldown()
 					FloatingText.render(g, SCALE);
 					UltimateAbility.render(g);
 				}
-				if (classicRpg) {
-					classicRpgMode.renderOverlay(g);
-				}
 			g.dispose();
 
                 g = bs.getDrawGraphics();
@@ -1117,7 +1114,7 @@ if ((questCompletedPending || isTransitionCooldown()
 		// Rodada 21: o card de estatísticas também conta como transição.
 		// Rodada 22: o inventário aberto também oculta a HUD de combate (o painel
 		// ocupa o centro inferior e o jogador não está em combate ativo).
-	boolean hidingHud = questCompletedPending || showLevelTransition > 0
+		boolean hidingHud = classicRpg || questCompletedPending || showLevelTransition > 0
 				|| com.traduvertgames.graficos.PhaseStatsScreen.isShowing()
 				|| InventoryManager.isOpen();
 if (!hidingHud) {
@@ -1141,14 +1138,18 @@ if (!hidingHud) {
 		// ui.renderOverlay é desenhado por último para que a HUD compacta
 		// (e os cards do painel tático) fiquem sobre o overlay escuro da loja
 		// e sobre os demais painéis, sem parecer esmaecida no fundo.
-	ui.renderOverlay(overlayG);
+		if (!classicRpg) {
+			ui.renderOverlay(overlayG);
+		}
 	if (!hidingHud) {
 			DynamicEventManager.render(overlayG);
 		com.traduvertgames.graficos.MissionHud.render(overlayG);
 		}
 
-		com.traduvertgames.graficos.VictoryCutscene.render(overlayG, SCALE);
-		com.traduvertgames.graficos.PhaseStatsScreen.render(overlayG, SCALE);
+		if (!classicRpg) {
+			com.traduvertgames.graficos.VictoryCutscene.render(overlayG, SCALE);
+			com.traduvertgames.graficos.PhaseStatsScreen.render(overlayG, SCALE);
+		}
 	// OBS: o dispose do overlayG foi MOVIDO para o final do render — antes ele
 	// ficava aqui, logo após a HUD, e todos os overlays seguintes (dano, diálogos,
 	// onboarding, seleção de arma, menu, cutscene de vitória, stats, level-up,
@@ -1161,14 +1162,20 @@ if (!hidingHud) {
 		overlayG.fillRect(0, 0, scaledWidth, scaledHeight);
 		damageOverlayFrames--;
 	}
-	DialogueManager.render(overlayG);
-	// Inventário (rodada 22): renderizado após o diálogo para ficar por cima.
-	InventoryManager.render(overlayG);
-	OnboardingManager.render(overlayG);
+		if (!classicRpg) {
+			DialogueManager.render(overlayG);
+			// Inventário (rodada 22): renderizado após o diálogo para ficar por cima.
+			InventoryManager.render(overlayG);
+			OnboardingManager.render(overlayG);
+		}
 	// A tela de escolha de arma inicial é desenhada por cima de tudo (inclusive
 	// do menu de pausa): durante a seleção o estado é MENU com pause=true, mas o
 	// menu principal não deve aparecer por cima das opções de arma.
-	renderInitialWeaponSelect(overlayG, scaledWidth, scaledHeight);
+		if (!classicRpg) {
+			renderInitialWeaponSelect(overlayG, scaledWidth, scaledHeight);
+		} else {
+			classicRpgMode.renderOverlay(overlayG);
+		}
 
 		if ("GAMEOVER".equals(gameState)) {
                         Graphics2D g2 = overlayG;

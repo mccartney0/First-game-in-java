@@ -5,5 +5,9 @@
   "file": "enemy_swarm.png",
   "width": 32,
   "height": 32,
+  "baseLife": 3,
+  "baseDamage": 1,
+  "speed": 1.7,
+  "behaviorTag": "swarm",
   "alphaRequired": true
 }

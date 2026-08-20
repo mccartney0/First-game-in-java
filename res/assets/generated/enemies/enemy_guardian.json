@@ -5,5 +5,9 @@
   "file": "enemy_guardian.png",
   "width": 32,
   "height": 32,
+  "baseLife": 18,
+  "baseDamage": 5,
+  "speed": 0.8,
+  "behaviorTag": "guardian",
   "alphaRequired": true
 }

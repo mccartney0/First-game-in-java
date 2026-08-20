@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "tile",
+  "variant": "RUINAS",
+  "file": "brumafolha_ruins_2.png",
+  "width": 32,
+  "height": 32,
+  "variation": 2,
+  "walkable": true,
+  "movementCost": 2,
+  "terrainTag": "ruins",
+  "alphaRequired": true
+}

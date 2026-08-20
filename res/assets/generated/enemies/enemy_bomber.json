@@ -5,5 +5,9 @@
   "file": "enemy_bomber.png",
   "width": 32,
   "height": 32,
+  "baseLife": 6,
+  "baseDamage": 6,
+  "speed": 1.2,
+  "behaviorTag": "explosive",
   "alphaRequired": true
 }

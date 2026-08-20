@@ -47,6 +47,27 @@ class ContentStudioProjectTest {
     }
 
     @Test
+    void studioSerializesCustomTileAndEnemyProperties() throws Exception {
+        ContentStudioProject.TileProperties tileProperties = new ContentStudioProject.TileProperties(false, 3, "ancient_ruins");
+        File tile = ContentStudioProject.generateTile(ContentStudioProject.TileStyle.RUINAS, "ruina_teste", 2,
+                tileProperties, root);
+        String tileManifest = ContentStudioProject.readManifestFor(tile);
+        assertTrue(tileManifest.contains("\"variation\": 2"));
+        assertTrue(tileManifest.contains("\"walkable\": false"));
+        assertTrue(tileManifest.contains("\"movementCost\": 3"));
+        assertTrue(tileManifest.contains("\"terrainTag\": \"ancient_ruins\""));
+
+        ContentStudioProject.EnemyProperties enemyProperties = new ContentStudioProject.EnemyProperties(27, 8, 0.7, "boss_guardian");
+        File enemy = ContentStudioProject.generateEnemySprite(ContentStudioProject.EnemyRole.GUARDIAN,
+                null, null, enemyProperties, root);
+        String enemyManifest = ContentStudioProject.readManifestFor(enemy);
+        assertTrue(enemyManifest.contains("\"baseLife\": 27"));
+        assertTrue(enemyManifest.contains("\"baseDamage\": 8"));
+        assertTrue(enemyManifest.contains("\"speed\": 0.7"));
+        assertTrue(enemyManifest.contains("\"behaviorTag\": \"boss_guardian\""));
+    }
+
+    @Test
     void valleyCanLoadDefaultContentStudioGrassAndGuardianAssets() {
         BufferedImage grass = AssetCatalog.contentTile("brumafolha_grass");
         assertNotNull(grass);

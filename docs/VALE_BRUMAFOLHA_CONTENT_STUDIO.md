@@ -21,20 +21,47 @@ No Linux ou macOS, use `./gradlew runContentStudio`. Para restaurar o pacote vis
 | **Inimigos** | Sprite PNG transparente de 32×32 e manifesto JSON. | `res/assets/generated/enemies/` |
 | **Manifesto** | Inspeção do JSON da última exportação. | Ao lado do arquivo exportado |
 
-## Criando um tile para Brumafolha
+## Criando tiles e variações para Brumafolha
 
-O terreno de grama comum do Vale é ligado ao asset `brumafolha_grass.png`. Para criar ou substituir esse tile, abra a aba **Tiles**, informe exatamente o nome `brumafolha_grass`, escolha **GRAMA** e clique em **Exportar tile 32×32**.
+O Vale agora escolhe uma variação fixa por coordenada. Isso quebra a repetição visual sem usar aleatoriedade por frame: o mesmo tile sempre recebe a mesma imagem ao abrir o mapa, salvar ou carregar o jogo.
+
+| Terreno | Variações integradas | Nomes de arquivo | Direção visual recomendada |
+| --- | --- | --- | --- |
+| Grama | 4 | `brumafolha_grass_0.png` a `brumafolha_grass_3.png` | Grama curta, moita escura, flor seca rara e solo exposto pontual. |
+| Estrada | 3 | `brumafolha_road_0.png` a `brumafolha_road_2.png` | Terra compactada, pedra pequena e marca de roda ou bota. |
+| Ruínas | 3 | `brumafolha_ruins_0.png` a `brumafolha_ruins_2.png` | Laje rachada, bloco tombado e musgo nas juntas. |
+
+O pacote padrão foi validado em escala nativa de 32×32: as variações de grama usam tufos agrupados, mancha de solo e detalhe claro pontual, evitando a malha regular que fazia o terreno parecer um padrão repetido.
+
+Na aba **Tiles**, informe um nome da matriz, escolha o estilo correspondente — **GRAMA**, **ESTRADA** ou **RUINAS** — defina o índice em **Variação** e clique em **Exportar tile 32×32**. Por exemplo, para substituir a segunda estrada, use o nome `brumafolha_road_1`, o estilo **ESTRADA** e a variação `1`.
 
 O aplicativo salva dois arquivos:
 
 | Arquivo | Função |
 | --- | --- |
-| `res/assets/generated/tiles/brumafolha_grass.png` | Arte desenhada em toda área de grama padrão do Vale. |
-| `res/assets/generated/tiles/brumafolha_grass.json` | Manifesto com tamanho, tipo e exigência de alfa. |
+| `res/assets/generated/tiles/brumafolha_grass_0.png` | Uma das quatro artes de grama que o renderizador distribui pelo Vale. |
+| `res/assets/generated/tiles/brumafolha_grass_0.json` | Manifesto com tamanho, tipo, variação e propriedades de terreno. |
 
-Depois de exportar, feche e abra o jogo novamente. O catálogo de assets mantém imagens em cache enquanto a aplicação está em execução. O renderizador do Vale aplica automaticamente o PNG a tiles de grama; o mapa e a colisão continuam idênticos.
+Depois de exportar, feche e abra o jogo novamente. O catálogo de assets mantém imagens em cache enquanto a aplicação está em execução. O renderizador do Vale aplica automaticamente as variações integradas; o mapa e a colisão continuam idênticos.
 
-Para criar tiles experimentais sem substituir a grama já integrada, use nomes próprios como `brumafolha_pedra_01` ou `brumafolha_ruinas_01`. Eles serão exportados de forma válida, mas ainda precisam de um vínculo de renderização antes de aparecer no Vale. O próximo passo recomendado é ampliar `RpgMap` com uma tabela de materiais, mantendo a mesma grade de colisão.
+Para criar tiles experimentais sem substituir uma matriz já integrada, use nomes próprios como `brumafolha_pedra_01` ou `brumafolha_vila_01`. Eles serão exportados de forma válida, mas ainda precisam de um vínculo de renderização antes de aparecer no Vale. O próximo passo recomendado é ampliar `RpgMap` com uma tabela de materiais, mantendo a mesma grade de colisão.
+
+### Lógica de escolha por posição
+
+O método `RpgMap.terrainVariantFor(...)` já implementa a ideia abaixo. Ele mistura tipo de terreno e coordenadas do tile; por isso o resultado é estável e fica dentro do intervalo de variantes.
+
+```java
+public static int terrainVariantFor(char terrain, int tileX, int tileY, int variantCount) {
+    if (variantCount <= 1) return 0;
+    int hash = tileX * 73856093 ^ tileY * 19349663 ^ terrain * 83492791;
+    return Math.floorMod(hash, variantCount);
+}
+
+int variant = terrainVariantFor('g', x, y, 4);
+BufferedImage grass = AssetCatalog.contentTile("brumafolha_grass_" + variant);
+```
+
+> Não use `new Random()` dentro de `render()`: a variante mudaria a cada frame, causando cintilação e impedindo um visual coerente.
 
 ## Criando inimigos e ligando-os à missão
 
@@ -52,6 +79,32 @@ Na aba **Inimigos**, escolha um papel de combate e uma paleta. A ferramenta cria
 O inimigo da missão **Guardião do Bosque** usa diretamente `enemy_guardian.png`. Para trocar sua arte, gere novamente o papel **GUARDIAN** e reinicie o jogo. A luta, os três pontos de integridade, o custo de 8 de stamina por ataque e a recompensa permanecem os mesmos.
 
 > Um sprite destinado ao jogo deve preservar silhueta distinta, alfa real no fundo e contraste contra terreno verde, cinza e escuro. Evite moldura, texto, círculo de HUD e fundo xadrez dentro do PNG.
+
+## Propriedades personalizadas no Content Studio
+
+As abas **Tiles** e **Inimigos** agora escrevem metadados no manifesto junto do PNG. Esses campos servem como contrato de produção; eles não alteram automaticamente o balanceamento de um inimigo já existente até que o código daquele modo passe a lê-los.
+
+| Tipo de export | Campos disponíveis | Exemplo de uso futuro |
+| --- | --- | --- |
+| Tile | `variation`, `walkable`, `movementCost`, `terrainTag` | Bloquear uma ponte quebrada, marcar pântano lento ou distinguir ruínas antigas. |
+| Inimigo | `baseLife`, `baseDamage`, `speed`, `behaviorTag` | Declarar um elite, um inimigo de tiro à distância ou um chefe de comportamento próprio. |
+
+Na interface, preencha os novos campos antes de exportar. Um Guardião personalizado, por exemplo, pode usar vida `27`, dano `8`, velocidade `0.7` e comportamento `boss_guardian`. O arquivo JSON resultante terá a estrutura:
+
+```json
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "GUARDIAN",
+  "baseLife": 27,
+  "baseDamage": 8,
+  "speed": 0.7,
+  "behaviorTag": "boss_guardian",
+  "alphaRequired": true
+}
+```
+
+Para adicionar uma propriedade nova ao script, crie o campo em `TileProperties` ou `EnemyProperties` em `ContentStudioProject`, exponha-o na tela `ContentStudioApp` e inclua-o no método de manifesto correspondente. Em seguida, acrescente uma regressão em `ContentStudioProjectTest` e, quando a propriedade afetar gameplay, faça o carregador do modo interessado interpretar o valor explicitamente.
 
 ## Criando mapas personalizados
 

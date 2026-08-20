@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "tile",
+  "variant": "ESTRADA",
+  "file": "brumafolha_road_1.png",
+  "width": 32,
+  "height": 32,
+  "variation": 1,
+  "walkable": true,
+  "movementCost": 1,
+  "terrainTag": "road",
+  "alphaRequired": true
+}

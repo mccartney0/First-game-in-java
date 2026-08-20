@@ -15,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
+import javax.swing.JCheckBox;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
@@ -118,11 +119,23 @@ public final class ContentStudioApp {
         JPanel panel = formPanel();
         JTextField name = new JTextField("piso_brumafolha", 16);
         JComboBox<ContentStudioProject.TileStyle> style = new JComboBox<ContentStudioProject.TileStyle>(ContentStudioProject.TileStyle.values());
+        JSpinner variation = new JSpinner(new SpinnerNumberModel(0, 0, 7, 1));
+        JCheckBox walkable = new JCheckBox("Caminhável", true);
+        walkable.setOpaque(false);
+        JTextField movementCost = new JTextField("1", 4);
+        JTextField terrainTag = new JTextField("ground", 12);
         JButton generate = new JButton("Exportar tile 32×32");
-        generate.addActionListener(event -> runExport("Tile", () ->
-                ContentStudioProject.generateTile((ContentStudioProject.TileStyle) style.getSelectedItem(), name.getText(), projectRoot)));
+        generate.addActionListener(event -> runExport("Tile", () -> {
+            int cost = Integer.parseInt(movementCost.getText().trim());
+            ContentStudioProject.TileProperties properties = new ContentStudioProject.TileProperties(
+                    walkable.isSelected(), cost, terrainTag.getText());
+            return ContentStudioProject.generateTile((ContentStudioProject.TileStyle) style.getSelectedItem(), name.getText(),
+                    (Integer) variation.getValue(), properties, projectRoot);
+        }));
         addField(panel, 0, "Nome do arquivo", name); addField(panel, 1, "Estilo", style);
-        addField(panel, 2, "", generate); addPreview(panel, 3);
+        addField(panel, 2, "Variação", variation); addField(panel, 3, "Colisão", walkable);
+        addField(panel, 4, "Custo de movimento", movementCost); addField(panel, 5, "Tag de terreno", terrainTag);
+        addField(panel, 6, "", generate); addPreview(panel, 7);
         return panel;
     }
 
@@ -130,13 +143,23 @@ public final class ContentStudioApp {
         JPanel panel = formPanel();
         JComboBox<ContentStudioProject.EnemyRole> role = new JComboBox<ContentStudioProject.EnemyRole>(ContentStudioProject.EnemyRole.values());
         JComboBox<String> palette = new JComboBox<String>(new String[] { "Padrão do papel", "Íon ciano", "Ameaça rubra", "Musgo ácido" });
+        JSpinner baseLife = new JSpinner(new SpinnerNumberModel(5, 1, 999, 1));
+        JSpinner baseDamage = new JSpinner(new SpinnerNumberModel(2, 0, 999, 1));
+        JSpinner speed = new JSpinner(new SpinnerNumberModel(1.4, 0.1, 10.0, 0.1));
+        JTextField behavior = new JTextField("chase", 12);
         JButton generate = new JButton("Exportar sprite transparente 32×32");
         generate.addActionListener(event -> runExport("Sprite", () -> {
             Color[] colors = paletteFor((String) palette.getSelectedItem());
-            return ContentStudioProject.generateEnemySprite((ContentStudioProject.EnemyRole) role.getSelectedItem(), colors[0], colors[1], projectRoot);
+            ContentStudioProject.EnemyProperties properties = new ContentStudioProject.EnemyProperties(
+                    (Integer) baseLife.getValue(), (Integer) baseDamage.getValue(),
+                    ((Number) speed.getValue()).doubleValue(), behavior.getText());
+            return ContentStudioProject.generateEnemySprite((ContentStudioProject.EnemyRole) role.getSelectedItem(),
+                    colors[0], colors[1], properties, projectRoot);
         }));
         addField(panel, 0, "Papel de combate", role); addField(panel, 1, "Paleta", palette);
-        addField(panel, 2, "", generate); addPreview(panel, 3);
+        addField(panel, 2, "Vida base", baseLife); addField(panel, 3, "Dano base", baseDamage);
+        addField(panel, 4, "Velocidade", speed); addField(panel, 5, "Comportamento", behavior);
+        addField(panel, 6, "", generate); addPreview(panel, 7);
         return panel;
     }
 

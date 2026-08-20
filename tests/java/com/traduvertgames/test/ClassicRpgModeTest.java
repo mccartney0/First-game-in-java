@@ -16,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.main.Menu;
 import com.traduvertgames.main.SaveManager;
+import com.traduvertgames.graficos.MissionHud;
+import com.traduvertgames.graficos.UI;
 import com.traduvertgames.rpg.ClassicRpgMode;
 import com.traduvertgames.rpg.RpgArchetype;
 import com.traduvertgames.rpg.RpgCharacterStats;
@@ -122,6 +124,26 @@ class ClassicRpgModeTest {
     }
 
     @Test
+    void classicModeSuppressesShooterHudAndUsesStableTerrainVariants() throws Exception {
+        Game game = GameTestFixture.newIsolatedGame();
+        game.startClassicRpg();
+        BufferedImage overlay = new BufferedImage(Game.WIDTH * Game.SCALE,
+                Game.HEIGHT * Game.SCALE, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = overlay.createGraphics();
+        new UI().renderOverlay(graphics);
+        MissionHud.render(graphics);
+        graphics.dispose();
+        assertEquals(0, overlay.getRGB(0, 0) >>> 24);
+        assertEquals(0, overlay.getRGB(40, 40) >>> 24);
+
+        int first = RpgMap.terrainVariantFor('g', 7, 9, 4);
+        assertEquals(first, RpgMap.terrainVariantFor('g', 7, 9, 4));
+        assertTrue(first >= 0 && first < 4);
+        assertTrue(RpgMap.terrainVariantFor('.', 13, 11, 3) < 3);
+        assertTrue(RpgMap.terrainVariantFor('r', 28, 17, 3) < 3);
+    }
+
+    @Test
     void classicSaveRoundTripRestoresMapCharacterAndPosition() throws Exception {
         Game game = GameTestFixture.newIsolatedGame();
         game.startClassicRpg();
@@ -154,6 +176,8 @@ class ClassicRpgModeTest {
 
         mode.getPlayer().setPosition(mode.getMap().getVillageGuideX(), mode.getMap().getVillageGuideY());
         game.keyPressed(key(game, KeyEvent.VK_R));
+        assertEquals("FIND_GUIDE", mode.getQuestStageForTest());
+        for (int i = 0; i < 3; i++) game.keyPressed(key(game, KeyEvent.VK_ENTER));
         assertEquals("DEFEAT_WARDEN", mode.getQuestStageForTest());
 
         mode.getPlayer().setPosition(mode.getMap().getWardenX(), mode.getMap().getWardenY());
@@ -163,6 +187,7 @@ class ClassicRpgModeTest {
 
         mode.getPlayer().setPosition(mode.getMap().getVillageGuideX(), mode.getMap().getVillageGuideY());
         game.keyPressed(key(game, KeyEvent.VK_E));
+        for (int i = 0; i < 3; i++) game.keyPressed(key(game, KeyEvent.VK_ENTER));
         assertEquals("COMPLETE", mode.getQuestStageForTest());
         assertTrue(mode.getCharacter().getExperience() > 0);
         assertEquals("COMPLETE", mode.serialize().get("questStage"));
