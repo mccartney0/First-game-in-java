@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "SWARM",
+  "file": "enemy_swarm.png",
+  "width": 32,
+  "height": 32,
+  "alphaRequired": true
+}

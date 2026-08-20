@@ -12,6 +12,20 @@ application {
     mainClass = 'com.traduvertgames.main.Game'
 }
 
+tasks.register('runContentStudio', JavaExec) {
+    group = 'application'
+    description = 'Abre o aplicativo desktop para gerar mapas, tiles, sprites e manifestos.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.traduvertgames.tools.ContentStudioApp'
+}
+
+tasks.register('generateDefaultEnemySprites', JavaExec) {
+    group = 'application'
+    description = 'Gera o pacote-base de sprites distintos e transparentes para inimigos.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.traduvertgames.tools.ContentStudioAssetBootstrap'
+}
+
 sourceSets {
     main.java.srcDirs = ['src','res']
     main.resources.srcDirs = ['src','res']

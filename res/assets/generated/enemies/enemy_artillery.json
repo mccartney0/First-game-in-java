@@ -1,0 +1,9 @@
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "ARTILLERY",
+  "file": "enemy_artillery.png",
+  "width": 32,
+  "height": 32,
+  "alphaRequired": true
+}
