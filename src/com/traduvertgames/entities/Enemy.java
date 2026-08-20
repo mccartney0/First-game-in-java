@@ -145,6 +145,25 @@ public class Enemy extends Entity {
         }
     }
 
+    /** Traduz o perfil de IA gravado pelo Content Studio para uma variante que a engine já executa. */
+    public static Variant variantForContentBehavior(String behaviorTag) {
+        String tag = behaviorTag == null ? "" : behaviorTag.trim().toLowerCase();
+        if ("bombard".equals(tag)) return Variant.ARTILLERY;
+        if ("detonate".equals(tag)) return Variant.BOMBER;
+        if ("shield".equals(tag)) return Variant.SHIELDER;
+        if ("swarm".equals(tag)) return Variant.SWARM;
+        if ("ambush".equals(tag)) return Variant.SAPPER;
+        if ("drain".equals(tag)) return Variant.PHANTOM;
+        if ("regenerate".equals(tag)) return Variant.GUARDIAN;
+        if ("snipe".equals(tag)) return Variant.SNIPER;
+        return Variant.SCOUT;
+    }
+
+    /** Cria um inimigo de um manifesto Content Studio usando o perfil de IA exportado. */
+    public static Enemy spawnFromContentBehavior(int x, int y, String behaviorTag) {
+        return new Enemy(x, y, 16, 16, Entity.ENEMY_EN, variantForContentBehavior(behaviorTag));
+    }
+
     private EnemyState state = EnemyState.PATROLLING;
     private Vector2i spawnTile;
     private Vector2i patrolTarget;

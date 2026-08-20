@@ -150,19 +150,24 @@ public final class ContentStudioApp {
         JSpinner baseLife = new JSpinner(new SpinnerNumberModel(5, 1, 999, 1));
         JSpinner baseDamage = new JSpinner(new SpinnerNumberModel(2, 0, 999, 1));
         JSpinner speed = new JSpinner(new SpinnerNumberModel(1.4, 0.1, 10.0, 0.1));
-        JTextField behavior = new JTextField("chase", 12);
+        JComboBox<ContentStudioProject.EnemyBehavior> behavior =
+                new JComboBox<ContentStudioProject.EnemyBehavior>(ContentStudioProject.EnemyBehavior.values());
+        role.addActionListener(event -> behavior.setSelectedItem(
+                ContentStudioProject.behaviorForRole((ContentStudioProject.EnemyRole) role.getSelectedItem())));
+        behavior.setSelectedItem(ContentStudioProject.behaviorForRole((ContentStudioProject.EnemyRole) role.getSelectedItem()));
         JButton generate = new JButton("Exportar sprite transparente 32×32");
         generate.addActionListener(event -> runExport("Sprite", () -> {
             Color[] colors = paletteFor((String) palette.getSelectedItem());
             ContentStudioProject.EnemyProperties properties = new ContentStudioProject.EnemyProperties(
                     (Integer) baseLife.getValue(), (Integer) baseDamage.getValue(),
-                    ((Number) speed.getValue()).doubleValue(), behavior.getText());
+                    ((Number) speed.getValue()).doubleValue(),
+                    ((ContentStudioProject.EnemyBehavior) behavior.getSelectedItem()).getTag());
             return ContentStudioProject.generateEnemySprite((ContentStudioProject.EnemyRole) role.getSelectedItem(),
                     colors[0], colors[1], properties, projectRoot);
         }));
         addField(panel, 0, "Papel de combate", role); addField(panel, 1, "Paleta", palette);
         addField(panel, 2, "Vida base", baseLife); addField(panel, 3, "Dano base", baseDamage);
-        addField(panel, 4, "Velocidade", speed); addField(panel, 5, "Comportamento", behavior);
+        addField(panel, 4, "Velocidade", speed); addField(panel, 5, "Perfil de IA", behavior);
         addField(panel, 6, "", generate); addPreview(panel, 7);
         return panel;
     }

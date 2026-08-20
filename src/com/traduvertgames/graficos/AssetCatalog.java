@@ -130,12 +130,12 @@ public final class AssetCatalog {
         ENEMY_PATHS.put(Enemy.Variant.WARBRINGER, "/assets/generated/enemies/enemy_guardian.png");
         ENEMY_PATHS.put(Enemy.Variant.OVERSEER, "/assets/generated/enemies/enemy_guardian.png");
         ENEMY_PATHS.put(Enemy.Variant.OVERSEER_PRIME, "/assets/generated/enemies/enemy_guardian.png");
-        ENEMY_PATHS.put(Enemy.Variant.SAPPER, "/assets/generated/enemies/enemy_bomber.png");
-        ENEMY_PATHS.put(Enemy.Variant.PHANTOM, "/assets/generated/enemies/enemy_swarm.png");
+        ENEMY_PATHS.put(Enemy.Variant.SAPPER, "/assets/generated/enemies/enemy_sapper.png");
+        ENEMY_PATHS.put(Enemy.Variant.PHANTOM, "/assets/generated/enemies/enemy_stalker.png");
         ENEMY_PATHS.put(Enemy.Variant.GUARDIAN, "/assets/generated/enemies/enemy_guardian.png");
         ENEMY_PATHS.put(Enemy.Variant.BOMBER, "/assets/generated/enemies/enemy_bomber.png");
         ENEMY_PATHS.put(Enemy.Variant.SHIELDER, "/assets/generated/enemies/enemy_shielder.png");
-        ENEMY_PATHS.put(Enemy.Variant.SNIPER, "/assets/generated/enemies/enemy_artillery.png");
+        ENEMY_PATHS.put(Enemy.Variant.SNIPER, "/assets/generated/enemies/enemy_sniper.png");
         ENEMY_PATHS.put(Enemy.Variant.SWARM, "/assets/generated/enemies/enemy_swarm.png");
     }
 

@@ -8,6 +8,6 @@
   "baseLife": 7,
   "baseDamage": 4,
   "speed": 1.1,
-  "behaviorTag": "ranged",
+  "behaviorTag": "bombard",
   "alphaRequired": true
 }

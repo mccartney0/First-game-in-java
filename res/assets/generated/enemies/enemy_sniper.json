@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "SNIPER",
+  "file": "enemy_sniper.png",
+  "width": 32,
+  "height": 32,
+  "baseLife": 7,
+  "baseDamage": 7,
+  "speed": 0.55,
+  "behaviorTag": "snipe",
+  "alphaRequired": true
+}

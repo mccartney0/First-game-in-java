@@ -68,6 +68,20 @@ class ContentStudioProjectTest {
     }
 
     @Test
+    void studioExportsExplicitAiProfilesThatMapToRuntimeVariants() throws Exception {
+        GameTestFixture.newIsolatedGame();
+        ContentStudioProject.EnemyProperties sniper = ContentStudioProject.EnemyProperties.defaults(
+                ContentStudioProject.EnemyRole.SNIPER);
+        File sprite = ContentStudioProject.generateEnemySprite(ContentStudioProject.EnemyRole.SNIPER,
+                null, null, sniper, root);
+        assertTrue(ContentStudioProject.readManifestFor(sprite).contains("\"behaviorTag\": \"snipe\""));
+        assertEquals(Enemy.Variant.SNIPER, Enemy.variantForContentBehavior(sniper.behaviorTag));
+        assertEquals(Enemy.Variant.SAPPER, Enemy.variantForContentBehavior("ambush"));
+        assertEquals(Enemy.Variant.PHANTOM, Enemy.variantForContentBehavior("drain"));
+        assertEquals(Enemy.Variant.GUARDIAN, Enemy.variantForContentBehavior("regenerate"));
+    }
+
+    @Test
     void valleyCanLoadDefaultContentStudioGrassAndGuardianAssets() {
         BufferedImage grass = AssetCatalog.contentTile("brumafolha_grass");
         assertNotNull(grass);

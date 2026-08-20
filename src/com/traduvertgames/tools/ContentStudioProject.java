@@ -24,7 +24,38 @@ public final class ContentStudioProject {
 
     public enum MapKind { REGIONAL, OPEN_WORLD }
     public enum TileStyle { GRAMA, ESTRADA, RUINAS, PEDRA, AREIA, TECNOLOGIA }
-    public enum EnemyRole { SCOUT, BOMBER, SHIELDER, ARTILLERY, SWARM, GUARDIAN }
+    public enum EnemyRole { SCOUT, BOMBER, SHIELDER, ARTILLERY, SNIPER, SWARM, SAPPER, STALKER, GUARDIAN }
+
+    public enum EnemyBehavior {
+        HUNT("hunt", "Caçador — persegue em alcance médio"),
+        BOMBARD("bombard", "Artilheiro — mantém distância e dispara"),
+        DETONATE("detonate", "Demolidor — aproxima e explode"),
+        SHIELD("shield", "Protetor — fortalece aliados próximos"),
+        SWARM("swarm", "Enxame — pressiona em grupo"),
+        AMBUSH("ambush", "Emboscador — salta para a retaguarda"),
+        DRAIN("drain", "Drenador — persegue e drena recursos"),
+        REGENERATE("regenerate", "Guardião — resiste e se regenera"),
+        SNIPE("snipe", "Atirador — dispara de longo alcance");
+
+        private final String tag;
+        private final String displayName;
+
+        EnemyBehavior(String tag, String displayName) {
+            this.tag = tag;
+            this.displayName = displayName;
+        }
+
+        public String getTag() { return tag; }
+        public String getDisplayName() { return displayName; }
+        @Override public String toString() { return displayName; }
+
+        public static EnemyBehavior fromTag(String raw) {
+            if (raw != null) for (EnemyBehavior behavior : values()) {
+                if (behavior.tag.equalsIgnoreCase(raw.trim())) return behavior;
+            }
+            return HUNT;
+        }
+    }
 
     public static final class TileProperties {
         public final boolean walkable;
@@ -60,13 +91,30 @@ public final class ContentStudioProject {
         }
 
         public static EnemyProperties defaults(EnemyRole role) {
-            if (role == EnemyRole.GUARDIAN) return new EnemyProperties(18, 5, 0.8, "guardian");
-            if (role == EnemyRole.ARTILLERY) return new EnemyProperties(7, 4, 1.1, "ranged");
-            if (role == EnemyRole.SHIELDER) return new EnemyProperties(10, 2, 0.9, "shield");
-            if (role == EnemyRole.BOMBER) return new EnemyProperties(6, 6, 1.2, "explosive");
-            if (role == EnemyRole.SWARM) return new EnemyProperties(3, 1, 1.7, "swarm");
-            return new EnemyProperties(5, 2, 1.4, "chase");
+            EnemyRole safeRole = role == null ? EnemyRole.SCOUT : role;
+            EnemyBehavior behavior = behaviorForRole(safeRole);
+            if (safeRole == EnemyRole.GUARDIAN) return new EnemyProperties(18, 5, 0.8, behavior.getTag());
+            if (safeRole == EnemyRole.SNIPER) return new EnemyProperties(7, 7, 0.55, behavior.getTag());
+            if (safeRole == EnemyRole.ARTILLERY) return new EnemyProperties(7, 4, 1.1, behavior.getTag());
+            if (safeRole == EnemyRole.SHIELDER) return new EnemyProperties(10, 2, 0.9, behavior.getTag());
+            if (safeRole == EnemyRole.BOMBER) return new EnemyProperties(6, 6, 1.2, behavior.getTag());
+            if (safeRole == EnemyRole.SWARM) return new EnemyProperties(3, 1, 1.7, behavior.getTag());
+            if (safeRole == EnemyRole.SAPPER) return new EnemyProperties(4, 5, 1.5, behavior.getTag());
+            if (safeRole == EnemyRole.STALKER) return new EnemyProperties(6, 3, 1.4, behavior.getTag());
+            return new EnemyProperties(5, 2, 1.4, behavior.getTag());
         }
+    }
+
+    public static EnemyBehavior behaviorForRole(EnemyRole role) {
+        if (role == EnemyRole.GUARDIAN) return EnemyBehavior.REGENERATE;
+        if (role == EnemyRole.SNIPER) return EnemyBehavior.SNIPE;
+        if (role == EnemyRole.ARTILLERY) return EnemyBehavior.BOMBARD;
+        if (role == EnemyRole.SHIELDER) return EnemyBehavior.SHIELD;
+        if (role == EnemyRole.BOMBER) return EnemyBehavior.DETONATE;
+        if (role == EnemyRole.SWARM) return EnemyBehavior.SWARM;
+        if (role == EnemyRole.SAPPER) return EnemyBehavior.AMBUSH;
+        if (role == EnemyRole.STALKER) return EnemyBehavior.DRAIN;
+        return EnemyBehavior.HUNT;
     }
 
     private ContentStudioProject() {
@@ -254,6 +302,23 @@ public final class ContentStudioProject {
             graphics.setColor(accent);
             graphics.fillPolygon(new Polygon(new int[] {10, 4, 11}, new int[] {12, 7, 18}, 3));
             graphics.fillPolygon(new Polygon(new int[] {22, 28, 21}, new int[] {12, 7, 18}, 3));
+        } else if (role == EnemyRole.SNIPER) {
+            graphics.fillRoundRect(10, 11, 12, 14, 4, 4);
+            graphics.setColor(accent);
+            graphics.fillRect(19, 4, 3, 16);
+            graphics.fillRect(16, 4, 8, 3);
+        } else if (role == EnemyRole.SAPPER) {
+            graphics.fillRoundRect(8, 10, 16, 15, 6, 6);
+            graphics.setColor(accent);
+            graphics.fillRect(13, 5, 6, 7);
+            graphics.fillRect(6, 22, 5, 4);
+            graphics.fillRect(21, 22, 5, 4);
+        } else if (role == EnemyRole.STALKER) {
+            graphics.fillRoundRect(9, 8, 14, 18, 7, 7);
+            graphics.setColor(accent);
+            graphics.fillRect(7, 12, 18, 3);
+            graphics.fillRect(11, 24, 3, 4);
+            graphics.fillRect(18, 24, 3, 4);
         } else if (role == EnemyRole.GUARDIAN) {
             graphics.fillRoundRect(5, 8, 22, 18, 7, 7);
             graphics.fillRect(2, 14, 6, 10);

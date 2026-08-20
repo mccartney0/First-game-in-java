@@ -8,6 +8,6 @@
   "baseLife": 6,
   "baseDamage": 6,
   "speed": 1.2,
-  "behaviorTag": "explosive",
+  "behaviorTag": "detonate",
   "alphaRequired": true
 }

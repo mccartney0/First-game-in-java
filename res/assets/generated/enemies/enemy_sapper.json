@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "SAPPER",
+  "file": "enemy_sapper.png",
+  "width": 32,
+  "height": 32,
+  "baseLife": 4,
+  "baseDamage": 5,
+  "speed": 1.5,
+  "behaviorTag": "ambush",
+  "alphaRequired": true
+}

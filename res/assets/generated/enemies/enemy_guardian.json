@@ -8,6 +8,6 @@
   "baseLife": 18,
   "baseDamage": 5,
   "speed": 0.8,
-  "behaviorTag": "guardian",
+  "behaviorTag": "regenerate",
   "alphaRequired": true
 }
