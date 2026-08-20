@@ -34,3 +34,8 @@
 - [x] Estender o Content Studio e seus manifestos com propriedades de inimigos e tiles personalizados.
 - [x] Atualizar a documentação e validar visualmente o novo fluxo do RPG Clássico.
 - [x] Gerar e integrar um pacote visual mais rico de variantes 32×32 para grama, estrada e ruínas de Brumafolha.
+- [x] Corrigir o travamento do menu e dos controles de escape do modo RPG.
+- [x] Renomear a apresentação do modo de RPG Clássico para RPG, preservando o identificador de save compatível.
+- [x] Implementar inventário RPG funcional, interações de cenário e feedback de uso de itens.
+- [x] Evoluir a interface e as telas do RPG sem reutilizar HUDs, menus ou terminologia do shooter.
+- [x] Validar o fluxo completo de criação, diálogo, inventário, pausa, retorno ao menu e save do RPG.

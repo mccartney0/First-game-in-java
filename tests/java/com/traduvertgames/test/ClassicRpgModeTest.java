@@ -42,7 +42,7 @@ class ClassicRpgModeTest {
 		assertEquals("mundo aberto gigante", menu.getGameModeLabelForTest(0));
 		assertEquals("aventura RPG", menu.getGameModeLabelForTest(1));
 		assertEquals("expedição de dungeon (teste)", menu.getGameModeLabelForTest(2));
-		assertEquals("rpg clássico", menu.getGameModeLabelForTest(3));
+		assertEquals("rpg", menu.getGameModeLabelForTest(3));
     }
 
     @Test
@@ -165,6 +165,36 @@ class ClassicRpgModeTest {
         assertEquals(RpgArchetype.ARCANISTA, restored.getCharacter().getArchetype());
         assertEquals(savedX, restored.getPlayer().getX(), 0.01);
         assertEquals(savedY, restored.getPlayer().getY(), 0.01);
+    }
+
+    @Test
+    void rpgOwnsPauseAndInventoryWithoutOpeningTheShooterMenu() throws Exception {
+        Game game = GameTestFixture.newIsolatedGame();
+        game.startClassicRpg();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        ClassicRpgMode mode = Game.getClassicRpgMode();
+
+        game.keyPressed(key(game, KeyEvent.VK_I));
+        assertEquals("INVENTORY", mode.getRpgPanelForTest());
+        int herbs = mode.getHerbCountForTest();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        assertEquals(herbs - 1, mode.getHerbCountForTest());
+        game.keyPressed(key(game, KeyEvent.VK_ESCAPE));
+        assertEquals("NONE", mode.getRpgPanelForTest());
+
+        game.keyPressed(key(game, KeyEvent.VK_ESCAPE));
+        assertEquals("PAUSE", mode.getRpgPanelForTest());
+        assertEquals("NORMAL", Game.gameState);
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        assertEquals("NONE", mode.getRpgPanelForTest());
+        assertTrue(Game.isClassicRpgMode());
+
+        game.keyPressed(key(game, KeyEvent.VK_ESCAPE));
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        assertFalse(Game.isClassicRpgMode());
+        assertEquals("MENU", Game.gameState);
     }
 
     @Test

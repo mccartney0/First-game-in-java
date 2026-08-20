@@ -59,7 +59,7 @@ public class Menu {
 				"mundo aberto gigante",
 				"aventura RPG",
 				"expedição de dungeon (teste)",
-				"rpg clássico",
+				"rpg",
 				"campanha narrativa",
 				"voltar"
 		};
@@ -68,7 +68,7 @@ public class Menu {
 				"Sandbox de 40 setores: explore livremente; H abre o hub e revela POIs/dungeons.",
 				"Loop regional com contratos: H → resgate/NPC → comboio → dungeon desbloqueada.",
 				"Entrada direta nas Ruínas para testar chefe, recompensa e portal de retorno.",
-				"Vale de Brumafolha: action RPG de fantasia separado, com inventário e atributos.",
+				"Vale de Brumafolha: RPG de fantasia com diálogo, inventário e atributos.",
 				"Campanha linear: tutorial, diálogos, capítulos e chefes narrativos."
 		};
 

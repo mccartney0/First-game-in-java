@@ -32,6 +32,12 @@ public final class ClassicRpgMode {
         COMPLETE_GUARDIAN_HUNT
     }
 
+    private enum RpgPanel {
+        NONE,
+        INVENTORY,
+        PAUSE
+    }
+
     private final RpgMap map = new RpgMap();
     private RpgPlayerController player;
     private RpgCharacterStats character;
@@ -52,6 +58,11 @@ public final class ClassicRpgMode {
     private String[] dialogueLines = new String[0];
     private int dialogueLine;
     private DialogueOutcome dialogueOutcome = DialogueOutcome.NONE;
+    private RpgPanel rpgPanel = RpgPanel.NONE;
+    private int panelSelection;
+    private int herbCount;
+    private int tonicCount;
+    private boolean wellBlessed;
 
     public void startNew(Game game) {
         active = true;
@@ -64,6 +75,11 @@ public final class ClassicRpgMode {
         wardenLife = 3;
         attackFrames = 0;
         closeClassicDialogue();
+        rpgPanel = RpgPanel.NONE;
+        panelSelection = 0;
+        herbCount = 2;
+        tonicCount = 1;
+        wellBlessed = false;
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
         character = null;
@@ -83,6 +99,11 @@ public final class ClassicRpgMode {
         wardenLife = Math.max(0, intValue(data == null ? null : data.get("wardenLife"), 3));
         attackFrames = 0;
         closeClassicDialogue();
+        rpgPanel = RpgPanel.NONE;
+        panelSelection = 0;
+        herbCount = Math.max(0, intValue(data == null ? null : data.get("herbCount"), 2));
+        tonicCount = Math.max(0, intValue(data == null ? null : data.get("tonicCount"), 1));
+        wellBlessed = Boolean.TRUE.equals(data == null ? null : data.get("wellBlessed"));
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
         character = RpgCharacterStats.deserialize(asMap(data == null ? null : data.get("character")));
@@ -96,7 +117,7 @@ public final class ClassicRpgMode {
     public void update() {
         if (!active) return;
         if (noticeFrames > 0) noticeFrames--;
-        if (choosingArchetype || characterSheetOpen || dialogueActive || character == null) return;
+        if (choosingArchetype || characterSheetOpen || dialogueActive || rpgPanel != RpgPanel.NONE || character == null) return;
         player.update();
         playedFrames++;
         if (attackFrames > 0) attackFrames--;
@@ -151,6 +172,30 @@ public final class ClassicRpgMode {
             }
             return true;
         }
+        if (rpgPanel == RpgPanel.INVENTORY) {
+            if (code == KeyEvent.VK_ESCAPE || code == KeyEvent.VK_I) {
+                closeRpgPanel();
+            } else if (code == KeyEvent.VK_UP || code == KeyEvent.VK_W) {
+                panelSelection = Math.max(0, panelSelection - 1);
+            } else if (code == KeyEvent.VK_DOWN || code == KeyEvent.VK_S) {
+                panelSelection = Math.min(1, panelSelection + 1);
+            } else if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
+                useSelectedRpgItem();
+            }
+            return true;
+        }
+        if (rpgPanel == RpgPanel.PAUSE) {
+            if (code == KeyEvent.VK_ESCAPE) {
+                closeRpgPanel();
+            } else if (code == KeyEvent.VK_UP || code == KeyEvent.VK_W) {
+                panelSelection = Math.max(0, panelSelection - 1);
+            } else if (code == KeyEvent.VK_DOWN || code == KeyEvent.VK_S) {
+                panelSelection = Math.min(2, panelSelection + 1);
+            } else if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
+                confirmRpgPause();
+            }
+            return true;
+        }
         if (code == KeyEvent.VK_W || code == KeyEvent.VK_UP) { player.setUp(true); return true; }
         if (code == KeyEvent.VK_S || code == KeyEvent.VK_DOWN) { player.setDown(true); return true; }
         if (code == KeyEvent.VK_A || code == KeyEvent.VK_LEFT) { player.setLeft(true); return true; }
@@ -160,7 +205,11 @@ public final class ClassicRpgMode {
             return true;
         }
         if (code == KeyEvent.VK_I) {
-            showNotice("Inventário RPG será expandido na Rodada 3.");
+            openRpgPanel(RpgPanel.INVENTORY);
+            return true;
+        }
+        if (code == KeyEvent.VK_ESCAPE) {
+            openRpgPanel(RpgPanel.PAUSE);
             return true;
         }
         if (code == KeyEvent.VK_R || code == KeyEvent.VK_E) {
@@ -176,7 +225,7 @@ public final class ClassicRpgMode {
             else showNotice("Não foi possível salvar o RPG Clássico.");
             return true;
         }
-        // ESC, P e F11 seguem o comportamento global da engine: pausa, tela cheia etc.
+        // F11 continua no dispatcher global; Escape é tratado pelo painel de pausa do RPG.
         return false;
     }
 
@@ -203,6 +252,16 @@ public final class ClassicRpgMode {
 
     private void interact() {
         if (character == null || player == null) return;
+        if (isNearWell()) {
+            if (!wellBlessed) {
+                wellBlessed = true;
+                character.restoreResources();
+                showNotice("Fonte de Bruma: seus recursos foram restaurados.");
+            } else {
+                showNotice("Fonte de Bruma: a água está tranquila por enquanto.");
+            }
+            return;
+        }
         if (!isNearGuide()) {
             if (questStage == QuestStage.DEFEAT_WARDEN && isNearWarden()) {
                 beginClassicDialogue("Guardião do Bosque", new String[] {
@@ -312,6 +371,58 @@ public final class ClassicRpgMode {
         return distanceTo(map.getVillageGuideX(), map.getVillageGuideY()) <= 48;
     }
 
+    private boolean isNearWell() {
+        return distanceTo(map.getWellX(), map.getWellY()) <= 42;
+    }
+
+    private void openRpgPanel(RpgPanel panel) {
+        rpgPanel = panel == null ? RpgPanel.NONE : panel;
+        panelSelection = 0;
+        player.setUp(false);
+        player.setDown(false);
+        player.setLeft(false);
+        player.setRight(false);
+    }
+
+    private void closeRpgPanel() {
+        rpgPanel = RpgPanel.NONE;
+        panelSelection = 0;
+    }
+
+    private void useSelectedRpgItem() {
+        if (panelSelection == 0) {
+            if (herbCount <= 0) {
+                showNotice("Você não possui Ervas de Bruma.");
+                return;
+            }
+            herbCount--;
+            character.restore(28, 0, 14);
+            showNotice("Erva de Bruma usada: vida e fôlego restaurados.");
+        } else {
+            if (tonicCount <= 0) {
+                showNotice("Você não possui Tônicos de Luar.");
+                return;
+            }
+            tonicCount--;
+            character.restore(0, 26, 22);
+            showNotice("Tônico de Luar usado: mana e fôlego restaurados.");
+        }
+    }
+
+    private void confirmRpgPause() {
+        if (panelSelection == 0) {
+            closeRpgPanel();
+        } else if (panelSelection == 1) {
+            if (SaveManager.saveCurrentGame()) showNotice("Jornada salva no slot " + SaveManager.activeSlot + ".");
+            else showNotice("Não foi possível salvar a jornada.");
+            closeRpgPanel();
+        } else {
+            closeRpgPanel();
+            Game game = Game.getInstance();
+            if (game != null) game.returnToMainMenu();
+        }
+    }
+
     private boolean isNearWarden() {
         return questStage == QuestStage.DEFEAT_WARDEN && wardenLife > 0
                 && distanceTo(map.getWardenX(), map.getWardenY()) <= 52;
@@ -346,10 +457,30 @@ public final class ClassicRpgMode {
         map.render(g, player == null ? 0 : player.getCameraX(),
                 player == null ? 0 : player.getCameraY(), Game.WIDTH, Game.HEIGHT);
         if (player != null) {
+            drawWell(g);
             drawGuide(g);
             if (questStage == QuestStage.DEFEAT_WARDEN && wardenLife > 0) drawWarden(g);
         }
         if (player != null) drawPlayer(g);
+    }
+
+    private void drawWell(Graphics g) {
+        int x = (int) (map.getWellX() - player.getCameraX());
+        int y = (int) (map.getWellY() - player.getCameraY());
+        g.setColor(new Color(21, 27, 35, 105));
+        g.fillOval(x - 14, y + 8, 28, 9);
+        g.setColor(new Color(84, 89, 99));
+        g.fillOval(x - 11, y - 7, 22, 18);
+        g.setColor(new Color(151, 164, 170));
+        g.drawOval(x - 9, y - 5, 18, 12);
+        g.setColor(new Color(73, 164, 197));
+        g.fillOval(x - 6, y - 3, 12, 6);
+        g.setColor(new Color(230, 226, 180));
+        g.drawString("Fonte de Bruma", x - 30, y - 15);
+        if (isNearWell()) {
+            g.setColor(new Color(255, 241, 174));
+            g.drawString("R/E", x - 8, y - 27);
+        }
     }
 
     private void drawGuide(Graphics g) {
@@ -405,6 +536,8 @@ public final class ClassicRpgMode {
         if (character != null) drawHud(g, width, height);
         if (characterSheetOpen) renderCharacterSheet(g, width, height);
         if (dialogueActive) renderClassicDialogue(g, width, height);
+        if (rpgPanel == RpgPanel.INVENTORY) renderRpgInventory(g, width, height);
+        if (rpgPanel == RpgPanel.PAUSE) renderRpgPause(g, width, height);
         if (noticeFrames > 0 && notice != null && !notice.isEmpty()) {
             g.setFont(new Font("Arial", Font.BOLD, 15));
             int textWidth = g.getFontMetrics().stringWidth(notice);
@@ -415,6 +548,72 @@ public final class ClassicRpgMode {
             g.setColor(new Color(248, 228, 167));
             g.drawString(notice, x, y);
         }
+    }
+
+    private void renderRpgInventory(Graphics g, int width, int height) {
+        int panelWidth = 472;
+        int panelHeight = 292;
+        int x = (width - panelWidth) / 2;
+        int y = (height - panelHeight) / 2;
+        g.setColor(new Color(8, 15, 22, 238));
+        g.fillRoundRect(x, y, panelWidth, panelHeight, 14, 14);
+        g.setColor(new Color(203, 165, 88));
+        g.drawRoundRect(x, y, panelWidth, panelHeight, 14, 14);
+        g.setColor(new Color(246, 222, 159));
+        g.setFont(new Font("Arial", Font.BOLD, 23));
+        g.drawString("BOLSA DE VIAGEM", x + 28, y + 42);
+        String[] names = { "Erva de Bruma", "Tônico de Luar" };
+        String[] descriptions = { "+28 vida · +14 fôlego", "+26 mana · +22 fôlego" };
+        int[] counts = { herbCount, tonicCount };
+        for (int i = 0; i < names.length; i++) {
+            int rowY = y + 70 + i * 74;
+            if (panelSelection == i) {
+                g.setColor(new Color(73, 103, 104, 220));
+                g.fillRoundRect(x + 20, rowY, panelWidth - 40, 58, 8, 8);
+            }
+            g.setColor(i == 0 ? new Color(102, 176, 105) : new Color(107, 144, 209));
+            g.fillRoundRect(x + 32, rowY + 11, 36, 36, 6, 6);
+            g.setColor(Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 16));
+            g.drawString(names[i], x + 84, rowY + 24);
+            g.setColor(new Color(205, 213, 214));
+            g.setFont(new Font("Arial", Font.PLAIN, 13));
+            g.drawString(descriptions[i], x + 84, rowY + 43);
+            g.setColor(new Color(246, 222, 159));
+            g.setFont(new Font("Arial", Font.BOLD, 16));
+            g.drawString("x" + counts[i], x + panelWidth - 62, rowY + 35);
+        }
+        g.setColor(new Color(190, 203, 210));
+        g.setFont(new Font("Arial", Font.PLAIN, 13));
+        g.drawString("W/S selecionar · Enter usar · I/Esc fechar", x + 28, y + panelHeight - 24);
+    }
+
+    private void renderRpgPause(Graphics g, int width, int height) {
+        int panelWidth = 390;
+        int panelHeight = 250;
+        int x = (width - panelWidth) / 2;
+        int y = (height - panelHeight) / 2;
+        g.setColor(new Color(7, 13, 19, 240));
+        g.fillRoundRect(x, y, panelWidth, panelHeight, 14, 14);
+        g.setColor(new Color(203, 165, 88));
+        g.drawRoundRect(x, y, panelWidth, panelHeight, 14, 14);
+        g.setColor(new Color(246, 222, 159));
+        g.setFont(new Font("Arial", Font.BOLD, 24));
+        g.drawString("PAUSA", x + 26, y + 43);
+        String[] actions = { "Continuar jornada", "Salvar jornada", "Voltar ao menu principal" };
+        for (int i = 0; i < actions.length; i++) {
+            int rowY = y + 68 + i * 48;
+            if (panelSelection == i) {
+                g.setColor(new Color(73, 103, 104, 220));
+                g.fillRoundRect(x + 20, rowY - 22, panelWidth - 40, 37, 7, 7);
+            }
+            g.setColor(panelSelection == i ? new Color(255, 236, 167) : Color.WHITE);
+            g.setFont(new Font("Arial", Font.BOLD, 16));
+            g.drawString((panelSelection == i ? "› " : "  ") + actions[i], x + 36, rowY);
+        }
+        g.setColor(new Color(190, 203, 210));
+        g.setFont(new Font("Arial", Font.PLAIN, 13));
+        g.drawString("W/S selecionar · Enter confirmar · Esc voltar", x + 26, y + panelHeight - 24);
     }
 
     private void renderClassicDialogue(Graphics g, int width, int height) {
@@ -491,7 +690,7 @@ public final class ClassicRpgMode {
         g.setFont(new Font("Arial", Font.PLAIN, 11));
         drawWrapped(g, objective, width - 193, height - 34, 174);
         g.setColor(new Color(235, 225, 197));
-        g.drawString("WASD mover  R/E falar  Espaço atacar  C atributos  T salvar", 12, height - 8);
+        g.drawString("WASD mover · R/E interagir · Espaço atacar · I bolsa · C atributos · Esc pausa", 12, height - 8);
     }
 
     private void drawBar(Graphics g, int x, int y, int width, int height, int value, int max, Color color) {
@@ -507,7 +706,7 @@ public final class ClassicRpgMode {
         g.fillRect(0, 0, width, height);
         g.setColor(new Color(246, 222, 159));
         g.setFont(new Font("Arial", Font.BOLD, 28));
-        String title = "RPG CLÁSSICO";
+        String title = "RPG";
         g.drawString(title, (width - g.getFontMetrics().stringWidth(title)) / 2, 72);
         g.setColor(new Color(210, 217, 219));
         g.setFont(new Font("Arial", Font.PLAIN, 15));
@@ -572,12 +771,15 @@ public final class ClassicRpgMode {
 
     public Map<String, Object> serialize() {
         Map<String, Object> data = new HashMap<String, Object>();
-        data.put("schema", 2);
+        data.put("schema", 3);
         data.put("mapId", "vale_brumafolha");
         data.put("objective", objective);
         data.put("playedFrames", playedFrames);
         data.put("questStage", questStage.name());
         data.put("wardenLife", wardenLife);
+        data.put("herbCount", herbCount);
+        data.put("tonicCount", tonicCount);
+        data.put("wellBlessed", wellBlessed);
         data.put("character", character == null ? RpgCharacterStats.create(RpgArchetype.GUARDIAO).serialize() : character.serialize());
         data.put("player", player == null ? new HashMap<String, Object>() : player.serialize());
         data.put("restPoint", "village_west_gate");
@@ -630,11 +832,19 @@ public final class ClassicRpgMode {
     public long getPlayedFrames() { return playedFrames; }
     public String getQuestStageForTest() { return questStage.name(); }
     public int getWardenLifeForTest() { return wardenLife; }
+    public String getRpgPanelForTest() { return rpgPanel.name(); }
+    public int getHerbCountForTest() { return herbCount; }
+    public int getTonicCountForTest() { return tonicCount; }
 
     public void reset() {
         active = false;
         choosingArchetype = false;
         characterSheetOpen = false;
+        rpgPanel = RpgPanel.NONE;
+        panelSelection = 0;
+        herbCount = 0;
+        tonicCount = 0;
+        wellBlessed = false;
         player = null;
         character = null;
         notice = "";

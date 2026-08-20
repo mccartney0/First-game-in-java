@@ -63,6 +63,13 @@ public final class RpgCharacterStats {
         stamina = maxStamina;
     }
 
+    /** Restauração usada por itens e interações do modo RPG, sem tocar no shooter. */
+    public void restore(int lifeAmount, int manaAmount, int staminaAmount) {
+        life = clamp(life + Math.max(0, lifeAmount), 0, maxLife);
+        mana = clamp(mana + Math.max(0, manaAmount), 0, maxMana);
+        stamina = clamp(stamina + Math.max(0, staminaAmount), 0, maxStamina);
+    }
+
     public void gainExperience(int amount) {
         if (amount <= 0) return;
         experience += amount;

@@ -14,6 +14,8 @@ public final class RpgMap {
     public static final int HEIGHT_TILES = 24;
     public static final int VILLAGE_GUIDE_X = 10 * TILE_SIZE + TILE_SIZE / 2;
     public static final int VILLAGE_GUIDE_Y = 8 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int WELL_X = 7 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int WELL_Y = 11 * TILE_SIZE + TILE_SIZE / 2;
     public static final int WARDEN_X = 24 * TILE_SIZE + TILE_SIZE / 2;
     public static final int WARDEN_Y = 11 * TILE_SIZE + TILE_SIZE / 2;
     private static final int WIDTH = WIDTH_TILES * TILE_SIZE;
@@ -51,6 +53,8 @@ public final class RpgMap {
     public double getSpawnY() { return 8 * TILE_SIZE + TILE_SIZE / 2.0; }
     public double getVillageGuideX() { return VILLAGE_GUIDE_X; }
     public double getVillageGuideY() { return VILLAGE_GUIDE_Y; }
+    public double getWellX() { return WELL_X; }
+    public double getWellY() { return WELL_Y; }
     public double getWardenX() { return WARDEN_X; }
     public double getWardenY() { return WARDEN_Y; }
     public String getDisplayName() { return "Vale de Brumafolha"; }
