@@ -28,10 +28,19 @@ public final class ClassicRpgMode {
         COMPLETE
     }
 
+    private enum OutlandQuestStage {
+        MEET_SCOUT,
+        CLEAR_THREATS,
+        RETURN_TO_SCOUT,
+        COMPLETE
+    }
+
     private enum DialogueOutcome {
         NONE,
         ACCEPT_GUARDIAN_HUNT,
-        COMPLETE_GUARDIAN_HUNT
+        COMPLETE_GUARDIAN_HUNT,
+        ACCEPT_OUTLAND_SCOUT,
+        COMPLETE_OUTLAND_SCOUT
     }
 
     private enum RpgPanel {
@@ -76,6 +85,7 @@ public final class ClassicRpgMode {
     private boolean stalkerDefeated;
     private boolean sniperDefeated;
     private boolean outlandBossDefeated;
+    private OutlandQuestStage outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
 
     public void startNew(Game game) {
         active = true;
@@ -101,6 +111,7 @@ public final class ClassicRpgMode {
         stalkerDefeated = false;
         sniperDefeated = false;
         outlandBossDefeated = false;
+        outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
         populateOutlandEnemies();
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
@@ -135,6 +146,7 @@ public final class ClassicRpgMode {
         stalkerDefeated = Boolean.TRUE.equals(data == null ? null : data.get("stalkerDefeated"));
         sniperDefeated = Boolean.TRUE.equals(data == null ? null : data.get("sniperDefeated"));
         outlandBossDefeated = Boolean.TRUE.equals(data == null ? null : data.get("outlandBossDefeated"));
+        outlandQuestStage = outlandStageValue(data == null ? null : data.get("outlandQuestStage"));
         populateOutlandEnemies();
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
@@ -335,6 +347,10 @@ public final class ClassicRpgMode {
             showNotice("Você encontrou o Fragmento do Sino. Abra a bolsa com I para equipá-lo.");
             return;
         }
+        if (isNearOutlandScout()) {
+            interactOutlandScout();
+            return;
+        }
         if (!isNearGuide()) {
             if (questStage == QuestStage.DEFEAT_WARDEN && isNearWarden()) {
                 beginClassicDialogue("Guardião do Bosque", new String[] {
@@ -416,6 +432,12 @@ public final class ClassicRpgMode {
             character.gainExperience(90);
             character.restoreResources();
             showNotice("Missão concluída: +90 XP e recursos restaurados.");
+        } else if (outcome == DialogueOutcome.COMPLETE_OUTLAND_SCOUT) {
+            outlandQuestStage = OutlandQuestStage.COMPLETE;
+            character.gainExperience(65);
+            brumaElixirCount++;
+            refreshObjective();
+            showNotice("Rota assegurada: +65 XP e Elixir de Bruma. Sena liberou o baú de vigia.");
         }
     }
 
@@ -438,6 +460,21 @@ public final class ClassicRpgMode {
         int choice = dialogueChoiceSelection;
         DialogueOutcome outcome = dialogueOutcome;
         closeClassicDialogue();
+        if (outcome == DialogueOutcome.ACCEPT_OUTLAND_SCOUT) {
+            if (choice == 0) {
+                outlandQuestStage = OutlandQuestStage.CLEAR_THREATS;
+                refreshObjective();
+                showNotice("Missão aceita: elimine o Rastejante e o Vigia da Charneca.");
+            } else if (choice == 1) {
+                beginClassicDialogue("Sena", new String[] {
+                        "A névoa empurra criaturas para perto da estrada quando escurece.",
+                        "O Rastejante fecha a passagem; o Vigia chama reforços das ruínas."
+                }, DialogueOutcome.NONE);
+            } else {
+                showNotice("Sena fica de vigia. Fale com ela quando quiser abrir a rota.");
+            }
+            return;
+        }
         if (outcome != DialogueOutcome.ACCEPT_GUARDIAN_HUNT) return;
         if (choice == 0) {
             questStage = QuestStage.DEFEAT_WARDEN;
@@ -529,6 +566,36 @@ public final class ClassicRpgMode {
             showNotice("Vigia derrotado: +" + enemy.getExperienceReward() + " XP e Elixir de Bruma.");
         }
         outlandEnemies.remove(enemy);
+        if (outlandQuestStage == OutlandQuestStage.CLEAR_THREATS && stalkerDefeated && sniperDefeated) {
+            outlandQuestStage = OutlandQuestStage.RETURN_TO_SCOUT;
+            refreshObjective();
+            showNotice("A rota está livre. Retorne a Sena, perto do Portão da Charneca.");
+        }
+    }
+
+    private void interactOutlandScout() {
+        if (outlandQuestStage == OutlandQuestStage.MEET_SCOUT) {
+            beginClassicDialogue("Sena", new String[] {
+                    "Pare aí. Sou Sena, batedora de Brumafolha. A névoa está trazendo criaturas para a estrada.",
+                    "Não posso abandonar este posto, mas alguém precisa abrir uma rota segura para os viajantes.",
+                    "Você elimina o Rastejante Musgoso e o Vigia das Ruínas?"
+            }, DialogueOutcome.ACCEPT_OUTLAND_SCOUT, new String[] {
+                    "Aceitar a patrulha", "O que está acontecendo?", "Volto depois"
+            });
+        } else if (outlandQuestStage == OutlandQuestStage.CLEAR_THREATS) {
+            int remaining = (stalkerDefeated ? 0 : 1) + (sniperDefeated ? 0 : 1);
+            showNotice("Sena: ainda há " + remaining + " ameaça" + (remaining == 1 ? " na" : "s na") + " Charneca.");
+        } else if (outlandQuestStage == OutlandQuestStage.RETURN_TO_SCOUT) {
+            beginClassicDialogue("Sena", new String[] {
+                    "Ouvi o silêncio voltar à estrada. Você limpou a patrulha sem recuar.",
+                    "Guarde este Elixir e aceite minha marca de confiança.",
+                    "O Baú de Vigia, ao sul das ruínas, agora é seu. Dentro há uma relíquia para quem protege a rota."
+            }, DialogueOutcome.COMPLETE_OUTLAND_SCOUT);
+        } else {
+            beginClassicDialogue("Sena", new String[] {
+                    "A rota continua aberta graças a você. O Guardião da Charneca ainda vigia o leste, se quiser enfrentar um desafio maior."
+            }, DialogueOutcome.NONE);
+        }
     }
 
     private boolean isNearGuide() {
@@ -541,6 +608,29 @@ public final class ClassicRpgMode {
 
     private boolean isNearBellRelic() {
         return distanceTo(map.getBellRelicX(), map.getBellRelicY()) <= 42;
+    }
+
+    private boolean isNearOutlandScout() {
+        return distanceTo(map.getOutlandScoutX(), map.getOutlandScoutY()) <= 46;
+    }
+
+    private void refreshObjective() {
+        if (outlandQuestStage == OutlandQuestStage.CLEAR_THREATS
+                || outlandQuestStage == OutlandQuestStage.RETURN_TO_SCOUT) {
+            objective = outlandObjectiveFor(outlandQuestStage);
+        } else {
+            objective = objectiveFor(questStage);
+        }
+    }
+
+    private static String outlandObjectiveFor(OutlandQuestStage stage) {
+        if (stage == OutlandQuestStage.CLEAR_THREATS) {
+            return "Abra a rota da Charneca: derrote o Rastejante Musgoso e o Vigia das Ruínas.";
+        }
+        if (stage == OutlandQuestStage.RETURN_TO_SCOUT) {
+            return "A rota está livre. Retorne a Sena perto do Portão da Charneca.";
+        }
+        return "Fale com Sena, a batedora, perto do Portão da Charneca.";
     }
 
     private void openRpgPanel(RpgPanel panel) {
@@ -646,6 +736,7 @@ public final class ClassicRpgMode {
             drawWell(g);
             if (!bellRelicCollected) drawBellRelic(g);
             drawGuide(g);
+            drawOutlandScout(g);
             if (questStage == QuestStage.DEFEAT_WARDEN && wardenLife > 0) drawWarden(g);
             for (RpgCombatEnemy enemy : outlandEnemies) {
                 enemy.render(g, player.getCameraX(), player.getCameraY());
@@ -706,6 +797,25 @@ public final class ClassicRpgMode {
         if (isNearGuide() && questStage != QuestStage.DEFEAT_WARDEN) {
             g.setColor(new Color(255, 241, 174));
             g.drawString("R/E", x - 8, y - 29);
+        }
+    }
+
+    private void drawOutlandScout(Graphics g) {
+        int x = (int) (map.getOutlandScoutX() - player.getCameraX());
+        int y = (int) (map.getOutlandScoutY() - player.getCameraY());
+        g.setColor(new Color(18, 26, 27, 115));
+        g.fillOval(x - 11, y + 8, 22, 8);
+        g.setColor(new Color(78, 110, 91));
+        g.fillRoundRect(x - 8, y - 9, 16, 23, 7, 7);
+        g.setColor(new Color(218, 177, 135));
+        g.fillOval(x - 6, y - 14, 12, 12);
+        g.setColor(new Color(209, 187, 106));
+        g.fillRect(x + 7, y - 7, 5, 2);
+        g.setColor(new Color(245, 232, 190));
+        g.drawString("Sena", x - 11, y - 20);
+        if (isNearOutlandScout()) {
+            g.setColor(new Color(255, 241, 174));
+            g.drawString("R/E", x - 8, y - 31);
         }
     }
 
@@ -843,7 +953,8 @@ public final class ClassicRpgMode {
         g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 12, 12);
         g.setColor(new Color(223, 186, 104));
         g.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 12, 12);
-        g.setColor("Iara".equals(dialogueSpeaker) ? new Color(151, 80, 111) : new Color(59, 69, 94));
+        g.setColor("Iara".equals(dialogueSpeaker) ? new Color(151, 80, 111)
+                : "Sena".equals(dialogueSpeaker) ? new Color(78, 110, 91) : new Color(59, 69, 94));
         g.fillRoundRect(panelX + 14, panelY + 16, 86, 86, 8, 8);
         g.setColor(new Color(246, 213, 174));
         g.fillOval(panelX + 39, panelY + 28, 36, 38);
@@ -1019,6 +1130,7 @@ public final class ClassicRpgMode {
         data.put("stalkerDefeated", stalkerDefeated);
         data.put("sniperDefeated", sniperDefeated);
         data.put("outlandBossDefeated", outlandBossDefeated);
+        data.put("outlandQuestStage", outlandQuestStage.name());
         data.put("character", character == null ? RpgCharacterStats.create(RpgArchetype.GUARDIAO).serialize() : character.serialize());
         data.put("player", player == null ? new HashMap<String, Object>() : player.serialize());
         data.put("restPoint", "village_west_gate");
@@ -1060,6 +1172,14 @@ public final class ClassicRpgMode {
         return QuestStage.FIND_GUIDE;
     }
 
+    private static OutlandQuestStage outlandStageValue(Object raw) {
+        if (raw != null) {
+            try { return OutlandQuestStage.valueOf(String.valueOf(raw)); }
+            catch (IllegalArgumentException ignored) { }
+        }
+        return OutlandQuestStage.MEET_SCOUT;
+    }
+
     public boolean isActive() { return active; }
     public boolean isChoosingArchetype() { return choosingArchetype; }
     public RpgMap getMap() { return map; }
@@ -1081,6 +1201,7 @@ public final class ClassicRpgMode {
     public int getOutlandEnemyCountForTest() { return outlandEnemies.size(); }
     public boolean isStalkerDefeatedForTest() { return stalkerDefeated; }
     public boolean isOutlandBossDefeatedForTest() { return outlandBossDefeated; }
+    public String getOutlandQuestStageForTest() { return outlandQuestStage.name(); }
 
     public void reset() {
         active = false;
@@ -1099,6 +1220,7 @@ public final class ClassicRpgMode {
         stalkerDefeated = false;
         sniperDefeated = false;
         outlandBossDefeated = false;
+        outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
         outlandEnemies.clear();
         player = null;
         character = null;

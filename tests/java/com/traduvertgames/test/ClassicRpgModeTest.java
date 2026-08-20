@@ -301,6 +301,36 @@ class ClassicRpgModeTest {
         assertEquals(2, Game.getClassicRpgMode().getOutlandEnemyCountForTest());
     }
 
+    @Test
+    void outlandScoutQuestClearsThreatsRewardsAndPersists() throws Exception {
+        Game game = GameTestFixture.newIsolatedGame();
+        game.startClassicRpg();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        ClassicRpgMode mode = Game.getClassicRpgMode();
+
+        mode.getPlayer().setPosition(mode.getMap().getOutlandScoutX(), mode.getMap().getOutlandScoutY());
+        game.keyPressed(key(game, KeyEvent.VK_R));
+        for (int advance = 0; advance < 3; advance++) game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        assertEquals("CLEAR_THREATS", mode.getOutlandQuestStageForTest());
+
+        mode.getPlayer().setPosition(mode.getMap().getStalkerX(), mode.getMap().getStalkerY());
+        for (int hit = 0; hit < 5; hit++) game.keyPressed(key(game, KeyEvent.VK_SPACE));
+        mode.getPlayer().setPosition(mode.getMap().getSniperX(), mode.getMap().getSniperY());
+        for (int hit = 0; hit < 5; hit++) game.keyPressed(key(game, KeyEvent.VK_SPACE));
+        assertEquals("RETURN_TO_SCOUT", mode.getOutlandQuestStageForTest());
+
+        mode.getPlayer().setPosition(mode.getMap().getOutlandScoutX(), mode.getMap().getOutlandScoutY());
+        game.keyPressed(key(game, KeyEvent.VK_E));
+        for (int advance = 0; advance < 3; advance++) game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        assertEquals("COMPLETE", mode.getOutlandQuestStageForTest());
+        assertEquals(4, mode.getBrumaElixirCountForTest());
+
+        assertTrue(SaveManager.saveCurrentGame());
+        game.returnToMainMenu();
+        assertTrue(SaveManager.loadSlot(1));
+        assertEquals("COMPLETE", Game.getClassicRpgMode().getOutlandQuestStageForTest());
+    }
+
     private static KeyEvent key(Game game, int keyCode) {
         return new KeyEvent(game, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
                 keyCode, KeyEvent.CHAR_UNDEFINED);

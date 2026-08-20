@@ -56,3 +56,11 @@
 - [x] Adicionar drops, experiência, subida de nível e persistência dos encontros do novo mapa.
 - [x] Criar um chefe opcional com recompensa permanente e estado persistente.
 - [x] Executar regressões e QA do vertical slice antes da publicação.
+
+## Próxima expansão — Charneca da Bruma
+
+- [x] Criar uma NPC com missão própria, diálogo ramificado, objetivo e recompensa persistente.
+- [ ] Adicionar um baú especial desbloqueado pelo progresso da missão e salvar seu estado.
+- [ ] Criar uma transição visual e mensagem de descoberta ao cruzar o Portão da Charneca.
+- [ ] Ampliar o Content Studio com novas variações de inimigos configuráveis e integrá-las ao encontro externo.
+- [ ] Cobrir a expansão com regressões de missão, recompensas, save e geração de conteúdo.
