@@ -51,3 +51,8 @@
 - [x] Adicionar modelos e exportadores de consumíveis e armas configuráveis ao Content Studio.
 - [x] Integrar exemplos de consumível e arma gerados ao inventário e combate do RPG.
 - [x] Cobrir manifestos, assets e uso no runtime com regressões antes da publicação.
+- [x] Criar uma área externa conectada ao Vale de Brumafolha, com entrada e retorno claros.
+- [x] Implementar inimigos RPG ativos com vida, comportamento, ataques e feedback de dano.
+- [x] Adicionar drops, experiência, subida de nível e persistência dos encontros do novo mapa.
+- [x] Criar um chefe opcional com recompensa permanente e estado persistente.
+- [x] Executar regressões e QA do vertical slice antes da publicação.

@@ -5,7 +5,9 @@ import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import com.traduvertgames.entities.Enemy;
@@ -70,6 +72,10 @@ public final class ClassicRpgMode {
     private int brumaElixirCount;
     private boolean brumaBladeEquipped;
     private boolean wellBlessed;
+    private final List<RpgCombatEnemy> outlandEnemies = new ArrayList<RpgCombatEnemy>();
+    private boolean stalkerDefeated;
+    private boolean sniperDefeated;
+    private boolean outlandBossDefeated;
 
     public void startNew(Game game) {
         active = true;
@@ -92,6 +98,10 @@ public final class ClassicRpgMode {
         brumaElixirCount = 1;
         brumaBladeEquipped = false;
         wellBlessed = false;
+        stalkerDefeated = false;
+        sniperDefeated = false;
+        outlandBossDefeated = false;
+        populateOutlandEnemies();
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
         character = null;
@@ -122,6 +132,10 @@ public final class ClassicRpgMode {
         brumaElixirCount = Math.max(0, intValue(data == null ? null : data.get("brumaElixirCount"), 1));
         brumaBladeEquipped = Boolean.TRUE.equals(data == null ? null : data.get("brumaBladeEquipped"));
         wellBlessed = Boolean.TRUE.equals(data == null ? null : data.get("wellBlessed"));
+        stalkerDefeated = Boolean.TRUE.equals(data == null ? null : data.get("stalkerDefeated"));
+        sniperDefeated = Boolean.TRUE.equals(data == null ? null : data.get("sniperDefeated"));
+        outlandBossDefeated = Boolean.TRUE.equals(data == null ? null : data.get("outlandBossDefeated"));
+        populateOutlandEnemies();
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
         character = RpgCharacterStats.deserialize(asMap(data == null ? null : data.get("character")));
@@ -144,9 +158,35 @@ public final class ClassicRpgMode {
             staminaRegenFrames = 0;
             character.updateStamina(1);
         }
+        updateOutlandCombat();
         if (questStage == QuestStage.DEFEAT_WARDEN && isNearWarden()) {
             showNotice("Guardião do Bosque à frente — Espaço para atacar.");
         }
+    }
+
+    private void updateOutlandCombat() {
+        for (RpgCombatEnemy enemy : outlandEnemies) {
+            int damage = enemy.update(player, map, character.getPhysicalDefense());
+            if (damage <= 0) continue;
+            character.takeDamage(damage);
+            showNotice(enemy.getName() + " atinge você: -" + damage + " vida.");
+            if (character.getLife() <= 0) {
+                character.restoreResources();
+                player.setPosition(map.getOutlandGateX() - RpgMap.TILE_SIZE * 2, map.getOutlandGateY());
+                showNotice("Você recuou para a Estrada Antiga. A Fonte de Bruma protege sua volta.");
+                break;
+            }
+        }
+    }
+
+    private void populateOutlandEnemies() {
+        outlandEnemies.clear();
+        if (!stalkerDefeated) outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.STALKER,
+                "Rastejante Musgoso", map.getStalkerX(), map.getStalkerY(), 8, 6, 28, 1, false));
+        if (!sniperDefeated) outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.SNIPER,
+                "Vigia das Ruínas", map.getSniperX(), map.getSniperY(), 10, 7, 36, 1, false));
+        if (!outlandBossDefeated) outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.MARSH_WARDEN,
+                "Guardião da Charneca", map.getOutlandBossX(), map.getOutlandBossY(), 28, 9, 120, 2, true));
     }
 
     /** Retorna true quando o evento foi consumido pelo modo clássico. */
@@ -415,6 +455,11 @@ public final class ClassicRpgMode {
 
     private void strikeWarden() {
         if (character == null || player == null) return;
+        RpgCombatEnemy outlandTarget = nearestOutlandEnemy();
+        if (outlandTarget != null) {
+            strikeOutlandEnemy(outlandTarget);
+            return;
+        }
         if (questStage != QuestStage.DEFEAT_WARDEN) {
             showNotice("Não há ameaça próxima. Use R ou E para conversar com Iara.");
             return;
@@ -439,6 +484,51 @@ public final class ClassicRpgMode {
         } else {
             showNotice("Golpe acertado. Integridade do Guardião: " + wardenLife + ".");
         }
+    }
+
+    private RpgCombatEnemy nearestOutlandEnemy() {
+        RpgCombatEnemy closest = null;
+        double closestDistance = 54;
+        for (RpgCombatEnemy enemy : outlandEnemies) {
+            if (!enemy.isAlive()) continue;
+            double dx = enemy.getX() - player.getX();
+            double dy = enemy.getY() - player.getY();
+            double distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance <= closestDistance) {
+                closest = enemy;
+                closestDistance = distance;
+            }
+        }
+        return closest;
+    }
+
+    private void strikeOutlandEnemy(RpgCombatEnemy enemy) {
+        int attackCost = brumaBladeEquipped ? 9 : 8;
+        if (!character.spendStamina(attackCost)) {
+            showNotice("Fôlego insuficiente. Recuar ou usar um Elixir pode salvar sua jornada.");
+            return;
+        }
+        attackFrames = 12;
+        int damage = Math.max(1, 2 + character.getStrength() / 12 + (brumaBladeEquipped ? 2 : 0));
+        if (!enemy.hit(damage)) {
+            showNotice("Você acerta " + enemy.getName() + ": " + damage + " dano.");
+            return;
+        }
+        character.gainExperience(enemy.getExperienceReward());
+        brumaElixirCount += enemy.getDropElixirs();
+        if (enemy.isBoss()) {
+            outlandBossDefeated = true;
+            bellRelicCount++;
+            showNotice("Chefe vencido: +" + enemy.getExperienceReward()
+                    + " XP, 2 Elixires e Fragmento do Sino adicional.");
+        } else if (enemy.getName().contains("Rastejante")) {
+            stalkerDefeated = true;
+            showNotice("Rastejante derrotado: +" + enemy.getExperienceReward() + " XP e Elixir de Bruma.");
+        } else {
+            sniperDefeated = true;
+            showNotice("Vigia derrotado: +" + enemy.getExperienceReward() + " XP e Elixir de Bruma.");
+        }
+        outlandEnemies.remove(enemy);
     }
 
     private boolean isNearGuide() {
@@ -557,6 +647,9 @@ public final class ClassicRpgMode {
             if (!bellRelicCollected) drawBellRelic(g);
             drawGuide(g);
             if (questStage == QuestStage.DEFEAT_WARDEN && wardenLife > 0) drawWarden(g);
+            for (RpgCombatEnemy enemy : outlandEnemies) {
+                enemy.render(g, player.getCameraX(), player.getCameraY());
+            }
         }
         if (player != null) drawPlayer(g);
     }
@@ -923,6 +1016,9 @@ public final class ClassicRpgMode {
         data.put("brumaElixirCount", brumaElixirCount);
         data.put("brumaBladeEquipped", brumaBladeEquipped);
         data.put("wellBlessed", wellBlessed);
+        data.put("stalkerDefeated", stalkerDefeated);
+        data.put("sniperDefeated", sniperDefeated);
+        data.put("outlandBossDefeated", outlandBossDefeated);
         data.put("character", character == null ? RpgCharacterStats.create(RpgArchetype.GUARDIAO).serialize() : character.serialize());
         data.put("player", player == null ? new HashMap<String, Object>() : player.serialize());
         data.put("restPoint", "village_west_gate");
@@ -982,6 +1078,9 @@ public final class ClassicRpgMode {
     public boolean isBellCharmEquippedForTest() { return bellCharmEquipped; }
     public int getBrumaElixirCountForTest() { return brumaElixirCount; }
     public boolean isBrumaBladeEquippedForTest() { return brumaBladeEquipped; }
+    public int getOutlandEnemyCountForTest() { return outlandEnemies.size(); }
+    public boolean isStalkerDefeatedForTest() { return stalkerDefeated; }
+    public boolean isOutlandBossDefeatedForTest() { return outlandBossDefeated; }
 
     public void reset() {
         active = false;
@@ -997,6 +1096,10 @@ public final class ClassicRpgMode {
         brumaElixirCount = 0;
         brumaBladeEquipped = false;
         wellBlessed = false;
+        stalkerDefeated = false;
+        sniperDefeated = false;
+        outlandBossDefeated = false;
+        outlandEnemies.clear();
         player = null;
         character = null;
         notice = "";

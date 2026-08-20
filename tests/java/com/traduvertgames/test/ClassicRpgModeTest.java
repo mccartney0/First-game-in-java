@@ -280,6 +280,27 @@ class ClassicRpgModeTest {
         assertTrue(Game.getClassicRpgMode().isBrumaBladeEquippedForTest());
     }
 
+    @Test
+    void outlandEnemyAwardsLootExperienceAndPersistsDefeat() throws Exception {
+        Game game = GameTestFixture.newIsolatedGame();
+        game.startClassicRpg();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        ClassicRpgMode mode = Game.getClassicRpgMode();
+        mode.getPlayer().setPosition(mode.getMap().getStalkerX(), mode.getMap().getStalkerY());
+        int elixirs = mode.getBrumaElixirCountForTest();
+        for (int hit = 0; hit < 5; hit++) game.keyPressed(key(game, KeyEvent.VK_SPACE));
+        assertTrue(mode.isStalkerDefeatedForTest());
+        assertEquals(2, mode.getOutlandEnemyCountForTest());
+        assertEquals(elixirs + 1, mode.getBrumaElixirCountForTest());
+        assertTrue(Game.getClassicRpgMode().getCharacter().getExperience() > 0);
+
+        assertTrue(SaveManager.saveCurrentGame());
+        game.returnToMainMenu();
+        assertTrue(SaveManager.loadSlot(1));
+        assertTrue(Game.getClassicRpgMode().isStalkerDefeatedForTest());
+        assertEquals(2, Game.getClassicRpgMode().getOutlandEnemyCountForTest());
+    }
+
     private static KeyEvent key(Game game, int keyCode) {
         return new KeyEvent(game, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
                 keyCode, KeyEvent.CHAR_UNDEFINED);

@@ -70,6 +70,11 @@ public final class RpgCharacterStats {
         stamina = clamp(stamina + Math.max(0, staminaAmount), 0, maxStamina);
     }
 
+    /** Aplica dano de combate do modo RPG após a mitigação calculada pela IA. */
+    public void takeDamage(int amount) {
+        life = clamp(life - Math.max(0, amount), 0, maxLife);
+    }
+
     public void gainExperience(int amount) {
         if (amount <= 0) return;
         experience += amount;

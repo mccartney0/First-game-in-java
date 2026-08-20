@@ -10,7 +10,7 @@ import com.traduvertgames.graficos.AssetCatalog;
 /** Mapa mínimo construído por intenção para a Rodada 1; a renderização é substituível por tiles. */
 public final class RpgMap {
     public static final int TILE_SIZE = 32;
-    public static final int WIDTH_TILES = 36;
+    public static final int WIDTH_TILES = 52;
     public static final int HEIGHT_TILES = 24;
     public static final int VILLAGE_GUIDE_X = 10 * TILE_SIZE + TILE_SIZE / 2;
     public static final int VILLAGE_GUIDE_Y = 8 * TILE_SIZE + TILE_SIZE / 2;
@@ -20,6 +20,14 @@ public final class RpgMap {
     public static final int WARDEN_Y = 11 * TILE_SIZE + TILE_SIZE / 2;
     public static final int BELL_RELIC_X = 29 * TILE_SIZE + TILE_SIZE / 2;
     public static final int BELL_RELIC_Y = 17 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int OUTLAND_GATE_X = 36 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int OUTLAND_GATE_Y = 12 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int STALKER_X = 40 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int STALKER_Y = 8 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int SNIPER_X = 44 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int SNIPER_Y = 17 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int OUTLAND_BOSS_X = 48 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int OUTLAND_BOSS_Y = 12 * TILE_SIZE + TILE_SIZE / 2;
     private static final int WIDTH = WIDTH_TILES * TILE_SIZE;
     private static final int HEIGHT = HEIGHT_TILES * TILE_SIZE;
 
@@ -41,6 +49,12 @@ public final class RpgMap {
     private char tileAt(int x, int y) {
         if (x <= 0 || y <= 0 || x >= WIDTH_TILES - 1 || y >= HEIGHT_TILES - 1) return '#';
         if (x >= 19 && x <= 22 && y >= 2 && y <= 5) return '~';
+        if (x >= 36) {
+            if (y == 11 || y == 12) return '.';
+            if (x >= 50 && (y < 5 || y > 19)) return '#';
+            if ((x + y) % 9 == 0) return 'r';
+            return 'e';
+        }
         if (x >= 26 && y >= 15) return 'r';
         if ((y == 11 || y == 12) || (x == 12 || x == 13) && y >= 8 && y <= 13) return '.';
         if (x >= 2 && x <= 11 && y >= 5 && y <= 10) return 'v';
@@ -61,6 +75,14 @@ public final class RpgMap {
     public double getWardenY() { return WARDEN_Y; }
     public double getBellRelicX() { return BELL_RELIC_X; }
     public double getBellRelicY() { return BELL_RELIC_Y; }
+    public double getOutlandGateX() { return OUTLAND_GATE_X; }
+    public double getOutlandGateY() { return OUTLAND_GATE_Y; }
+    public double getStalkerX() { return STALKER_X; }
+    public double getStalkerY() { return STALKER_Y; }
+    public double getSniperX() { return SNIPER_X; }
+    public double getSniperY() { return SNIPER_Y; }
+    public double getOutlandBossX() { return OUTLAND_BOSS_X; }
+    public double getOutlandBossY() { return OUTLAND_BOSS_Y; }
     public String getDisplayName() { return "Vale de Brumafolha"; }
 
     public void render(Graphics g, double cameraX, double cameraY, int viewportWidth, int viewportHeight) {
@@ -94,6 +116,7 @@ public final class RpgMap {
         case 'v': return new Color(111, 151, 83);
         case 'f': return new Color(55, 112, 72);
         case 'r': return new Color(103, 91, 87);
+        case 'e': return new Color(67, 104, 82);
         default: return new Color(91, 139, 76);
         }
     }
@@ -147,6 +170,11 @@ public final class RpgMap {
             g.setColor(new Color(102, 187, 211, 150));
             g.drawLine(x + 4, y + 11, x + 27, y + 11);
             g.drawLine(x + 10, y + 21, x + 30, y + 21);
+        } else if (tile == 'e' && (tileX * 3 + tileY) % 4 == 0) {
+            g.setColor(new Color(39, 75, 62));
+            g.fillOval(x + 6, y + 11, 18, 12);
+            g.setColor(new Color(133, 152, 88));
+            g.fillRect(x + 15, y + 8, 2, 10);
         }
     }
 
@@ -156,6 +184,7 @@ public final class RpgMap {
         drawLabel(g, "Estrada Antiga", 13 * TILE_SIZE - cameraX, 10 * TILE_SIZE - cameraY);
         drawLabel(g, "Bosque dos Sussurros", 25 * TILE_SIZE - cameraX, 12 * TILE_SIZE - cameraY);
         drawLabel(g, "Ruínas do Sino", 27 * TILE_SIZE - cameraX, 14 * TILE_SIZE - cameraY);
+        drawLabel(g, "Charneca da Bruma", 38 * TILE_SIZE - cameraX, 7 * TILE_SIZE - cameraY);
     }
 
     private void drawLabel(Graphics g, String text, double x, double y) {
