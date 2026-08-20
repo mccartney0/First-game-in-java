@@ -25,3 +25,6 @@
 - [x] Criar loop inicial de NPC, objetivo e encontro no RPG Clássico.
 - [x] Implementar aplicativo desktop de geração e exportação de conteúdo.
 - [x] Cobrir assets, desempenho, exportação e gameplay com regressões e QA completo.
+- [x] Documentar o fluxo de criação, exportação e integração de inimigos e tiles do Content Studio ao Vale de Brumafolha.
+- [x] Registrar a recomendação técnica para evolução visual dos tiles sem alterar a lógica de colisão do RPG Clássico.
+- [x] Conectar o tile de grama exportado e o sprite Guardian do Content Studio ao renderizador do Vale de Brumafolha.

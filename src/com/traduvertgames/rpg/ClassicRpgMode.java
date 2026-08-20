@@ -4,9 +4,12 @@ import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.event.KeyEvent;
+import java.awt.image.BufferedImage;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.traduvertgames.entities.Enemy;
+import com.traduvertgames.graficos.AssetCatalog;
 import com.traduvertgames.main.Game;
 import com.traduvertgames.main.SaveManager;
 
@@ -299,13 +302,18 @@ public final class ClassicRpgMode {
         int y = (int) (map.getWardenY() - player.getCameraY());
         g.setColor(new Color(25, 24, 39, 110));
         g.fillOval(x - 14, y + 8, 28, 9);
-        g.setColor(new Color(62, 48, 88));
-        g.fillOval(x - 11, y - 11, 22, 25);
-        g.setColor(new Color(147, 198, 112));
-        g.fillOval(x - 7, y - 7, 14, 11);
-        g.setColor(new Color(237, 113, 122));
-        g.fillRect(x - 4, y - 3, 3, 3);
-        g.fillRect(x + 2, y - 3, 3, 3);
+        BufferedImage sprite = AssetCatalog.enemySprite(Enemy.Variant.GUARDIAN);
+        if (sprite != null) {
+            g.drawImage(sprite, x - 14, y - 14, 28, 28, null);
+        } else {
+            g.setColor(new Color(62, 48, 88));
+            g.fillOval(x - 11, y - 11, 22, 25);
+            g.setColor(new Color(147, 198, 112));
+            g.fillOval(x - 7, y - 7, 14, 11);
+            g.setColor(new Color(237, 113, 122));
+            g.fillRect(x - 4, y - 3, 3, 3);
+            g.fillRect(x + 2, y - 3, 3, 3);
+        }
         g.setColor(new Color(240, 224, 182));
         g.drawString("Guardião " + wardenLife, x - 23, y - 17);
         if (isNearWarden()) {

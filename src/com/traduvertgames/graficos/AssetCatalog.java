@@ -6,6 +6,7 @@ import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.EnumMap;
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.imageio.ImageIO;
@@ -22,6 +23,7 @@ public final class AssetCatalog {
     private static final Map<CompanionType, BufferedImage> COMPANION_SPRITES = new EnumMap<CompanionType, BufferedImage>(CompanionType.class);
     private static final Map<Enemy.Variant, BufferedImage> ENEMY_SPRITES = new EnumMap<Enemy.Variant, BufferedImage>(Enemy.Variant.class);
     private static final Map<Enemy.Variant, String> ENEMY_PATHS = new EnumMap<Enemy.Variant, String>(Enemy.Variant.class);
+    private static final Map<String, BufferedImage> CONTENT_TILES = new HashMap<String, BufferedImage>();
     private static BufferedImage companionAtlas;
     private static BufferedImage enemyAtlas;
     private static boolean initialized;
@@ -186,6 +188,23 @@ public final class AssetCatalog {
 
     public static BufferedImage regionalTileAtlas() {
         return load("/assets/generated/world/regional_tile_texture.png");
+    }
+
+    /**
+     * Retorna um tile exportado pelo Content Studio e o mantém em cache. O jogo
+     * continua operando com o preenchimento de cor caso o asset ainda não exista.
+     */
+    public static synchronized BufferedImage contentTile(String assetName) {
+        if (assetName == null || assetName.trim().isEmpty()) {
+            return null;
+        }
+        String normalized = assetName.trim().toLowerCase().replaceAll("[^a-z0-9_-]+", "_");
+        if (CONTENT_TILES.containsKey(normalized)) {
+            return CONTENT_TILES.get(normalized);
+        }
+        BufferedImage tile = load("/assets/generated/tiles/" + normalized + ".png");
+        CONTENT_TILES.put(normalized, tile);
+        return tile;
     }
 
     public static void drawWeaponIcon(Graphics2D graphics, WeaponType type, int x, int y, int width, int height) {

@@ -12,6 +12,7 @@ public final class ContentStudioAssetBootstrap {
         for (ContentStudioProject.EnemyRole role : ContentStudioProject.EnemyRole.values()) {
             ContentStudioProject.generateEnemySprite(role, null, null, root);
         }
+        ContentStudioProject.generateTile(ContentStudioProject.TileStyle.GRAMA, "brumafolha_grass", root);
         System.out.println("Pacote de inimigos exportado em "
                 + new File(root, "res/assets/generated/enemies").getAbsolutePath());
     }

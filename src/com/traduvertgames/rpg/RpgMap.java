@@ -3,6 +3,9 @@ package com.traduvertgames.rpg;
 import java.awt.Color;
 import java.awt.Font;
 import java.awt.Graphics;
+import java.awt.image.BufferedImage;
+
+import com.traduvertgames.graficos.AssetCatalog;
 
 /** Mapa mínimo construído por intenção para a Rodada 1; a renderização é substituível por tiles. */
 public final class RpgMap {
@@ -57,13 +60,18 @@ public final class RpgMap {
         int firstY = Math.max(0, (int) Math.floor(cameraY / TILE_SIZE) - 1);
         int lastX = Math.min(WIDTH_TILES, firstX + viewportWidth / TILE_SIZE + 3);
         int lastY = Math.min(HEIGHT_TILES, firstY + viewportHeight / TILE_SIZE + 3);
+        BufferedImage grassTile = AssetCatalog.contentTile("brumafolha_grass");
         for (int y = firstY; y < lastY; y++) {
             for (int x = firstX; x < lastX; x++) {
                 char tile = tileAt(x, y);
                 int drawX = x * TILE_SIZE - (int) cameraX;
                 int drawY = y * TILE_SIZE - (int) cameraY;
-                g.setColor(colorFor(tile));
-                g.fillRect(drawX, drawY, TILE_SIZE + 1, TILE_SIZE + 1);
+                if (tile == 'g' && grassTile != null) {
+                    g.drawImage(grassTile, drawX, drawY, TILE_SIZE, TILE_SIZE, null);
+                } else {
+                    g.setColor(colorFor(tile));
+                    g.fillRect(drawX, drawY, TILE_SIZE + 1, TILE_SIZE + 1);
+                }
                 drawTileDetail(g, tile, drawX, drawY, x, y);
             }
         }

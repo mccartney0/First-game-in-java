@@ -1,6 +1,7 @@
 package com.traduvertgames.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
@@ -12,6 +13,8 @@ import javax.imageio.ImageIO;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
+import com.traduvertgames.entities.Enemy;
+import com.traduvertgames.graficos.AssetCatalog;
 import com.traduvertgames.tools.ContentStudioProject;
 
 class ContentStudioProjectTest {
@@ -41,6 +44,15 @@ class ContentStudioProjectTest {
         assertEquals(32, enemyImage.getWidth());
         assertEquals(0, enemyImage.getRGB(0, 0) >>> 24);
         assertTrue(ContentStudioProject.readManifestFor(enemy).contains("\"kind\": \"enemy\""));
+    }
+
+    @Test
+    void valleyCanLoadDefaultContentStudioGrassAndGuardianAssets() {
+        BufferedImage grass = AssetCatalog.contentTile("brumafolha_grass");
+        assertNotNull(grass);
+        assertEquals(32, grass.getWidth());
+        assertEquals(32, grass.getHeight());
+        assertNotNull(AssetCatalog.enemySprite(Enemy.Variant.GUARDIAN));
     }
 
     private static void delete(File file) {
