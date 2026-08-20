@@ -13,6 +13,8 @@ import java.awt.Insets;
 import java.awt.event.ActionEvent;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
@@ -284,8 +286,11 @@ public final class ContentStudioApp {
         explanation.setForeground(new Color(225, 232, 237));
         JButton exportPack = new JButton("Gerar pacote runtime 32×32");
         exportPack.addActionListener(event -> exportBrumafolhaTerrainPack());
+        JButton importAssets = new JButton("Importar assets do projeto");
+        importAssets.addActionListener(event -> importUserAssets());
         header.add(explanation);
         header.add(exportPack);
+        header.add(importAssets);
         root.add(header, BorderLayout.NORTH);
 
         JPanel cards = new JPanel(new GridLayout(1, 3, 12, 12));
@@ -299,6 +304,40 @@ public final class ContentStudioApp {
         note.setForeground(new Color(194, 219, 196));
         root.add(note, BorderLayout.SOUTH);
         return root;
+    }
+
+    private void importUserAssets() {
+        String[] pythonCommands = { "python3", "python" };
+        Process process = null;
+        StringBuilder commandErrors = new StringBuilder();
+        try {
+            for (String python : pythonCommands) {
+                try {
+                    process = new ProcessBuilder(python, "tools/import_user_assets.py")
+                            .directory(projectRoot)
+                            .redirectErrorStream(true)
+                            .start();
+                    break;
+                } catch (IOException unavailable) {
+                    commandErrors.append(python).append(": ").append(unavailable.getMessage()).append("\\n");
+                }
+            }
+            if (process == null) {
+                throw new IOException("Python não encontrado.\\n" + commandErrors);
+            }
+            String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8);
+            int exitCode = process.waitFor();
+            if (exitCode != 0) {
+                throw new IOException(output.isEmpty() ? "O importador terminou com erro." : output);
+            }
+            activity.append("\\nAssets importados automaticamente: " + output.trim());
+            JOptionPane.showMessageDialog(null,
+                    "Assets importados. Veja o manifesto em res/assets/generated/user_asset_manifest.json.",
+                    "Importação concluída", JOptionPane.INFORMATION_MESSAGE);
+        } catch (Exception failure) {
+            activity.append("\\nERRO na importação de assets: " + failure.getMessage());
+            JOptionPane.showMessageDialog(null, failure.getMessage(), "Falha na importação", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel createTerrainReferenceCard(String title, String fileName) {

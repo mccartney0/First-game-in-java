@@ -1,0 +1,174 @@
+{
+  "schema": "first-game-user-assets/v1",
+  "input": "res/assets/incoming/user_uploads",
+  "output": "res/assets/generated",
+  "notes": [
+    "Os arquivos originais permanecem intactos em res/assets/incoming/user_uploads.",
+    "Os atlases mantêm a dimensão e a grade; células individuais são geradas apenas para inspeção e reuso futuro.",
+    "Os efeitos de disparo são importados, mas o jogo atual ainda usa desenho procedural em BulletShoot."
+  ],
+  "assets": [
+    {
+      "source": "pasted_file_vTJGiV_blaster_clean.png",
+      "category": "weapon_icon",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/weapons/blaster_clean.png"
+      ],
+      "usage": "AssetCatalog.weaponIcon(BLASTER) e HUD/seleção de arma"
+    },
+    {
+      "source": "pasted_file_eGVrkj_ion_rifle_clean.png",
+      "category": "weapon_icon",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/weapons/ion_rifle_clean.png"
+      ],
+      "usage": "AssetCatalog.weaponIcon(ION_RIFLE) e HUD/seleção de arma"
+    },
+    {
+      "source": "pasted_file_5Xj8uT_scatter_cannon_clean.png",
+      "category": "weapon_icon",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/weapons/scatter_cannon_clean.png"
+      ],
+      "usage": "AssetCatalog.weaponIcon(SCATTER_CANNON) e HUD/seleção de arma"
+    },
+    {
+      "source": "pasted_file_PSgahn_fusion_lance_clean.png",
+      "category": "weapon_icon",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/weapons/fusion_lance_clean.png"
+      ],
+      "usage": "AssetCatalog.weaponIcon(FUSION_LANCE) e HUD/seleção de arma"
+    },
+    {
+      "source": "pasted_file_pFl32X_void_mortar_clean.png",
+      "category": "weapon_icon",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/weapons/void_mortar_clean.png"
+      ],
+      "usage": "AssetCatalog.weaponIcon(VOID_MORTAR) e HUD/seleção de arma"
+    },
+    {
+      "source": "pasted_file_dskvdQ_fusion_lance.png",
+      "category": "weapon_shot_effect",
+      "runtime_loaded": false,
+      "outputs": [
+        "res/assets/generated/effects/fusion_lance_shot.png"
+      ],
+      "usage": "Biblioteca de efeito de disparo; pronta para muzzle flash/trail, não carregada hoje pelo runtime"
+    },
+    {
+      "source": "pasted_file_sm9Uux_ion_rifle.png",
+      "category": "weapon_shot_effect",
+      "runtime_loaded": false,
+      "outputs": [
+        "res/assets/generated/effects/ion_rifle_shot.png"
+      ],
+      "usage": "Biblioteca de efeito de disparo; pronta para muzzle flash/trail, não carregada hoje pelo runtime"
+    },
+    {
+      "source": "pasted_file_y4UOo1_scatter_cannon.png",
+      "category": "weapon_shot_effect",
+      "runtime_loaded": false,
+      "outputs": [
+        "res/assets/generated/effects/scatter_cannon_shot.png"
+      ],
+      "usage": "Biblioteca de efeito de disparo; pronta para muzzle flash/trail, não carregada hoje pelo runtime"
+    },
+    {
+      "source": "pasted_file_i1drWm_blaster.png",
+      "category": "weapon_shot_effect",
+      "runtime_loaded": false,
+      "outputs": [
+        "res/assets/generated/effects/blaster_shot.png"
+      ],
+      "usage": "Biblioteca de efeito de disparo; pronta para muzzle flash/trail, não carregada hoje pelo runtime"
+    },
+    {
+      "source": "pasted_file_LxubVF_void_mortar.png",
+      "category": "weapon_shot_effect",
+      "runtime_loaded": false,
+      "outputs": [
+        "res/assets/generated/effects/void_mortar_shot.png"
+      ],
+      "usage": "Biblioteca de efeito de disparo; pronta para muzzle flash/trail, não carregada hoje pelo runtime"
+    },
+    {
+      "source": "pasted_file_vIjJqn_scout_ref.png",
+      "category": "enemy_sprite",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/enemies/scout_ref.png"
+      ],
+      "usage": "AssetCatalog.enemySprite(SCOUT) e fallback de variantes"
+    },
+    {
+      "source": "pasted_file_XvdE6W_dungeon_portal.png",
+      "category": "world_portal",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/world/dungeon_portal.png"
+      ],
+      "usage": "AssetCatalog.dungeonPortal(); disponível para cenas de dungeon"
+    },
+    {
+      "source": "pasted_file_XPjC2J_companion_set_clean.webp",
+      "category": "companion_atlas",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/companions/companion_set_clean.png",
+        "res/assets/generated/atlas_cells/companions/companion_scout.png",
+        "res/assets/generated/atlas_cells/companions/companion_shield_bot.png",
+        "res/assets/generated/atlas_cells/companions/companion_fairy.png"
+      ],
+      "usage": "AssetCatalog.companionSprite(); 3 colunas: SCOUT, SHIELD_BOT e FAIRY"
+    },
+    {
+      "source": "pasted_file_M71Xov_enemy_set_clean.webp",
+      "category": "enemy_atlas",
+      "runtime_loaded": true,
+      "outputs": [
+        "res/assets/generated/enemies/enemy_set_clean.png",
+        "res/assets/generated/atlas_cells/enemies/enemy_scout.png",
+        "res/assets/generated/atlas_cells/enemies/enemy_bomber.png",
+        "res/assets/generated/atlas_cells/enemies/enemy_shielder.png",
+        "res/assets/generated/atlas_cells/enemies/enemy_artillery.png",
+        "res/assets/generated/atlas_cells/enemies/enemy_swarm.png",
+        "res/assets/generated/atlas_cells/enemies/enemy_guardian.png"
+      ],
+      "usage": "AssetCatalog.enemySprite(); grade 3×2 usada como fallback por variante"
+    },
+    {
+      "source": "pasted_file_oWYxmX_companion_set.webp",
+      "category": "reference",
+      "runtime_loaded": false,
+      "outputs": [
+        "res/assets/generated/references/companion_set_effects.webp"
+      ],
+      "usage": "Referência de direção de arte"
+    },
+    {
+      "source": "pasted_file_bDlYOO_enemy_set.webp",
+      "category": "reference",
+      "runtime_loaded": false,
+      "outputs": [
+        "res/assets/generated/references/enemy_set_effects.webp"
+      ],
+      "usage": "Referência de direção de arte"
+    },
+    {
+      "source": "pasted_file_viQa0x_visual_target.webp",
+      "category": "reference",
+      "runtime_loaded": false,
+      "outputs": [
+        "res/assets/generated/references/visual_target.webp"
+      ],
+      "usage": "Imagem-alvo de composição; não é sprite de runtime"
+    }
+  ]
+}

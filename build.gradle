@@ -19,6 +19,14 @@ tasks.register('runContentStudio', JavaExec) {
     mainClass = 'com.traduvertgames.tools.ContentStudioApp'
 }
 
+tasks.register('importUserAssets', Exec) {
+    group = 'assets'
+    description = 'Recorta, normaliza e registra os assets colocados em res/assets/incoming/user_uploads.'
+    workingDir projectDir
+    commandLine 'python3', 'tools/import_user_assets.py'
+}
+
+
 tasks.register('generateDefaultEnemySprites', JavaExec) {
     group = 'application'
     description = 'Gera o pacote-base de sprites distintos, transparentes e tiles de Brumafolha.'
