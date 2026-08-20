@@ -76,6 +76,22 @@ class ContentStudioProjectTest {
         assertNotNull(AssetCatalog.enemySprite(Enemy.Variant.GUARDIAN));
     }
 
+    @Test
+    void studioExportsTheCompleteBrumafolhaRuntimeTerrainPack() throws Exception {
+        File[] pack = ContentStudioProject.generateBrumafolhaTerrainPack(root);
+        assertEquals(10, pack.length);
+        for (File tile : pack) {
+            assertTrue(tile.isFile());
+            BufferedImage image = ImageIO.read(tile);
+            assertEquals(32, image.getWidth());
+            assertEquals(32, image.getHeight());
+            assertTrue(ContentStudioProject.readManifestFor(tile).contains("\"kind\": \"tile\""));
+        }
+        assertEquals("brumafolha_grass_0.png", pack[0].getName());
+        assertEquals("brumafolha_road_0.png", pack[4].getName());
+        assertEquals("brumafolha_ruins_2.png", pack[9].getName());
+    }
+
     private static void delete(File file) {
         if (file == null || !file.exists()) return;
         File[] children = file.listFiles();

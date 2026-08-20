@@ -8,11 +8,14 @@ import java.awt.Font;
 import java.awt.GraphicsEnvironment;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
+import java.awt.GridLayout;
 import java.awt.Insets;
 import java.awt.event.ActionEvent;
+import java.awt.image.BufferedImage;
 import java.io.File;
 import java.util.concurrent.atomic.AtomicReference;
 
+import javax.imageio.ImageIO;
 import javax.swing.BorderFactory;
 import javax.swing.ButtonGroup;
 import javax.swing.JCheckBox;
@@ -70,6 +73,7 @@ public final class ContentStudioApp {
         tabs.addTab("Mapas", createMapPanel());
         tabs.addTab("Tiles", createTilePanel());
         tabs.addTab("Inimigos", createEnemyPanel());
+        tabs.addTab("Referências", createTerrainGalleryPanel());
         tabs.addTab("Manifesto", createManifestPanel());
         frame.add(tabs, BorderLayout.CENTER);
 
@@ -179,6 +183,75 @@ public final class ContentStudioApp {
         panel.add(open, BorderLayout.NORTH);
         panel.add(new JScrollPane(manifest), BorderLayout.CENTER);
         return panel;
+    }
+
+    private JPanel createTerrainGalleryPanel() {
+        JPanel root = new JPanel(new BorderLayout(10, 10));
+        root.setBackground(new Color(31, 39, 51));
+        root.setBorder(BorderFactory.createEmptyBorder(16, 18, 18, 18));
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        header.setOpaque(false);
+        JLabel explanation = new JLabel("Referências visuais de Brumafolha — a exportação instala os tiles 32×32 no jogo.");
+        explanation.setForeground(new Color(225, 232, 237));
+        JButton exportPack = new JButton("Gerar pacote runtime 32×32");
+        exportPack.addActionListener(event -> exportBrumafolhaTerrainPack());
+        header.add(explanation);
+        header.add(exportPack);
+        root.add(header, BorderLayout.NORTH);
+
+        JPanel cards = new JPanel(new GridLayout(1, 3, 12, 12));
+        cards.setBackground(new Color(31, 39, 51));
+        cards.add(createTerrainReferenceCard("Grama — 4 variações", "brumafolha_grass_reference.png"));
+        cards.add(createTerrainReferenceCard("Estrada — 3 variações", "brumafolha_road_reference.png"));
+        cards.add(createTerrainReferenceCard("Ruínas — 3 variações", "brumafolha_ruins_reference.png"));
+        root.add(cards, BorderLayout.CENTER);
+
+        JLabel note = new JLabel("As referências orientam a arte; o Vale carrega PNGs em res/assets/generated/tiles/.");
+        note.setForeground(new Color(194, 219, 196));
+        root.add(note, BorderLayout.SOUTH);
+        return root;
+    }
+
+    private JPanel createTerrainReferenceCard(String title, String fileName) {
+        JPanel card = new JPanel(new BorderLayout(6, 6));
+        card.setBackground(new Color(17, 22, 30));
+        card.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(82, 100, 105)),
+                BorderFactory.createEmptyBorder(8, 8, 8, 8)));
+        JLabel label = new JLabel(title, SwingConstants.CENTER);
+        label.setForeground(new Color(245, 218, 146));
+        label.setFont(new Font("Dialog", Font.BOLD, 14));
+        card.add(label, BorderLayout.NORTH);
+        JLabel image = new JLabel("Referência ainda não encontrada", SwingConstants.CENTER);
+        image.setForeground(new Color(180, 194, 201));
+        image.setOpaque(true);
+        image.setBackground(new Color(10, 14, 20));
+        File source = new File(projectRoot, "res/assets/generated/terrain_sources/" + fileName);
+        try {
+            BufferedImage loaded = ImageIO.read(source);
+            if (loaded != null) {
+                image.setIcon(new ImageIcon(loaded.getScaledInstance(248, 186, java.awt.Image.SCALE_SMOOTH)));
+                image.setText("");
+            }
+        } catch (Exception ignored) {
+            image.setText("Não foi possível carregar " + fileName);
+        }
+        card.add(image, BorderLayout.CENTER);
+        return card;
+    }
+
+    private void exportBrumafolhaTerrainPack() {
+        try {
+            File[] outputs = ContentStudioProject.generateBrumafolhaTerrainPack(projectRoot);
+            latestExport.set(outputs[0]);
+            preview.setIcon(new ImageIcon(outputs[0].getAbsolutePath()));
+            preview.setText("");
+            activity.append("\nPacote Brumafolha exportado: " + outputs.length
+                    + " tiles em res/assets/generated/tiles");
+        } catch (Exception failure) {
+            activity.append("\nERRO no pacote de terreno: " + failure.getMessage());
+            JOptionPane.showMessageDialog(null, failure.getMessage(), "Falha na exportação", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel formPanel() {

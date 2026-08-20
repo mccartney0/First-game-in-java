@@ -13,3 +13,11 @@ No Linux ou macOS, execute `./gradlew runContentStudio`.
 As exportações são enviadas aos diretórios utilizados pelo jogo. Mapas regionais ficam em `bin/large_rpg_maps/`, mundos abertos em `bin/open_world_maps/`, tiles em `res/assets/generated/tiles/` e sprites em `res/assets/generated/enemies/`. Consulte `docs/CONTENT_STUDIO_CONTRACT.md` para o contrato de compatibilidade.
 
 As referências visuais de direção de arte do Vale de Brumafolha ficam em `res/assets/generated/terrain_sources/`. Elas orientam as variantes 32×32 de grama, estrada e ruínas; os arquivos de runtime permanecem em `res/assets/generated/tiles/` com os nomes definidos em `docs/VALE_BRUMAFOLHA_CONTENT_STUDIO.md`.
+
+Na aba **Referências**, a galeria mostra grama, estrada e ruínas lado a lado. O botão **Gerar pacote runtime 32×32** escreve automaticamente as quatro variantes de grama, três de estrada e três de ruínas nos nomes que o Vale consome.
+
+Para regenerar o mesmo pacote sem abrir a interface, execute:
+
+```bat
+gradlew.bat generateBrumafolhaTerrain
+```

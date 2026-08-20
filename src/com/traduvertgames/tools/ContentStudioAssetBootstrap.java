@@ -12,16 +12,7 @@ public final class ContentStudioAssetBootstrap {
         for (ContentStudioProject.EnemyRole role : ContentStudioProject.EnemyRole.values()) {
             ContentStudioProject.generateEnemySprite(role, null, null, root);
         }
-        for (int variant = 0; variant < 4; variant++) {
-            ContentStudioProject.generateTile(ContentStudioProject.TileStyle.GRAMA, "brumafolha_grass_" + variant,
-                    variant, ContentStudioProject.TileProperties.defaults(ContentStudioProject.TileStyle.GRAMA), root);
-        }
-        for (int variant = 0; variant < 3; variant++) {
-            ContentStudioProject.generateTile(ContentStudioProject.TileStyle.ESTRADA, "brumafolha_road_" + variant,
-                    variant, ContentStudioProject.TileProperties.defaults(ContentStudioProject.TileStyle.ESTRADA), root);
-            ContentStudioProject.generateTile(ContentStudioProject.TileStyle.RUINAS, "brumafolha_ruins_" + variant,
-                    variant, ContentStudioProject.TileProperties.defaults(ContentStudioProject.TileStyle.RUINAS), root);
-        }
+        ContentStudioProject.generateBrumafolhaTerrainPack(root);
         System.out.println("Pacote de terreno e inimigos exportado em "
                 + new File(root, "res/assets/generated").getAbsolutePath());
     }

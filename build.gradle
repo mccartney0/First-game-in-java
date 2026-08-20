@@ -21,9 +21,16 @@ tasks.register('runContentStudio', JavaExec) {
 
 tasks.register('generateDefaultEnemySprites', JavaExec) {
     group = 'application'
-    description = 'Gera o pacote-base de sprites distintos e transparentes para inimigos.'
+    description = 'Gera o pacote-base de sprites distintos, transparentes e tiles de Brumafolha.'
     classpath = sourceSets.main.runtimeClasspath
     mainClass = 'com.traduvertgames.tools.ContentStudioAssetBootstrap'
+}
+
+tasks.register('generateBrumafolhaTerrain', JavaExec) {
+    group = 'application'
+    description = 'Gera automaticamente as 10 variações 32×32 de grama, estrada e ruínas no diretório de runtime.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.traduvertgames.tools.BrumafolhaTerrainBootstrap'
 }
 
 sourceSets {

@@ -166,6 +166,29 @@ public final class ContentStudioProject {
         return png;
     }
 
+    /**
+     * Exporta as dez variantes de runtime de Brumafolha para
+     * res/assets/generated/tiles. Seus nomes são consumidos diretamente pelo
+     * RpgMap e, por isso, não exigem cópia manual ou mudança de código do jogo.
+     */
+    public static File[] generateBrumafolhaTerrainPack(File projectRoot) throws IOException {
+        File[] generated = new File[10];
+        int index = 0;
+        for (int variant = 0; variant < 4; variant++) {
+            generated[index++] = generateTile(TileStyle.GRAMA, "brumafolha_grass_" + variant,
+                    variant, TileProperties.defaults(TileStyle.GRAMA), projectRoot);
+        }
+        for (int variant = 0; variant < 3; variant++) {
+            generated[index++] = generateTile(TileStyle.ESTRADA, "brumafolha_road_" + variant,
+                    variant, TileProperties.defaults(TileStyle.ESTRADA), projectRoot);
+        }
+        for (int variant = 0; variant < 3; variant++) {
+            generated[index++] = generateTile(TileStyle.RUINAS, "brumafolha_ruins_" + variant,
+                    variant, TileProperties.defaults(TileStyle.RUINAS), projectRoot);
+        }
+        return generated;
+    }
+
     public static File generateEnemySprite(EnemyRole role, Color body, Color accent, File projectRoot) throws IOException {
         EnemyRole safeRole = role == null ? EnemyRole.SCOUT : role;
         return generateEnemySprite(safeRole, body, accent, EnemyProperties.defaults(safeRole), projectRoot);

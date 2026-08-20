@@ -39,3 +39,7 @@
 - [x] Implementar inventário RPG funcional, interações de cenário e feedback de uso de itens.
 - [x] Evoluir a interface e as telas do RPG sem reutilizar HUDs, menus ou terminologia do shooter.
 - [x] Validar o fluxo completo de criação, diálogo, inventário, pausa, retorno ao menu e save do RPG.
+- [x] Gerar e instalar na pasta de runtime as variações finais 32×32 de grama, estrada e ruínas.
+- [x] Garantir a escolha determinística de variantes de tile por posição no renderizador do Vale.
+- [x] Adicionar uma galeria visual interna de referências de terreno ao Content Studio.
+- [x] Validar os assets, a galeria e o build completo antes da publicação.
