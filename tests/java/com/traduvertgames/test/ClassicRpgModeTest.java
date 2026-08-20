@@ -242,6 +242,7 @@ class ClassicRpgModeTest {
         game.keyPressed(key(game, KeyEvent.VK_I));
         game.keyPressed(key(game, KeyEvent.VK_DOWN));
         game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
         game.keyPressed(key(game, KeyEvent.VK_ENTER));
         assertTrue(mode.isBellCharmEquippedForTest());
         game.keyPressed(key(game, KeyEvent.VK_ESCAPE));
@@ -251,6 +252,32 @@ class ClassicRpgModeTest {
         assertTrue(SaveManager.loadSlot(1));
         assertEquals(1, Game.getClassicRpgMode().getBellRelicCountForTest());
         assertTrue(Game.getClassicRpgMode().isBellCharmEquippedForTest());
+    }
+
+    @Test
+    void rpgUsesAndPersistsContentStudioConsumableAndWeapon() throws Exception {
+        Game game = GameTestFixture.newIsolatedGame();
+        game.startClassicRpg();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        ClassicRpgMode mode = Game.getClassicRpgMode();
+
+        game.keyPressed(key(game, KeyEvent.VK_I));
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        int elixirs = mode.getBrumaElixirCountForTest();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        assertEquals(elixirs - 1, mode.getBrumaElixirCountForTest());
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        assertTrue(mode.isBrumaBladeEquippedForTest());
+        game.keyPressed(key(game, KeyEvent.VK_ESCAPE));
+
+        assertTrue(SaveManager.saveCurrentGame());
+        game.returnToMainMenu();
+        assertTrue(SaveManager.loadSlot(1));
+        assertEquals(0, Game.getClassicRpgMode().getBrumaElixirCountForTest());
+        assertTrue(Game.getClassicRpgMode().isBrumaBladeEquippedForTest());
     }
 
     private static KeyEvent key(Game game, int keyCode) {

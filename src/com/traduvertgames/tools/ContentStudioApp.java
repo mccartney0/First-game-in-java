@@ -73,6 +73,7 @@ public final class ContentStudioApp {
         tabs.addTab("Mapas", createMapPanel());
         tabs.addTab("Tiles", createTilePanel());
         tabs.addTab("Inimigos", createEnemyPanel());
+        tabs.addTab("Itens RPG", createRpgItemsPanel());
         tabs.addTab("Referências", createTerrainGalleryPanel());
         tabs.addTab("Manifesto", createManifestPanel());
         frame.add(tabs, BorderLayout.CENTER);
@@ -169,6 +170,70 @@ public final class ContentStudioApp {
         addField(panel, 2, "Vida base", baseLife); addField(panel, 3, "Dano base", baseDamage);
         addField(panel, 4, "Velocidade", speed); addField(panel, 5, "Perfil de IA", behavior);
         addField(panel, 6, "", generate); addPreview(panel, 7);
+        return panel;
+    }
+
+    private JPanel createRpgItemsPanel() {
+        JTabbedPane itemTabs = new JTabbedPane();
+        itemTabs.addTab("Consumível", createConsumablePanel());
+        itemTabs.addTab("Arma", createRpgWeaponPanel());
+        JPanel root = new JPanel(new BorderLayout(8, 8));
+        root.setBorder(BorderFactory.createEmptyBorder(12, 14, 14, 14));
+        root.add(itemTabs, BorderLayout.CENTER);
+        JButton defaults = new JButton("Gerar pacote RPG inicial");
+        defaults.addActionListener(event -> runExport("Pacote RPG", () -> {
+            File[] exports = ContentStudioProject.generateDefaultRpgContentPack(projectRoot);
+            return exports[exports.length - 1];
+        }));
+        JPanel footer = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        footer.add(defaults);
+        root.add(footer, BorderLayout.SOUTH);
+        return root;
+    }
+
+    private JPanel createConsumablePanel() {
+        JPanel panel = formPanel();
+        JTextField id = new JTextField("elixir_de_bruma", 16);
+        JTextField displayName = new JTextField("Elixir de Bruma", 16);
+        JComboBox<ContentStudioProject.ConsumableEffect> effect =
+                new JComboBox<ContentStudioProject.ConsumableEffect>(ContentStudioProject.ConsumableEffect.values());
+        JSpinner life = new JSpinner(new SpinnerNumberModel(24, 0, 999, 1));
+        JSpinner mana = new JSpinner(new SpinnerNumberModel(18, 0, 999, 1));
+        JSpinner stamina = new JSpinner(new SpinnerNumberModel(20, 0, 999, 1));
+        JButton generate = new JButton("Exportar consumível 32×32");
+        generate.addActionListener(event -> runExport("Consumível", () -> {
+            ContentStudioProject.ConsumableProperties properties = new ContentStudioProject.ConsumableProperties(
+                    displayName.getText(), (ContentStudioProject.ConsumableEffect) effect.getSelectedItem(),
+                    (Integer) life.getValue(), (Integer) mana.getValue(), (Integer) stamina.getValue());
+            return ContentStudioProject.generateConsumable(id.getText(), properties, projectRoot);
+        }));
+        addField(panel, 0, "ID do arquivo", id); addField(panel, 1, "Nome visível", displayName);
+        addField(panel, 2, "Efeito", effect); addField(panel, 3, "Restaura vida", life);
+        addField(panel, 4, "Restaura mana", mana); addField(panel, 5, "Restaura fôlego", stamina);
+        addField(panel, 6, "", generate);
+        return panel;
+    }
+
+    private JPanel createRpgWeaponPanel() {
+        JPanel panel = formPanel();
+        JTextField id = new JTextField("lamina_de_bruma", 16);
+        JTextField displayName = new JTextField("Lâmina de Bruma", 16);
+        JComboBox<ContentStudioProject.RpgWeaponStyle> style =
+                new JComboBox<ContentStudioProject.RpgWeaponStyle>(ContentStudioProject.RpgWeaponStyle.values());
+        JSpinner damage = new JSpinner(new SpinnerNumberModel(2, 0, 99, 1));
+        JSpinner stamina = new JSpinner(new SpinnerNumberModel(9, 0, 99, 1));
+        JTextField rarity = new JTextField("uncommon", 12);
+        JButton generate = new JButton("Exportar arma RPG 32×32");
+        generate.addActionListener(event -> runExport("Arma RPG", () -> {
+            ContentStudioProject.RpgWeaponProperties properties = new ContentStudioProject.RpgWeaponProperties(
+                    displayName.getText(), (Integer) damage.getValue(), (Integer) stamina.getValue(), rarity.getText());
+            return ContentStudioProject.generateRpgWeapon(id.getText(),
+                    (ContentStudioProject.RpgWeaponStyle) style.getSelectedItem(), properties, projectRoot);
+        }));
+        addField(panel, 0, "ID do arquivo", id); addField(panel, 1, "Nome visível", displayName);
+        addField(panel, 2, "Estilo", style); addField(panel, 3, "Bônus de dano", damage);
+        addField(panel, 4, "Custo de fôlego", stamina); addField(panel, 5, "Raridade", rarity);
+        addField(panel, 6, "", generate);
         return panel;
     }
 

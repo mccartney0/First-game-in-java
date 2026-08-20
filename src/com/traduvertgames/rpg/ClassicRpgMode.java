@@ -67,6 +67,8 @@ public final class ClassicRpgMode {
     private int bellRelicCount;
     private boolean bellRelicCollected;
     private boolean bellCharmEquipped;
+    private int brumaElixirCount;
+    private boolean brumaBladeEquipped;
     private boolean wellBlessed;
 
     public void startNew(Game game) {
@@ -87,6 +89,8 @@ public final class ClassicRpgMode {
         bellRelicCount = 0;
         bellRelicCollected = false;
         bellCharmEquipped = false;
+        brumaElixirCount = 1;
+        brumaBladeEquipped = false;
         wellBlessed = false;
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
@@ -115,6 +119,8 @@ public final class ClassicRpgMode {
         bellRelicCollected = Boolean.TRUE.equals(data == null ? null : data.get("bellRelicCollected"));
         bellCharmEquipped = Boolean.TRUE.equals(data == null ? null : data.get("bellCharmEquipped"))
                 && bellRelicCount > 0;
+        brumaElixirCount = Math.max(0, intValue(data == null ? null : data.get("brumaElixirCount"), 1));
+        brumaBladeEquipped = Boolean.TRUE.equals(data == null ? null : data.get("brumaBladeEquipped"));
         wellBlessed = Boolean.TRUE.equals(data == null ? null : data.get("wellBlessed"));
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
@@ -199,7 +205,7 @@ public final class ClassicRpgMode {
             } else if (code == KeyEvent.VK_UP || code == KeyEvent.VK_W) {
                 panelSelection = Math.max(0, panelSelection - 1);
             } else if (code == KeyEvent.VK_DOWN || code == KeyEvent.VK_S) {
-                panelSelection = Math.min(2, panelSelection + 1);
+                panelSelection = Math.min(4, panelSelection + 1);
             } else if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
                 useSelectedRpgItem();
             }
@@ -417,12 +423,14 @@ public final class ClassicRpgMode {
             showNotice("O Guardião está no Bosque dos Sussurros, além da Estrada Antiga.");
             return;
         }
-        if (!character.spendStamina(8)) {
+        int attackCost = brumaBladeEquipped ? 9 : 8;
+        if (!character.spendStamina(attackCost)) {
             showNotice("Fôlego insuficiente. Espere um instante antes de atacar.");
             return;
         }
         attackFrames = 12;
-        int damage = Math.max(1, 1 + character.getStrength() / 14 + (bellCharmEquipped ? 1 : 0));
+        int damage = Math.max(1, 1 + character.getStrength() / 14 + (bellCharmEquipped ? 1 : 0)
+                + (brumaBladeEquipped ? 2 : 0));
         wardenLife = Math.max(0, wardenLife - damage);
         if (wardenLife == 0) {
             questStage = QuestStage.RETURN_TO_GUIDE;
@@ -476,12 +484,24 @@ public final class ClassicRpgMode {
             tonicCount--;
             character.restore(0, 26, 22);
             showNotice("Tônico de Luar usado: mana e fôlego restaurados.");
-        } else if (bellRelicCount <= 0) {
+        } else if (panelSelection == 2) {
+            if (brumaElixirCount <= 0) {
+                showNotice("Você não possui Elixires de Bruma.");
+                return;
+            }
+            brumaElixirCount--;
+            character.restore(24, 18, 20);
+            showNotice("Elixir de Bruma usado: recursos restaurados.");
+        } else if (panelSelection == 3 && bellRelicCount <= 0) {
             showNotice("O Fragmento do Sino repousa nas Ruínas do Sino.");
-        } else {
+        } else if (panelSelection == 3) {
             bellCharmEquipped = !bellCharmEquipped;
             showNotice(bellCharmEquipped ? "Fragmento do Sino equipado: +1 dano contra o Guardião."
                     : "Fragmento do Sino guardado na bolsa.");
+        } else {
+            brumaBladeEquipped = !brumaBladeEquipped;
+            showNotice(brumaBladeEquipped ? "Lâmina de Bruma equipada: +2 dano, +1 custo de fôlego."
+                    : "Lâmina de Bruma guardada na bolsa.");
         }
     }
 
@@ -648,7 +668,7 @@ public final class ClassicRpgMode {
 
     private void renderRpgInventory(Graphics g, int width, int height) {
         int panelWidth = 472;
-        int panelHeight = 350;
+        int panelHeight = 500;
         int x = (width - panelWidth) / 2;
         int y = (height - panelHeight) / 2;
         g.setColor(new Color(8, 15, 22, 238));
@@ -658,10 +678,12 @@ public final class ClassicRpgMode {
         g.setColor(new Color(246, 222, 159));
         g.setFont(new Font("Arial", Font.BOLD, 23));
         g.drawString("BOLSA DE VIAGEM", x + 28, y + 42);
-        String[] names = { "Erva de Bruma", "Tônico de Luar", "Fragmento do Sino" };
+        String[] names = { "Erva de Bruma", "Tônico de Luar", "Elixir de Bruma", "Fragmento do Sino", "Lâmina de Bruma" };
         String[] descriptions = { "+28 vida · +14 fôlego", "+26 mana · +22 fôlego",
-                bellCharmEquipped ? "Equipado · +1 dano contra Guardião" : "Equipar · +1 dano contra Guardião" };
-        int[] counts = { herbCount, tonicCount, bellRelicCount };
+                "+24 vida · +18 mana · +20 fôlego",
+                bellCharmEquipped ? "Equipado · +1 dano contra Guardião" : "Equipar · +1 dano contra Guardião",
+                brumaBladeEquipped ? "Equipada · +2 dano · custo 9" : "Equipar · +2 dano · custo 9" };
+        int[] counts = { herbCount, tonicCount, brumaElixirCount, bellRelicCount, 1 };
         for (int i = 0; i < names.length; i++) {
             int rowY = y + 70 + i * 74;
             if (panelSelection == i) {
@@ -669,8 +691,12 @@ public final class ClassicRpgMode {
                 g.fillRoundRect(x + 20, rowY, panelWidth - 40, 58, 8, 8);
             }
             g.setColor(i == 0 ? new Color(102, 176, 105) : i == 1 ? new Color(107, 144, 209)
-                    : new Color(201, 167, 78));
+                    : i == 2 ? new Color(172, 112, 202) : i == 3 ? new Color(201, 167, 78)
+                    : new Color(191, 199, 204));
             g.fillRoundRect(x + 32, rowY + 11, 36, 36, 6, 6);
+            BufferedImage generatedIcon = i == 2 ? AssetCatalog.rpgConsumableIcon("elixir_de_bruma")
+                    : i == 4 ? AssetCatalog.rpgWeaponIcon("lamina_de_bruma") : null;
+            if (generatedIcon != null) g.drawImage(generatedIcon, x + 34, rowY + 13, 32, 32, null);
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 16));
             g.drawString(names[i], x + 84, rowY + 24);
@@ -894,6 +920,8 @@ public final class ClassicRpgMode {
         data.put("bellRelicCount", bellRelicCount);
         data.put("bellRelicCollected", bellRelicCollected);
         data.put("bellCharmEquipped", bellCharmEquipped);
+        data.put("brumaElixirCount", brumaElixirCount);
+        data.put("brumaBladeEquipped", brumaBladeEquipped);
         data.put("wellBlessed", wellBlessed);
         data.put("character", character == null ? RpgCharacterStats.create(RpgArchetype.GUARDIAO).serialize() : character.serialize());
         data.put("player", player == null ? new HashMap<String, Object>() : player.serialize());
@@ -952,6 +980,8 @@ public final class ClassicRpgMode {
     public int getTonicCountForTest() { return tonicCount; }
     public int getBellRelicCountForTest() { return bellRelicCount; }
     public boolean isBellCharmEquippedForTest() { return bellCharmEquipped; }
+    public int getBrumaElixirCountForTest() { return brumaElixirCount; }
+    public boolean isBrumaBladeEquippedForTest() { return brumaBladeEquipped; }
 
     public void reset() {
         active = false;
@@ -964,6 +994,8 @@ public final class ClassicRpgMode {
         bellRelicCount = 0;
         bellRelicCollected = false;
         bellCharmEquipped = false;
+        brumaElixirCount = 0;
+        brumaBladeEquipped = false;
         wellBlessed = false;
         player = null;
         character = null;

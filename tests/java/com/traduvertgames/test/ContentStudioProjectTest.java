@@ -106,6 +106,27 @@ class ContentStudioProjectTest {
         assertEquals("brumafolha_ruins_2.png", pack[9].getName());
     }
 
+    @Test
+    void studioExportsConsumableWeaponAndRpgContentCatalog() throws Exception {
+        ContentStudioProject.ConsumableProperties elixirProperties = new ContentStudioProject.ConsumableProperties(
+                "Elixir Teste", ContentStudioProject.ConsumableEffect.TRIAGEM, 31, 17, 19);
+        File elixir = ContentStudioProject.generateConsumable("elixir_teste", elixirProperties, root);
+        assertEquals(32, ImageIO.read(elixir).getWidth());
+        String elixirManifest = ContentStudioProject.readManifestFor(elixir);
+        assertTrue(elixirManifest.contains("\"kind\": \"consumable\""));
+        assertTrue(elixirManifest.contains("\"lifeRestore\": 31"));
+        assertTrue(elixirManifest.contains("\"displayName\": \"Elixir Teste\""));
+
+        ContentStudioProject.RpgWeaponProperties bladeProperties = new ContentStudioProject.RpgWeaponProperties(
+                "Lâmina Teste", 4, 10, "rare");
+        File blade = ContentStudioProject.generateRpgWeapon("lamina_teste", ContentStudioProject.RpgWeaponStyle.ESPADA,
+                bladeProperties, root);
+        String bladeManifest = ContentStudioProject.readManifestFor(blade);
+        assertTrue(bladeManifest.contains("\"kind\": \"rpg_weapon\""));
+        assertTrue(bladeManifest.contains("\"damageBonus\": 4"));
+        assertTrue(new File(root, "res/assets/generated/rpg_content_catalog.json").isFile());
+    }
+
     private static void delete(File file) {
         if (file == null || !file.exists()) return;
         File[] children = file.listFiles();

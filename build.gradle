@@ -33,6 +33,13 @@ tasks.register('generateBrumafolhaTerrain', JavaExec) {
     mainClass = 'com.traduvertgames.tools.BrumafolhaTerrainBootstrap'
 }
 
+tasks.register('generateDefaultRpgContent', JavaExec) {
+    group = 'application'
+    description = 'Gera o consumível e a arma RPG iniciais com manifestos e ícones 32×32.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.traduvertgames.tools.RpgContentBootstrap'
+}
+
 sourceSets {
     main.java.srcDirs = ['src','res']
     main.resources.srcDirs = ['src','res']

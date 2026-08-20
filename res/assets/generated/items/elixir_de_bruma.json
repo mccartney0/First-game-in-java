@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "consumable",
+  "variant": "TRIAGEM",
+  "file": "elixir_de_bruma.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Elixir de Bruma",
+  "lifeRestore": 24,
+  "manaRestore": 18,
+  "staminaRestore": 20,
+  "alphaRequired": true
+}

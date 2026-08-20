@@ -48,3 +48,6 @@
 - [x] Integrar inimigos configuráveis do Content Studio a comportamentos de IA distintos no jogo.
 - [x] Modernizar a composição, navegação e feedback dos menus principais.
 - [x] Cobrir os novos fluxos de RPG, IA e menu com regressões e validação integrada.
+- [x] Adicionar modelos e exportadores de consumíveis e armas configuráveis ao Content Studio.
+- [x] Integrar exemplos de consumível e arma gerados ao inventário e combate do RPG.
+- [x] Cobrir manifestos, assets e uso no runtime com regressões antes da publicação.

@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "rpg_weapon",
+  "variant": "ESPADA",
+  "file": "lamina_de_bruma.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Lâmina de Bruma",
+  "damageBonus": 2,
+  "staminaCost": 9,
+  "rarity": "uncommon",
+  "alphaRequired": true
+}

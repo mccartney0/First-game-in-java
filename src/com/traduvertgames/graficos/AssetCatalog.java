@@ -207,6 +207,18 @@ public final class AssetCatalog {
         return tile;
     }
 
+    /** Ícone de consumível exportado pelo Content Studio em assets/generated/items. */
+    public static BufferedImage rpgConsumableIcon(String assetName) {
+        String normalized = assetName == null ? "" : assetName.trim().toLowerCase().replaceAll("[^a-z0-9_-]+", "_");
+        return normalized.isEmpty() ? null : load("/assets/generated/items/" + normalized + ".png");
+    }
+
+    /** Ícone de arma melee exportada pelo Content Studio em assets/generated/rpg_weapons. */
+    public static BufferedImage rpgWeaponIcon(String assetName) {
+        String normalized = assetName == null ? "" : assetName.trim().toLowerCase().replaceAll("[^a-z0-9_-]+", "_");
+        return normalized.isEmpty() ? null : load("/assets/generated/rpg_weapons/" + normalized + ".png");
+    }
+
     public static void drawWeaponIcon(Graphics2D graphics, WeaponType type, int x, int y, int width, int height) {
         BufferedImage icon = weaponIcon(type);
         if (icon == null) {

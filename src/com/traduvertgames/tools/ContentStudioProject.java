@@ -25,6 +25,8 @@ public final class ContentStudioProject {
     public enum MapKind { REGIONAL, OPEN_WORLD }
     public enum TileStyle { GRAMA, ESTRADA, RUINAS, PEDRA, AREIA, TECNOLOGIA }
     public enum EnemyRole { SCOUT, BOMBER, SHIELDER, ARTILLERY, SNIPER, SWARM, SAPPER, STALKER, GUARDIAN }
+    public enum ConsumableEffect { CURA, MANA, FÔLEGO, TRIAGEM }
+    public enum RpgWeaponStyle { ESPADA, MACHADO, CAJADO, ADAGA }
 
     public enum EnemyBehavior {
         HUNT("hunt", "Caçador — persegue em alcance médio"),
@@ -102,6 +104,55 @@ public final class ContentStudioProject {
             if (safeRole == EnemyRole.SAPPER) return new EnemyProperties(4, 5, 1.5, behavior.getTag());
             if (safeRole == EnemyRole.STALKER) return new EnemyProperties(6, 3, 1.4, behavior.getTag());
             return new EnemyProperties(5, 2, 1.4, behavior.getTag());
+        }
+    }
+
+    /** Propriedades de um consumível usado pelo loop de inventário do RPG. */
+    public static final class ConsumableProperties {
+        public final String displayName;
+        public final ConsumableEffect effect;
+        public final int lifeRestore;
+        public final int manaRestore;
+        public final int staminaRestore;
+
+        public ConsumableProperties(String displayName, ConsumableEffect effect, int lifeRestore,
+                int manaRestore, int staminaRestore) {
+            this.displayName = safeDisplayName(displayName, "Consumível");
+            this.effect = effect == null ? ConsumableEffect.CURA : effect;
+            this.lifeRestore = Math.max(0, lifeRestore);
+            this.manaRestore = Math.max(0, manaRestore);
+            this.staminaRestore = Math.max(0, staminaRestore);
+        }
+
+        public static ConsumableProperties defaults(ConsumableEffect effect) {
+            ConsumableEffect safeEffect = effect == null ? ConsumableEffect.CURA : effect;
+            if (safeEffect == ConsumableEffect.MANA) return new ConsumableProperties("Tônico de Éter", safeEffect, 0, 34, 12);
+            if (safeEffect == ConsumableEffect.FÔLEGO) return new ConsumableProperties("Infusão de Fôlego", safeEffect, 8, 0, 38);
+            if (safeEffect == ConsumableEffect.TRIAGEM) return new ConsumableProperties("Elixir de Bruma", safeEffect, 24, 18, 20);
+            return new ConsumableProperties("Erva de Bruma", safeEffect, 30, 0, 14);
+        }
+    }
+
+    /** Propriedades de uma arma equipável pelo personagem do modo RPG. */
+    public static final class RpgWeaponProperties {
+        public final String displayName;
+        public final int damageBonus;
+        public final int staminaCost;
+        public final String rarity;
+
+        public RpgWeaponProperties(String displayName, int damageBonus, int staminaCost, String rarity) {
+            this.displayName = safeDisplayName(displayName, "Arma RPG");
+            this.damageBonus = Math.max(0, damageBonus);
+            this.staminaCost = Math.max(0, staminaCost);
+            this.rarity = safeTag(rarity, "common");
+        }
+
+        public static RpgWeaponProperties defaults(RpgWeaponStyle style) {
+            RpgWeaponStyle safeStyle = style == null ? RpgWeaponStyle.ESPADA : style;
+            if (safeStyle == RpgWeaponStyle.MACHADO) return new RpgWeaponProperties("Machado de Raiz", 3, 12, "rare");
+            if (safeStyle == RpgWeaponStyle.CAJADO) return new RpgWeaponProperties("Cajado de Bruma", 2, 8, "uncommon");
+            if (safeStyle == RpgWeaponStyle.ADAGA) return new RpgWeaponProperties("Adaga do Vento", 1, 5, "common");
+            return new RpgWeaponProperties("Lâmina de Bruma", 2, 9, "uncommon");
         }
     }
 
@@ -242,6 +293,46 @@ public final class ContentStudioProject {
         return generateEnemySprite(safeRole, body, accent, EnemyProperties.defaults(safeRole), projectRoot);
     }
 
+    public static File generateConsumable(String id, ConsumableProperties properties, File projectRoot) throws IOException {
+        ConsumableProperties safeProperties = properties == null
+                ? ConsumableProperties.defaults(ConsumableEffect.CURA) : properties;
+        File output = ensureDirectory(projectRoot, "res/assets/generated/items");
+        File png = new File(output, safeName(id, "consumable") + ".png");
+        BufferedImage icon = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = icon.createGraphics();
+        drawConsumableIcon(graphics, safeProperties.effect);
+        graphics.dispose();
+        ImageIO.write(icon, "png", png);
+        writeConsumableManifest(png, safeProperties);
+        refreshRpgContentCatalog(projectRoot);
+        return png;
+    }
+
+    public static File generateRpgWeapon(String id, RpgWeaponStyle style, RpgWeaponProperties properties,
+            File projectRoot) throws IOException {
+        RpgWeaponStyle safeStyle = style == null ? RpgWeaponStyle.ESPADA : style;
+        RpgWeaponProperties safeProperties = properties == null ? RpgWeaponProperties.defaults(safeStyle) : properties;
+        File output = ensureDirectory(projectRoot, "res/assets/generated/rpg_weapons");
+        File png = new File(output, safeName(id, "rpg_weapon") + ".png");
+        BufferedImage icon = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = icon.createGraphics();
+        drawRpgWeaponIcon(graphics, safeStyle);
+        graphics.dispose();
+        ImageIO.write(icon, "png", png);
+        writeRpgWeaponManifest(png, safeStyle, safeProperties);
+        refreshRpgContentCatalog(projectRoot);
+        return png;
+    }
+
+    /** Exporta um conjunto inicial que o modo RPG reconhece automaticamente. */
+    public static File[] generateDefaultRpgContentPack(File projectRoot) throws IOException {
+        File elixir = generateConsumable("elixir_de_bruma",
+                ConsumableProperties.defaults(ConsumableEffect.TRIAGEM), projectRoot);
+        File blade = generateRpgWeapon("lamina_de_bruma", RpgWeaponStyle.ESPADA,
+                RpgWeaponProperties.defaults(RpgWeaponStyle.ESPADA), projectRoot);
+        return new File[] { elixir, blade };
+    }
+
     public static File generateEnemySprite(EnemyRole role, Color body, Color accent, EnemyProperties properties,
             File projectRoot) throws IOException {
         EnemyRole safeRole = role == null ? EnemyRole.SCOUT : role;
@@ -349,6 +440,75 @@ public final class ContentStudioProject {
         return new Color(74, 128, 73);
     }
 
+    private static void drawConsumableIcon(Graphics2D graphics, ConsumableEffect effect) {
+        Color liquid = effect == ConsumableEffect.MANA ? new Color(83, 137, 220)
+                : effect == ConsumableEffect.FÔLEGO ? new Color(108, 194, 125)
+                : effect == ConsumableEffect.TRIAGEM ? new Color(172, 112, 202) : new Color(201, 79, 80);
+        graphics.setColor(new Color(9, 14, 22, 120));
+        graphics.fillOval(8, 25, 16, 4);
+        graphics.setColor(new Color(229, 224, 205));
+        graphics.fillRect(13, 4, 6, 5);
+        graphics.setColor(new Color(112, 118, 126));
+        graphics.fillRoundRect(9, 8, 14, 18, 5, 5);
+        graphics.setColor(liquid);
+        graphics.fillRoundRect(11, 13, 10, 11, 4, 4);
+        graphics.setColor(new Color(255, 246, 194));
+        graphics.fillRect(14, 15, 4, 4);
+    }
+
+    private static void drawRpgWeaponIcon(Graphics2D graphics, RpgWeaponStyle style) {
+        graphics.setColor(new Color(9, 14, 22, 120));
+        graphics.fillOval(7, 25, 18, 4);
+        if (style == RpgWeaponStyle.CAJADO) {
+            graphics.setColor(new Color(110, 75, 47));
+            graphics.fillRect(15, 5, 3, 22);
+            graphics.setColor(new Color(93, 205, 194));
+            graphics.fillOval(11, 3, 11, 10);
+        } else if (style == RpgWeaponStyle.MACHADO) {
+            graphics.setColor(new Color(116, 77, 48));
+            graphics.fillRect(15, 7, 3, 21);
+            graphics.setColor(new Color(191, 199, 204));
+            graphics.fillRoundRect(7, 7, 12, 10, 4, 4);
+        } else if (style == RpgWeaponStyle.ADAGA) {
+            graphics.setColor(new Color(202, 211, 214));
+            graphics.fillPolygon(new Polygon(new int[] {16, 21, 16}, new int[] {3, 22, 18}, 3));
+            graphics.setColor(new Color(172, 121, 61));
+            graphics.fillRect(13, 19, 7, 3);
+        } else {
+            graphics.setColor(new Color(205, 214, 215));
+            graphics.fillPolygon(new Polygon(new int[] {16, 20, 17, 14, 12}, new int[] {3, 20, 24, 20, 6}, 5));
+            graphics.setColor(new Color(180, 130, 63));
+            graphics.fillRect(11, 20, 11, 3);
+            graphics.fillRect(14, 22, 4, 6);
+        }
+    }
+
+    private static void writeConsumableManifest(File png, ConsumableProperties properties) throws IOException {
+        writeAssetManifest(png, "consumable", properties.effect.name(),
+                "  \"displayName\": \"" + properties.displayName + "\",\n"
+                + "  \"lifeRestore\": " + properties.lifeRestore + ",\n"
+                + "  \"manaRestore\": " + properties.manaRestore + ",\n"
+                + "  \"staminaRestore\": " + properties.staminaRestore + ",\n");
+    }
+
+    private static void writeRpgWeaponManifest(File png, RpgWeaponStyle style, RpgWeaponProperties properties)
+            throws IOException {
+        writeAssetManifest(png, "rpg_weapon", style.name(),
+                "  \"displayName\": \"" + properties.displayName + "\",\n"
+                + "  \"damageBonus\": " + properties.damageBonus + ",\n"
+                + "  \"staminaCost\": " + properties.staminaCost + ",\n"
+                + "  \"rarity\": \"" + properties.rarity + "\",\n");
+    }
+
+    private static void refreshRpgContentCatalog(File projectRoot) throws IOException {
+        File output = ensureDirectory(projectRoot, "res/assets/generated");
+        File catalog = new File(output, "rpg_content_catalog.json");
+        try (FileWriter writer = new FileWriter(catalog, StandardCharsets.UTF_8)) {
+            writer.write("{\n  \"schema\": 1,\n  \"itemsDirectory\": \"items\",\n"
+                    + "  \"weaponsDirectory\": \"rpg_weapons\",\n  \"autoDiscovery\": true\n}\n");
+        }
+    }
+
     private static Color tileAccent(TileStyle style) {
         if (style == TileStyle.ESTRADA) return new Color(211, 179, 119);
         if (style == TileStyle.RUINAS) return new Color(146, 145, 153);
@@ -387,6 +547,12 @@ public final class ContentStudioProject {
     private static String safeName(String value, String fallback) {
         String candidate = value == null ? "" : value.trim().toLowerCase().replaceAll("[^a-z0-9_-]+", "_");
         return candidate.isEmpty() ? fallback : candidate;
+    }
+
+    private static String safeDisplayName(String value, String fallback) {
+        String candidate = value == null ? "" : value.trim().replaceAll("[\\r\\n\\t]+", " ");
+        if (candidate.isEmpty()) return fallback;
+        return candidate.length() > 42 ? candidate.substring(0, 42) : candidate;
     }
 
     private static void writeTileManifest(File png, TileStyle style, int variation, TileProperties properties)
