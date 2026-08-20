@@ -16,6 +16,13 @@ import com.traduvertgames.main.SaveManager;
  * os da aplicação principal.
  */
 public final class ClassicRpgMode {
+    private enum QuestStage {
+        FIND_GUIDE,
+        DEFEAT_WARDEN,
+        RETURN_TO_GUIDE,
+        COMPLETE
+    }
+
     private final RpgMap map = new RpgMap();
     private RpgPlayerController player;
     private RpgCharacterStats character;
@@ -23,11 +30,14 @@ public final class ClassicRpgMode {
     private boolean choosingArchetype;
     private int archetypeSelection;
     private boolean characterSheetOpen;
-    private String objective = "Conheça a vila e encontre alguém que conheça a floresta.";
+    private String objective = "Fale com Iara, a guia da vila, perto das casas de Brumafolha.";
     private String notice = "";
     private int noticeFrames;
     private long playedFrames;
     private int staminaRegenFrames;
+    private QuestStage questStage = QuestStage.FIND_GUIDE;
+    private int wardenLife = 3;
+    private int attackFrames;
 
     public void startNew(Game game) {
         active = true;
@@ -36,7 +46,10 @@ public final class ClassicRpgMode {
         characterSheetOpen = false;
         playedFrames = 0;
         staminaRegenFrames = 0;
-        objective = "Conheça a vila e encontre alguém que conheça a floresta.";
+        questStage = QuestStage.FIND_GUIDE;
+        wardenLife = 3;
+        attackFrames = 0;
+        objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
         character = null;
         notice = "Escolha seu arquétipo para iniciar a jornada";
@@ -51,8 +64,10 @@ public final class ClassicRpgMode {
         choosingArchetype = false;
         characterSheetOpen = false;
         playedFrames = nonNegativeLong(data == null ? null : data.get("playedFrames"));
-        objective = stringValue(data == null ? null : data.get("objective"),
-                "Conheça a vila e encontre alguém que conheça a floresta.");
+        questStage = stageValue(data == null ? null : data.get("questStage"));
+        wardenLife = Math.max(0, intValue(data == null ? null : data.get("wardenLife"), 3));
+        attackFrames = 0;
+        objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
         character = RpgCharacterStats.deserialize(asMap(data == null ? null : data.get("character")));
         player.deserialize(asMap(data == null ? null : data.get("player")));
@@ -68,10 +83,14 @@ public final class ClassicRpgMode {
         if (choosingArchetype || characterSheetOpen || character == null) return;
         player.update();
         playedFrames++;
+        if (attackFrames > 0) attackFrames--;
         staminaRegenFrames++;
         if (staminaRegenFrames >= 4) {
             staminaRegenFrames = 0;
             character.updateStamina(1);
+        }
+        if (questStage == QuestStage.DEFEAT_WARDEN && isNearWarden()) {
+            showNotice("Guardião do Bosque à frente — Espaço para atacar.");
         }
     }
 
@@ -119,8 +138,12 @@ public final class ClassicRpgMode {
             showNotice("Inventário RPG será expandido na Rodada 3.");
             return true;
         }
-        if (code == KeyEvent.VK_R) {
-            showNotice("R — Examine a vila e siga pela Estrada Antiga.");
+        if (code == KeyEvent.VK_R || code == KeyEvent.VK_E) {
+            interact();
+            return true;
+        }
+        if (code == KeyEvent.VK_SPACE) {
+            strikeWarden();
             return true;
         }
         if (code == KeyEvent.VK_T) {
@@ -146,9 +169,96 @@ public final class ClassicRpgMode {
         RpgArchetype[] archetypes = RpgArchetype.values();
         character = RpgCharacterStats.create(archetypes[archetypeSelection]);
         choosingArchetype = false;
-        objective = "Conheça a vila e encontre alguém que conheça a floresta.";
+        questStage = QuestStage.FIND_GUIDE;
+        wardenLife = 3;
+        objective = objectiveFor(questStage);
         showNotice("Você é " + character.getArchetype().getDisplayName()
-                + ". Explore o vale e descubra seu primeiro caminho.");
+                + ". Iara, a guia, precisa falar com você.");
+    }
+
+    private void interact() {
+        if (character == null || player == null) return;
+        if (!isNearGuide()) {
+            if (questStage == QuestStage.DEFEAT_WARDEN) {
+                showNotice("Siga pela Estrada Antiga até o Bosque dos Sussurros.");
+            } else if (questStage == QuestStage.RETURN_TO_GUIDE) {
+                showNotice("Volte para Iara, perto das casas de Brumafolha.");
+            } else if (questStage == QuestStage.COMPLETE) {
+                showNotice("O vale está seguro. Explore e grave sua jornada com T.");
+            } else {
+                showNotice("Iara está perto das casas. Aproxime-se e pressione R ou E.");
+            }
+            return;
+        }
+        if (questStage == QuestStage.FIND_GUIDE) {
+            questStage = QuestStage.DEFEAT_WARDEN;
+            objective = objectiveFor(questStage);
+            showNotice("Iara: algo corrompeu o bosque. Derrote o Guardião e volte aqui.");
+        } else if (questStage == QuestStage.RETURN_TO_GUIDE) {
+            questStage = QuestStage.COMPLETE;
+            objective = objectiveFor(questStage);
+            character.gainExperience(90);
+            character.restoreResources();
+            showNotice("Iara: o vale respira de novo. +90 XP e recursos restaurados.");
+        } else if (questStage == QuestStage.COMPLETE) {
+            showNotice("Iara: as Ruínas do Sino serão a próxima expedição.");
+        } else {
+            showNotice("Iara: siga a Estrada Antiga até o Bosque dos Sussurros.");
+        }
+    }
+
+    private void strikeWarden() {
+        if (character == null || player == null) return;
+        if (questStage != QuestStage.DEFEAT_WARDEN) {
+            showNotice("Não há ameaça próxima. Use R ou E para conversar com Iara.");
+            return;
+        }
+        if (!isNearWarden()) {
+            showNotice("O Guardião está no Bosque dos Sussurros, além da Estrada Antiga.");
+            return;
+        }
+        if (!character.spendStamina(8)) {
+            showNotice("Fôlego insuficiente. Espere um instante antes de atacar.");
+            return;
+        }
+        attackFrames = 12;
+        int damage = Math.max(1, 1 + character.getStrength() / 14);
+        wardenLife = Math.max(0, wardenLife - damage);
+        if (wardenLife == 0) {
+            questStage = QuestStage.RETURN_TO_GUIDE;
+            objective = objectiveFor(questStage);
+            showNotice("O Guardião foi purificado. Volte para Iara em Brumafolha.");
+        } else {
+            showNotice("Golpe acertado. Integridade do Guardião: " + wardenLife + ".");
+        }
+    }
+
+    private boolean isNearGuide() {
+        return distanceTo(map.getVillageGuideX(), map.getVillageGuideY()) <= 48;
+    }
+
+    private boolean isNearWarden() {
+        return questStage == QuestStage.DEFEAT_WARDEN && wardenLife > 0
+                && distanceTo(map.getWardenX(), map.getWardenY()) <= 52;
+    }
+
+    private double distanceTo(double x, double y) {
+        double dx = player.getX() - x;
+        double dy = player.getY() - y;
+        return Math.sqrt(dx * dx + dy * dy);
+    }
+
+    private static String objectiveFor(QuestStage stage) {
+        if (stage == QuestStage.DEFEAT_WARDEN) {
+            return "Siga a Estrada Antiga e derrote o Guardião do Bosque com Espaço.";
+        }
+        if (stage == QuestStage.RETURN_TO_GUIDE) {
+            return "Retorne a Brumafolha e conte a Iara que o Guardião foi purificado.";
+        }
+        if (stage == QuestStage.COMPLETE) {
+            return "Missão concluída. Explore o vale, confira seus atributos e salve a jornada.";
+        }
+        return "Fale com Iara, a guia da vila, perto das casas de Brumafolha.";
     }
 
     private void showNotice(String text) {
@@ -160,7 +270,48 @@ public final class ClassicRpgMode {
         if (!active) return;
         map.render(g, player == null ? 0 : player.getCameraX(),
                 player == null ? 0 : player.getCameraY(), Game.WIDTH, Game.HEIGHT);
+        if (player != null) {
+            drawGuide(g);
+            if (questStage == QuestStage.DEFEAT_WARDEN && wardenLife > 0) drawWarden(g);
+        }
         if (player != null) drawPlayer(g);
+    }
+
+    private void drawGuide(Graphics g) {
+        int x = (int) (map.getVillageGuideX() - player.getCameraX());
+        int y = (int) (map.getVillageGuideY() - player.getCameraY());
+        g.setColor(new Color(21, 27, 35, 105));
+        g.fillOval(x - 11, y + 8, 22, 8);
+        g.setColor(new Color(160, 78, 110));
+        g.fillOval(x - 8, y - 9, 16, 22);
+        g.setColor(new Color(246, 209, 173));
+        g.fillOval(x - 6, y - 13, 12, 12);
+        g.setColor(new Color(247, 226, 157));
+        g.drawString("Iara", x - 10, y - 18);
+        if (isNearGuide() && questStage != QuestStage.DEFEAT_WARDEN) {
+            g.setColor(new Color(255, 241, 174));
+            g.drawString("R/E", x - 8, y - 29);
+        }
+    }
+
+    private void drawWarden(Graphics g) {
+        int x = (int) (map.getWardenX() - player.getCameraX());
+        int y = (int) (map.getWardenY() - player.getCameraY());
+        g.setColor(new Color(25, 24, 39, 110));
+        g.fillOval(x - 14, y + 8, 28, 9);
+        g.setColor(new Color(62, 48, 88));
+        g.fillOval(x - 11, y - 11, 22, 25);
+        g.setColor(new Color(147, 198, 112));
+        g.fillOval(x - 7, y - 7, 14, 11);
+        g.setColor(new Color(237, 113, 122));
+        g.fillRect(x - 4, y - 3, 3, 3);
+        g.fillRect(x + 2, y - 3, 3, 3);
+        g.setColor(new Color(240, 224, 182));
+        g.drawString("Guardião " + wardenLife, x - 23, y - 17);
+        if (isNearWarden()) {
+            g.setColor(new Color(255, 240, 176));
+            g.drawString("ESPAÇO", x - 20, y - 28);
+        }
     }
 
     public void renderOverlay(Graphics g) {
@@ -197,6 +348,10 @@ public final class ClassicRpgMode {
         g.setColor(new Color(242, 216, 161));
         g.drawLine(px, py - 5, px + (int) player.getFacingX() * 13,
                 py - 5 + (int) player.getFacingY() * 13);
+        if (attackFrames > 0) {
+            g.setColor(new Color(255, 239, 168, 210));
+            g.drawArc(px - 16, py - 16, 32, 32, -45, 125);
+        }
         g.setColor(Color.WHITE);
         g.fillRect(px - 2, py - 7, 2, 2);
     }
@@ -229,7 +384,7 @@ public final class ClassicRpgMode {
         g.setFont(new Font("Arial", Font.PLAIN, 11));
         drawWrapped(g, objective, width - 193, height - 34, 174);
         g.setColor(new Color(235, 225, 197));
-        g.drawString("WASD mover  C atributos  T salvar", 12, height - 8);
+        g.drawString("WASD mover  R/E falar  Espaço atacar  C atributos  T salvar", 12, height - 8);
     }
 
     private void drawBar(Graphics g, int x, int y, int width, int height, int value, int max, Color color) {
@@ -310,10 +465,12 @@ public final class ClassicRpgMode {
 
     public Map<String, Object> serialize() {
         Map<String, Object> data = new HashMap<String, Object>();
-        data.put("schema", 1);
+        data.put("schema", 2);
         data.put("mapId", "vale_brumafolha");
         data.put("objective", objective);
         data.put("playedFrames", playedFrames);
+        data.put("questStage", questStage.name());
+        data.put("wardenLife", wardenLife);
         data.put("character", character == null ? RpgCharacterStats.create(RpgArchetype.GUARDIAO).serialize() : character.serialize());
         data.put("player", player == null ? new HashMap<String, Object>() : player.serialize());
         data.put("restPoint", "village_west_gate");
@@ -341,6 +498,20 @@ public final class ClassicRpgMode {
         catch (Exception ignored) { return 0; }
     }
 
+    private static int intValue(Object raw, int fallback) {
+        if (raw instanceof Number) return ((Number) raw).intValue();
+        try { return Integer.parseInt(String.valueOf(raw)); }
+        catch (Exception ignored) { return fallback; }
+    }
+
+    private static QuestStage stageValue(Object raw) {
+        if (raw != null) {
+            try { return QuestStage.valueOf(String.valueOf(raw)); }
+            catch (IllegalArgumentException ignored) { }
+        }
+        return QuestStage.FIND_GUIDE;
+    }
+
     public boolean isActive() { return active; }
     public boolean isChoosingArchetype() { return choosingArchetype; }
     public RpgMap getMap() { return map; }
@@ -350,6 +521,8 @@ public final class ClassicRpgMode {
     public String getMapId() { return "vale_brumafolha"; }
     public String getMapDisplayName() { return map.getDisplayName(); }
     public long getPlayedFrames() { return playedFrames; }
+    public String getQuestStageForTest() { return questStage.name(); }
+    public int getWardenLifeForTest() { return wardenLife; }
 
     public void reset() {
         active = false;

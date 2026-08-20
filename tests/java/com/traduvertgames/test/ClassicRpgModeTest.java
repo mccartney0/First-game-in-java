@@ -145,6 +145,34 @@ class ClassicRpgModeTest {
         assertEquals(savedY, restored.getPlayer().getY(), 0.01);
     }
 
+    @Test
+    void classicQuestHasGuideCombatRewardAndPersistsItsStage() throws Exception {
+        Game game = GameTestFixture.newIsolatedGame();
+        game.startClassicRpg();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        ClassicRpgMode mode = Game.getClassicRpgMode();
+
+        mode.getPlayer().setPosition(mode.getMap().getVillageGuideX(), mode.getMap().getVillageGuideY());
+        game.keyPressed(key(game, KeyEvent.VK_R));
+        assertEquals("DEFEAT_WARDEN", mode.getQuestStageForTest());
+
+        mode.getPlayer().setPosition(mode.getMap().getWardenX(), mode.getMap().getWardenY());
+        for (int i = 0; i < 3; i++) game.keyPressed(key(game, KeyEvent.VK_SPACE));
+        assertEquals(0, mode.getWardenLifeForTest());
+        assertEquals("RETURN_TO_GUIDE", mode.getQuestStageForTest());
+
+        mode.getPlayer().setPosition(mode.getMap().getVillageGuideX(), mode.getMap().getVillageGuideY());
+        game.keyPressed(key(game, KeyEvent.VK_E));
+        assertEquals("COMPLETE", mode.getQuestStageForTest());
+        assertTrue(mode.getCharacter().getExperience() > 0);
+        assertEquals("COMPLETE", mode.serialize().get("questStage"));
+
+        assertTrue(SaveManager.saveCurrentGame());
+        game.returnToMainMenu();
+        assertTrue(SaveManager.loadSlot(1));
+        assertEquals("COMPLETE", Game.getClassicRpgMode().getQuestStageForTest());
+    }
+
     private static KeyEvent key(Game game, int keyCode) {
         return new KeyEvent(game, KeyEvent.KEY_PRESSED, System.currentTimeMillis(), 0,
                 keyCode, KeyEvent.CHAR_UNDEFINED);
