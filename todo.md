@@ -18,3 +18,10 @@
 - [x] Impedir que tonalização de Mundo Aberto escureça Campanha e Aventura RPG.
 - [x] Tornar os modos iniciais e o caminho para dungeons explícitos na interface.
 - [x] Adicionar regressões de fluxo, executar build, QA e playthrough de aceitação.
+- [x] Auditar atlas dos inimigos, renderização de sprites, gargalos do mapa e estado do RPG Clássico.
+- [x] Definir manifestos e formato de exportação do aplicativo de produção de mapas, tiles e assets.
+- [x] Substituir os monstros ilegíveis por sprites transparentes com silhuetas distintas.
+- [x] Introduzir setores ativos para limitar atualizações e desenho do mundo RPG grande.
+- [x] Criar loop inicial de NPC, objetivo e encontro no RPG Clássico.
+- [x] Implementar aplicativo desktop de geração e exportação de conteúdo.
+- [x] Cobrir assets, desempenho, exportação e gameplay com regressões e QA completo.
