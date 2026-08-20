@@ -7,11 +7,11 @@ Os arquivos enviados pelo usuário são tratados como **assets próprios do proj
 | Grupo | Entrada | Saída | Uso no jogo |
 |---|---|---|---|
 | Ícones de armas | `*_clean.png` | `generated/weapons/*_clean.png` | `AssetCatalog.weaponIcon`, HUD, seleção e telas de build. |
-| Efeitos de tiro | `blaster.png`, `ion_rifle.png`, `scatter_cannon.png`, `fusion_lance.png`, `void_mortar.png` | `generated/effects/*_shot.png` | Biblioteca de efeitos com rastro/brilho. O runtime atual ainda desenha o projétil por código; estes arquivos ficam preparados para uma próxima camada de muzzle flash/trail. |
+| Efeitos de tiro | `blaster.png`, `ion_rifle.png`, `scatter_cannon.png`, `fusion_lance.png`, `void_mortar.png` | `generated/effects/*_shot.png` | Biblioteca de efeitos com rastro/brilho. O runtime atual ainda desenha o projétil por código; por isso estes arquivos não são desenhados automaticamente durante a partida. |
 | Companheiros | `companion_set_clean.webp` | `generated/companions/companion_set_clean.png` | Atlas de 3 colunas lido por `AssetCatalog.companionSprite`: `SCOUT`, `SHIELD_BOT` e `FAIRY`. |
 | Inimigos | `enemy_set_clean.webp` | `generated/enemies/enemy_set_clean.png` | Atlas de 3×2 usado como fallback por `AssetCatalog.enemySprite` e por entidades de combate. |
 | Scout | `scout_ref.png` | `generated/enemies/scout_ref.png` | Sprite individual do `SCOUT` e fallback de variantes que ainda não têm arte própria. |
-| Portal | `dungeon_portal.png` | `generated/world/dungeon_portal.png` | Asset exposto por `AssetCatalog.dungeonPortal`, disponível para cenas de dungeon e portal de retorno. |
+| Portal | `dungeon_portal.png` | `generated/world/dungeon_portal.png` | `AssetCatalog.dungeonPortal()` já carrega o arquivo; a cena ainda precisa chamar esse método em um renderizador de portal ativo. |
 | Referências | `visual_target.webp`, pranchas com efeitos | `generated/references/*` | Direção de arte e consulta; não são carregadas durante a partida. |
 
 > O importador não substitui a lógica de combate. Ele prepara arquivos e mantém nomes compatíveis com o catálogo existente; colisão, dano, cadência e IA continuam sendo definidos no código Java.
