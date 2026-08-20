@@ -32,12 +32,13 @@ public class MenuLogicTest {
 		Field upF = menuClass.getField("up"), downF = menuClass.getField("down"), enterF = menuClass.getField("enter");
 		java.lang.reflect.Method updateMethod = menuClass.getMethod("update");
 
-		Object howToScreen = null, mainScreen = null;
+		Object howToScreen = null, mainScreen = null, exitConfirmScreen = null;
 		Class<?> screenType = screenField.getType();
 		Object[] enums = screenType.getEnumConstants();
 		for (Object e : enums) {
 			if (e.toString().equals("HOW_TO_PLAY")) howToScreen = e;
-			if (e.toString().equals("MAIN")) mainScreen = e;
+				if (e.toString().equals("MAIN")) mainScreen = e;
+				if (e.toString().equals("EXIT_CONFIRM")) exitConfirmScreen = e;
 		}
 
 		// Flusso realista: MAIN opção 3 ("como jogar") -> Enter -> abre tutorial
@@ -54,16 +55,13 @@ public class MenuLogicTest {
 		check("após voltar, seleção em cima (currentOption=0)", (int) optionField.get(menu) == 0);
 
 		// Verificar que o EXIT_CONFIRM com "Não" também volta ao MAIN
-		// (caminho adicional: MAIN opção 5 "sair" -> Não -> MAIN)
-		// resetar
-		downF.set(menu, true); updateMethod.invoke(menu); // opção 1
-		downF.set(menu, true); updateMethod.invoke(menu); // opção 2
-		downF.set(menu, true); updateMethod.invoke(menu); // opção 3
-		downF.set(menu, true); updateMethod.invoke(menu); // opção 4
-		downF.set(menu, true); updateMethod.invoke(menu); // opção 5 = sair
+		// (caminho adicional: MAIN opção 7 "sair" -> Não -> MAIN)
+		// Posicionar diretamente em "Sair" para isolar o fluxo de confirmação
+		// das opções indisponíveis e do estado de teclas refletido entre updates.
+		optionField.set(menu, 7);
 		enterF.set(menu, true);
 		updateMethod.invoke(menu);
-		check("menu entrou na confirmação de saída", screenField.getType().getMethod("ordinal").invoke(screenField.get(menu)).equals(5));
+		check("menu entrou na confirmação de saída", exitConfirmScreen.equals(screenField.get(menu)));
 		enterF.set(menu, true); // "Não" (seleção inicial 0)
 		updateMethod.invoke(menu);
 		check("Não na confirmação volta ao menu principal", mainScreen.equals(screenField.get(menu)));

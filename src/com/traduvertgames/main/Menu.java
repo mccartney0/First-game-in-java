@@ -15,9 +15,10 @@ import com.traduvertgames.world.World;
 
 public class Menu {
 
-	private enum Screen {
-		MAIN,
-		PAUSE,
+		private enum Screen {
+			MAIN,
+			GAME_MODES,
+			PAUSE,
 		OPTIONS,
 		LOAD,
 		SAVE,
@@ -25,25 +26,19 @@ public class Menu {
 		EXIT_CONFIRM
 	}
 
-		private static final int OPTION_OPEN_WORLD = 0;
-		private static final int OPTION_RPG_ADVENTURE = 1;
-		private static final int OPTION_CLASSIC_RPG = 2;
-		private static final int OPTION_CAMPAIGN = 3;
-		private static final int OPTION_CONTINUE = 4;
-		private static final int OPTION_LOAD_GAME = 5;
-		private static final int OPTION_HOW_TO_PLAY = 6;
-		private static final int OPTION_SETTINGS = 7;
+		private static final int OPTION_PLAY = 0;
+		private static final int OPTION_CONTINUE = 1;
+		private static final int OPTION_LOAD_GAME = 2;
+		private static final int OPTION_HOW_TO_PLAY = 3;
+		private static final int OPTION_SETTINGS = 4;
 		// Rodada 29 — metagame: opção do menu principal para as melhorias
 		// permanentes do piloto, compráveis com os créditos persistentes.
-		private static final int OPTION_UPGRADES = 8;
-		private static final int OPTION_NEW_GAME_PLUS = 9;
-		private static final int OPTION_EXIT = 10;
+		private static final int OPTION_UPGRADES = 5;
+		private static final int OPTION_NEW_GAME_PLUS = 6;
+		private static final int OPTION_EXIT = 7;
 
 		private static final String[] MAIN_OPTIONS = {
-				"mundo aberto gigante",
-				"aventura RPG",
-				"rpg clássico",
-				"campanha narrativa",
+				"jogar",
 				"continuar",
 				"carregar jogo",
 				"como jogar",
@@ -51,6 +46,27 @@ public class Menu {
 				"melhorias do piloto",
 				"nova campanha+",
 				"sair"
+		};
+
+		private static final int MODE_OPEN_WORLD = 0;
+		private static final int MODE_RPG_ADVENTURE = 1;
+		private static final int MODE_CLASSIC_RPG = 2;
+		private static final int MODE_CAMPAIGN = 3;
+		private static final int MODE_BACK = 4;
+
+		private static final String[] GAME_MODE_OPTIONS = {
+				"mundo aberto gigante",
+				"aventura RPG",
+				"rpg clássico",
+				"campanha narrativa",
+				"voltar"
+		};
+
+		private static final String[] GAME_MODE_DESCRIPTIONS = {
+				"Explore um mundo amplo com clima, regiões e eventos dinâmicos.",
+				"Aceite missões, evolua sua equipe e enfrente desafios regionais.",
+				"Descubra o Vale de Brumafolha em um action RPG de fantasia.",
+				"Siga uma campanha narrativa com decisões, diálogos e capítulos."
 		};
 
 	private static final int PAUSE_CONTINUE = 0;
@@ -203,11 +219,14 @@ public class Menu {
 				com.traduvertgames.graficos.PilotUpgradesScreen.confirm();
 				return;
 			}
-			switch (currentScreen) {
-			case MAIN:
-				handleMainMenuSelection();
-				break;
-			case PAUSE:
+				switch (currentScreen) {
+				case MAIN:
+					handleMainMenuSelection();
+					break;
+				case GAME_MODES:
+					handleGameModeSelection();
+					break;
+				case PAUSE:
 				handlePauseSelection();
 				break;
 			case OPTIONS:
@@ -238,16 +257,20 @@ public class Menu {
 	/** ESC fecha a tela atual voltando ao nível anterior do menu. */
 	private void escapeFromCurrentScreen() {
 		switch (currentScreen) {
-		case MAIN:
-			// ESC no menu principal com o jogo pausado fecha a pausa (volta ao jogo).
+			case MAIN:
+				// ESC no menu principal com o jogo pausado fecha a pausa (volta ao jogo).
 			if (pause) {
 				closePauseScreen();
 			}
 			break;
-		case PAUSE:
-			closePauseScreen();
-			break;
-		case OPTIONS:
+			case GAME_MODES:
+				currentScreen = Screen.MAIN;
+				currentOption = OPTION_PLAY;
+				break;
+			case PAUSE:
+				closePauseScreen();
+				break;
+			case OPTIONS:
 			currentScreen = pause ? Screen.PAUSE : Screen.MAIN;
 			currentOption = 0;
 			break;
@@ -296,10 +319,12 @@ public class Menu {
 	}
 
 	private int getCurrentOptionCount() {
-		switch (currentScreen) {
-		case MAIN:
-			return MAIN_OPTIONS.length;
-		case PAUSE:
+			switch (currentScreen) {
+			case MAIN:
+				return MAIN_OPTIONS.length;
+			case GAME_MODES:
+				return GAME_MODE_OPTIONS.length;
+			case PAUSE:
 			return PAUSE_OPTIONS_LIST.length;
 		case OPTIONS:
 			return OPTIONS_LABELS.length;
@@ -342,40 +367,12 @@ public class Menu {
 
 	private static Screen currentScreenStatic = Screen.MAIN;
 
-	private void handleMainMenuSelection() {
-		switch (currentOption) {
-		case OPTION_OPEN_WORLD:
-			if (!pause) {
-				Game openWorldGame = Game.getInstance();
-				if (openWorldGame != null) {
-					openWorldGame.startOpenWorld();
-				}
-			}
-			break;
-			case OPTION_RPG_ADVENTURE:
-				if (!pause) {
-					Game adventureGame = Game.getInstance();
-					if (adventureGame != null) {
-						adventureGame.startNewGame();
-					}
-				}
+		private void handleMainMenuSelection() {
+			switch (currentOption) {
+			case OPTION_PLAY:
+				currentScreen = Screen.GAME_MODES;
+				currentOption = MODE_OPEN_WORLD;
 				break;
-			case OPTION_CLASSIC_RPG:
-				if (!pause) {
-					Game classicGame = Game.getInstance();
-					if (classicGame != null) {
-						classicGame.startClassicRpg();
-					}
-				}
-				break;
-			case OPTION_CAMPAIGN:
-			if (!pause) {
-				Game campaignGame = Game.getInstance();
-				if (campaignGame != null) {
-					campaignGame.startNarrativeCampaign();
-				}
-			}
-			break;
 		case OPTION_CONTINUE:
 			if (pause) {
 				closePauseScreen();
@@ -426,10 +423,61 @@ public class Menu {
 		}
 	}
 
-	/** Contagem das opções do menu principal (exposta para testes — rodada 31). */
-	public int getMainMenuOptionCountForTest() {
-		return MAIN_OPTIONS.length;
-	}
+		private void handleGameModeSelection() {
+			if (currentOption == MODE_BACK) {
+				currentScreen = Screen.MAIN;
+				currentOption = OPTION_PLAY;
+				return;
+			}
+			if (pause) {
+				currentScreen = Screen.MAIN;
+				currentOption = OPTION_PLAY;
+				return;
+			}
+			Game game = Game.getInstance();
+			if (game == null) return;
+			switch (currentOption) {
+			case MODE_OPEN_WORLD:
+				game.startOpenWorld();
+				break;
+			case MODE_RPG_ADVENTURE:
+				game.startNewGame();
+				break;
+			case MODE_CLASSIC_RPG:
+				game.startClassicRpg();
+				break;
+			case MODE_CAMPAIGN:
+				game.startNarrativeCampaign();
+				break;
+			case MODE_BACK:
+			default:
+				currentScreen = Screen.MAIN;
+				currentOption = OPTION_PLAY;
+				break;
+			}
+		}
+
+		/** Contagem das opções do menu principal (exposta para testes). */
+		public int getMainMenuOptionCountForTest() {
+			return MAIN_OPTIONS.length;
+		}
+
+		/** Rótulo renderizado de uma opção principal, útil para regressões de UI. */
+		public String getMainMenuLabelForTest(int index) {
+			if (index < 0 || index >= MAIN_OPTIONS.length) return "";
+			return getMainMenuLabel(index);
+		}
+
+		/** Contagem dos modos disponíveis na tela “Jogar”. */
+		public int getGameModeOptionCountForTest() {
+			return GAME_MODE_OPTIONS.length;
+		}
+
+		/** Rótulo de um modo disponível na tela “Jogar”. */
+		public String getGameModeLabelForTest(int index) {
+			if (index < 0 || index >= GAME_MODE_OPTIONS.length) return "";
+			return GAME_MODE_OPTIONS[index];
+		}
 
 	/** Disponibilidade da opção Nova campanha+ (exposta para testes — rodada 31). */
 	public boolean isNewGamePlusAvailableForTest() {
@@ -690,34 +738,26 @@ private void handlePauseSelection() {
 			g.fillRect(0, 0, screenWidth, screenHeight);
 		}
 
-		// O título amarelo só aparece no menu principal; nos painéis de
-		// overlay, cada painel desenha seu próprio cabeçalho limpo.
-		if (!screenOverlay) {
-			String title = ">Traduvert<";
-			Font titleFont = new Font("arial", Font.BOLD, 40);
-			g.setFont(titleFont);
-			int titleX = (screenWidth - g.getFontMetrics().stringWidth(title)) / 2;
-			int titleBaseline = (int) (screenHeight * 0.28);
-			g.setColor(Color.yellow);
-			g.drawString(title, titleX, titleBaseline);
-		}
 
 		// Consistência: se o jogo está em MENU sem pausa e não está em nenhuma
 		// tela de overlay, forçar a tela principal. As telas de overlay (PAUSE,
 		// LOAD, OPTIONS, HOW_TO_PLAY, EXIT_CONFIRM) são válidas no estado MENU.
-		boolean isOverlay = (currentScreen == Screen.PAUSE || currentScreen == Screen.LOAD
-				|| currentScreen == Screen.SAVE
-				|| currentScreen == Screen.OPTIONS || currentScreen == Screen.HOW_TO_PLAY
-				|| currentScreen == Screen.EXIT_CONFIRM);
+			boolean isOverlay = (currentScreen == Screen.GAME_MODES || currentScreen == Screen.PAUSE
+					|| currentScreen == Screen.LOAD || currentScreen == Screen.SAVE
+					|| currentScreen == Screen.OPTIONS || currentScreen == Screen.HOW_TO_PLAY
+					|| currentScreen == Screen.EXIT_CONFIRM);
 		if (!pause && currentScreen != Screen.MAIN && !isOverlay) {
 			currentScreen = Screen.MAIN;
 			currentOption = 0;
 		}
-		switch (currentScreen) {
-		case PAUSE:
-			renderPauseMenu(g);
-			break;
-		case OPTIONS:
+			switch (currentScreen) {
+			case GAME_MODES:
+				renderGameModes(g);
+				break;
+			case PAUSE:
+				renderPauseMenu(g);
+				break;
+			case OPTIONS:
 			renderOptionsMenu(g);
 			break;
 		case LOAD:
@@ -742,49 +782,124 @@ private void handlePauseSelection() {
 		com.traduvertgames.graficos.PilotUpgradesScreen.draw(g);
 	}
 
-	private void renderMainMenu(Graphics g) {
-		Font optionFont = new Font("arial", Font.BOLD, 25);
-		g.setFont(optionFont);
-		String[] labels = new String[MAIN_OPTIONS.length];
-		int maxWidth = 0;
-		for (int i = 0; i < MAIN_OPTIONS.length; i++) {
-			labels[i] = getMainMenuLabel(i);
-			maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(labels[i]));
-		}
-
-		int screenWidth = Game.WIDTH * Game.SCALE;
-		int screenHeight = Game.HEIGHT * Game.SCALE;
-		int textX = (screenWidth - maxWidth) / 2;
-		int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
-		int totalHeight = MAIN_OPTIONS.length * LINE_HEIGHT;
-		int startY = (screenHeight - totalHeight) / 2 + g.getFontMetrics().getAscent();
-
-		for (int i = 0; i < MAIN_OPTIONS.length; i++) {
-			int baselineY = startY + (LINE_HEIGHT * i);
-			if (currentOption == i) {
-				g.setColor(Color.white);
-				g.drawString(">", arrowX, baselineY);
+		private void renderMainMenu(Graphics g) {
+			int screenWidth = Game.WIDTH * Game.SCALE;
+			int screenHeight = Game.HEIGHT * Game.SCALE;
+			String[] labels = new String[MAIN_OPTIONS.length];
+			Font optionFont = new Font("arial", Font.BOLD, 24);
+			g.setFont(optionFont);
+			int maxWidth = 0;
+			for (int i = 0; i < MAIN_OPTIONS.length; i++) {
+				labels[i] = getMainMenuLabel(i);
+				maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(labels[i]));
 			}
 
-			if (!isOptionAvailable(MAIN_OPTIONS[i])) {
-				g.setColor(Color.LIGHT_GRAY);
-			} else {
-				g.setColor(Color.white);
+			String title = "> TRADUVERT <";
+			Font titleFont = new Font("arial", Font.BOLD, 42);
+			g.setFont(titleFont);
+			g.setColor(new Color(255, 218, 72));
+			int titleY = 104;
+			g.drawString(title, (screenWidth - g.getFontMetrics().stringWidth(title)) / 2, titleY);
+
+			Font subtitleFont = new Font("arial", Font.PLAIN, 15);
+			g.setFont(subtitleFont);
+			g.setColor(new Color(205, 215, 225));
+			String subtitle = "Escolha uma aventura para começar";
+			g.drawString(subtitle, (screenWidth - g.getFontMetrics().stringWidth(subtitle)) / 2, titleY + 30);
+
+			int panelWidth = Math.min(screenWidth - 120, maxWidth + 210);
+			int panelX = (screenWidth - panelWidth) / 2;
+			int panelY = 158;
+			int panelHeight = MAIN_OPTIONS.length * LINE_HEIGHT + 42;
+			g.setColor(new Color(8, 14, 24, 232));
+			g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
+			g.setColor(new Color(92, 117, 145, 190));
+			g.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
+
+			int textX = (screenWidth - maxWidth) / 2;
+			int arrowX = textX - g.getFontMetrics().charWidth('>') - 18;
+			int startY = panelY + 32;
+			for (int i = 0; i < MAIN_OPTIONS.length; i++) {
+				int rowY = startY + LINE_HEIGHT * i;
+				int baselineY = rowY + g.getFontMetrics().getAscent();
+				boolean available = isOptionAvailable(MAIN_OPTIONS[i]);
+				if (currentOption == i) {
+					g.setColor(new Color(55, 83, 112, 230));
+					g.fillRoundRect(panelX + 20, rowY - 4, panelWidth - 40, LINE_HEIGHT - 4, 10, 10);
+					g.setColor(new Color(255, 226, 108));
+					g.drawString(">", arrowX, baselineY);
+				}
+				g.setColor(!available ? new Color(126, 135, 145) :
+						(currentOption == i ? Color.WHITE : new Color(232, 237, 242)));
+				g.drawString(labels[i], textX, baselineY);
 			}
 
-			g.drawString(labels[i], textX, baselineY);
+			int credits = com.traduvertgames.state.PilotUpgrades.getCredits();
+			Font creditFont = new Font("arial", Font.BOLD, 15);
+			g.setFont(creditFont);
+			String creditLabel = "CRÉDITOS  " + credits;
+			g.setColor(new Color(255, 214, 10));
+			g.drawString(creditLabel, (screenWidth - g.getFontMetrics().stringWidth(creditLabel)) / 2,
+					panelY + panelHeight + 30);
+
+			Font footerFont = new Font("arial", Font.PLAIN, 13);
+			g.setFont(footerFont);
+			g.setColor(new Color(177, 190, 204));
+			String footer = "↑/↓ selecionar   ENTER confirmar   ESC sair";
+			g.drawString(footer, (screenWidth - g.getFontMetrics().stringWidth(footer)) / 2,
+					screenHeight - 18);
 		}
 
-		// Saldo em memória: compras e recompensas aparecem imediatamente. O
-		// estado do disco é carregado no construtor e nas rotinas de load.
-		int credits = com.traduvertgames.state.PilotUpgrades.getCredits();
-		Font creditFont = new Font("arial", Font.BOLD, 16);
-		g.setFont(creditFont);
-		String creditLabel = "CREDITOS: " + credits;
-		g.setColor(new java.awt.Color(255, 214, 10));
-		g.drawString(creditLabel, (screenWidth - g.getFontMetrics().stringWidth(creditLabel)) / 2,
-				(int) (screenHeight * 0.28) + g.getFontMetrics().getHeight() + 6);
-	}
+		private void renderGameModes(Graphics g) {
+			int screenWidth = Game.WIDTH * Game.SCALE;
+			int screenHeight = Game.HEIGHT * Game.SCALE;
+			Font titleFont = new Font("arial", Font.BOLD, 34);
+			g.setFont(titleFont);
+			g.setColor(new Color(255, 218, 72));
+			String title = "JOGAR";
+			g.drawString(title, (screenWidth - g.getFontMetrics().stringWidth(title)) / 2, 105);
+
+			Font subtitleFont = new Font("arial", Font.PLAIN, 15);
+			g.setFont(subtitleFont);
+			g.setColor(new Color(205, 215, 225));
+			String subtitle = "Escolha o modo de jogo";
+			g.drawString(subtitle, (screenWidth - g.getFontMetrics().stringWidth(subtitle)) / 2, 133);
+
+			int rowHeight = 68;
+			int panelWidth = Math.min(screenWidth - 120, 820);
+			int panelX = (screenWidth - panelWidth) / 2;
+			int panelY = 162;
+			int panelHeight = GAME_MODE_OPTIONS.length * rowHeight + 32;
+			g.setColor(new Color(8, 14, 24, 238));
+			g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
+			g.setColor(new Color(92, 117, 145, 190));
+			g.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
+
+			Font modeFont = new Font("arial", Font.BOLD, 22);
+			Font descriptionFont = new Font("arial", Font.PLAIN, 13);
+			for (int i = 0; i < GAME_MODE_OPTIONS.length; i++) {
+				int rowY = panelY + 16 + i * rowHeight;
+				if (currentOption == i) {
+					g.setColor(new Color(55, 83, 112, 230));
+					g.fillRoundRect(panelX + 18, rowY, panelWidth - 36, rowHeight - 8, 10, 10);
+				}
+				g.setFont(modeFont);
+				g.setColor(currentOption == i ? new Color(255, 226, 108) : new Color(232, 237, 242));
+				g.drawString((currentOption == i ? "> " : "  ") + GAME_MODE_OPTIONS[i], panelX + 42, rowY + 27);
+				if (i < GAME_MODE_DESCRIPTIONS.length) {
+					g.setFont(descriptionFont);
+					g.setColor(new Color(190, 202, 214));
+					g.drawString(GAME_MODE_DESCRIPTIONS[i], panelX + 74, rowY + 49);
+				}
+			}
+
+			Font footerFont = new Font("arial", Font.PLAIN, 13);
+			g.setFont(footerFont);
+			g.setColor(new Color(177, 190, 204));
+			String footer = "↑/↓ escolher   ENTER iniciar   ESC voltar";
+			g.drawString(footer, (screenWidth - g.getFontMetrics().stringWidth(footer)) / 2,
+					screenHeight - 18);
+		}
 
 	private boolean isOptionAvailable(String option) {
 		if ("carregar jogo".equals(option)) {
@@ -801,16 +916,12 @@ private void handlePauseSelection() {
 		return true;
 	}
 
-	private String getMainMenuLabel(int index) {
-		switch (index) {
-		case OPTION_RPG_ADVENTURE:
-				return pause ? "Continuar" : "Aventura RPG";
-			case OPTION_CLASSIC_RPG:
-				return "RPG Clássico";
-			case OPTION_CAMPAIGN:
-			return "Campanha narrativa";
-		case OPTION_CONTINUE:
-			return "Continuar";
+		private String getMainMenuLabel(int index) {
+			switch (index) {
+			case OPTION_PLAY:
+				return "Jogar";
+			case OPTION_CONTINUE:
+				return "Continuar";
 		case OPTION_LOAD_GAME:
 			return saveExists ? "Carregar jogo" : "Carregar jogo (indisponível)";
 		case OPTION_HOW_TO_PLAY:
@@ -823,10 +934,10 @@ private void handlePauseSelection() {
 		// for concluída (a opção é desabilitada em isOptionAvailable).
 		case OPTION_NEW_GAME_PLUS:
 			return "Nova campanha+";
-		case OPTION_EXIT:
-			return "Sair";
-		default:
-			return "";
+			case OPTION_EXIT:
+				return "Sair";
+			default:
+				return "";
 		}
 	}
 
@@ -1019,28 +1130,35 @@ private void handlePauseSelection() {
 		g.setFont(optionFont);
 
 			String[] lines = {
-					"WASD/setas: mover — SPACE: pular — X/clique: atirar",
-					"Q/E ou 1–6: trocar arma — SHIFT: dash — F: especial",
-					"TAB: painel tático — I: inventário — P/ESC: pausa",
-					"Fase 1: fale com Ava e colete 2 artefatos do setor",
-					"Fase 2: ative o beacon, defenda a área e derrote o Warbringer",
-					"Fase 3–5: sobreviva, desative obeliscos, resgate e recupere dados",
-					"Fase 6–8: resista, sabote, defenda e escolte até o núcleo",
-					"Matar concede XP; a loja e as estatísticas aparecem ao concluir a fase",
-					"PHANTOM drena escudo/mana — mantenha distância; elites brilham em dourado",
-					"Morrer salva automaticamente; no game over use setas/A-D e ENTER",
-					"Opções: música, volume da trilha, efeitos, volume e dificuldade",
+					"CONTROLES GERAIS",
+					"WASD / setas: mover       ENTER: confirmar",
+					"ESC: fechar a tela atual ou pausar durante o jogo",
+					"MENU",
+					"Jogar: escolha um dos quatro modos disponíveis",
+					"COMBATE E EXPLORAÇÃO",
+					"RPG Clássico: X/clique esquerdo atacar — botão direito bloquear",
+					"Espaço esquivar — C atributos — R interagir — I inventário",
+					"Campanha/Aventura: X/clique atirar — Q/E ou 1–6 trocar arma",
+					"SHIFT dash — F especial — TAB painel tático",
+					"PROGRESSÃO",
+					"Explore, converse, cumpra missões e use os menus de inventário e opções.",
 					"ENTER ou ESC: voltar"
-			};
+				};
 
-		int maxWidth = 0;
-		for (String line : lines) {
-			maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(line));
-		}
+			java.util.List<String> displayLines = new java.util.ArrayList<String>();
+			int contentMaxWidth = Math.min(980, screenWidth - 260);
+			for (String line : lines) {
+				displayLines.addAll(wrapText(line, g.getFontMetrics(), contentMaxWidth));
+			}
+
+			int maxWidth = 0;
+			for (String line : displayLines) {
+				maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(line));
+			}
 		// Painel escuro por trás do tutorial para garantir legibilidade
 		// (evita que o título e o jogo apareçam por cima do texto).
-		int panelHeight = 124 + linesBlockHeight(lines, 28) + 20;
-		int panelWidth = Math.max(headerWidth, maxWidth) + 80;
+			int panelHeight = 124 + displayLines.size() * 28 + 20;
+			int panelWidth = Math.min(screenWidth - 120, Math.max(headerWidth, maxWidth) + 80);
 		int panelX = (screenWidth - panelWidth) / 2;
 		// Centraliza o painel na tela para nenhuma linha ficar cortada
 		// em resoluções menores que o conteúdo completo.
@@ -1048,15 +1166,21 @@ private void handlePauseSelection() {
 		g.setFont(headerFont);
 		g.setColor(new Color(10, 12, 18, 235));
 		g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 16, 16);
-		g.setColor(Color.yellow);
-		g.drawString(header, (screenWidth - headerWidth) / 2, panelY + 40);
+			g.setColor(new Color(255, 218, 72));
+			g.drawString(header, (screenWidth - headerWidth) / 2, panelY + 40);
 
-		int textX = (screenWidth - maxWidth) / 2;
+			g.setFont(optionFont);
+			int textX = (screenWidth - maxWidth) / 2;
 		int startY = panelY + 68;
-		for (int i = 0; i < lines.length; i++) {
-			g.setColor(Color.white);
-			g.drawString(lines[i], textX, startY + (28 * i));
-		}
+			for (int i = 0; i < displayLines.size(); i++) {
+				String line = displayLines.get(i);
+				boolean section = "CONTROLES GERAIS".equals(line)
+						|| "MENU".equals(line)
+						|| "COMBATE E EXPLORAÇÃO".equals(line)
+						|| "PROGRESSÃO".equals(line);
+				g.setColor(section ? new Color(255, 218, 72) : Color.WHITE);
+				g.drawString(line, textX, startY + (28 * i));
+			}
 	}
 
 	private static int linesBlockHeight(String[] lines, int lineHeight) {
@@ -1109,31 +1233,42 @@ private void handlePauseSelection() {
 		}
 
 		int textX = (screenWidth - maxWidth) / 2;
-		int totalHeight = g.getFontMetrics(headerFont).getHeight() + OPTIONS_LABELS.length * OPTIONS_LINE_HEIGHT;
-		int startY = (screenHeight - totalHeight) / 2;
-		int headerBaseline = startY + g.getFontMetrics(headerFont).getAscent();
+int totalHeight = g.getFontMetrics(headerFont).getHeight() + OPTIONS_LABELS.length * OPTIONS_LINE_HEIGHT;
+			int startY = (screenHeight - totalHeight) / 2;
+			int headerBaseline = startY + g.getFontMetrics(headerFont).getAscent();
+			int panelWidth = Math.min(screenWidth - 120, maxWidth + 190);
+			int panelX = (screenWidth - panelWidth) / 2;
+			int panelY = startY - 26;
+				int panelHeight = totalHeight + 96;
+			g.setColor(new Color(8, 14, 24, 238));
+			g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
+			g.setColor(new Color(92, 117, 145, 190));
+			g.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
 
-		g.setColor(Color.white);
-		g.setFont(headerFont);
+			g.setColor(new Color(255, 218, 72));
+			g.setFont(headerFont);
 		g.drawString(header, (screenWidth - headerWidth) / 2, headerBaseline);
 
 		g.setFont(optionFont);
 		int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
-		for (int i = 0; i < lines.length; i++) {
-			int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
-			if (currentOption == i) {
-				g.setColor(Color.yellow);
-				g.drawString(">", arrowX, baselineY);
-				g.setColor(Color.white);
-			}
-							g.drawString(lines[i], textX, baselineY);
+			for (int i = 0; i < lines.length; i++) {
+				int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
+				int rowTop = baselineY - g.getFontMetrics().getAscent() - 7;
+				if (currentOption == i) {
+					g.setColor(new Color(55, 83, 112, 230));
+					g.fillRoundRect(panelX + 20, rowTop, panelWidth - 40, OPTIONS_LINE_HEIGHT - 3, 9, 9);
+					g.setColor(new Color(255, 226, 108));
+					g.drawString(">", arrowX, baselineY);
+				}
+				g.setColor(currentOption == i ? Color.WHITE : new Color(232, 237, 242));
+				g.drawString(lines[i], textX, baselineY);
 			}
 			Font hintFont = new Font("arial", Font.PLAIN, 13);
 			g.setFont(hintFont);
-			g.setColor(new Color(190, 190, 190));
-			String hint = "Esquerda/direita: ajustar volume — Enter: alternar/confirmar";
-			g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2,
-					startY + OPTIONS_LABELS.length * OPTIONS_LINE_HEIGHT + 28);
+			g.setColor(new Color(190, 200, 212));
+			String hint = "←/→ ajustar   ENTER alternar   ESC voltar";
+				g.drawString(hint, (screenWidth - g.getFontMetrics().stringWidth(hint)) / 2,
+						startY + OPTIONS_LABELS.length * OPTIONS_LINE_HEIGHT + 54);
 		}
 
 		private void renderOptionList(Graphics g, String[] labels, String headerLabel) {
@@ -1153,25 +1288,36 @@ private void handlePauseSelection() {
 		}
 
 		int textX = (screenWidth - maxWidth) / 2;
-		int totalHeight = g.getFontMetrics(headerFont).getHeight() + labels.length * OPTIONS_LINE_HEIGHT;
-		int startY = (screenHeight - totalHeight) / 2;
-		int headerBaseline = startY + g.getFontMetrics(headerFont).getAscent();
+			int totalHeight = g.getFontMetrics(headerFont).getHeight() + labels.length * OPTIONS_LINE_HEIGHT;
+			int startY = (screenHeight - totalHeight) / 2;
+			int headerBaseline = startY + g.getFontMetrics(headerFont).getAscent();
+			int panelWidth = Math.min(screenWidth - 120, maxWidth + 190);
+			int panelX = (screenWidth - panelWidth) / 2;
+			int panelY = startY - 26;
+			int panelHeight = totalHeight + 50;
+			g.setColor(new Color(8, 14, 24, 238));
+			g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
+			g.setColor(new Color(92, 117, 145, 190));
+			g.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
 
-		g.setColor(Color.white);
-		g.setFont(headerFont);
-		g.drawString(headerLabel, (screenWidth - headerWidth) / 2, headerBaseline);
+			g.setColor(new Color(255, 218, 72));
+			g.setFont(headerFont);
+			g.drawString(headerLabel, (screenWidth - headerWidth) / 2, headerBaseline);
 
-		g.setFont(optionFont);
-		int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
-		for (int i = 0; i < labels.length; i++) {
-			int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
-			if (currentOption == i) {
-				g.setColor(Color.yellow);
-				g.drawString(">", arrowX, baselineY);
-				g.setColor(Color.white);
+			g.setFont(optionFont);
+			int arrowX = textX - g.getFontMetrics().charWidth('>') - 16;
+			for (int i = 0; i < labels.length; i++) {
+				int baselineY = headerBaseline + OPTIONS_LINE_HEIGHT * (i + 1);
+				int rowTop = baselineY - g.getFontMetrics().getAscent() - 7;
+				if (currentOption == i) {
+					g.setColor(new Color(55, 83, 112, 230));
+					g.fillRoundRect(panelX + 20, rowTop, panelWidth - 40, OPTIONS_LINE_HEIGHT - 3, 9, 9);
+					g.setColor(new Color(255, 226, 108));
+					g.drawString(">", arrowX, baselineY);
+				}
+				g.setColor(currentOption == i ? Color.WHITE : new Color(232, 237, 242));
+				g.drawString(labels[i], textX, baselineY);
 			}
-			g.drawString(labels[i], textX, baselineY);
-		}
 	}
 
 	/** @deprecated Use {@link SaveManager} para persistência. */
