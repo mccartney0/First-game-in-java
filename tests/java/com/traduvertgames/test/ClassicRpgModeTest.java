@@ -325,10 +325,17 @@ class ClassicRpgModeTest {
         for (int advance = 0; advance < 3; advance++) game.keyPressed(key(game, KeyEvent.VK_ENTER));
         assertEquals("COMPLETE", mode.getOutlandQuestStageForTest());
         assertEquals(4, mode.getBrumaElixirCountForTest());
-        assertEquals(4, mode.getOutlandEnemyCountForTest());
+        assertEquals(5, mode.getOutlandEnemyCountForTest());
         assertTrue(mode.hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind.MIRE_HOUND));
         assertTrue(mode.hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind.BOG_ORACLE));
         assertTrue(mode.hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind.MIRE_BRUTE));
+        assertTrue(mode.hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind.MIST_SOVEREIGN));
+
+        int lifeBeforePulse = mode.getCharacter().getLife();
+        mode.getPlayer().setPosition(mode.getMap().getMistSovereignX(), mode.getMap().getMistSovereignY());
+        mode.update();
+        assertTrue(mode.isMistSovereignPulseActiveForTest());
+        assertTrue(mode.getCharacter().getLife() < lifeBeforePulse);
 
         int defenseBeforeChest = mode.getCharacter().getPhysicalDefense();
         mode.getPlayer().setPosition(mode.getMap().getOutlandChestX(), mode.getMap().getOutlandChestY());

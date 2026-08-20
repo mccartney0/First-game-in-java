@@ -9,7 +9,7 @@ import com.traduvertgames.graficos.AssetCatalog;
 
 /** Inimigo leve, determinístico e independente do loop do shooter para o modo RPG. */
 public final class RpgCombatEnemy {
-    public enum Kind { STALKER, SNIPER, MARSH_WARDEN, MIRE_HOUND, BOG_ORACLE, MIRE_BRUTE }
+    public enum Kind { STALKER, SNIPER, MARSH_WARDEN, MIRE_HOUND, BOG_ORACLE, MIRE_BRUTE, MIST_SOVEREIGN }
 
     private final Kind kind;
     private final String name;
@@ -21,20 +21,31 @@ public final class RpgCombatEnemy {
     private final double moveSpeed;
     private final String behaviorTag;
     private final String contentSpriteId;
+    private final RpgBossAbilityProfile specialAbility;
     private double x;
     private double y;
     private int life;
     private int attackCooldown;
+    private int specialCooldown;
+    private int specialPulseFrames;
+    private boolean specialUsedLastUpdate;
 
     public RpgCombatEnemy(Kind kind, String name, double x, double y, int maxLife, int attack,
             int experienceReward, int dropElixirs, boolean boss) {
         this(kind, name, x, y, maxLife, attack, experienceReward, dropElixirs, boss,
-                defaultSpeed(kind), defaultBehavior(kind), null);
+                defaultSpeed(kind), defaultBehavior(kind), null, null);
     }
 
     public RpgCombatEnemy(Kind kind, String name, double x, double y, int maxLife, int attack,
             int experienceReward, int dropElixirs, boolean boss, double moveSpeed, String behaviorTag,
             String contentSpriteId) {
+        this(kind, name, x, y, maxLife, attack, experienceReward, dropElixirs, boss, moveSpeed, behaviorTag,
+                contentSpriteId, null);
+    }
+
+    public RpgCombatEnemy(Kind kind, String name, double x, double y, int maxLife, int attack,
+            int experienceReward, int dropElixirs, boolean boss, double moveSpeed, String behaviorTag,
+            String contentSpriteId, RpgBossAbilityProfile specialAbility) {
         this.kind = kind == null ? Kind.STALKER : kind;
         this.name = name == null ? "Ameaça da Charneca" : name;
         this.x = x;
@@ -48,11 +59,15 @@ public final class RpgCombatEnemy {
         this.moveSpeed = Math.max(0.1, moveSpeed);
         this.behaviorTag = behaviorTag == null ? defaultBehavior(this.kind) : behaviorTag;
         this.contentSpriteId = contentSpriteId;
+        this.specialAbility = specialAbility;
     }
 
     public int update(RpgPlayerController player, RpgMap map, int physicalDefense) {
         if (!isAlive() || player == null || map == null) return 0;
         if (attackCooldown > 0) attackCooldown--;
+        if (specialCooldown > 0) specialCooldown--;
+        if (specialPulseFrames > 0) specialPulseFrames--;
+        specialUsedLastUpdate = false;
         double dx = player.getX() - x;
         double dy = player.getY() - y;
         double distance = Math.sqrt(dx * dx + dy * dy);
@@ -65,6 +80,12 @@ public final class RpgCombatEnemy {
                 x = nx;
                 y = ny;
             }
+        }
+        if (specialAbility != null && distance <= specialAbility.getRange() && specialCooldown <= 0) {
+            specialCooldown = specialAbility.getCooldownTicks();
+            specialPulseFrames = 24;
+            specialUsedLastUpdate = true;
+            return Math.max(1, specialAbility.getDamage() - Math.max(0, physicalDefense) / 2);
         }
         double attackRange = isRanged() ? 165 : isFortified() ? 58 : isPounce() ? 42
                 : kind == Kind.SNIPER ? 190 : kind == Kind.MARSH_WARDEN ? 52 : 38;
@@ -104,6 +125,15 @@ public final class RpgCombatEnemy {
             if (kind == Kind.SNIPER) g.fillRect(drawX + 6, drawY - 18, 4, 15);
         }
         if (boss) g.drawOval(drawX - 14, drawY - 20, 28, 31);
+        if (specialPulseFrames > 0) {
+            int radius = 16 + (24 - specialPulseFrames) / 2;
+            g.setColor(new Color(222, 70, 111, 145));
+            g.drawOval(drawX - radius, drawY - radius, radius * 2, radius * 2);
+            g.setColor(new Color(255, 204, 164, 100));
+            g.drawOval(drawX - radius - 3, drawY - radius - 3, radius * 2 + 6, radius * 2 + 6);
+            BufferedImage abilityIcon = AssetCatalog.contentAbilityIcon("mist_sovereign_nucleo_da_bruma");
+            if (abilityIcon != null) g.drawImage(abilityIcon, drawX - 8, drawY - 8, 16, 16, null);
+        }
         g.setColor(new Color(14, 19, 23, 215));
         g.fillRoundRect(drawX - 22, drawY - 28, 44, 7, 3, 3);
         g.setColor(new Color(201, 75, 72));
@@ -117,6 +147,7 @@ public final class RpgCombatEnemy {
     private Enemy.Variant spriteVariant() {
         if (kind == Kind.SNIPER) return Enemy.Variant.SNIPER;
         if (kind == Kind.MARSH_WARDEN) return Enemy.Variant.GUARDIAN;
+        if (kind == Kind.MIST_SOVEREIGN) return Enemy.Variant.GUARDIAN;
         return Enemy.Variant.PHANTOM;
     }
 
@@ -128,6 +159,7 @@ public final class RpgCombatEnemy {
         if (kind == Kind.MIRE_HOUND) return 1.65;
         if (kind == Kind.BOG_ORACLE) return 0.7;
         if (kind == Kind.MIRE_BRUTE) return 0.65;
+        if (kind == Kind.MIST_SOVEREIGN) return 0.55;
         if (kind == Kind.STALKER) return 1.2;
         if (kind == Kind.MARSH_WARDEN) return 0.7;
         return 0.45;
@@ -139,6 +171,7 @@ public final class RpgCombatEnemy {
         if (kind == Kind.MIRE_BRUTE) return "fortify";
         if (kind == Kind.SNIPER) return "snipe";
         if (kind == Kind.MARSH_WARDEN) return "regenerate";
+        if (kind == Kind.MIST_SOVEREIGN) return "regenerate";
         return "drain";
     }
 
@@ -149,6 +182,8 @@ public final class RpgCombatEnemy {
     public int getDropElixirs() { return dropElixirs; }
     public String getName() { return name; }
     public Kind getKind() { return kind; }
+    public boolean wasSpecialUsedLastUpdate() { return specialUsedLastUpdate; }
+    public int getSpecialPulseFrames() { return specialPulseFrames; }
     public double getX() { return x; }
     public double getY() { return y; }
 }

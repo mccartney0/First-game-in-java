@@ -88,6 +88,7 @@ public final class ClassicRpgMode {
     private boolean mireHoundDefeated;
     private boolean bogOracleDefeated;
     private boolean mireBruteDefeated;
+    private boolean mistSovereignDefeated;
     private OutlandQuestStage outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
     private boolean outlandChestOpened;
     private boolean outlandEntranceSeen;
@@ -120,6 +121,7 @@ public final class ClassicRpgMode {
         mireHoundDefeated = false;
         bogOracleDefeated = false;
         mireBruteDefeated = false;
+        mistSovereignDefeated = false;
         outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
         outlandChestOpened = false;
         outlandEntranceSeen = false;
@@ -161,6 +163,7 @@ public final class ClassicRpgMode {
         mireHoundDefeated = Boolean.TRUE.equals(data == null ? null : data.get("mireHoundDefeated"));
         bogOracleDefeated = Boolean.TRUE.equals(data == null ? null : data.get("bogOracleDefeated"));
         mireBruteDefeated = Boolean.TRUE.equals(data == null ? null : data.get("mireBruteDefeated"));
+        mistSovereignDefeated = Boolean.TRUE.equals(data == null ? null : data.get("mistSovereignDefeated"));
         outlandQuestStage = outlandStageValue(data == null ? null : data.get("outlandQuestStage"));
         outlandChestOpened = Boolean.TRUE.equals(data == null ? null : data.get("outlandChestOpened"));
         outlandEntranceSeen = Boolean.TRUE.equals(data == null ? null : data.get("outlandEntranceSeen"));
@@ -200,7 +203,8 @@ public final class ClassicRpgMode {
             int damage = enemy.update(player, map, character.getPhysicalDefense());
             if (damage <= 0) continue;
             character.takeDamage(damage);
-            showNotice(enemy.getName() + " atinge você: -" + damage + " vida.");
+            showNotice(enemy.wasSpecialUsedLastUpdate() ? "Núcleo da Bruma pulsa: -" + damage + " vida."
+                    : enemy.getName() + " atinge você: -" + damage + " vida.");
             if (character.getLife() <= 0) {
                 character.restoreResources();
                 player.setPosition(map.getOutlandGateX() - RpgMap.TILE_SIZE * 2, map.getOutlandGateY());
@@ -247,6 +251,13 @@ public final class ClassicRpgMode {
             outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.MIRE_BRUTE, "Bruto da Charneca",
                     map.getMireBruteX(), map.getMireBruteY(), profile.getBaseLife(), profile.getBaseDamage(),
                     76, 2, false, profile.getSpeed(), profile.getBehaviorTag(), profile.getAssetId()));
+        }
+        if (!mistSovereignDefeated) {
+            RpgContentEnemyProfile profile = RpgContentEnemyProfile.load("enemy_mist_sovereign", 48, 12, 0.55, "regenerate");
+            RpgBossAbilityProfile ability = RpgBossAbilityProfile.loadMistSovereignAbility();
+            outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.MIST_SOVEREIGN, "Soberano da Bruma",
+                    map.getMistSovereignX(), map.getMistSovereignY(), profile.getBaseLife(), profile.getBaseDamage(),
+                    180, 3, true, profile.getSpeed(), profile.getBehaviorTag(), profile.getAssetId(), ability));
         }
     }
 
@@ -607,7 +618,12 @@ public final class ClassicRpgMode {
         }
         character.gainExperience(enemy.getExperienceReward());
         brumaElixirCount += enemy.getDropElixirs();
-        if (enemy.isBoss()) {
+        if (enemy.getKind() == RpgCombatEnemy.Kind.MIST_SOVEREIGN) {
+            mistSovereignDefeated = true;
+            bellRelicCount += 2;
+            showNotice("Soberano vencido: +" + enemy.getExperienceReward()
+                    + " XP, 3 Elixires e 2 Fragmentos do Sino.");
+        } else if (enemy.isBoss()) {
             outlandBossDefeated = true;
             bellRelicCount++;
             showNotice("Chefe vencido: +" + enemy.getExperienceReward()
@@ -1251,6 +1267,7 @@ public final class ClassicRpgMode {
         data.put("mireHoundDefeated", mireHoundDefeated);
         data.put("bogOracleDefeated", bogOracleDefeated);
         data.put("mireBruteDefeated", mireBruteDefeated);
+        data.put("mistSovereignDefeated", mistSovereignDefeated);
         data.put("outlandQuestStage", outlandQuestStage.name());
         data.put("outlandChestOpened", outlandChestOpened);
         data.put("outlandEntranceSeen", outlandEntranceSeen);
@@ -1324,12 +1341,19 @@ public final class ClassicRpgMode {
     public int getOutlandEnemyCountForTest() { return outlandEnemies.size(); }
     public boolean isStalkerDefeatedForTest() { return stalkerDefeated; }
     public boolean isOutlandBossDefeatedForTest() { return outlandBossDefeated; }
+    public boolean isMistSovereignDefeatedForTest() { return mistSovereignDefeated; }
     public String getOutlandQuestStageForTest() { return outlandQuestStage.name(); }
     public boolean isOutlandChestOpenedForTest() { return outlandChestOpened; }
     public boolean hasSeenOutlandEntranceForTest() { return outlandEntranceSeen; }
     public boolean hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind kind) {
         for (RpgCombatEnemy enemy : outlandEnemies) {
             if (enemy.getKind() == kind && enemy.isAlive()) return true;
+        }
+        return false;
+    }
+    public boolean isMistSovereignPulseActiveForTest() {
+        for (RpgCombatEnemy enemy : outlandEnemies) {
+            if (enemy.getKind() == RpgCombatEnemy.Kind.MIST_SOVEREIGN && enemy.getSpecialPulseFrames() > 0) return true;
         }
         return false;
     }
@@ -1354,6 +1378,7 @@ public final class ClassicRpgMode {
         mireHoundDefeated = false;
         bogOracleDefeated = false;
         mireBruteDefeated = false;
+        mistSovereignDefeated = false;
         outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
         outlandChestOpened = false;
         outlandEntranceSeen = false;

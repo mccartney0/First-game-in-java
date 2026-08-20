@@ -25,6 +25,7 @@ public final class AssetCatalog {
     private static final Map<Enemy.Variant, String> ENEMY_PATHS = new EnumMap<Enemy.Variant, String>(Enemy.Variant.class);
     private static final Map<String, BufferedImage> CONTENT_TILES = new HashMap<String, BufferedImage>();
     private static final Map<String, BufferedImage> CONTENT_ENEMIES = new HashMap<String, BufferedImage>();
+    private static final Map<String, BufferedImage> CONTENT_ABILITIES = new HashMap<String, BufferedImage>();
     private static BufferedImage companionAtlas;
     private static BufferedImage enemyAtlas;
     private static boolean initialized;
@@ -216,6 +217,16 @@ public final class AssetCatalog {
         BufferedImage sprite = loadNormalizedEnemySprite("/assets/generated/enemies/" + normalized + ".png");
         CONTENT_ENEMIES.put(normalized, sprite);
         return sprite;
+    }
+
+    /** Ícone de habilidade exportado pelo Content Studio para efeitos especiais do RPG. */
+    public static synchronized BufferedImage contentAbilityIcon(String assetName) {
+        if (assetName == null || assetName.trim().isEmpty()) return null;
+        String normalized = assetName.trim().toLowerCase().replaceAll("[^a-z0-9_-]+", "_");
+        if (CONTENT_ABILITIES.containsKey(normalized)) return CONTENT_ABILITIES.get(normalized);
+        BufferedImage icon = load("/assets/generated/abilities/" + normalized + ".png");
+        CONTENT_ABILITIES.put(normalized, icon);
+        return icon;
     }
 
     /** Ícone de consumível exportado pelo Content Studio em assets/generated/items. */

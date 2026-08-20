@@ -123,6 +123,25 @@ public final class ContentStudioProject {
         }
     }
 
+    /** Contrato exportável de uma habilidade especial de chefe usada pelo runtime RPG. */
+    public static final class BossAbilityProperties {
+        public final String ownerRole;
+        public final int damage;
+        public final int cooldownTicks;
+        public final int range;
+
+        public BossAbilityProperties(String ownerRole, int damage, int cooldownTicks, int range) {
+            this.ownerRole = safeTag(ownerRole, EnemyRole.MIST_SOVEREIGN.name().toLowerCase());
+            this.damage = Math.max(1, damage);
+            this.cooldownTicks = Math.max(1, cooldownTicks);
+            this.range = Math.max(24, range);
+        }
+
+        public static BossAbilityProperties mistSovereignDefaults() {
+            return new BossAbilityProperties("mist_sovereign", 14, 180, 168);
+        }
+    }
+
     /** Propriedades de um consumível usado pelo loop de inventário do RPG. */
     public static final class ConsumableProperties {
         public final String displayName;
@@ -391,6 +410,35 @@ public final class ContentStudioProject {
         return generateEnemySprite(EnemyRole.MIST_SOVEREIGN, null, null, profile, projectRoot);
     }
 
+    /** Exporta o ícone e o manifesto configurável da pulsação especial do Soberano. */
+    public static File generateMistSovereignAbility(File projectRoot) throws IOException {
+        return generateMistSovereignAbility(BossAbilityProperties.mistSovereignDefaults(), projectRoot);
+    }
+
+    public static File generateMistSovereignAbility(BossAbilityProperties properties, File projectRoot) throws IOException {
+        BossAbilityProperties safeProperties = properties == null
+                ? BossAbilityProperties.mistSovereignDefaults() : properties;
+        File output = ensureDirectory(projectRoot, "res/assets/generated/abilities");
+        File png = new File(output, "mist_sovereign_nucleo_da_bruma.png");
+        BufferedImage icon = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = icon.createGraphics();
+        graphics.setColor(new Color(36, 28, 57, 120));
+        graphics.fillOval(2, 2, 28, 28);
+        graphics.setColor(new Color(113, 42, 82, 230));
+        graphics.fillOval(6, 6, 20, 20);
+        graphics.setColor(new Color(220, 61, 103, 245));
+        graphics.fillOval(10, 10, 12, 12);
+        graphics.setColor(new Color(255, 216, 170, 255));
+        graphics.fillOval(13, 13, 6, 6);
+        graphics.setColor(new Color(174, 95, 194, 220));
+        graphics.drawOval(3, 3, 26, 26);
+        graphics.drawOval(7, 7, 18, 18);
+        graphics.dispose();
+        ImageIO.write(icon, "png", png);
+        writeBossAbilityManifest(png, safeProperties);
+        return png;
+    }
+
     public static String readManifestFor(File generatedFile) throws IOException {
         if (generatedFile == null) return "";
         String name = generatedFile.getName();
@@ -645,6 +693,13 @@ public final class ContentStudioProject {
                 + "  \"speed\": " + properties.speed + ",\n"
                 + "  \"behaviorTag\": \"" + properties.behaviorTag + "\",\n"
                 + "  \"boss\": " + properties.boss + ",\n");
+    }
+
+    private static void writeBossAbilityManifest(File png, BossAbilityProperties properties) throws IOException {
+        writeAssetManifest(png, "boss_ability", properties.ownerRole,
+                "  \"damage\": " + properties.damage + ",\n"
+                + "  \"cooldownTicks\": " + properties.cooldownTicks + ",\n"
+                + "  \"range\": " + properties.range + ",\n");
     }
 
     private static void writeAssetManifest(File png, String kind, String variant, String propertiesJson) throws IOException {

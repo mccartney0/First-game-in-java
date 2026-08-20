@@ -70,3 +70,9 @@
 - [x] Criar um chefe configurável no canvas de inimigos com atributos e perfil de IA próprios.
 - [x] Exportar e inspecionar o sprite PNG transparente e o manifesto JSON do chefe.
 - [x] Executar a validação automatizada de exportação e compatibilidade de runtime.
+
+## Habilidade do Soberano da Bruma e integração de assets
+
+- [x] Mapear quais assets gerados já estão ligados ao runtime e quais permanecem apenas como referências visuais.
+- [x] Criar uma habilidade especial exportável para o Soberano da Bruma no Content Studio.
+- [x] Integrar a habilidade ao combate do chefe e cobrir o cooldown, o efeito e o manifesto em regressões.

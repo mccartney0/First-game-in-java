@@ -44,6 +44,12 @@ Para repetir a demonstração sem abrir a interface gráfica, execute:
 gradlew.bat generateMistSovereignBoss
 ```
 
+O botão **Exportar habilidade: Núcleo da Bruma** cria o ícone e o manifesto da pulsação especial do Soberano. Os campos padrão são 14 de dano, 180 ticks de cooldown e alcance de 168 pixels; o runtime RPG lê esse manifesto quando o chefe é criado.
+
+```bat
+gradlew.bat generateMistSovereignAbility
+```
+
 ## Itens e armas do RPG
 
 Na aba **Itens RPG**, escolha entre **Consumível** e **Arma**. Todo export gera um PNG 32×32 transparente e um manifesto JSON ao lado. Para consumíveis, configure os valores de vida, mana e fôlego restaurados. Para armas, configure o estilo, o bônus de dano, o custo de fôlego e a raridade.

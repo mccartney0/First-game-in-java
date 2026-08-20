@@ -32,6 +32,8 @@ public final class RpgMap {
     public static final int BOG_ORACLE_Y = 7 * TILE_SIZE + TILE_SIZE / 2;
     public static final int MIRE_BRUTE_X = 47 * TILE_SIZE + TILE_SIZE / 2;
     public static final int MIRE_BRUTE_Y = 19 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int MIST_SOVEREIGN_X = 50 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int MIST_SOVEREIGN_Y = 16 * TILE_SIZE + TILE_SIZE / 2;
     public static final int STALKER_X = 40 * TILE_SIZE + TILE_SIZE / 2;
     public static final int STALKER_Y = 8 * TILE_SIZE + TILE_SIZE / 2;
     public static final int SNIPER_X = 44 * TILE_SIZE + TILE_SIZE / 2;
@@ -97,6 +99,8 @@ public final class RpgMap {
     public double getBogOracleY() { return BOG_ORACLE_Y; }
     public double getMireBruteX() { return MIRE_BRUTE_X; }
     public double getMireBruteY() { return MIRE_BRUTE_Y; }
+    public double getMistSovereignX() { return MIST_SOVEREIGN_X; }
+    public double getMistSovereignY() { return MIST_SOVEREIGN_Y; }
     public double getStalkerX() { return STALKER_X; }
     public double getStalkerY() { return STALKER_Y; }
     public double getSniperX() { return SNIPER_X; }

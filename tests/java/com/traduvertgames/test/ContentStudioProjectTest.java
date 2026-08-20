@@ -116,6 +116,22 @@ class ContentStudioProjectTest {
     }
 
     @Test
+    void studioExportsMistSovereignCoreAbilityWithManifest() throws Exception {
+        ContentStudioProject.BossAbilityProperties properties =
+                new ContentStudioProject.BossAbilityProperties("mist_sovereign", 17, 210, 176);
+        File ability = ContentStudioProject.generateMistSovereignAbility(properties, root);
+        assertEquals("mist_sovereign_nucleo_da_bruma.png", ability.getName());
+        BufferedImage image = ImageIO.read(ability);
+        assertEquals(32, image.getWidth());
+        assertEquals(0, image.getRGB(0, 0) >>> 24);
+        String manifest = ContentStudioProject.readManifestFor(ability);
+        assertTrue(manifest.contains("\"kind\": \"boss_ability\""));
+        assertTrue(manifest.contains("\"damage\": 17"));
+        assertTrue(manifest.contains("\"cooldownTicks\": 210"));
+        assertTrue(manifest.contains("\"range\": 176"));
+    }
+
+    @Test
     void valleyCanLoadDefaultContentStudioGrassAndGuardianAssets() {
         BufferedImage grass = AssetCatalog.contentTile("brumafolha_grass");
         assertNotNull(grass);
@@ -124,6 +140,7 @@ class ContentStudioProjectTest {
         assertNotNull(AssetCatalog.enemySprite(Enemy.Variant.GUARDIAN));
         assertNotNull(AssetCatalog.contentEnemySprite("enemy_mire_hound"));
         assertNotNull(AssetCatalog.contentEnemySprite("enemy_mist_sovereign"));
+        assertNotNull(AssetCatalog.contentAbilityIcon("mist_sovereign_nucleo_da_bruma"));
     }
 
     @Test

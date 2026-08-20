@@ -183,9 +183,12 @@ public final class ContentStudioApp {
         JButton bossDemo = new JButton("Gerar demo: Soberano da Bruma");
         bossDemo.addActionListener(event -> runExport("Chefe da Charneca", () ->
                 ContentStudioProject.generateMistSovereignBoss(projectRoot)));
+        JButton bossAbility = new JButton("Exportar habilidade: Núcleo da Bruma");
+        bossAbility.addActionListener(event -> runExport("Habilidade do Soberano", () ->
+                ContentStudioProject.generateMistSovereignAbility(projectRoot)));
         addField(panel, 4, "Velocidade", speed); addField(panel, 5, "Perfil de IA", behavior);
         addField(panel, 6, "", generate); addField(panel, 7, "", bossDemo);
-        addField(panel, 8, "", outlandPack); addPreview(panel, 9);
+        addField(panel, 8, "", bossAbility); addField(panel, 9, "", outlandPack); addPreview(panel, 10);
         return panel;
     }
 

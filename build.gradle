@@ -54,6 +54,13 @@ tasks.register('generateMistSovereignBoss', JavaExec) {
     mainClass = 'com.traduvertgames.tools.MistSovereignBossBootstrap'
 }
 
+tasks.register('generateMistSovereignAbility', JavaExec) {
+    group = 'application'
+    description = 'Exporta a habilidade Núcleo da Bruma configurada para o Soberano da Bruma.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.traduvertgames.tools.MistSovereignAbilityBootstrap'
+}
+
 sourceSets {
     main.java.srcDirs = ['src','res']
     main.resources.srcDirs = ['src','res']

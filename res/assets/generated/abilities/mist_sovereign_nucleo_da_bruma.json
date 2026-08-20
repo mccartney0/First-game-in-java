@@ -1,0 +1,12 @@
+{
+  "schema": 1,
+  "kind": "boss_ability",
+  "variant": "mist_sovereign",
+  "file": "mist_sovereign_nucleo_da_bruma.png",
+  "width": 32,
+  "height": 32,
+  "damage": 14,
+  "cooldownTicks": 180,
+  "range": 168,
+  "alphaRequired": true
+}
