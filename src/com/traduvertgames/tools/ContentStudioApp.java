@@ -15,6 +15,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.imageio.ImageIO;
@@ -78,6 +79,7 @@ public final class ContentStudioApp {
         tabs.addTab("Itens RPG", createRpgItemsPanel());
         tabs.addTab("Referências", createTerrainGalleryPanel());
         tabs.addTab("Manifesto", createManifestPanel());
+        tabs.addTab("Validação", createValidationPanel());
         frame.add(tabs, BorderLayout.CENTER);
 
         activity.setEditable(false);
@@ -274,6 +276,58 @@ public final class ContentStudioApp {
         panel.add(open, BorderLayout.NORTH);
         panel.add(new JScrollPane(manifest), BorderLayout.CENTER);
         return panel;
+    }
+
+    private JPanel createValidationPanel() {
+        JPanel root = new JPanel(new BorderLayout(10, 10));
+        root.setBackground(new Color(31, 39, 51));
+        root.setBorder(BorderFactory.createEmptyBorder(16, 18, 18, 18));
+
+        JPanel header = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        header.setOpaque(false);
+        JLabel explanation = new JLabel("Valida os sete contratos antes de enviar conteúdo para o runtime.");
+        explanation.setForeground(new Color(225, 232, 237));
+        JButton validate = new JButton("Validar conteúdo");
+        header.add(explanation);
+        header.add(validate);
+        root.add(header, BorderLayout.NORTH);
+
+        JTextArea report = new JTextArea();
+        report.setEditable(false);
+        report.setFont(new Font("Monospaced", Font.PLAIN, 12));
+        report.setBackground(new Color(13, 17, 24));
+        report.setForeground(new Color(194, 219, 196));
+        report.setText("Clique em ‘Validar conteúdo’ para verificar arquivos, transparência, escala, atlas, metadados, referências e runtime.");
+        report.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        root.add(new JScrollPane(report), BorderLayout.CENTER);
+
+        JLabel note = new JLabel("O relatório JSON é salvo em res/assets/generated/content_validation_report.json.");
+        note.setForeground(new Color(194, 219, 196));
+        root.add(note, BorderLayout.SOUTH);
+        validate.addActionListener(event -> validateContent(report));
+        return root;
+    }
+
+    private void validateContent(JTextArea reportArea) {
+        try {
+            ContentValidator.Report report = ContentValidator.validate(projectRoot);
+            reportArea.setText(report.toText());
+            File output = new File(projectRoot, "res/assets/generated/content_validation_report.json");
+            Files.writeString(output.toPath(), report.toJson(), StandardCharsets.UTF_8);
+            activity.append("\\nValidação: " + report.errorCount() + " erro(s), "
+                    + report.warningCount() + " aviso(s). Relatório salvo em " + output.getPath());
+            if (report.isValid()) {
+                JOptionPane.showMessageDialog(null, "Conteúdo válido. Nenhum erro encontrado.",
+                        "Validação concluída", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(null, report.errorCount() + " erro(s) de conteúdo encontrados.",
+                        "Validação encontrou problemas", JOptionPane.WARNING_MESSAGE);
+            }
+        } catch (Exception failure) {
+            reportArea.setText("Falha ao validar conteúdo: " + failure.getMessage());
+            activity.append("\\nERRO na validação: " + failure.getMessage());
+            JOptionPane.showMessageDialog(null, failure.getMessage(), "Falha na validação", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     private JPanel createTerrainGalleryPanel() {
