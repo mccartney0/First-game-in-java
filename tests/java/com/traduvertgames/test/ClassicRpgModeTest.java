@@ -207,7 +207,7 @@ class ClassicRpgModeTest {
         mode.getPlayer().setPosition(mode.getMap().getVillageGuideX(), mode.getMap().getVillageGuideY());
         game.keyPressed(key(game, KeyEvent.VK_R));
         assertEquals("FIND_GUIDE", mode.getQuestStageForTest());
-        for (int i = 0; i < 3; i++) game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        for (int i = 0; i < 5; i++) game.keyPressed(key(game, KeyEvent.VK_ENTER));
         assertEquals("DEFEAT_WARDEN", mode.getQuestStageForTest());
 
         mode.getPlayer().setPosition(mode.getMap().getWardenX(), mode.getMap().getWardenY());
@@ -226,6 +226,31 @@ class ClassicRpgModeTest {
         game.returnToMainMenu();
         assertTrue(SaveManager.loadSlot(1));
         assertEquals("COMPLETE", Game.getClassicRpgMode().getQuestStageForTest());
+    }
+
+    @Test
+    void rpgCollectsEquipsAndPersistsTheBellRelic() throws Exception {
+        Game game = GameTestFixture.newIsolatedGame();
+        game.startClassicRpg();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        ClassicRpgMode mode = Game.getClassicRpgMode();
+
+        mode.getPlayer().setPosition(mode.getMap().getBellRelicX(), mode.getMap().getBellRelicY());
+        game.keyPressed(key(game, KeyEvent.VK_R));
+        assertEquals(1, mode.getBellRelicCountForTest());
+
+        game.keyPressed(key(game, KeyEvent.VK_I));
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        game.keyPressed(key(game, KeyEvent.VK_DOWN));
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        assertTrue(mode.isBellCharmEquippedForTest());
+        game.keyPressed(key(game, KeyEvent.VK_ESCAPE));
+
+        assertTrue(SaveManager.saveCurrentGame());
+        game.returnToMainMenu();
+        assertTrue(SaveManager.loadSlot(1));
+        assertEquals(1, Game.getClassicRpgMode().getBellRelicCountForTest());
+        assertTrue(Game.getClassicRpgMode().isBellCharmEquippedForTest());
     }
 
     private static KeyEvent key(Game game, int keyCode) {

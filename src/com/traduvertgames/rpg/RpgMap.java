@@ -18,6 +18,8 @@ public final class RpgMap {
     public static final int WELL_Y = 11 * TILE_SIZE + TILE_SIZE / 2;
     public static final int WARDEN_X = 24 * TILE_SIZE + TILE_SIZE / 2;
     public static final int WARDEN_Y = 11 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int BELL_RELIC_X = 29 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int BELL_RELIC_Y = 17 * TILE_SIZE + TILE_SIZE / 2;
     private static final int WIDTH = WIDTH_TILES * TILE_SIZE;
     private static final int HEIGHT = HEIGHT_TILES * TILE_SIZE;
 
@@ -57,6 +59,8 @@ public final class RpgMap {
     public double getWellY() { return WELL_Y; }
     public double getWardenX() { return WARDEN_X; }
     public double getWardenY() { return WARDEN_Y; }
+    public double getBellRelicX() { return BELL_RELIC_X; }
+    public double getBellRelicY() { return BELL_RELIC_Y; }
     public String getDisplayName() { return "Vale de Brumafolha"; }
 
     public void render(Graphics g, double cameraX, double cameraY, int viewportWidth, int viewportHeight) {

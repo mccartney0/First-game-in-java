@@ -57,11 +57,16 @@ public final class ClassicRpgMode {
     private String dialogueSpeaker = "";
     private String[] dialogueLines = new String[0];
     private int dialogueLine;
+    private String[] dialogueChoices = new String[0];
+    private int dialogueChoiceSelection;
     private DialogueOutcome dialogueOutcome = DialogueOutcome.NONE;
     private RpgPanel rpgPanel = RpgPanel.NONE;
     private int panelSelection;
     private int herbCount;
     private int tonicCount;
+    private int bellRelicCount;
+    private boolean bellRelicCollected;
+    private boolean bellCharmEquipped;
     private boolean wellBlessed;
 
     public void startNew(Game game) {
@@ -79,6 +84,9 @@ public final class ClassicRpgMode {
         panelSelection = 0;
         herbCount = 2;
         tonicCount = 1;
+        bellRelicCount = 0;
+        bellRelicCollected = false;
+        bellCharmEquipped = false;
         wellBlessed = false;
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
@@ -103,6 +111,10 @@ public final class ClassicRpgMode {
         panelSelection = 0;
         herbCount = Math.max(0, intValue(data == null ? null : data.get("herbCount"), 2));
         tonicCount = Math.max(0, intValue(data == null ? null : data.get("tonicCount"), 1));
+        bellRelicCount = Math.max(0, intValue(data == null ? null : data.get("bellRelicCount"), 0));
+        bellRelicCollected = Boolean.TRUE.equals(data == null ? null : data.get("bellRelicCollected"));
+        bellCharmEquipped = Boolean.TRUE.equals(data == null ? null : data.get("bellCharmEquipped"))
+                && bellRelicCount > 0;
         wellBlessed = Boolean.TRUE.equals(data == null ? null : data.get("wellBlessed"));
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
@@ -166,6 +178,15 @@ public final class ClassicRpgMode {
         if (dialogueActive) {
             if (code == KeyEvent.VK_ESCAPE) {
                 closeClassicDialogue();
+            } else if (dialogueHasChoices()) {
+                if (code == KeyEvent.VK_UP || code == KeyEvent.VK_W) {
+                    dialogueChoiceSelection = Math.max(0, dialogueChoiceSelection - 1);
+                } else if (code == KeyEvent.VK_DOWN || code == KeyEvent.VK_S) {
+                    dialogueChoiceSelection = Math.min(dialogueChoices.length - 1, dialogueChoiceSelection + 1);
+                } else if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE
+                        || code == KeyEvent.VK_R || code == KeyEvent.VK_E) {
+                    resolveClassicDialogueChoice();
+                }
             } else if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE
                     || code == KeyEvent.VK_R || code == KeyEvent.VK_E) {
                 advanceClassicDialogue();
@@ -178,7 +199,7 @@ public final class ClassicRpgMode {
             } else if (code == KeyEvent.VK_UP || code == KeyEvent.VK_W) {
                 panelSelection = Math.max(0, panelSelection - 1);
             } else if (code == KeyEvent.VK_DOWN || code == KeyEvent.VK_S) {
-                panelSelection = Math.min(1, panelSelection + 1);
+                panelSelection = Math.min(2, panelSelection + 1);
             } else if (code == KeyEvent.VK_ENTER || code == KeyEvent.VK_SPACE) {
                 useSelectedRpgItem();
             }
@@ -262,6 +283,12 @@ public final class ClassicRpgMode {
             }
             return;
         }
+        if (isNearBellRelic() && !bellRelicCollected) {
+            bellRelicCollected = true;
+            bellRelicCount++;
+            showNotice("Você encontrou o Fragmento do Sino. Abra a bolsa com I para equipá-lo.");
+            return;
+        }
         if (!isNearGuide()) {
             if (questStage == QuestStage.DEFEAT_WARDEN && isNearWarden()) {
                 beginClassicDialogue("Guardião do Bosque", new String[] {
@@ -285,8 +312,11 @@ public final class ClassicRpgMode {
             beginClassicDialogue("Iara", new String[] {
                     "Você chegou na hora certa. O Bosque dos Sussurros deixou de responder aos nossos chamados.",
                     "O Guardião não nasceu cruel; a corrupção o prendeu às ruínas. Vá pela Estrada Antiga.",
-                    "Quando ele cair, volte para mim. Não o deixe sozinho na escuridão."
-            }, DialogueOutcome.ACCEPT_GUARDIAN_HUNT);
+                    "Quando ele cair, volte para mim. Não o deixe sozinho na escuridão.",
+                    "Você aceita carregar a esperança de Brumafolha?"
+            }, DialogueOutcome.ACCEPT_GUARDIAN_HUNT, new String[] {
+                    "Aceitar a missão", "Perguntar sobre o bosque", "Ainda não"
+            });
         } else if (questStage == QuestStage.RETURN_TO_GUIDE) {
             beginClassicDialogue("Iara", new String[] {
                     "Eu ouvi o bosque respirar antes mesmo de você cruzar a ponte.",
@@ -303,9 +333,15 @@ public final class ClassicRpgMode {
     }
 
     private void beginClassicDialogue(String speaker, String[] lines, DialogueOutcome outcome) {
+        beginClassicDialogue(speaker, lines, outcome, new String[0]);
+    }
+
+    private void beginClassicDialogue(String speaker, String[] lines, DialogueOutcome outcome, String[] choices) {
         dialogueSpeaker = speaker == null ? "" : speaker;
         dialogueLines = lines == null ? new String[0] : lines;
         dialogueLine = 0;
+        dialogueChoices = choices == null ? new String[0] : choices;
+        dialogueChoiceSelection = 0;
         dialogueOutcome = outcome == null ? DialogueOutcome.NONE : outcome;
         dialogueActive = dialogueLines.length > 0;
         player.setUp(false);
@@ -318,6 +354,10 @@ public final class ClassicRpgMode {
         if (!dialogueActive) return;
         dialogueLine++;
         if (dialogueLine < dialogueLines.length) return;
+        if (dialogueChoices.length > 0) {
+            dialogueLine = Math.max(0, dialogueLines.length - 1);
+            return;
+        }
         DialogueOutcome outcome = dialogueOutcome;
         closeClassicDialogue();
         if (outcome == DialogueOutcome.ACCEPT_GUARDIAN_HUNT) {
@@ -338,7 +378,33 @@ public final class ClassicRpgMode {
         dialogueSpeaker = "";
         dialogueLines = new String[0];
         dialogueLine = 0;
+        dialogueChoices = new String[0];
+        dialogueChoiceSelection = 0;
         dialogueOutcome = DialogueOutcome.NONE;
+    }
+
+    private boolean dialogueHasChoices() {
+        return dialogueActive && dialogueLine == dialogueLines.length - 1 && dialogueChoices.length > 0;
+    }
+
+    private void resolveClassicDialogueChoice() {
+        if (!dialogueHasChoices()) return;
+        int choice = dialogueChoiceSelection;
+        DialogueOutcome outcome = dialogueOutcome;
+        closeClassicDialogue();
+        if (outcome != DialogueOutcome.ACCEPT_GUARDIAN_HUNT) return;
+        if (choice == 0) {
+            questStage = QuestStage.DEFEAT_WARDEN;
+            objective = objectiveFor(questStage);
+            showNotice("Missão aceita: siga a Estrada Antiga até o Bosque dos Sussurros.");
+        } else if (choice == 1) {
+            beginClassicDialogue("Iara", new String[] {
+                    "A corrupção nasceu nas Ruínas do Sino. O Fragmento do Sino ainda vibra entre as pedras.",
+                    "Se encontrá-lo, equipe-o em sua bolsa. Ele fortalece golpes contra o Guardião."
+            }, DialogueOutcome.NONE);
+        } else {
+            showNotice("Iara respeita sua escolha. Fale com ela novamente quando estiver pronto.");
+        }
     }
 
     private void strikeWarden() {
@@ -356,7 +422,7 @@ public final class ClassicRpgMode {
             return;
         }
         attackFrames = 12;
-        int damage = Math.max(1, 1 + character.getStrength() / 14);
+        int damage = Math.max(1, 1 + character.getStrength() / 14 + (bellCharmEquipped ? 1 : 0));
         wardenLife = Math.max(0, wardenLife - damage);
         if (wardenLife == 0) {
             questStage = QuestStage.RETURN_TO_GUIDE;
@@ -373,6 +439,10 @@ public final class ClassicRpgMode {
 
     private boolean isNearWell() {
         return distanceTo(map.getWellX(), map.getWellY()) <= 42;
+    }
+
+    private boolean isNearBellRelic() {
+        return distanceTo(map.getBellRelicX(), map.getBellRelicY()) <= 42;
     }
 
     private void openRpgPanel(RpgPanel panel) {
@@ -398,7 +468,7 @@ public final class ClassicRpgMode {
             herbCount--;
             character.restore(28, 0, 14);
             showNotice("Erva de Bruma usada: vida e fôlego restaurados.");
-        } else {
+        } else if (panelSelection == 1) {
             if (tonicCount <= 0) {
                 showNotice("Você não possui Tônicos de Luar.");
                 return;
@@ -406,6 +476,12 @@ public final class ClassicRpgMode {
             tonicCount--;
             character.restore(0, 26, 22);
             showNotice("Tônico de Luar usado: mana e fôlego restaurados.");
+        } else if (bellRelicCount <= 0) {
+            showNotice("O Fragmento do Sino repousa nas Ruínas do Sino.");
+        } else {
+            bellCharmEquipped = !bellCharmEquipped;
+            showNotice(bellCharmEquipped ? "Fragmento do Sino equipado: +1 dano contra o Guardião."
+                    : "Fragmento do Sino guardado na bolsa.");
         }
     }
 
@@ -458,6 +534,7 @@ public final class ClassicRpgMode {
                 player == null ? 0 : player.getCameraY(), Game.WIDTH, Game.HEIGHT);
         if (player != null) {
             drawWell(g);
+            if (!bellRelicCollected) drawBellRelic(g);
             drawGuide(g);
             if (questStage == QuestStage.DEFEAT_WARDEN && wardenLife > 0) drawWarden(g);
         }
@@ -480,6 +557,25 @@ public final class ClassicRpgMode {
         if (isNearWell()) {
             g.setColor(new Color(255, 241, 174));
             g.drawString("R/E", x - 8, y - 27);
+        }
+    }
+
+    private void drawBellRelic(Graphics g) {
+        int x = (int) (map.getBellRelicX() - player.getCameraX());
+        int y = (int) (map.getBellRelicY() - player.getCameraY());
+        g.setColor(new Color(22, 19, 33, 115));
+        g.fillOval(x - 12, y + 8, 24, 8);
+        g.setColor(new Color(201, 167, 78));
+        g.fillOval(x - 6, y - 11, 12, 18);
+        g.setColor(new Color(247, 225, 139));
+        g.fillRect(x - 2, y - 15, 4, 5);
+        g.setColor(new Color(96, 205, 191));
+        g.fillOval(x - 2, y - 3, 4, 4);
+        g.setColor(new Color(245, 232, 190));
+        g.drawString("Fragmento do Sino", x - 36, y - 22);
+        if (isNearBellRelic()) {
+            g.setColor(new Color(255, 241, 174));
+            g.drawString("R/E", x - 8, y - 34);
         }
     }
 
@@ -552,7 +648,7 @@ public final class ClassicRpgMode {
 
     private void renderRpgInventory(Graphics g, int width, int height) {
         int panelWidth = 472;
-        int panelHeight = 292;
+        int panelHeight = 350;
         int x = (width - panelWidth) / 2;
         int y = (height - panelHeight) / 2;
         g.setColor(new Color(8, 15, 22, 238));
@@ -562,16 +658,18 @@ public final class ClassicRpgMode {
         g.setColor(new Color(246, 222, 159));
         g.setFont(new Font("Arial", Font.BOLD, 23));
         g.drawString("BOLSA DE VIAGEM", x + 28, y + 42);
-        String[] names = { "Erva de Bruma", "Tônico de Luar" };
-        String[] descriptions = { "+28 vida · +14 fôlego", "+26 mana · +22 fôlego" };
-        int[] counts = { herbCount, tonicCount };
+        String[] names = { "Erva de Bruma", "Tônico de Luar", "Fragmento do Sino" };
+        String[] descriptions = { "+28 vida · +14 fôlego", "+26 mana · +22 fôlego",
+                bellCharmEquipped ? "Equipado · +1 dano contra Guardião" : "Equipar · +1 dano contra Guardião" };
+        int[] counts = { herbCount, tonicCount, bellRelicCount };
         for (int i = 0; i < names.length; i++) {
             int rowY = y + 70 + i * 74;
             if (panelSelection == i) {
                 g.setColor(new Color(73, 103, 104, 220));
                 g.fillRoundRect(x + 20, rowY, panelWidth - 40, 58, 8, 8);
             }
-            g.setColor(i == 0 ? new Color(102, 176, 105) : new Color(107, 144, 209));
+            g.setColor(i == 0 ? new Color(102, 176, 105) : i == 1 ? new Color(107, 144, 209)
+                    : new Color(201, 167, 78));
             g.fillRoundRect(x + 32, rowY + 11, 36, 36, 6, 6);
             g.setColor(Color.WHITE);
             g.setFont(new Font("Arial", Font.BOLD, 16));
@@ -619,9 +717,9 @@ public final class ClassicRpgMode {
     private void renderClassicDialogue(Graphics g, int width, int height) {
         String line = dialogueLine >= 0 && dialogueLine < dialogueLines.length ? dialogueLines[dialogueLine] : "";
         int panelX = 28;
-        int panelY = height - 174;
+        int panelY = height - (dialogueHasChoices() ? 222 : 174);
         int panelWidth = width - 56;
-        int panelHeight = 142;
+        int panelHeight = dialogueHasChoices() ? 190 : 142;
         g.setColor(new Color(8, 15, 22, 236));
         g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 12, 12);
         g.setColor(new Color(223, 186, 104));
@@ -636,9 +734,23 @@ public final class ClassicRpgMode {
         g.setColor(Color.WHITE);
         g.setFont(new Font("Arial", Font.PLAIN, 15));
         drawWrapped(g, line, panelX + 116, panelY + 58, panelWidth - 140);
+        if (dialogueHasChoices()) {
+            for (int i = 0; i < dialogueChoices.length; i++) {
+                int choiceY = panelY + 110 + i * 20;
+                if (i == dialogueChoiceSelection) {
+                    g.setColor(new Color(73, 103, 104, 220));
+                    g.fillRoundRect(panelX + 108, choiceY - 15, panelWidth - 130, 18, 5, 5);
+                }
+                g.setColor(i == dialogueChoiceSelection ? new Color(255, 236, 167) : Color.WHITE);
+                g.setFont(new Font("Arial", Font.BOLD, 13));
+                g.drawString((i == dialogueChoiceSelection ? "› " : "  ") + dialogueChoices[i],
+                        panelX + 120, choiceY);
+            }
+        }
         g.setColor(new Color(190, 203, 210));
         g.setFont(new Font("Arial", Font.PLAIN, 12));
-        g.drawString("Enter / Espaço para continuar    " + (dialogueLine + 1) + "/" + dialogueLines.length,
+        g.drawString(dialogueHasChoices() ? "W/S selecionar · Enter confirmar"
+                : "Enter / Espaço para continuar    " + (dialogueLine + 1) + "/" + dialogueLines.length,
                 panelX + 116, panelY + panelHeight - 18);
     }
 
@@ -771,7 +883,7 @@ public final class ClassicRpgMode {
 
     public Map<String, Object> serialize() {
         Map<String, Object> data = new HashMap<String, Object>();
-        data.put("schema", 3);
+        data.put("schema", 4);
         data.put("mapId", "vale_brumafolha");
         data.put("objective", objective);
         data.put("playedFrames", playedFrames);
@@ -779,6 +891,9 @@ public final class ClassicRpgMode {
         data.put("wardenLife", wardenLife);
         data.put("herbCount", herbCount);
         data.put("tonicCount", tonicCount);
+        data.put("bellRelicCount", bellRelicCount);
+        data.put("bellRelicCollected", bellRelicCollected);
+        data.put("bellCharmEquipped", bellCharmEquipped);
         data.put("wellBlessed", wellBlessed);
         data.put("character", character == null ? RpgCharacterStats.create(RpgArchetype.GUARDIAO).serialize() : character.serialize());
         data.put("player", player == null ? new HashMap<String, Object>() : player.serialize());
@@ -835,6 +950,8 @@ public final class ClassicRpgMode {
     public String getRpgPanelForTest() { return rpgPanel.name(); }
     public int getHerbCountForTest() { return herbCount; }
     public int getTonicCountForTest() { return tonicCount; }
+    public int getBellRelicCountForTest() { return bellRelicCount; }
+    public boolean isBellCharmEquippedForTest() { return bellCharmEquipped; }
 
     public void reset() {
         active = false;
@@ -844,6 +961,9 @@ public final class ClassicRpgMode {
         panelSelection = 0;
         herbCount = 0;
         tonicCount = 0;
+        bellRelicCount = 0;
+        bellRelicCollected = false;
+        bellCharmEquipped = false;
         wellBlessed = false;
         player = null;
         character = null;
