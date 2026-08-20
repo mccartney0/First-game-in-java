@@ -86,6 +86,9 @@ public final class ClassicRpgMode {
     private boolean sniperDefeated;
     private boolean outlandBossDefeated;
     private OutlandQuestStage outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
+    private boolean outlandChestOpened;
+    private boolean outlandEntranceSeen;
+    private int outlandEntranceTransitionFrames;
 
     public void startNew(Game game) {
         active = true;
@@ -112,6 +115,9 @@ public final class ClassicRpgMode {
         sniperDefeated = false;
         outlandBossDefeated = false;
         outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
+        outlandChestOpened = false;
+        outlandEntranceSeen = false;
+        outlandEntranceTransitionFrames = 0;
         populateOutlandEnemies();
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
@@ -147,6 +153,9 @@ public final class ClassicRpgMode {
         sniperDefeated = Boolean.TRUE.equals(data == null ? null : data.get("sniperDefeated"));
         outlandBossDefeated = Boolean.TRUE.equals(data == null ? null : data.get("outlandBossDefeated"));
         outlandQuestStage = outlandStageValue(data == null ? null : data.get("outlandQuestStage"));
+        outlandChestOpened = Boolean.TRUE.equals(data == null ? null : data.get("outlandChestOpened"));
+        outlandEntranceSeen = Boolean.TRUE.equals(data == null ? null : data.get("outlandEntranceSeen"));
+        outlandEntranceTransitionFrames = 0;
         populateOutlandEnemies();
         objective = objectiveFor(questStage);
         player = new RpgPlayerController(map);
@@ -164,6 +173,7 @@ public final class ClassicRpgMode {
         if (choosingArchetype || characterSheetOpen || dialogueActive || rpgPanel != RpgPanel.NONE || character == null) return;
         player.update();
         playedFrames++;
+        updateOutlandEntrance();
         if (attackFrames > 0) attackFrames--;
         staminaRegenFrames++;
         if (staminaRegenFrames >= 4) {
@@ -189,6 +199,14 @@ public final class ClassicRpgMode {
                 break;
             }
         }
+    }
+
+    private void updateOutlandEntrance() {
+        if (outlandEntranceTransitionFrames > 0) outlandEntranceTransitionFrames--;
+        if (outlandEntranceSeen || player.getX() < map.getOutlandGateX() - RpgMap.TILE_SIZE / 2) return;
+        outlandEntranceSeen = true;
+        outlandEntranceTransitionFrames = 90;
+        showNotice("Você atravessou o Portão da Charneca. A névoa esconde novos caminhos.");
     }
 
     private void populateOutlandEnemies() {
@@ -349,6 +367,10 @@ public final class ClassicRpgMode {
         }
         if (isNearOutlandScout()) {
             interactOutlandScout();
+            return;
+        }
+        if (isNearOutlandChest()) {
+            interactOutlandChest();
             return;
         }
         if (!isNearGuide()) {
@@ -598,6 +620,21 @@ public final class ClassicRpgMode {
         }
     }
 
+    private void interactOutlandChest() {
+        if (outlandQuestStage != OutlandQuestStage.COMPLETE) {
+            showNotice("Baú de Vigia lacrado. Sena sabe como abrir este selo.");
+            return;
+        }
+        if (outlandChestOpened) {
+            showNotice("Baú de Vigia aberto. A égide de turfa já protege sua jornada.");
+            return;
+        }
+        outlandChestOpened = true;
+        brumaElixirCount += 2;
+        character.grantPermanentPhysicalDefense(1);
+        showNotice("Baú de Vigia: +2 Elixires e Égide de Turfa (+1 defesa permanente).");
+    }
+
     private boolean isNearGuide() {
         return distanceTo(map.getVillageGuideX(), map.getVillageGuideY()) <= 48;
     }
@@ -612,6 +649,10 @@ public final class ClassicRpgMode {
 
     private boolean isNearOutlandScout() {
         return distanceTo(map.getOutlandScoutX(), map.getOutlandScoutY()) <= 46;
+    }
+
+    private boolean isNearOutlandChest() {
+        return distanceTo(map.getOutlandChestX(), map.getOutlandChestY()) <= 42;
     }
 
     private void refreshObjective() {
@@ -737,6 +778,7 @@ public final class ClassicRpgMode {
             if (!bellRelicCollected) drawBellRelic(g);
             drawGuide(g);
             drawOutlandScout(g);
+            drawOutlandChest(g);
             if (questStage == QuestStage.DEFEAT_WARDEN && wardenLife > 0) drawWarden(g);
             for (RpgCombatEnemy enemy : outlandEnemies) {
                 enemy.render(g, player.getCameraX(), player.getCameraY());
@@ -819,6 +861,24 @@ public final class ClassicRpgMode {
         }
     }
 
+    private void drawOutlandChest(Graphics g) {
+        int x = (int) (map.getOutlandChestX() - player.getCameraX());
+        int y = (int) (map.getOutlandChestY() - player.getCameraY());
+        g.setColor(new Color(15, 22, 24, 130));
+        g.fillOval(x - 13, y + 10, 26, 7);
+        g.setColor(outlandChestOpened ? new Color(92, 94, 86) : new Color(117, 77, 40));
+        g.fillRoundRect(x - 12, y - 7, 24, 18, 4, 4);
+        g.setColor(outlandChestOpened ? new Color(157, 163, 154) : new Color(216, 177, 77));
+        g.fillRect(x - 10, y - 4, 20, 4);
+        g.fillRect(x - 2, y - 1, 4, 7);
+        g.setColor(new Color(245, 232, 190));
+        g.drawString(outlandChestOpened ? "Baú de Vigia aberto" : "Baú de Vigia", x - 35, y - 15);
+        if (isNearOutlandChest()) {
+            g.setColor(new Color(255, 241, 174));
+            g.drawString("R/E", x - 8, y - 27);
+        }
+    }
+
     private void drawWarden(Graphics g) {
         int x = (int) (map.getWardenX() - player.getCameraX());
         int y = (int) (map.getWardenY() - player.getCameraY());
@@ -857,6 +917,7 @@ public final class ClassicRpgMode {
         if (dialogueActive) renderClassicDialogue(g, width, height);
         if (rpgPanel == RpgPanel.INVENTORY) renderRpgInventory(g, width, height);
         if (rpgPanel == RpgPanel.PAUSE) renderRpgPause(g, width, height);
+        if (outlandEntranceTransitionFrames > 0) renderOutlandEntranceTransition(g, width, height);
         if (noticeFrames > 0 && notice != null && !notice.isEmpty()) {
             g.setFont(new Font("Arial", Font.BOLD, 15));
             int textWidth = g.getFontMetrics().stringWidth(notice);
@@ -867,6 +928,22 @@ public final class ClassicRpgMode {
             g.setColor(new Color(248, 228, 167));
             g.drawString(notice, x, y);
         }
+    }
+
+    private void renderOutlandEntranceTransition(Graphics g, int width, int height) {
+        int alpha = Math.min(170, 30 + outlandEntranceTransitionFrames * 2);
+        g.setColor(new Color(22, 47, 43, alpha));
+        g.fillRect(0, 0, width, height);
+        g.setColor(new Color(235, 222, 173));
+        g.setFont(new Font("Arial", Font.BOLD, 16));
+        String eyebrow = "ALÉM DO PORTÃO";
+        g.drawString(eyebrow, (width - g.getFontMetrics().stringWidth(eyebrow)) / 2, height / 2 - 24);
+        g.setFont(new Font("Arial", Font.BOLD, 32));
+        String title = "CHARNECA DA BRUMA";
+        g.drawString(title, (width - g.getFontMetrics().stringWidth(title)) / 2, height / 2 + 12);
+        g.setFont(new Font("Arial", Font.PLAIN, 14));
+        String subtitle = "Névoa, patrulhas e segredos aguardam na estrada inundada.";
+        g.drawString(subtitle, (width - g.getFontMetrics().stringWidth(subtitle)) / 2, height / 2 + 38);
     }
 
     private void renderRpgInventory(Graphics g, int width, int height) {
@@ -1131,6 +1208,8 @@ public final class ClassicRpgMode {
         data.put("sniperDefeated", sniperDefeated);
         data.put("outlandBossDefeated", outlandBossDefeated);
         data.put("outlandQuestStage", outlandQuestStage.name());
+        data.put("outlandChestOpened", outlandChestOpened);
+        data.put("outlandEntranceSeen", outlandEntranceSeen);
         data.put("character", character == null ? RpgCharacterStats.create(RpgArchetype.GUARDIAO).serialize() : character.serialize());
         data.put("player", player == null ? new HashMap<String, Object>() : player.serialize());
         data.put("restPoint", "village_west_gate");
@@ -1202,6 +1281,8 @@ public final class ClassicRpgMode {
     public boolean isStalkerDefeatedForTest() { return stalkerDefeated; }
     public boolean isOutlandBossDefeatedForTest() { return outlandBossDefeated; }
     public String getOutlandQuestStageForTest() { return outlandQuestStage.name(); }
+    public boolean isOutlandChestOpenedForTest() { return outlandChestOpened; }
+    public boolean hasSeenOutlandEntranceForTest() { return outlandEntranceSeen; }
 
     public void reset() {
         active = false;
@@ -1221,6 +1302,9 @@ public final class ClassicRpgMode {
         sniperDefeated = false;
         outlandBossDefeated = false;
         outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
+        outlandChestOpened = false;
+        outlandEntranceSeen = false;
+        outlandEntranceTransitionFrames = 0;
         outlandEnemies.clear();
         player = null;
         character = null;

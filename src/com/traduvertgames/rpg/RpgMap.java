@@ -24,6 +24,8 @@ public final class RpgMap {
     public static final int OUTLAND_GATE_Y = 12 * TILE_SIZE + TILE_SIZE / 2;
     public static final int OUTLAND_SCOUT_X = 38 * TILE_SIZE + TILE_SIZE / 2;
     public static final int OUTLAND_SCOUT_Y = 16 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int OUTLAND_CHEST_X = 42 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int OUTLAND_CHEST_Y = 20 * TILE_SIZE + TILE_SIZE / 2;
     public static final int STALKER_X = 40 * TILE_SIZE + TILE_SIZE / 2;
     public static final int STALKER_Y = 8 * TILE_SIZE + TILE_SIZE / 2;
     public static final int SNIPER_X = 44 * TILE_SIZE + TILE_SIZE / 2;
@@ -81,6 +83,8 @@ public final class RpgMap {
     public double getOutlandGateY() { return OUTLAND_GATE_Y; }
     public double getOutlandScoutX() { return OUTLAND_SCOUT_X; }
     public double getOutlandScoutY() { return OUTLAND_SCOUT_Y; }
+    public double getOutlandChestX() { return OUTLAND_CHEST_X; }
+    public double getOutlandChestY() { return OUTLAND_CHEST_Y; }
     public double getStalkerX() { return STALKER_X; }
     public double getStalkerY() { return STALKER_Y; }
     public double getSniperX() { return SNIPER_X; }

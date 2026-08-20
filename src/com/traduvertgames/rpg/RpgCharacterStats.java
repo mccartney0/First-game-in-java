@@ -24,6 +24,7 @@ public final class RpgCharacterStats {
     private int criticalChance;
     private int criticalDamage;
     private int speed;
+    private int permanentPhysicalDefense;
 
     private RpgCharacterStats(RpgArchetype archetype) {
         this.archetype = archetype;
@@ -75,6 +76,12 @@ public final class RpgCharacterStats {
         life = clamp(life - Math.max(0, amount), 0, maxLife);
     }
 
+    /** Recompensa permanente de exploração, persistida sem tocar nos atributos base do arquétipo. */
+    public void grantPermanentPhysicalDefense(int amount) {
+        permanentPhysicalDefense = Math.max(0, permanentPhysicalDefense + Math.max(0, amount));
+        recalculateDerivedValues();
+    }
+
     public void gainExperience(int amount) {
         if (amount <= 0) return;
         experience += amount;
@@ -109,7 +116,7 @@ public final class RpgCharacterStats {
         maxLife = 70 + vitality * 5 + archetype.getBonusLife();
         maxMana = 30 + intelligence * 4 + archetype.getBonusMana();
         maxStamina = 80 + dexterity * 2;
-        physicalDefense = 2 + vitality / 3;
+        physicalDefense = 2 + vitality / 3 + permanentPhysicalDefense;
         magicalDefense = 2 + intelligence / 4;
         criticalChance = Math.min(50, archetype.getCriticalChance() + dexterity / 4);
         speed = Math.max(2, 2 + dexterity / 12);
@@ -139,6 +146,7 @@ public final class RpgCharacterStats {
         data.put("criticalChance", criticalChance);
         data.put("criticalDamage", criticalDamage);
         data.put("speed", speed);
+        data.put("permanentPhysicalDefense", permanentPhysicalDefense);
         return data;
     }
 
@@ -158,6 +166,7 @@ public final class RpgCharacterStats {
         stats.intelligence = positiveInt(data.get("intelligence"), type.getIntelligence());
         stats.vitality = positiveInt(data.get("vitality"), type.getVitality());
         stats.criticalDamage = positiveInt(data.get("criticalDamage"), 150);
+        stats.permanentPhysicalDefense = nonNegativeInt(data.get("permanentPhysicalDefense"), 0);
         stats.recalculateDerivedValues();
         stats.life = clamp(nonNegativeInt(data.get("life"), stats.maxLife), 0, stats.maxLife);
         stats.mana = clamp(nonNegativeInt(data.get("mana"), stats.maxMana), 0, stats.maxMana);
@@ -199,4 +208,5 @@ public final class RpgCharacterStats {
     public int getCriticalChance() { return criticalChance; }
     public int getCriticalDamage() { return criticalDamage; }
     public int getSpeed() { return speed; }
+    public int getPermanentPhysicalDefense() { return permanentPhysicalDefense; }
 }

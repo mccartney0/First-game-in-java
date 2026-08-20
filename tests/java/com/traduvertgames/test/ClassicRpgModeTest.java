@@ -325,10 +325,31 @@ class ClassicRpgModeTest {
         assertEquals("COMPLETE", mode.getOutlandQuestStageForTest());
         assertEquals(4, mode.getBrumaElixirCountForTest());
 
+        int defenseBeforeChest = mode.getCharacter().getPhysicalDefense();
+        mode.getPlayer().setPosition(mode.getMap().getOutlandChestX(), mode.getMap().getOutlandChestY());
+        game.keyPressed(key(game, KeyEvent.VK_R));
+        assertTrue(mode.isOutlandChestOpenedForTest());
+        assertEquals(6, mode.getBrumaElixirCountForTest());
+        assertEquals(defenseBeforeChest + 1, mode.getCharacter().getPhysicalDefense());
+
         assertTrue(SaveManager.saveCurrentGame());
         game.returnToMainMenu();
         assertTrue(SaveManager.loadSlot(1));
         assertEquals("COMPLETE", Game.getClassicRpgMode().getOutlandQuestStageForTest());
+        assertTrue(Game.getClassicRpgMode().isOutlandChestOpenedForTest());
+        assertEquals(defenseBeforeChest + 1, Game.getClassicRpgMode().getCharacter().getPhysicalDefense());
+    }
+
+    @Test
+    void outlandGateMarksDiscoveryWhenThePlayerEntersTheRegion() throws Exception {
+        Game game = GameTestFixture.newIsolatedGame();
+        game.startClassicRpg();
+        game.keyPressed(key(game, KeyEvent.VK_ENTER));
+        ClassicRpgMode mode = Game.getClassicRpgMode();
+        mode.getPlayer().setPosition(mode.getMap().getOutlandGateX(), mode.getMap().getOutlandGateY());
+        mode.update();
+        assertTrue(mode.hasSeenOutlandEntranceForTest());
+        assertTrue(Boolean.TRUE.equals(mode.serialize().get("outlandEntranceSeen")));
     }
 
     private static KeyEvent key(Game game, int keyCode) {
