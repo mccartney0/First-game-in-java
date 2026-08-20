@@ -20,6 +20,7 @@ import com.traduvertgames.graficos.MissionHud;
 import com.traduvertgames.graficos.UI;
 import com.traduvertgames.rpg.ClassicRpgMode;
 import com.traduvertgames.rpg.RpgArchetype;
+import com.traduvertgames.rpg.RpgCombatEnemy;
 import com.traduvertgames.rpg.RpgCharacterStats;
 import com.traduvertgames.rpg.RpgMap;
 import com.traduvertgames.rpg.RpgPlayerController;
@@ -324,6 +325,10 @@ class ClassicRpgModeTest {
         for (int advance = 0; advance < 3; advance++) game.keyPressed(key(game, KeyEvent.VK_ENTER));
         assertEquals("COMPLETE", mode.getOutlandQuestStageForTest());
         assertEquals(4, mode.getBrumaElixirCountForTest());
+        assertEquals(4, mode.getOutlandEnemyCountForTest());
+        assertTrue(mode.hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind.MIRE_HOUND));
+        assertTrue(mode.hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind.BOG_ORACLE));
+        assertTrue(mode.hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind.MIRE_BRUTE));
 
         int defenseBeforeChest = mode.getCharacter().getPhysicalDefense();
         mode.getPlayer().setPosition(mode.getMap().getOutlandChestX(), mode.getMap().getOutlandChestY());

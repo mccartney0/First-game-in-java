@@ -26,6 +26,12 @@ public final class RpgMap {
     public static final int OUTLAND_SCOUT_Y = 16 * TILE_SIZE + TILE_SIZE / 2;
     public static final int OUTLAND_CHEST_X = 42 * TILE_SIZE + TILE_SIZE / 2;
     public static final int OUTLAND_CHEST_Y = 20 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int MIRE_HOUND_X = 39 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int MIRE_HOUND_Y = 19 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int BOG_ORACLE_X = 46 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int BOG_ORACLE_Y = 7 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int MIRE_BRUTE_X = 47 * TILE_SIZE + TILE_SIZE / 2;
+    public static final int MIRE_BRUTE_Y = 19 * TILE_SIZE + TILE_SIZE / 2;
     public static final int STALKER_X = 40 * TILE_SIZE + TILE_SIZE / 2;
     public static final int STALKER_Y = 8 * TILE_SIZE + TILE_SIZE / 2;
     public static final int SNIPER_X = 44 * TILE_SIZE + TILE_SIZE / 2;
@@ -85,6 +91,12 @@ public final class RpgMap {
     public double getOutlandScoutY() { return OUTLAND_SCOUT_Y; }
     public double getOutlandChestX() { return OUTLAND_CHEST_X; }
     public double getOutlandChestY() { return OUTLAND_CHEST_Y; }
+    public double getMireHoundX() { return MIRE_HOUND_X; }
+    public double getMireHoundY() { return MIRE_HOUND_Y; }
+    public double getBogOracleX() { return BOG_ORACLE_X; }
+    public double getBogOracleY() { return BOG_ORACLE_Y; }
+    public double getMireBruteX() { return MIRE_BRUTE_X; }
+    public double getMireBruteY() { return MIRE_BRUTE_Y; }
     public double getStalkerX() { return STALKER_X; }
     public double getStalkerY() { return STALKER_Y; }
     public double getSniperX() { return SNIPER_X; }

@@ -40,6 +40,13 @@ tasks.register('generateDefaultRpgContent', JavaExec) {
     mainClass = 'com.traduvertgames.tools.RpgContentBootstrap'
 }
 
+tasks.register('generateOutlandEnemyPack', JavaExec) {
+    group = 'application'
+    description = 'Gera os novos inimigos configuráveis da Charneca da Bruma, com sprites e manifestos 32×32.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.traduvertgames.tools.OutlandEnemyBootstrap'
+}
+
 sourceSets {
     main.java.srcDirs = ['src','res']
     main.resources.srcDirs = ['src','res']

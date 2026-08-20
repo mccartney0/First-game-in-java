@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "MIRE_HOUND",
+  "file": "enemy_mire_hound.png",
+  "width": 32,
+  "height": 32,
+  "baseLife": 5,
+  "baseDamage": 4,
+  "speed": 1.65,
+  "behaviorTag": "pounce",
+  "alphaRequired": true
+}

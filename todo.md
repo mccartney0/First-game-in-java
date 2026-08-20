@@ -62,5 +62,5 @@
 - [x] Criar uma NPC com missão própria, diálogo ramificado, objetivo e recompensa persistente.
 - [x] Adicionar um baú especial desbloqueado pelo progresso da missão e salvar seu estado.
 - [x] Criar uma transição visual e mensagem de descoberta ao cruzar o Portão da Charneca.
-- [ ] Ampliar o Content Studio com novas variações de inimigos configuráveis e integrá-las ao encontro externo.
-- [ ] Cobrir a expansão com regressões de missão, recompensas, save e geração de conteúdo.
+- [x] Ampliar o Content Studio com novas variações de inimigos configuráveis e integrá-las ao encontro externo.
+- [x] Cobrir a expansão com regressões de missão, recompensas, save e geração de conteúdo.

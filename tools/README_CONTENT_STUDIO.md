@@ -22,6 +22,18 @@ Para regenerar o mesmo pacote sem abrir a interface, execute:
 gradlew.bat generateBrumafolhaTerrain
 ```
 
+## Inimigos da Charneca da Bruma
+
+Na aba **Inimigos**, os papéis **Cão de Turfa**, **Oráculo do Brejo** e **Bruto da Charneca** oferecem comportamentos de investida, maldição à distância e confronto fortificado. É possível ajustar vida, dano, velocidade, perfil de IA e paleta antes de exportar o sprite transparente e seu manifesto JSON.
+
+O botão **Gerar pacote da Charneca** cria as três variações de runtime. Elas são liberadas no RPG quando a patrulha da batedora Sena é concluída; ao iniciar uma jornada, o jogo lê novamente os manifestos para aplicar os valores configurados.
+
+Para regenerar o pacote sem abrir a interface, execute:
+
+```bat
+gradlew.bat generateOutlandEnemyPack
+```
+
 ## Itens e armas do RPG
 
 Na aba **Itens RPG**, escolha entre **Consumível** e **Arma**. Todo export gera um PNG 32×32 transparente e um manifesto JSON ao lado. Para consumíveis, configure os valores de vida, mana e fôlego restaurados. Para armas, configure o estilo, o bônus de dano, o custo de fôlego e a raridade.

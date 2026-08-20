@@ -85,6 +85,9 @@ public final class ClassicRpgMode {
     private boolean stalkerDefeated;
     private boolean sniperDefeated;
     private boolean outlandBossDefeated;
+    private boolean mireHoundDefeated;
+    private boolean bogOracleDefeated;
+    private boolean mireBruteDefeated;
     private OutlandQuestStage outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
     private boolean outlandChestOpened;
     private boolean outlandEntranceSeen;
@@ -114,6 +117,9 @@ public final class ClassicRpgMode {
         stalkerDefeated = false;
         sniperDefeated = false;
         outlandBossDefeated = false;
+        mireHoundDefeated = false;
+        bogOracleDefeated = false;
+        mireBruteDefeated = false;
         outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
         outlandChestOpened = false;
         outlandEntranceSeen = false;
@@ -152,6 +158,9 @@ public final class ClassicRpgMode {
         stalkerDefeated = Boolean.TRUE.equals(data == null ? null : data.get("stalkerDefeated"));
         sniperDefeated = Boolean.TRUE.equals(data == null ? null : data.get("sniperDefeated"));
         outlandBossDefeated = Boolean.TRUE.equals(data == null ? null : data.get("outlandBossDefeated"));
+        mireHoundDefeated = Boolean.TRUE.equals(data == null ? null : data.get("mireHoundDefeated"));
+        bogOracleDefeated = Boolean.TRUE.equals(data == null ? null : data.get("bogOracleDefeated"));
+        mireBruteDefeated = Boolean.TRUE.equals(data == null ? null : data.get("mireBruteDefeated"));
         outlandQuestStage = outlandStageValue(data == null ? null : data.get("outlandQuestStage"));
         outlandChestOpened = Boolean.TRUE.equals(data == null ? null : data.get("outlandChestOpened"));
         outlandEntranceSeen = Boolean.TRUE.equals(data == null ? null : data.get("outlandEntranceSeen"));
@@ -217,6 +226,28 @@ public final class ClassicRpgMode {
                 "Vigia das Ruínas", map.getSniperX(), map.getSniperY(), 10, 7, 36, 1, false));
         if (!outlandBossDefeated) outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.MARSH_WARDEN,
                 "Guardião da Charneca", map.getOutlandBossX(), map.getOutlandBossY(), 28, 9, 120, 2, true));
+        if (outlandQuestStage == OutlandQuestStage.COMPLETE) populateContentStudioOutlandEnemies();
+    }
+
+    private void populateContentStudioOutlandEnemies() {
+        if (!mireHoundDefeated) {
+            RpgContentEnemyProfile profile = RpgContentEnemyProfile.load("enemy_mire_hound", 5, 4, 1.65, "pounce");
+            outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.MIRE_HOUND, "Cão de Turfa",
+                    map.getMireHoundX(), map.getMireHoundY(), profile.getBaseLife(), profile.getBaseDamage(),
+                    42, 1, false, profile.getSpeed(), profile.getBehaviorTag(), profile.getAssetId()));
+        }
+        if (!bogOracleDefeated) {
+            RpgContentEnemyProfile profile = RpgContentEnemyProfile.load("enemy_bog_oracle", 8, 6, 0.7, "hex");
+            outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.BOG_ORACLE, "Oráculo do Brejo",
+                    map.getBogOracleX(), map.getBogOracleY(), profile.getBaseLife(), profile.getBaseDamage(),
+                    56, 1, false, profile.getSpeed(), profile.getBehaviorTag(), profile.getAssetId()));
+        }
+        if (!mireBruteDefeated) {
+            RpgContentEnemyProfile profile = RpgContentEnemyProfile.load("enemy_mire_brute", 16, 8, 0.65, "fortify");
+            outlandEnemies.add(new RpgCombatEnemy(RpgCombatEnemy.Kind.MIRE_BRUTE, "Bruto da Charneca",
+                    map.getMireBruteX(), map.getMireBruteY(), profile.getBaseLife(), profile.getBaseDamage(),
+                    76, 2, false, profile.getSpeed(), profile.getBehaviorTag(), profile.getAssetId()));
+        }
     }
 
     /** Retorna true quando o evento foi consumido pelo modo clássico. */
@@ -458,6 +489,7 @@ public final class ClassicRpgMode {
             outlandQuestStage = OutlandQuestStage.COMPLETE;
             character.gainExperience(65);
             brumaElixirCount++;
+            populateOutlandEnemies();
             refreshObjective();
             showNotice("Rota assegurada: +65 XP e Elixir de Bruma. Sena liberou o baú de vigia.");
         }
@@ -580,12 +612,21 @@ public final class ClassicRpgMode {
             bellRelicCount++;
             showNotice("Chefe vencido: +" + enemy.getExperienceReward()
                     + " XP, 2 Elixires e Fragmento do Sino adicional.");
-        } else if (enemy.getName().contains("Rastejante")) {
+        } else if (enemy.getKind() == RpgCombatEnemy.Kind.STALKER) {
             stalkerDefeated = true;
             showNotice("Rastejante derrotado: +" + enemy.getExperienceReward() + " XP e Elixir de Bruma.");
-        } else {
+        } else if (enemy.getKind() == RpgCombatEnemy.Kind.SNIPER) {
             sniperDefeated = true;
             showNotice("Vigia derrotado: +" + enemy.getExperienceReward() + " XP e Elixir de Bruma.");
+        } else if (enemy.getKind() == RpgCombatEnemy.Kind.MIRE_HOUND) {
+            mireHoundDefeated = true;
+            showNotice("Cão de Turfa derrotado: +" + enemy.getExperienceReward() + " XP e Elixir de Bruma.");
+        } else if (enemy.getKind() == RpgCombatEnemy.Kind.BOG_ORACLE) {
+            bogOracleDefeated = true;
+            showNotice("Oráculo derrotado: +" + enemy.getExperienceReward() + " XP e Elixir de Bruma.");
+        } else {
+            mireBruteDefeated = true;
+            showNotice("Bruto derrotado: +" + enemy.getExperienceReward() + " XP e Elixires de Bruma.");
         }
         outlandEnemies.remove(enemy);
         if (outlandQuestStage == OutlandQuestStage.CLEAR_THREATS && stalkerDefeated && sniperDefeated) {
@@ -1207,6 +1248,9 @@ public final class ClassicRpgMode {
         data.put("stalkerDefeated", stalkerDefeated);
         data.put("sniperDefeated", sniperDefeated);
         data.put("outlandBossDefeated", outlandBossDefeated);
+        data.put("mireHoundDefeated", mireHoundDefeated);
+        data.put("bogOracleDefeated", bogOracleDefeated);
+        data.put("mireBruteDefeated", mireBruteDefeated);
         data.put("outlandQuestStage", outlandQuestStage.name());
         data.put("outlandChestOpened", outlandChestOpened);
         data.put("outlandEntranceSeen", outlandEntranceSeen);
@@ -1283,6 +1327,12 @@ public final class ClassicRpgMode {
     public String getOutlandQuestStageForTest() { return outlandQuestStage.name(); }
     public boolean isOutlandChestOpenedForTest() { return outlandChestOpened; }
     public boolean hasSeenOutlandEntranceForTest() { return outlandEntranceSeen; }
+    public boolean hasOutlandEnemyKindForTest(RpgCombatEnemy.Kind kind) {
+        for (RpgCombatEnemy enemy : outlandEnemies) {
+            if (enemy.getKind() == kind && enemy.isAlive()) return true;
+        }
+        return false;
+    }
 
     public void reset() {
         active = false;
@@ -1301,6 +1351,9 @@ public final class ClassicRpgMode {
         stalkerDefeated = false;
         sniperDefeated = false;
         outlandBossDefeated = false;
+        mireHoundDefeated = false;
+        bogOracleDefeated = false;
+        mireBruteDefeated = false;
         outlandQuestStage = OutlandQuestStage.MEET_SCOUT;
         outlandChestOpened = false;
         outlandEntranceSeen = false;

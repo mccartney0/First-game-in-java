@@ -24,7 +24,10 @@ public final class ContentStudioProject {
 
     public enum MapKind { REGIONAL, OPEN_WORLD }
     public enum TileStyle { GRAMA, ESTRADA, RUINAS, PEDRA, AREIA, TECNOLOGIA }
-    public enum EnemyRole { SCOUT, BOMBER, SHIELDER, ARTILLERY, SNIPER, SWARM, SAPPER, STALKER, GUARDIAN }
+    public enum EnemyRole {
+        SCOUT, BOMBER, SHIELDER, ARTILLERY, SNIPER, SWARM, SAPPER, STALKER, GUARDIAN,
+        MIRE_HOUND, BOG_ORACLE, MIRE_BRUTE
+    }
     public enum ConsumableEffect { CURA, MANA, FÔLEGO, TRIAGEM }
     public enum RpgWeaponStyle { ESPADA, MACHADO, CAJADO, ADAGA }
 
@@ -37,7 +40,10 @@ public final class ContentStudioProject {
         AMBUSH("ambush", "Emboscador — salta para a retaguarda"),
         DRAIN("drain", "Drenador — persegue e drena recursos"),
         REGENERATE("regenerate", "Guardião — resiste e se regenera"),
-        SNIPE("snipe", "Atirador — dispara de longo alcance");
+        SNIPE("snipe", "Atirador — dispara de longo alcance"),
+        POUNCE("pounce", "Predador — avança em investidas curtas"),
+        HEX("hex", "Oráculo — mantém distância e lança maldições"),
+        FORTIFY("fortify", "Bruto — avança lento, mas aguenta o confronto");
 
         private final String tag;
         private final String displayName;
@@ -95,6 +101,9 @@ public final class ContentStudioProject {
         public static EnemyProperties defaults(EnemyRole role) {
             EnemyRole safeRole = role == null ? EnemyRole.SCOUT : role;
             EnemyBehavior behavior = behaviorForRole(safeRole);
+            if (safeRole == EnemyRole.MIRE_BRUTE) return new EnemyProperties(16, 8, 0.65, behavior.getTag());
+            if (safeRole == EnemyRole.BOG_ORACLE) return new EnemyProperties(8, 6, 0.7, behavior.getTag());
+            if (safeRole == EnemyRole.MIRE_HOUND) return new EnemyProperties(5, 4, 1.65, behavior.getTag());
             if (safeRole == EnemyRole.GUARDIAN) return new EnemyProperties(18, 5, 0.8, behavior.getTag());
             if (safeRole == EnemyRole.SNIPER) return new EnemyProperties(7, 7, 0.55, behavior.getTag());
             if (safeRole == EnemyRole.ARTILLERY) return new EnemyProperties(7, 4, 1.1, behavior.getTag());
@@ -157,6 +166,9 @@ public final class ContentStudioProject {
     }
 
     public static EnemyBehavior behaviorForRole(EnemyRole role) {
+        if (role == EnemyRole.MIRE_BRUTE) return EnemyBehavior.FORTIFY;
+        if (role == EnemyRole.BOG_ORACLE) return EnemyBehavior.HEX;
+        if (role == EnemyRole.MIRE_HOUND) return EnemyBehavior.POUNCE;
         if (role == EnemyRole.GUARDIAN) return EnemyBehavior.REGENERATE;
         if (role == EnemyRole.SNIPER) return EnemyBehavior.SNIPE;
         if (role == EnemyRole.ARTILLERY) return EnemyBehavior.BOMBARD;
@@ -354,6 +366,17 @@ public final class ContentStudioProject {
         return png;
     }
 
+    /** Gera os três arquétipos usados pelo encontro expandido da Charneca da Bruma. */
+    public static File[] generateOutlandEnemyPack(File projectRoot) throws IOException {
+        EnemyRole[] roles = { EnemyRole.MIRE_HOUND, EnemyRole.BOG_ORACLE, EnemyRole.MIRE_BRUTE };
+        File[] generated = new File[roles.length];
+        for (int index = 0; index < roles.length; index++) {
+            EnemyRole role = roles[index];
+            generated[index] = generateEnemySprite(role, null, null, EnemyProperties.defaults(role), projectRoot);
+        }
+        return generated;
+    }
+
     public static String readManifestFor(File generatedFile) throws IOException {
         if (generatedFile == null) return "";
         String name = generatedFile.getName();
@@ -410,6 +433,27 @@ public final class ContentStudioProject {
             graphics.fillRect(7, 12, 18, 3);
             graphics.fillRect(11, 24, 3, 4);
             graphics.fillRect(18, 24, 3, 4);
+        } else if (role == EnemyRole.MIRE_HOUND) {
+            Polygon hound = new Polygon(new int[] {5, 11, 18, 27, 23, 13, 7}, new int[] {19, 10, 11, 17, 23, 25, 23}, 7);
+            graphics.fillPolygon(hound);
+            graphics.setColor(accent);
+            graphics.fillRect(17, 14, 7, 3);
+            graphics.fillRect(8, 8, 3, 6);
+            graphics.fillRect(20, 22, 3, 5);
+        } else if (role == EnemyRole.BOG_ORACLE) {
+            graphics.fillRoundRect(9, 9, 14, 17, 5, 5);
+            graphics.setColor(accent);
+            graphics.fillOval(11, 5, 10, 10);
+            graphics.fillRect(5, 12, 4, 12);
+            graphics.fillRect(23, 12, 4, 12);
+            graphics.fillRect(14, 24, 4, 4);
+        } else if (role == EnemyRole.MIRE_BRUTE) {
+            graphics.fillRoundRect(5, 9, 22, 18, 8, 8);
+            graphics.fillRect(2, 15, 6, 10);
+            graphics.fillRect(24, 15, 6, 10);
+            graphics.setColor(accent);
+            graphics.fillRect(10, 12, 12, 4);
+            graphics.fillRect(13, 5, 6, 6);
         } else if (role == EnemyRole.GUARDIAN) {
             graphics.fillRoundRect(5, 8, 22, 18, 7, 7);
             graphics.fillRect(2, 14, 6, 10);
@@ -519,6 +563,9 @@ public final class ContentStudioProject {
     }
 
     private static Color defaultBody(EnemyRole role) {
+        if (role == EnemyRole.MIRE_HOUND) return new Color(71, 128, 74);
+        if (role == EnemyRole.BOG_ORACLE) return new Color(86, 72, 132);
+        if (role == EnemyRole.MIRE_BRUTE) return new Color(101, 76, 53);
         if (role == EnemyRole.BOMBER) return new Color(143, 80, 42);
         if (role == EnemyRole.SHIELDER) return new Color(40, 119, 127);
         if (role == EnemyRole.ARTILLERY) return new Color(82, 67, 127);
@@ -528,6 +575,9 @@ public final class ContentStudioProject {
     }
 
     private static Color defaultAccent(EnemyRole role) {
+        if (role == EnemyRole.MIRE_HOUND) return new Color(184, 222, 104);
+        if (role == EnemyRole.BOG_ORACLE) return new Color(117, 215, 208);
+        if (role == EnemyRole.MIRE_BRUTE) return new Color(233, 139, 79);
         if (role == EnemyRole.BOMBER) return new Color(244, 184, 65);
         if (role == EnemyRole.SHIELDER) return new Color(81, 218, 237);
         if (role == EnemyRole.ARTILLERY) return new Color(245, 135, 71);

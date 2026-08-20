@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "BOG_ORACLE",
+  "file": "enemy_bog_oracle.png",
+  "width": 32,
+  "height": 32,
+  "baseLife": 8,
+  "baseDamage": 6,
+  "speed": 0.7,
+  "behaviorTag": "hex",
+  "alphaRequired": true
+}

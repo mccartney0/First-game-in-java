@@ -168,8 +168,13 @@ public final class ContentStudioApp {
         }));
         addField(panel, 0, "Papel de combate", role); addField(panel, 1, "Paleta", palette);
         addField(panel, 2, "Vida base", baseLife); addField(panel, 3, "Dano base", baseDamage);
+        JButton outlandPack = new JButton("Gerar pacote da Charneca");
+        outlandPack.addActionListener(event -> runExport("Pacote Charneca", () -> {
+            File[] exports = ContentStudioProject.generateOutlandEnemyPack(projectRoot);
+            return exports[exports.length - 1];
+        }));
         addField(panel, 4, "Velocidade", speed); addField(panel, 5, "Perfil de IA", behavior);
-        addField(panel, 6, "", generate); addPreview(panel, 7);
+        addField(panel, 6, "", generate); addField(panel, 7, "", outlandPack); addPreview(panel, 8);
         return panel;
     }
 

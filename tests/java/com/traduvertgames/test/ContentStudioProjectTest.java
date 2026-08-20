@@ -82,12 +82,29 @@ class ContentStudioProjectTest {
     }
 
     @Test
+    void studioExportsConfigurableOutlandEnemyPack() throws Exception {
+        File[] pack = ContentStudioProject.generateOutlandEnemyPack(root);
+        assertEquals(3, pack.length);
+        assertEquals("enemy_mire_hound.png", pack[0].getName());
+        assertEquals("enemy_bog_oracle.png", pack[1].getName());
+        assertEquals("enemy_mire_brute.png", pack[2].getName());
+        assertTrue(ContentStudioProject.readManifestFor(pack[0]).contains("\"behaviorTag\": \"pounce\""));
+        assertTrue(ContentStudioProject.readManifestFor(pack[1]).contains("\"behaviorTag\": \"hex\""));
+        assertTrue(ContentStudioProject.readManifestFor(pack[2]).contains("\"behaviorTag\": \"fortify\""));
+        for (File enemy : pack) {
+            assertEquals(32, ImageIO.read(enemy).getWidth());
+            assertEquals(0, ImageIO.read(enemy).getRGB(0, 0) >>> 24);
+        }
+    }
+
+    @Test
     void valleyCanLoadDefaultContentStudioGrassAndGuardianAssets() {
         BufferedImage grass = AssetCatalog.contentTile("brumafolha_grass");
         assertNotNull(grass);
         assertEquals(32, grass.getWidth());
         assertEquals(32, grass.getHeight());
         assertNotNull(AssetCatalog.enemySprite(Enemy.Variant.GUARDIAN));
+        assertNotNull(AssetCatalog.contentEnemySprite("enemy_mire_hound"));
     }
 
     @Test

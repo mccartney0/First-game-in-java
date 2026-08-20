@@ -24,6 +24,7 @@ public final class AssetCatalog {
     private static final Map<Enemy.Variant, BufferedImage> ENEMY_SPRITES = new EnumMap<Enemy.Variant, BufferedImage>(Enemy.Variant.class);
     private static final Map<Enemy.Variant, String> ENEMY_PATHS = new EnumMap<Enemy.Variant, String>(Enemy.Variant.class);
     private static final Map<String, BufferedImage> CONTENT_TILES = new HashMap<String, BufferedImage>();
+    private static final Map<String, BufferedImage> CONTENT_ENEMIES = new HashMap<String, BufferedImage>();
     private static BufferedImage companionAtlas;
     private static BufferedImage enemyAtlas;
     private static boolean initialized;
@@ -205,6 +206,16 @@ public final class AssetCatalog {
         BufferedImage tile = load("/assets/generated/tiles/" + normalized + ".png");
         CONTENT_TILES.put(normalized, tile);
         return tile;
+    }
+
+    /** Sprite de inimigo exportado pelo Content Studio, normalizado como os demais inimigos de runtime. */
+    public static synchronized BufferedImage contentEnemySprite(String assetName) {
+        if (assetName == null || assetName.trim().isEmpty()) return null;
+        String normalized = assetName.trim().toLowerCase().replaceAll("[^a-z0-9_-]+", "_");
+        if (CONTENT_ENEMIES.containsKey(normalized)) return CONTENT_ENEMIES.get(normalized);
+        BufferedImage sprite = loadNormalizedEnemySprite("/assets/generated/enemies/" + normalized + ".png");
+        CONTENT_ENEMIES.put(normalized, sprite);
+        return sprite;
     }
 
     /** Ícone de consumível exportado pelo Content Studio em assets/generated/items. */

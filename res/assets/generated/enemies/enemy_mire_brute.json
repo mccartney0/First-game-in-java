@@ -1,0 +1,13 @@
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "MIRE_BRUTE",
+  "file": "enemy_mire_brute.png",
+  "width": 32,
+  "height": 32,
+  "baseLife": 16,
+  "baseDamage": 8,
+  "speed": 0.65,
+  "behaviorTag": "fortify",
+  "alphaRequired": true
+}
