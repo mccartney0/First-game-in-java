@@ -33,3 +33,4 @@
 - [x] Criar e integrar variações determinísticas de terreno 32×32 para grama, estrada e ruínas do Vale.
 - [x] Estender o Content Studio e seus manifestos com propriedades de inimigos e tiles personalizados.
 - [x] Atualizar a documentação e validar visualmente o novo fluxo do RPG Clássico.
+- [x] Gerar e integrar um pacote visual mais rico de variantes 32×32 para grama, estrada e ruínas de Brumafolha.

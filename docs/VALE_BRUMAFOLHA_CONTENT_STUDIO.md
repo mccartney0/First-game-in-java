@@ -33,6 +33,8 @@ O Vale agora escolhe uma variação fixa por coordenada. Isso quebra a repetiç�
 
 O pacote padrão foi validado em escala nativa de 32×32: as variações de grama usam tufos agrupados, mancha de solo e detalhe claro pontual, evitando a malha regular que fazia o terreno parecer um padrão repetido.
 
+As referências de direção de arte geradas para a próxima passagem já estão em `res/assets/generated/terrain_sources/`: a grama privilegia massas orgânicas e clareiras discretas; a estrada combina terra batida, pedra e trilha de roda. Elas são referências de composição, não texturas desenhadas diretamente pelo renderizador, que continua consumindo os PNGs 32×32 da matriz acima.
+
 Na aba **Tiles**, informe um nome da matriz, escolha o estilo correspondente — **GRAMA**, **ESTRADA** ou **RUINAS** — defina o índice em **Variação** e clique em **Exportar tile 32×32**. Por exemplo, para substituir a segunda estrada, use o nome `brumafolha_road_1`, o estilo **ESTRADA** e a variação `1`.
 
 O aplicativo salva dois arquivos:
