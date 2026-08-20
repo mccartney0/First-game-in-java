@@ -43,8 +43,8 @@
 - [x] Garantir a escolha determinística de variantes de tile por posição no renderizador do Vale.
 - [x] Adicionar uma galeria visual interna de referências de terreno ao Content Studio.
 - [x] Validar os assets, a galeria e o build completo antes da publicação.
-- [ ] Expandir o inventário do RPG com equipamentos, consumíveis, coleta e persistência.
-- [ ] Adicionar diálogos ramificados com escolhas, estados de NPC e recompensas ao modo RPG.
-- [ ] Integrar inimigos configuráveis do Content Studio a comportamentos de IA distintos no jogo.
-- [ ] Modernizar a composição, navegação e feedback dos menus principais.
-- [ ] Cobrir os novos fluxos de RPG, IA e menu com regressões e validação integrada.
+- [x] Expandir o inventário do RPG com equipamentos, consumíveis, coleta e persistência.
+- [x] Adicionar diálogos ramificados com escolhas, estados de NPC e recompensas ao modo RPG.
+- [x] Integrar inimigos configuráveis do Content Studio a comportamentos de IA distintos no jogo.
+- [x] Modernizar a composição, navegação e feedback dos menus principais.
+- [x] Cobrir os novos fluxos de RPG, IA e menu com regressões e validação integrada.

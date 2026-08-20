@@ -728,21 +728,23 @@ private void handlePauseSelection() {
 		shift = false;
 	}
 
-	public void render(Graphics g) {
-		Graphics2D g2 = (Graphics2D) g;
-		int screenWidth = Game.WIDTH * Game.SCALE;
-		int screenHeight = Game.HEIGHT * Game.SCALE;
+		public void render(Graphics g) {
+			Graphics2D g2 = (Graphics2D) g;
+			int screenWidth = Game.WIDTH * Game.SCALE;
+			int screenHeight = Game.HEIGHT * Game.SCALE;
 
-		g2.setColor(new Color(0, 0, 0, 150));
-		g2.fillRect(0, 0, screenWidth, screenHeight);
+			g2.setColor(new Color(4, 9, 15, currentScreen == Screen.MAIN ? 174 : 252));
+			g2.fillRect(0, 0, screenWidth, screenHeight);
+			drawModernMenuBackdrop(g2, screenWidth, screenHeight);
 
 		// Painéis do menu (pausa, como jogar, opções, carregar) cobrem o jogo
 		// com fundo totalmente opaco para não sobreporem elementos do mundo.
-		boolean screenOverlay = currentScreen != Screen.MAIN;
-		if (screenOverlay) {
-			g.setColor(new Color(0, 0, 0, 255));
-			g.fillRect(0, 0, screenWidth, screenHeight);
-		}
+			boolean screenOverlay = currentScreen != Screen.MAIN;
+			if (screenOverlay) {
+				g.setColor(new Color(4, 9, 15, 236));
+				g.fillRect(0, 0, screenWidth, screenHeight);
+				drawModernMenuBackdrop(g2, screenWidth, screenHeight);
+			}
 
 
 		// Consistência: se o jogo está em MENU sem pausa e não está em nenhuma
@@ -785,8 +787,23 @@ private void handlePauseSelection() {
 
 		// Rodada 29 — metagame: a tela de melhorias do piloto é desenhada por
 		// cima do menu principal (fundo translúcido, saldo e lista de upgrades).
-		com.traduvertgames.graficos.PilotUpgradesScreen.draw(g);
-	}
+			com.traduvertgames.graficos.PilotUpgradesScreen.draw(g);
+		}
+
+		private void drawModernMenuBackdrop(Graphics2D g, int screenWidth, int screenHeight) {
+			g.setColor(new Color(20, 43, 61, 92));
+			g.fillRect(0, 0, screenWidth, 7);
+			g.setColor(new Color(239, 190, 79, 145));
+			g.fillRect(0, 7, screenWidth / 3, 2);
+			g.setColor(new Color(74, 122, 150, 28));
+			for (int x = -screenHeight; x < screenWidth; x += 92) {
+				g.drawLine(x, 0, x + screenHeight, screenHeight);
+			}
+			g.setColor(new Color(32, 64, 85, 50));
+			g.fillRoundRect(28, 42, Math.max(220, screenWidth / 4), screenHeight - 84, 22, 22);
+			g.setColor(new Color(118, 172, 187, 80));
+			g.drawRoundRect(28, 42, Math.max(220, screenWidth / 4), screenHeight - 84, 22, 22);
+		}
 
 		private void renderMainMenu(Graphics g) {
 			int screenWidth = Game.WIDTH * Game.SCALE;
@@ -800,29 +817,33 @@ private void handlePauseSelection() {
 				maxWidth = Math.max(maxWidth, g.getFontMetrics().stringWidth(labels[i]));
 			}
 
-			String title = "> TRADUVERT <";
-			Font titleFont = new Font("arial", Font.BOLD, 42);
+			String title = "TRADUVERT";
+			Font titleFont = new Font("arial", Font.BOLD, 46);
 			g.setFont(titleFont);
 			g.setColor(new Color(255, 218, 72));
-			int titleY = 104;
-			g.drawString(title, (screenWidth - g.getFontMetrics().stringWidth(title)) / 2, titleY);
+			int titleY = 112;
+			g.drawString(title, 58, titleY);
+			g.setColor(new Color(87, 186, 201));
+			g.fillRect(60, titleY + 12, 132, 3);
 
 			Font subtitleFont = new Font("arial", Font.PLAIN, 15);
 			g.setFont(subtitleFont);
 			g.setColor(new Color(205, 215, 225));
-			String subtitle = "Escolha uma aventura para começar";
-			g.drawString(subtitle, (screenWidth - g.getFontMetrics().stringWidth(subtitle)) / 2, titleY + 30);
+			String subtitle = "CENTRAL DE OPERAÇÕES";
+			g.drawString(subtitle, 60, titleY + 40);
+			g.setColor(new Color(152, 174, 187));
+			g.drawString("RPG  •  MUNDO ABERTO  •  SOBREVIVÊNCIA", 60, titleY + 64);
 
-			int panelWidth = Math.min(screenWidth - 120, maxWidth + 210);
-			int panelX = (screenWidth - panelWidth) / 2;
-			int panelY = 158;
+			int panelWidth = Math.min(screenWidth - 300, maxWidth + 250);
+			int panelX = Math.max(screenWidth / 2 - 30, 300);
+			int panelY = 124;
 			int panelHeight = MAIN_OPTIONS.length * LINE_HEIGHT + 42;
 			g.setColor(new Color(8, 14, 24, 232));
 			g.fillRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
 			g.setColor(new Color(92, 117, 145, 190));
 			g.drawRoundRect(panelX, panelY, panelWidth, panelHeight, 18, 18);
 
-			int textX = (screenWidth - maxWidth) / 2;
+			int textX = panelX + 62;
 			int arrowX = textX - g.getFontMetrics().charWidth('>') - 18;
 			int startY = panelY + 32;
 			for (int i = 0; i < MAIN_OPTIONS.length; i++) {
@@ -830,8 +851,10 @@ private void handlePauseSelection() {
 				int baselineY = rowY + g.getFontMetrics().getAscent();
 				boolean available = isOptionAvailable(MAIN_OPTIONS[i]);
 				if (currentOption == i) {
-					g.setColor(new Color(55, 83, 112, 230));
+					g.setColor(new Color(48, 91, 113, 235));
 					g.fillRoundRect(panelX + 20, rowY - 4, panelWidth - 40, LINE_HEIGHT - 4, 10, 10);
+					g.setColor(new Color(255, 202, 78));
+					g.fillRoundRect(panelX + 20, rowY - 4, 5, LINE_HEIGHT - 4, 4, 4);
 					g.setColor(new Color(255, 226, 108));
 					g.drawString(">", arrowX, baselineY);
 				}
@@ -843,7 +866,7 @@ private void handlePauseSelection() {
 			int credits = com.traduvertgames.state.PilotUpgrades.getCredits();
 			Font creditFont = new Font("arial", Font.BOLD, 15);
 			g.setFont(creditFont);
-			String creditLabel = "CRÉDITOS  " + credits;
+			String creditLabel = "CRÉDITOS DE OPERAÇÃO  " + credits;
 			g.setColor(new Color(255, 214, 10));
 			g.drawString(creditLabel, (screenWidth - g.getFontMetrics().stringWidth(creditLabel)) / 2,
 					panelY + panelHeight + 30);
@@ -862,14 +885,14 @@ private void handlePauseSelection() {
 			Font titleFont = new Font("arial", Font.BOLD, 34);
 			g.setFont(titleFont);
 			g.setColor(new Color(255, 218, 72));
-			String title = "JOGAR";
-			g.drawString(title, (screenWidth - g.getFontMetrics().stringWidth(title)) / 2, 105);
+			String title = "CENTRAL DE OPERAÇÕES";
+			g.drawString(title, 58, 105);
 
 			Font subtitleFont = new Font("arial", Font.PLAIN, 15);
 			g.setFont(subtitleFont);
 			g.setColor(new Color(205, 215, 225));
-			String subtitle = "Escolha o modo de jogo";
-			g.drawString(subtitle, (screenWidth - g.getFontMetrics().stringWidth(subtitle)) / 2, 133);
+			String subtitle = "Escolha a jornada que deseja iniciar";
+			g.drawString(subtitle, 60, 133);
 
 			int rowHeight = 68;
 			int panelWidth = Math.min(screenWidth - 120, 820);
@@ -886,8 +909,10 @@ private void handlePauseSelection() {
 			for (int i = 0; i < GAME_MODE_OPTIONS.length; i++) {
 				int rowY = panelY + 16 + i * rowHeight;
 				if (currentOption == i) {
-					g.setColor(new Color(55, 83, 112, 230));
+					g.setColor(new Color(48, 91, 113, 235));
 					g.fillRoundRect(panelX + 18, rowY, panelWidth - 36, rowHeight - 8, 10, 10);
+					g.setColor(new Color(255, 202, 78));
+					g.fillRoundRect(panelX + 18, rowY, 5, rowHeight - 8, 4, 4);
 				}
 				g.setFont(modeFont);
 				g.setColor(currentOption == i ? new Color(255, 226, 108) : new Color(232, 237, 242));
