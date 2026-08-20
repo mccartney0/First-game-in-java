@@ -2166,6 +2166,23 @@ if (!hidingHud) {
 		}
 
 		/**
+		 * Entrada direta para validar uma dungeon sem exigir a cadeia regional.
+		 * A progressão normal continua intacta na Aventura RPG; esta expedição é
+		 * apresentada como rota de treino e usa a instância das Ruínas.
+		 */
+		public void startDungeonExpedition() {
+			loadRegionalAdventure(1);
+			boolean requested = com.traduvertgames.world.DungeonManager.requestEnter(
+					com.traduvertgames.world.RpgWorldManager.RegionType.RUINS);
+			if (requested) {
+				com.traduvertgames.world.DungeonManager.processPendingTransition();
+				com.traduvertgames.graficos.MissionBanner.show("EXPEDIÇÃO DE DUNGEON",
+						"Derrote o Guardião das Ruínas; depois use o portal de retorno.",
+						new java.awt.Color(220, 80, 255), java.awt.Color.WHITE, 240);
+			}
+		}
+
+		/**
 		 * Recria uma sessão RPG salva sem abrir onboarding, loja ou seleção de
 		 * fases. Eventos ativos são encerrados com segurança; o histórico concluído
 		 * já foi restaurado pelo SaveManager antes da troca de mapa.

@@ -50,23 +50,26 @@ public class Menu {
 
 		private static final int MODE_OPEN_WORLD = 0;
 		private static final int MODE_RPG_ADVENTURE = 1;
-		private static final int MODE_CLASSIC_RPG = 2;
-		private static final int MODE_CAMPAIGN = 3;
-		private static final int MODE_BACK = 4;
+		private static final int MODE_DUNGEON_EXPEDITION = 2;
+		private static final int MODE_CLASSIC_RPG = 3;
+		private static final int MODE_CAMPAIGN = 4;
+		private static final int MODE_BACK = 5;
 
 		private static final String[] GAME_MODE_OPTIONS = {
 				"mundo aberto gigante",
 				"aventura RPG",
+				"expedição de dungeon (teste)",
 				"rpg clássico",
 				"campanha narrativa",
 				"voltar"
 		};
 
 		private static final String[] GAME_MODE_DESCRIPTIONS = {
-				"Explore um mundo amplo com clima, regiões e eventos dinâmicos.",
-				"Aceite missões, evolua sua equipe e enfrente desafios regionais.",
-				"Descubra o Vale de Brumafolha em um action RPG de fantasia.",
-				"Siga uma campanha narrativa com decisões, diálogos e capítulos."
+				"Sandbox de 40 setores: explore livremente; H abre o hub e revela POIs/dungeons.",
+				"Loop regional com contratos: H → resgate/NPC → comboio → dungeon desbloqueada.",
+				"Entrada direta nas Ruínas para testar chefe, recompensa e portal de retorno.",
+				"Vale de Brumafolha: action RPG de fantasia separado, com inventário e atributos.",
+				"Campanha linear: tutorial, diálogos, capítulos e chefes narrativos."
 		};
 
 	private static final int PAUSE_CONTINUE = 0;
@@ -440,10 +443,13 @@ public class Menu {
 			case MODE_OPEN_WORLD:
 				game.startOpenWorld();
 				break;
-			case MODE_RPG_ADVENTURE:
-				game.startNewGame();
-				break;
-			case MODE_CLASSIC_RPG:
+				case MODE_RPG_ADVENTURE:
+					game.startNewGame();
+					break;
+				case MODE_DUNGEON_EXPEDITION:
+					game.startDungeonExpedition();
+					break;
+				case MODE_CLASSIC_RPG:
 				game.startClassicRpg();
 				break;
 			case MODE_CAMPAIGN:
@@ -1134,7 +1140,12 @@ private void handlePauseSelection() {
 					"WASD / setas: mover       ENTER: confirmar",
 					"ESC: fechar a tela atual ou pausar durante o jogo",
 					"MENU",
-					"Jogar: escolha um dos quatro modos disponíveis",
+					"Jogar: escolha um dos cinco modos disponíveis",
+					"Mundo Aberto: sandbox de 40 setores; H abre o hub, TAB mostra POIs e M marca locais.",
+					"Aventura RPG: siga a cadeia regional no hub: resgate → NPC → comboio → dungeon.",
+					"Expedição de dungeon: inicia nas Ruínas para testar chefe, recompensa e portal.",
+					"Fase 2: ative o beacon, defenda a área e mantenha os invasores afastados.",
+					"Fase 6–8: resista, sabote os sistemas inimigos e conclua o objetivo do HUD.",
 					"COMBATE E EXPLORAÇÃO",
 					"RPG Clássico: X/clique esquerdo atacar — botão direito bloquear",
 					"Espaço esquivar — C atributos — R interagir — I inventário",

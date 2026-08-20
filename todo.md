@@ -13,3 +13,8 @@
 - [x] Definir camadas de ambiente e trilhas adaptativas por período e condição climática.
 - [x] Integrar assets substituíveis, crossfades e telemetria de áudio no jogo.
 - [x] Validar regressões, QA e playthrough final antes de publicar.
+- [x] Sincronizar a main e reproduzir a falha de entrada da Aventura RPG.
+- [x] Corrigir o recurso de mapa ausente no carregamento por `gradlew.bat run`.
+- [x] Impedir que tonalização de Mundo Aberto escureça Campanha e Aventura RPG.
+- [x] Tornar os modos iniciais e o caminho para dungeons explícitos na interface.
+- [x] Adicionar regressões de fluxo, executar build, QA e playthrough de aceitação.

@@ -27,18 +27,21 @@ public class World {
 	private static Enemy.Variant deferredBossVariant;
 	
 	public World(String path) {
-		// Caminhos absolutos (mapas procedurais do modo infinito) são carregados
-		// diretamente do disco em vez do classpath.
-		if (path != null && path.startsWith("/")) {
-			java.io.File f = new java.io.File(path);
-			if (f.exists()) {
-				loadFromFile(f);
-				TeleportPad.linkPairs();
-				return;
-			}
+		// Mapas procedurais são arquivos reais. No Windows um caminho absoluto
+		// começa com "C:\\", e não com "/"; testar o arquivo diretamente evita
+		// que ele caia por engano no carregador de recursos do classpath.
+		java.io.File diskMap = path == null ? null : new java.io.File(path);
+		if (diskMap != null && diskMap.isFile()) {
+			loadFromFile(diskMap);
+			TeleportPad.linkPairs();
+			return;
 		}
 		try {
-			BufferedImage map = ImageIO.read(getClass().getResource(path));
+			java.net.URL resource = getClass().getResource(path);
+			if (resource == null) {
+				throw new IOException("Mapa não encontrado no classpath: " + path);
+			}
+			BufferedImage map = ImageIO.read(resource);
 			if (map == null) {
 				throw new IOException("Mapa não encontrado no classpath: " + path);
 			}
@@ -49,7 +52,7 @@ public class World {
 			map.getRGB(0, 0, map.getWidth(), map.getHeight(), pixels, 0, map.getWidth());
 			applyMapPixels(pixels, map.getWidth(), map.getHeight());
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new IllegalStateException("Falha ao carregar mapa: " + path, e);
 		}
 		TeleportPad.linkPairs();
 	}
@@ -73,7 +76,7 @@ public class World {
 			map.getRGB(0, 0, map.getWidth(), map.getHeight(), pixels, 0, map.getWidth());
 			applyMapPixels(pixels, map.getWidth(), map.getHeight());
 		} catch (IOException e) {
-			e.printStackTrace();
+			throw new IllegalStateException("Falha ao carregar mapa do disco: " + mapFile.getAbsolutePath(), e);
 		}
 	}
 

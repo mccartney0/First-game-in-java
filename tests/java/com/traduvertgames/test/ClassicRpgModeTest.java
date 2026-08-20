@@ -36,10 +36,11 @@ class ClassicRpgModeTest {
 		assertEquals(8, menu.getMainMenuOptionCountForTest());
 		assertEquals("Jogar", menu.getMainMenuLabelForTest(0));
 		assertEquals("Como jogar", menu.getMainMenuLabelForTest(3));
-		assertEquals(5, menu.getGameModeOptionCountForTest());
+		assertEquals(6, menu.getGameModeOptionCountForTest());
 		assertEquals("mundo aberto gigante", menu.getGameModeLabelForTest(0));
 		assertEquals("aventura RPG", menu.getGameModeLabelForTest(1));
-		assertEquals("rpg clássico", menu.getGameModeLabelForTest(2));
+		assertEquals("expedição de dungeon (teste)", menu.getGameModeLabelForTest(2));
+		assertEquals("rpg clássico", menu.getGameModeLabelForTest(3));
     }
 
     @Test
