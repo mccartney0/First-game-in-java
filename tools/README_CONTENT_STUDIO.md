@@ -34,6 +34,16 @@ Para regenerar o pacote sem abrir a interface, execute:
 gradlew.bat generateOutlandEnemyPack
 ```
 
+## Demonstração de chefe no canvas
+
+Na aba **Inimigos**, o botão **Gerar demo: Soberano da Bruma** cria um chefe completo no canvas e exibe o PNG recém-exportado no painel de prévia. O perfil demonstrativo usa a silhueta de soberano coroado, 48 de vida base, 12 de dano, velocidade `0.55` e o comportamento **Guardião — resiste e se regenera**. O manifesto registra também `"boss": true`, permitindo inspeção e validação automatizada do papel de chefe.
+
+Para repetir a demonstração sem abrir a interface gráfica, execute:
+
+```bat
+gradlew.bat generateMistSovereignBoss
+```
+
 ## Itens e armas do RPG
 
 Na aba **Itens RPG**, escolha entre **Consumível** e **Arma**. Todo export gera um PNG 32×32 transparente e um manifesto JSON ao lado. Para consumíveis, configure os valores de vida, mana e fôlego restaurados. Para armas, configure o estilo, o bônus de dano, o custo de fôlego e a raridade.

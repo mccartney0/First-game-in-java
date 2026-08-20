@@ -98,6 +98,24 @@ class ContentStudioProjectTest {
     }
 
     @Test
+    void studioExportsMistSovereignBossWithInspectableBossManifest() throws Exception {
+        File boss = ContentStudioProject.generateMistSovereignBoss(root);
+        assertEquals("enemy_mist_sovereign.png", boss.getName());
+        BufferedImage image = ImageIO.read(boss);
+        assertEquals(32, image.getWidth());
+        assertEquals(32, image.getHeight());
+        assertEquals(0, image.getRGB(0, 0) >>> 24);
+        String manifest = ContentStudioProject.readManifestFor(boss);
+        assertTrue(manifest.contains("\"variant\": \"MIST_SOVEREIGN\""));
+        assertTrue(manifest.contains("\"baseLife\": 48"));
+        assertTrue(manifest.contains("\"baseDamage\": 12"));
+        assertTrue(manifest.contains("\"behaviorTag\": \"regenerate\""));
+        assertTrue(manifest.contains("\"boss\": true"));
+        assertTrue(ContentStudioProject.EnemyProperties.defaults(
+                ContentStudioProject.EnemyRole.MIST_SOVEREIGN).boss);
+    }
+
+    @Test
     void valleyCanLoadDefaultContentStudioGrassAndGuardianAssets() {
         BufferedImage grass = AssetCatalog.contentTile("brumafolha_grass");
         assertNotNull(grass);
@@ -105,6 +123,7 @@ class ContentStudioProjectTest {
         assertEquals(32, grass.getHeight());
         assertNotNull(AssetCatalog.enemySprite(Enemy.Variant.GUARDIAN));
         assertNotNull(AssetCatalog.contentEnemySprite("enemy_mire_hound"));
+        assertNotNull(AssetCatalog.contentEnemySprite("enemy_mist_sovereign"));
     }
 
     @Test

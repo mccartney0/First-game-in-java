@@ -64,3 +64,9 @@
 - [x] Criar uma transição visual e mensagem de descoberta ao cruzar o Portão da Charneca.
 - [x] Ampliar o Content Studio com novas variações de inimigos configuráveis e integrá-las ao encontro externo.
 - [x] Cobrir a expansão com regressões de missão, recompensas, save e geração de conteúdo.
+
+## Demonstração do Content Studio — chefe da Charneca
+
+- [x] Criar um chefe configurável no canvas de inimigos com atributos e perfil de IA próprios.
+- [x] Exportar e inspecionar o sprite PNG transparente e o manifesto JSON do chefe.
+- [x] Executar a validação automatizada de exportação e compatibilidade de runtime.

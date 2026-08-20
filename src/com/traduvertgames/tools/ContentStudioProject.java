@@ -26,7 +26,7 @@ public final class ContentStudioProject {
     public enum TileStyle { GRAMA, ESTRADA, RUINAS, PEDRA, AREIA, TECNOLOGIA }
     public enum EnemyRole {
         SCOUT, BOMBER, SHIELDER, ARTILLERY, SNIPER, SWARM, SAPPER, STALKER, GUARDIAN,
-        MIRE_HOUND, BOG_ORACLE, MIRE_BRUTE
+        MIRE_HOUND, BOG_ORACLE, MIRE_BRUTE, MIST_SOVEREIGN
     }
     public enum ConsumableEffect { CURA, MANA, FÔLEGO, TRIAGEM }
     public enum RpgWeaponStyle { ESPADA, MACHADO, CAJADO, ADAGA }
@@ -90,17 +90,24 @@ public final class ContentStudioProject {
         public final int baseDamage;
         public final double speed;
         public final String behaviorTag;
+        public final boolean boss;
 
         public EnemyProperties(int baseLife, int baseDamage, double speed, String behaviorTag) {
+            this(baseLife, baseDamage, speed, behaviorTag, false);
+        }
+
+        public EnemyProperties(int baseLife, int baseDamage, double speed, String behaviorTag, boolean boss) {
             this.baseLife = Math.max(1, baseLife);
             this.baseDamage = Math.max(0, baseDamage);
             this.speed = Math.max(0.1, speed);
             this.behaviorTag = safeTag(behaviorTag, "chase");
+            this.boss = boss;
         }
 
         public static EnemyProperties defaults(EnemyRole role) {
             EnemyRole safeRole = role == null ? EnemyRole.SCOUT : role;
             EnemyBehavior behavior = behaviorForRole(safeRole);
+            if (safeRole == EnemyRole.MIST_SOVEREIGN) return new EnemyProperties(48, 12, 0.55, behavior.getTag(), true);
             if (safeRole == EnemyRole.MIRE_BRUTE) return new EnemyProperties(16, 8, 0.65, behavior.getTag());
             if (safeRole == EnemyRole.BOG_ORACLE) return new EnemyProperties(8, 6, 0.7, behavior.getTag());
             if (safeRole == EnemyRole.MIRE_HOUND) return new EnemyProperties(5, 4, 1.65, behavior.getTag());
@@ -166,6 +173,7 @@ public final class ContentStudioProject {
     }
 
     public static EnemyBehavior behaviorForRole(EnemyRole role) {
+        if (role == EnemyRole.MIST_SOVEREIGN) return EnemyBehavior.REGENERATE;
         if (role == EnemyRole.MIRE_BRUTE) return EnemyBehavior.FORTIFY;
         if (role == EnemyRole.BOG_ORACLE) return EnemyBehavior.HEX;
         if (role == EnemyRole.MIRE_HOUND) return EnemyBehavior.POUNCE;
@@ -377,6 +385,12 @@ public final class ContentStudioProject {
         return generated;
     }
 
+    /** Demonstração exportável de um chefe configurado no canvas de inimigos. */
+    public static File generateMistSovereignBoss(File projectRoot) throws IOException {
+        EnemyProperties profile = EnemyProperties.defaults(EnemyRole.MIST_SOVEREIGN);
+        return generateEnemySprite(EnemyRole.MIST_SOVEREIGN, null, null, profile, projectRoot);
+    }
+
     public static String readManifestFor(File generatedFile) throws IOException {
         if (generatedFile == null) return "";
         String name = generatedFile.getName();
@@ -454,6 +468,16 @@ public final class ContentStudioProject {
             graphics.setColor(accent);
             graphics.fillRect(10, 12, 12, 4);
             graphics.fillRect(13, 5, 6, 6);
+        } else if (role == EnemyRole.MIST_SOVEREIGN) {
+            Polygon cloak = new Polygon(new int[] {16, 25, 28, 23, 9, 4, 7},
+                    new int[] {4, 13, 27, 28, 28, 27, 13}, 7);
+            graphics.fillPolygon(cloak);
+            graphics.setColor(accent);
+            graphics.fillRect(10, 10, 12, 3);
+            graphics.fillOval(12, 5, 8, 8);
+            graphics.fillRect(5, 4, 3, 10);
+            graphics.fillRect(24, 4, 3, 10);
+            graphics.fillRect(14, 22, 4, 6);
         } else if (role == EnemyRole.GUARDIAN) {
             graphics.fillRoundRect(5, 8, 22, 18, 7, 7);
             graphics.fillRect(2, 14, 6, 10);
@@ -563,6 +587,7 @@ public final class ContentStudioProject {
     }
 
     private static Color defaultBody(EnemyRole role) {
+        if (role == EnemyRole.MIST_SOVEREIGN) return new Color(57, 84, 112);
         if (role == EnemyRole.MIRE_HOUND) return new Color(71, 128, 74);
         if (role == EnemyRole.BOG_ORACLE) return new Color(86, 72, 132);
         if (role == EnemyRole.MIRE_BRUTE) return new Color(101, 76, 53);
@@ -575,6 +600,7 @@ public final class ContentStudioProject {
     }
 
     private static Color defaultAccent(EnemyRole role) {
+        if (role == EnemyRole.MIST_SOVEREIGN) return new Color(224, 189, 91);
         if (role == EnemyRole.MIRE_HOUND) return new Color(184, 222, 104);
         if (role == EnemyRole.BOG_ORACLE) return new Color(117, 215, 208);
         if (role == EnemyRole.MIRE_BRUTE) return new Color(233, 139, 79);
@@ -617,7 +643,8 @@ public final class ContentStudioProject {
         writeAssetManifest(png, "enemy", role.name(), "  \"baseLife\": " + properties.baseLife + ",\n"
                 + "  \"baseDamage\": " + properties.baseDamage + ",\n"
                 + "  \"speed\": " + properties.speed + ",\n"
-                + "  \"behaviorTag\": \"" + properties.behaviorTag + "\",\n");
+                + "  \"behaviorTag\": \"" + properties.behaviorTag + "\",\n"
+                + "  \"boss\": " + properties.boss + ",\n");
     }
 
     private static void writeAssetManifest(File png, String kind, String variant, String propertiesJson) throws IOException {

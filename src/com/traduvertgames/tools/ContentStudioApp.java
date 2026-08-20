@@ -153,8 +153,14 @@ public final class ContentStudioApp {
         JSpinner speed = new JSpinner(new SpinnerNumberModel(1.4, 0.1, 10.0, 0.1));
         JComboBox<ContentStudioProject.EnemyBehavior> behavior =
                 new JComboBox<ContentStudioProject.EnemyBehavior>(ContentStudioProject.EnemyBehavior.values());
-        role.addActionListener(event -> behavior.setSelectedItem(
-                ContentStudioProject.behaviorForRole((ContentStudioProject.EnemyRole) role.getSelectedItem())));
+        role.addActionListener(event -> {
+            ContentStudioProject.EnemyRole selected = (ContentStudioProject.EnemyRole) role.getSelectedItem();
+            ContentStudioProject.EnemyProperties defaults = ContentStudioProject.EnemyProperties.defaults(selected);
+            behavior.setSelectedItem(ContentStudioProject.behaviorForRole(selected));
+            baseLife.setValue(defaults.baseLife);
+            baseDamage.setValue(defaults.baseDamage);
+            speed.setValue(defaults.speed);
+        });
         behavior.setSelectedItem(ContentStudioProject.behaviorForRole((ContentStudioProject.EnemyRole) role.getSelectedItem()));
         JButton generate = new JButton("Exportar sprite transparente 32×32");
         generate.addActionListener(event -> runExport("Sprite", () -> {
@@ -162,7 +168,8 @@ public final class ContentStudioApp {
             ContentStudioProject.EnemyProperties properties = new ContentStudioProject.EnemyProperties(
                     (Integer) baseLife.getValue(), (Integer) baseDamage.getValue(),
                     ((Number) speed.getValue()).doubleValue(),
-                    ((ContentStudioProject.EnemyBehavior) behavior.getSelectedItem()).getTag());
+                    ((ContentStudioProject.EnemyBehavior) behavior.getSelectedItem()).getTag(),
+                    role.getSelectedItem() == ContentStudioProject.EnemyRole.MIST_SOVEREIGN);
             return ContentStudioProject.generateEnemySprite((ContentStudioProject.EnemyRole) role.getSelectedItem(),
                     colors[0], colors[1], properties, projectRoot);
         }));
@@ -173,8 +180,12 @@ public final class ContentStudioApp {
             File[] exports = ContentStudioProject.generateOutlandEnemyPack(projectRoot);
             return exports[exports.length - 1];
         }));
+        JButton bossDemo = new JButton("Gerar demo: Soberano da Bruma");
+        bossDemo.addActionListener(event -> runExport("Chefe da Charneca", () ->
+                ContentStudioProject.generateMistSovereignBoss(projectRoot)));
         addField(panel, 4, "Velocidade", speed); addField(panel, 5, "Perfil de IA", behavior);
-        addField(panel, 6, "", generate); addField(panel, 7, "", outlandPack); addPreview(panel, 8);
+        addField(panel, 6, "", generate); addField(panel, 7, "", bossDemo);
+        addField(panel, 8, "", outlandPack); addPreview(panel, 9);
         return panel;
     }
 

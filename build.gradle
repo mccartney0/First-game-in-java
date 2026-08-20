@@ -47,6 +47,13 @@ tasks.register('generateOutlandEnemyPack', JavaExec) {
     mainClass = 'com.traduvertgames.tools.OutlandEnemyBootstrap'
 }
 
+tasks.register('generateMistSovereignBoss', JavaExec) {
+    group = 'application'
+    description = 'Demonstra a criação e exportação do chefe Soberano da Bruma no Content Studio.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.traduvertgames.tools.MistSovereignBossBootstrap'
+}
+
 sourceSets {
     main.java.srcDirs = ['src','res']
     main.resources.srcDirs = ['src','res']

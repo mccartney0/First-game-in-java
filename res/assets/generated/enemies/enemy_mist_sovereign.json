@@ -1,0 +1,14 @@
+{
+  "schema": 1,
+  "kind": "enemy",
+  "variant": "MIST_SOVEREIGN",
+  "file": "enemy_mist_sovereign.png",
+  "width": 32,
+  "height": 32,
+  "baseLife": 48,
+  "baseDamage": 12,
+  "speed": 0.55,
+  "behaviorTag": "regenerate",
+  "boss": true,
+  "alphaRequired": true
+}
