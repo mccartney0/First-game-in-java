@@ -160,6 +160,49 @@ public enum WeaponType {
                 return unlockedByDefault;
         }
 
+        /**
+         * Ponto normalizado do cano na arte horizontal da arma (0..1).
+         * O runtime ainda dispara do centro do jogador; o Content Studio usa
+         * este contrato para visualizar e preparar a futura integração por arma.
+         */
+        public double getShotOriginX() {
+                switch (this) {
+                case BLASTER:
+                        return 0.93;
+                case ION_RIFLE:
+                        return 0.94;
+                case SCATTER_CANNON:
+                        return 0.95;
+                case FUSION_LANCE:
+                        return 0.96;
+                case ARC_DISRUPTOR:
+                        return 0.92;
+                case SOLAR_CANNON:
+                        return 0.94;
+                case PLASMA_CUTTER:
+                        return 0.95;
+                case VOID_MORTAR:
+                        return 0.91;
+                case BOOMERANG_ARCANO:
+                        return 0.90;
+                case CHAIN_ARC:
+                        return 0.90;
+                case DRONE_SENTINEL:
+                        return 0.50;
+                default:
+                        return 0.50;
+                }
+        }
+
+        /** Ponto vertical normalizado do cano na arte horizontal da arma (0..1). */
+        public double getShotOriginY() {
+                return 0.50;
+        }
+
+        public String getShotOriginSpace() {
+                return "arte normalizada da arma; runtime atual: centro do jogador";
+        }
+
         public static WeaponType random(Random random) {
                 WeaponType[] values = values();
                 return values[random.nextInt(values.length)];

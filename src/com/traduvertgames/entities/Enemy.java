@@ -92,43 +92,43 @@ public class Enemy extends Entity {
             this.color = color;
         }
 
-        double getMaxLife() {
+        public double getMaxLife() {
             return maxLife;
         }
 
-        double getSpeedMultiplier() {
+        public double getSpeedMultiplier() {
             return speedMultiplier;
         }
 
-        double getStrafeMultiplier() {
+        public double getStrafeMultiplier() {
             return strafeMultiplier;
         }
 
-        double getProjectileSpeed() {
+        public double getProjectileSpeed() {
             return projectileSpeed;
         }
 
-        double getProjectileDamage() {
+        public double getProjectileDamage() {
             return projectileDamage;
         }
 
-        int getProjectileSize() {
+        public int getProjectileSize() {
             return projectileSize;
         }
 
-        int getAttackCooldown() {
+        public int getAttackCooldown() {
             return attackCooldown;
         }
 
-        int getSpecialCooldown() {
+        public int getSpecialCooldown() {
             return specialCooldown;
         }
 
-        double getSpecialRange() {
+        public double getSpecialRange() {
             return specialRange;
         }
 
-        Color getProjectileColor() {
+        public Color getProjectileColor() {
             return color;
         }
 

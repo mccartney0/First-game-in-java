@@ -80,6 +80,7 @@ public final class ContentStudioApp {
         tabs.addTab("Referências", createTerrainGalleryPanel());
         tabs.addTab("Manifesto", createManifestPanel());
         tabs.addTab("Validação", createValidationPanel());
+        tabs.addTab("Metadados", new MetadataPreviewPanel(projectRoot));
         frame.add(tabs, BorderLayout.CENTER);
 
         activity.setEditable(false);
