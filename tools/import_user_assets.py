@@ -37,6 +37,10 @@ def is_background_candidate(pixel: tuple[int, int, int, int]) -> bool:
     r, g, b, a = pixel
     if a <= 12:
         return True
+    # Fundos escuros semitransparentes de capturas de referência. O casco do
+    # Scout é opaco, portanto esta regra remove apenas o halo conectado à borda.
+    if a < 220 and r <= 95 and g <= 105 and b <= 105 and max(r, g, b) - min(r, g, b) <= 28:
+        return True
     # Quadriculado branco/cinza típico dos exports de referência.
     if r >= 185 and g >= 185 and b >= 185 and max(r, g, b) - min(r, g, b) <= 26:
         return True
@@ -217,8 +221,8 @@ def main() -> None:
     for weapon, suffix in effect_specs:
         source = find_asset(suffix)
         output = import_single(source, f"effects/{weapon}_shot.png", padding=4)
-        add_record(records, source, "weapon_shot_effect", False, [output] if output else [],
-                   "Biblioteca de efeito de disparo; pronta para muzzle flash/trail, não carregada hoje pelo runtime")
+        add_record(records, source, "reference", False, [output] if output else [],
+                   "Referência visual de efeito de disparo; reservada para futura integração de muzzle flash/trail")
 
     scout = find_asset("pasted_file_vIjJqn_scout_ref.png")
     scout_output = import_single(scout, "enemies/scout_ref.png", padding=6)

@@ -1,14 +1,7 @@
 {
-  "valid": false,
-  "errors": 7,
+  "valid": true,
+  "errors": 0,
   "warnings": 0,
   "issues": [
-    {"check":"Arquivo","target":"res/assets/generated/companions/companion_set.png","severity":"error","message":"Arquivo existe, mas não está no AssetCatalog nem no manifesto."},
-    {"check":"Transparência","target":"res/assets/generated/enemies/scout_ref.png","severity":"error","message":"Fundo sólido encontrado em um sprite que deveria ter alfa."},
-    {"check":"Referência","target":"pasted_file_dskvdQ_fusion_lance.png","severity":"error","message":"Asset importado, mas nenhum inimigo, arma ou cena o utiliza no runtime."},
-    {"check":"Referência","target":"pasted_file_sm9Uux_ion_rifle.png","severity":"error","message":"Asset importado, mas nenhum inimigo, arma ou cena o utiliza no runtime."},
-    {"check":"Referência","target":"pasted_file_y4UOo1_scatter_cannon.png","severity":"error","message":"Asset importado, mas nenhum inimigo, arma ou cena o utiliza no runtime."},
-    {"check":"Referência","target":"pasted_file_i1drWm_blaster.png","severity":"error","message":"Asset importado, mas nenhum inimigo, arma ou cena o utiliza no runtime."},
-    {"check":"Referência","target":"pasted_file_LxubVF_void_mortar.png","severity":"error","message":"Asset importado, mas nenhum inimigo, arma ou cena o utiliza no runtime."}
   ]
 }
