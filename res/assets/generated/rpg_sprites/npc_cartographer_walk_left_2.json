@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_npc",
+  "variant": "NPC_CARTOGRAPHER",
+  "file": "npc_cartographer_walk_left_2.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Neris, Cartógrafa",
+  "gameplayScale": 1.0,
+  "animationState": "walk",
+  "direction": "left",
+  "frame": 2,
+  "frameCount": 3,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}

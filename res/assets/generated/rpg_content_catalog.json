@@ -1,7 +1,8 @@
 {
-  "schema": 1,
+  "schema": 2,
   "itemsDirectory": "items",
   "weaponsDirectory": "rpg_weapons",
   "spritesDirectory": "rpg_sprites",
+  "animationStates": ["walk", "attack"],
   "autoDiscovery": true
 }

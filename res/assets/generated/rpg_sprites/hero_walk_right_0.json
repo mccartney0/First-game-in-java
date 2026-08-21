@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_hero",
+  "variant": "HERO",
+  "file": "hero_walk_right_0.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Protagonista",
+  "gameplayScale": 1.0,
+  "animationState": "walk",
+  "direction": "right",
+  "frame": 0,
+  "frameCount": 3,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}

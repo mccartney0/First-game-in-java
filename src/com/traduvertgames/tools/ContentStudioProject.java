@@ -9,6 +9,8 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.imageio.ImageIO;
 
@@ -435,20 +437,60 @@ public final class ContentStudioProject {
         return png;
     }
 
-    /** Gera o pacote visual mínimo para protagonista, NPCs, armas e tiros. */
+    /**
+     * Exporta 24 frames 32×32 para personagens: quatro direções, três passos de
+     * caminhada e três poses de ataque. O APK também aceita o sprite-base, de
+     * modo que conteúdos antigos continuam jogáveis mesmo sem esses arquivos.
+     */
+    public static File[] generateRpgAnimationFrames(String id, RpgSpriteKind kind, RpgSpriteProperties properties,
+            File projectRoot) throws IOException {
+        RpgSpriteKind safeKind = kind == null ? RpgSpriteKind.HERO : kind;
+        if (safeKind.getCategory().equals("weapon") || safeKind.getCategory().equals("projectile")) {
+            return new File[0];
+        }
+        RpgSpriteProperties safeProperties = properties == null ? RpgSpriteProperties.defaults(safeKind) : properties;
+        File output = ensureDirectory(projectRoot, "res/assets/generated/rpg_sprites");
+        String safeId = safeName(id, "rpg_" + safeKind.name().toLowerCase());
+        String[] states = { "walk", "attack" };
+        String[] directions = { "right", "left", "up", "down" };
+        List<File> generated = new ArrayList<File>();
+        for (String state : states) {
+            for (String direction : directions) {
+                for (int frame = 0; frame < 3; frame++) {
+                    File png = new File(output, safeId + "_" + state + "_" + direction + "_" + frame + ".png");
+                    BufferedImage sprite = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+                    Graphics2D graphics = sprite.createGraphics();
+                    drawRpgSpriteFrame(graphics, safeKind, direction, state, frame);
+                    graphics.dispose();
+                    ImageIO.write(sprite, "png", png);
+                    writeRpgAnimationManifest(png, safeKind, safeProperties, state, direction, frame);
+                    generated.add(png);
+                }
+            }
+        }
+        refreshRpgContentCatalog(projectRoot);
+        return generated.toArray(new File[0]);
+    }
+
+    /** Gera o pacote visual completo, incluindo frames animados para herói e NPCs. */
     public static File[] generateDefaultRpgVisualPack(File projectRoot) throws IOException {
         RpgSpriteKind[] kinds = {
                 RpgSpriteKind.HERO, RpgSpriteKind.NPC_COMMANDANT, RpgSpriteKind.NPC_HEALER,
                 RpgSpriteKind.NPC_CARTOGRAPHER, RpgSpriteKind.WEAPON_STAFF, RpgSpriteKind.WEAPON_RUNE_SWORD,
                 RpgSpriteKind.WEAPON_ARC_RIFLE, RpgSpriteKind.PROJECTILE_FIREBOLT,
                 RpgSpriteKind.PROJECTILE_ARCANE, RpgSpriteKind.PROJECTILE_MIST };
-        File[] generated = new File[kinds.length];
-        for (int index = 0; index < kinds.length; index++) {
-            RpgSpriteKind spriteKind = kinds[index];
-            generated[index] = generateRpgSprite(spriteKind.name().toLowerCase(), spriteKind,
-                    RpgSpriteProperties.defaults(spriteKind), projectRoot);
+        List<File> generated = new ArrayList<File>();
+        for (RpgSpriteKind spriteKind : kinds) {
+            RpgSpriteProperties properties = RpgSpriteProperties.defaults(spriteKind);
+            generated.add(generateRpgSprite(spriteKind.name().toLowerCase(), spriteKind, properties, projectRoot));
+            if (!spriteKind.getCategory().equals("weapon") && !spriteKind.getCategory().equals("projectile")) {
+                for (File frame : generateRpgAnimationFrames(spriteKind.name().toLowerCase(), spriteKind, properties,
+                        projectRoot)) {
+                    generated.add(frame);
+                }
+            }
         }
-        return generated;
+        return generated.toArray(new File[0]);
     }
 
     /** Exporta um conjunto inicial que o modo RPG reconhece automaticamente. */
@@ -728,6 +770,33 @@ public final class ContentStudioProject {
         }
     }
 
+    /** Cria uma pose curta e determinística para o runtime Android, sem atlas externo. */
+    private static void drawRpgSpriteFrame(Graphics2D graphics, RpgSpriteKind kind, String direction,
+            String state, int frame) {
+        int bob = "walk".equals(state) ? (frame == 1 ? -1 : frame == 2 ? 1 : 0) : 0;
+        int lunge = "attack".equals(state) && frame == 1 ? 2 : "attack".equals(state) && frame == 2 ? 1 : 0;
+        int offsetX = "left".equals(direction) ? -lunge : "right".equals(direction) ? lunge : 0;
+        int offsetY = "up".equals(direction) ? -lunge : "down".equals(direction) ? lunge : 0;
+        graphics.translate(offsetX, offsetY + bob);
+        if ("left".equals(direction)) {
+            graphics.translate(32, 0);
+            graphics.scale(-1, 1);
+        }
+        drawRpgSprite(graphics, kind);
+        if ("up".equals(direction)) {
+            graphics.setColor(new Color(24, 31, 51, 120));
+            graphics.fillRoundRect(12, 13, 8, 8, 3, 3);
+        } else if ("down".equals(direction)) {
+            graphics.setColor(new Color(255, 231, 182, 150));
+            graphics.fillRect(14, 8, 4, 2);
+        }
+        if ("attack".equals(state) && frame == 1) {
+            graphics.setColor(new Color(255, 240, 167, 180));
+            graphics.drawLine(17, 10, 28, 5);
+            graphics.drawLine(17, 11, 29, 11);
+        }
+    }
+
     private static void writeConsumableManifest(File png, ConsumableProperties properties) throws IOException {
         writeAssetManifest(png, "consumable", properties.effect.name(),
                 "  \"displayName\": \"" + properties.displayName + "\",\n"
@@ -757,13 +826,25 @@ public final class ContentStudioProject {
                 + "  \"runtimeLoaded\": true,\n");
     }
 
+    private static void writeRpgAnimationManifest(File png, RpgSpriteKind kind, RpgSpriteProperties properties,
+            String state, String direction, int frame) throws IOException {
+        writeAssetManifest(png, "rpg_" + kind.getCategory(), kind.name(),
+                "  \"displayName\": \"" + properties.displayName + "\",\n"
+                + "  \"gameplayScale\": " + properties.gameplayScale + ",\n"
+                + "  \"animationState\": \"" + state + "\",\n"
+                + "  \"direction\": \"" + direction + "\",\n"
+                + "  \"frame\": " + frame + ",\n"
+                + "  \"frameCount\": 3,\n"
+                + "  \"runtimeLoaded\": true,\n");
+    }
+
     private static void refreshRpgContentCatalog(File projectRoot) throws IOException {
         File output = ensureDirectory(projectRoot, "res/assets/generated");
         File catalog = new File(output, "rpg_content_catalog.json");
         try (FileWriter writer = new FileWriter(catalog, StandardCharsets.UTF_8)) {
-            writer.write("{\n  \"schema\": 1,\n  \"itemsDirectory\": \"items\",\n"
+            writer.write("{\n  \"schema\": 2,\n  \"itemsDirectory\": \"items\",\n"
                     + "  \"weaponsDirectory\": \"rpg_weapons\",\n  \"spritesDirectory\": \"rpg_sprites\",\n"
-                    + "  \"autoDiscovery\": true\n}\n");
+                    + "  \"animationStates\": [\"walk\", \"attack\"],\n  \"autoDiscovery\": true\n}\n");
         }
     }
 

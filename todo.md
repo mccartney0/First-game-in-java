@@ -85,3 +85,19 @@
 - [x] Integrar os novos sprites e metadados de ponto de disparo no runtime Android RPG.
 - [x] Estender o importador do Content Studio para recortar, catalogar e validar automaticamente personagens, armas e tiros.
 - [x] Executar `test`, `validateContent` e o build Android; atualizar o portal e publicar os artefatos.
+
+## Animações direcionais — caminhada e ataque
+
+- [ ] Auditar os sprites RPG, o loop de atualização e os pontos de direção existentes no runtime Android.
+- [ ] Estender o Content Studio com contratos e exportadores de frames para caminhar e atacar nas quatro direções.
+- [ ] Gerar quadros transparentes e sincronizá-los automaticamente com os assets do APK.
+- [ ] Aplicar seleção temporal de frames, direção e feedback de ataque ao protagonista e aos NPCs.
+- [ ] Executar regressões, `validateContent` e o build Android antes da publicação.
+
+## Wiki, playthrough e onboarding interativo
+
+- [ ] Mapear os sistemas, missões e regiões que devem receber páginas navegáveis na wiki.
+- [ ] Criar um percurso de playthrough com etapas, objetivos, decisões e marcos de progresso.
+- [ ] Implementar onboarding contextual no APK para movimento, combate, interação, inventário e savegame.
+- [ ] Adicionar wiki e playthrough interativos ao portal com navegação, busca e acompanhamento de etapas.
+- [ ] Validar o APK, a página web e os links de download antes da publicação.

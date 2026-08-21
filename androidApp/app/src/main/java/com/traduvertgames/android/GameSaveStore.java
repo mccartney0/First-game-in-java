@@ -42,6 +42,7 @@ public final class GameSaveStore {
             root.put("relicCollected", data.relicCollected);
             root.put("necromancerDefeated", data.necromancerDefeated);
             root.put("titanDefeated", data.titanDefeated);
+            root.put("onboardingStep", data.onboardingStep);
             root.put("weapon", data.weaponName);
             root.put("armor", data.armorName);
             root.put("accessory", data.accessoryName);
@@ -84,6 +85,9 @@ public final class GameSaveStore {
             data.relicCollected = root.optBoolean("relicCollected", false);
             data.necromancerDefeated = root.optBoolean("necromancerDefeated", false);
             data.titanDefeated = root.optBoolean("titanDefeated", false);
+            // Saves anteriores não tinham tutorial; não interrompemos aventuras em andamento com ele.
+            data.onboardingStep = root.has("onboardingStep")
+                    ? Math.max(1, Math.min(6, root.optInt("onboardingStep", 1))) : 6;
             data.weaponName = root.optString("weapon", "");
             data.armorName = root.optString("armor", "");
             data.accessoryName = root.optString("accessory", "");
@@ -123,6 +127,7 @@ public final class GameSaveStore {
         boolean relicCollected;
         boolean necromancerDefeated;
         boolean titanDefeated;
+        int onboardingStep = 1;
         String weaponName = "";
         String armorName = "";
         String accessoryName = "";

@@ -291,10 +291,20 @@ public final class ContentStudioApp {
             File[] exports = ContentStudioProject.generateDefaultRpgVisualPack(projectRoot);
             return exports[exports.length - 1];
         }));
+        JButton animation = new JButton("Exportar 24 frames direcionais");
+        animation.addActionListener(event -> runExport("Animação RPG", () -> {
+            ContentStudioProject.RpgSpriteProperties properties = new ContentStudioProject.RpgSpriteProperties(
+                    displayName.getText(), ((Number) scale.getValue()).doubleValue(), (Integer) damage.getValue(),
+                    (Integer) cooldown.getValue(), 0.62, 0.34);
+            File[] exports = ContentStudioProject.generateRpgAnimationFrames(id.getText(),
+                    (ContentStudioProject.RpgSpriteKind) kind.getSelectedItem(), properties, projectRoot);
+            if (exports.length == 0) throw new IOException("Animações direcionais são exclusivas de protagonista e NPCs.");
+            return exports[exports.length - 1];
+        }));
         addField(panel, 0, "Tipo visual", kind); addField(panel, 1, "ID do arquivo", id);
         addField(panel, 2, "Nome visível", displayName); addField(panel, 3, "Escala no jogo", scale);
         addField(panel, 4, "Dano (arma/tiro)", damage); addField(panel, 5, "Cooldown (ticks)", cooldown);
-        addField(panel, 6, "", generate); addField(panel, 7, "", pack); addPreview(panel, 8);
+        addField(panel, 6, "", generate); addField(panel, 7, "", animation); addField(panel, 8, "", pack); addPreview(panel, 9);
         return panel;
     }
 

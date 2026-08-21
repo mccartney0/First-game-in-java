@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_npc",
+  "variant": "NPC_COMMANDANT",
+  "file": "npc_commandant_attack_down_2.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Ava, Comandante",
+  "gameplayScale": 1.0,
+  "animationState": "attack",
+  "direction": "down",
+  "frame": 2,
+  "frameCount": 3,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}

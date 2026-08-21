@@ -35,6 +35,16 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private static final float WORLD_HEIGHT = ROWS * TILE;
     private static final float PLAYER_RADIUS = 15f;
     private static final float MAX_DT = 0.04f;
+    private static final int DIR_RIGHT = 0;
+    private static final int DIR_LEFT = 1;
+    private static final int DIR_UP = 2;
+    private static final int DIR_DOWN = 3;
+    private static final int ONBOARDING_MOVE = 1;
+    private static final int ONBOARDING_ATTACK = 2;
+    private static final int ONBOARDING_INTERACT = 3;
+    private static final int ONBOARDING_INVENTORY = 4;
+    private static final int ONBOARDING_SAVE = 5;
+    private static final int ONBOARDING_COMPLETE = 6;
     private static final char GRASS = 'g';
     private static final char PATH = 'p';
     private static final char WATER = 'w';
@@ -76,6 +86,13 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private int movePointerId = -1;
     private int actionPointerId = -1;
     private float attackTimer;
+    private float attackVisualTimer;
+    private float animationClock;
+    private float walkFrameTimer;
+    private int walkFrame;
+    private int playerDirection = DIR_RIGHT;
+    private int attackDirection = DIR_RIGHT;
+    private boolean playerWalking;
     private float spawnTimer;
     private float messageTimer;
     private float health = 100f;
@@ -92,6 +109,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private boolean relicCollected;
     private boolean necromancerDefeated;
     private boolean titanDefeated;
+    private int onboardingStep = ONBOARDING_MOVE;
     private String dialogueTitle = "AVA, COMANDANTE";
     private String dialogueLineOne = "A Bruma cresce ao norte.";
     private String dialogueLineTwo = "A Clareira precisa de você.";
@@ -136,6 +154,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         inventoryVisible = false;
         gameOver = false;
         attackTimer = 0f;
+        attackVisualTimer = 0f;
+        animationClock = 0f;
+        walkFrameTimer = 0f;
+        walkFrame = 0;
+        playerDirection = DIR_RIGHT;
+        attackDirection = DIR_RIGHT;
+        playerWalking = false;
+        onboardingStep = ONBOARDING_MOVE;
         spawnTimer = 4.5f;
         messageTimer = 4f;
         message = "Explore a Clareira da Bruma";
@@ -293,9 +319,11 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void update(float dt) {
         if (gameOver) return;
+        animationClock += dt;
         messageTimer -= dt;
         if (inventoryVisible) return;
         attackTimer -= dt;
+        attackVisualTimer = Math.max(0f, attackVisualTimer - dt);
         spawnTimer -= dt;
         if (actionHeld && attackTimer <= 0f) {
             attackTimer = Math.max(0.22f, 0.42f - magicPower() * 0.01f);
@@ -304,9 +332,19 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float length = (float) Math.sqrt(moveAxisX * moveAxisX + moveAxisY * moveAxisY);
         float vx = length > 1f ? moveAxisX / length : moveAxisX;
         float vy = length > 1f ? moveAxisY / length : moveAxisY;
+        float beforeX = playerX;
+        float beforeY = playerY;
         movePlayer(vx * (180f + armorPower() * 2f) * dt, vy * (180f + armorPower() * 2f) * dt);
+        playerWalking = distance(beforeX, beforeY, playerX, playerY) > 0.05f;
+        if (playerWalking) {
+            walkFrameTimer += dt;
+            walkFrame = ((int) (walkFrameTimer / 0.12f)) % 3;
+        } else {
+            walkFrame = 0;
+        }
         cameraX = clamp(playerX - 576f, 0f, WORLD_WIDTH - 1152f);
         cameraY = clamp(playerY - 324f, 0f, WORLD_HEIGHT - 648f);
+        updateNpcs(dt);
         updateEnemies(dt);
         updateBolts(dt);
         collectNearbyItems();
@@ -318,10 +356,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void movePlayer(float dx, float dy) {
+        if (Math.abs(dx) + Math.abs(dy) > 0.01f) playerDirection = directionFromVector(dx, dy);
+        float beforeX = playerX;
+        float beforeY = playerY;
         float nextX = clamp(playerX + dx, TILE * 1.5f, WORLD_WIDTH - TILE * 1.5f);
         float nextY = clamp(playerY + dy, TILE * 1.5f, WORLD_HEIGHT - TILE * 1.5f);
         if (walkable(nextX, playerY)) playerX = nextX;
         if (walkable(playerX, nextY)) playerY = nextY;
+        if (distance(beforeX, beforeY, playerX, playerY) > 0.05f) advanceOnboarding(ONBOARDING_MOVE);
     }
 
     private boolean walkable(float x, float y) {
@@ -329,6 +371,23 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         int row = (int) (y / TILE);
         if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return false;
         return tiles[row][col] != WATER && tiles[row][col] != TREE && tiles[row][col] != WALL;
+    }
+
+    private void updateNpcs(float dt) {
+        for (Npc npc : npcs) {
+            npc.animationTimer += dt;
+            npc.attackVisualTimer = Math.max(0f, npc.attackVisualTimer - dt);
+            float dx = playerX - npc.x;
+            float dy = playerY - npc.y;
+            if (distance(playerX, playerY, npc.x, npc.y) < TILE * 3f) {
+                npc.direction = directionFromVector(dx, dy);
+                npc.walking = false;
+            } else {
+                npc.direction = (int) (npc.animationTimer / 2.4f) % 4;
+                npc.walking = ((int) (npc.animationTimer * 2.5f) % 6) < 2;
+            }
+            npc.walkFrame = ((int) (npc.animationTimer / 0.14f)) % 3;
+        }
     }
 
     private void updateEnemies(float dt) {
@@ -444,9 +503,13 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float dx = aimX - playerX;
         float dy = aimY - playerY;
         float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
+        attackDirection = directionFromVector(dx, dy);
+        playerDirection = attackDirection;
+        attackVisualTimer = 0.28f;
         float damage = 8f + level * 2f + attackPower() + magicPower() * 1.6f;
         bolts.add(new MagicBolt(playerX + dx / distance * 20f, playerY + dy / distance * 20f,
                 dx / distance, dy / distance, damage, projectileSpriteId()));
+        advanceOnboarding(ONBOARDING_ATTACK);
     }
 
     private void interact() {
@@ -480,6 +543,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void openNpcDialogue(Npc npc) {
+        advanceOnboarding(ONBOARDING_INTERACT);
+        npc.attackVisualTimer = 0.28f;
         dialogueVisible = true;
         dialogueTitle = npc.name + ", " + npc.role;
         dialogueHint = "Toque em AÇÃO para encerrar o diálogo";
@@ -595,6 +660,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         data.relicCollected = relicCollected;
         data.necromancerDefeated = necromancerDefeated;
         data.titanDefeated = titanDefeated;
+        data.onboardingStep = onboardingStep;
         data.weaponName = equippedWeapon == null ? "" : equippedWeapon.name;
         data.armorName = equippedArmor == null ? "" : equippedArmor.name;
         data.accessoryName = equippedAccessory == null ? "" : equippedAccessory.name;
@@ -652,6 +718,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         relicCollected = data.relicCollected;
         necromancerDefeated = data.necromancerDefeated;
         titanDefeated = data.titanDefeated;
+        onboardingStep = data.onboardingStep;
         equippedWeapon = findItem(data.weaponName);
         equippedArmor = findItem(data.armorName);
         equippedAccessory = findItem(data.accessoryName);
@@ -662,6 +729,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         actionHeld = false;
         moveAxisX = 0f;
         moveAxisY = 0f;
+        attackVisualTimer = 0f;
+        walkFrame = 0;
+        playerWalking = false;
         spawnInitialEnemies();
         message = feedback ? "Progresso carregado" : "Progresso retomado";
         messageTimer = 3f;
@@ -745,6 +815,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         drawPlayer(canvas);
         canvas.restore();
         drawHud(canvas);
+        drawOnboarding(canvas);
         if (dialogueVisible) drawDialogue(canvas);
         if (inventoryVisible) drawInventory(canvas);
         if (gameOver) drawGameOver(canvas);
@@ -792,9 +863,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void drawNpc(Canvas canvas, Npc npc) {
-        if (!drawRpgSprite(canvas, npc.spriteId, npc.x, npc.y, 42f)) {
-            drawCharacter(canvas, npc.x, npc.y, npc.color);
-        }
+        drawAnimatedCharacter(canvas, npc.spriteId, npc.x, npc.y, 42f, npc.color, npc.direction,
+                npc.walkFrame, npc.walking, npc.attackVisualTimer);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(11f);
         textPaint.setColor(Color.rgb(255, 231, 154));
@@ -882,14 +952,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void drawPlayer(Canvas canvas) {
         int playerColor = equippedArmor == null ? Color.rgb(105, 196, 255) : Color.rgb(154, 131, 255);
-        if (!drawRpgSprite(canvas, "hero", playerX, playerY, 46f)) {
-            drawCharacter(canvas, playerX, playerY, playerColor);
-        }
+        drawAnimatedCharacter(canvas, "hero", playerX, playerY, 46f, playerColor, playerDirection,
+                walkFrame, playerWalking, attackVisualTimer);
         float dx = aimX - playerX;
         float dy = aimY - playerY;
         float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
-        float weaponX = playerX + dx / distance * 20f;
-        float weaponY = playerY + dy / distance * 10f;
+        float attackReach = attackVisualTimer > 0f ? 29f : 20f;
+        float weaponX = playerX + dx / distance * attackReach;
+        float weaponY = playerY + dy / distance * (attackVisualTimer > 0f ? 15f : 10f);
         drawRpgSprite(canvas, weaponSpriteId(), weaponX, weaponY, 28f);
         paint.setColor(Color.argb(170, 211, 246, 255));
         paint.setStrokeWidth(4f);
@@ -914,13 +984,32 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         String[] ids = {"hero", "npc_commandant", "npc_healer", "npc_cartographer", "weapon_staff",
                 "weapon_rune_sword", "weapon_arc_rifle", "projectile_firebolt", "projectile_arcane", "projectile_mist"};
         for (String id : ids) {
-            try (InputStream stream = getContext().getAssets().open("rpg/" + id + ".png")) {
-                Bitmap bitmap = BitmapFactory.decodeStream(stream);
-                if (bitmap != null) rpgSprites.put(id, bitmap);
-            } catch (IOException ignored) {
-                // O fallback procedural mantém o APK jogável antes da primeira exportação do Content Studio.
+            loadRpgSprite(id);
+            if (isCharacterSprite(id)) {
+                String[] states = {"walk", "attack"};
+                String[] directions = {"right", "left", "up", "down"};
+                for (String state : states) {
+                    for (String direction : directions) {
+                        for (int frame = 0; frame < 3; frame++) {
+                            loadRpgSprite(id + "_" + state + "_" + direction + "_" + frame);
+                        }
+                    }
+                }
             }
         }
+    }
+
+    private void loadRpgSprite(String id) {
+        try (InputStream stream = getContext().getAssets().open("rpg/" + id + ".png")) {
+            Bitmap bitmap = BitmapFactory.decodeStream(stream);
+            if (bitmap != null) rpgSprites.put(id, bitmap);
+        } catch (IOException ignored) {
+            // O fallback procedural mantém o APK jogável antes da primeira exportação do Content Studio.
+        }
+    }
+
+    private static boolean isCharacterSprite(String id) {
+        return "hero".equals(id) || id.startsWith("npc_");
     }
 
     private boolean drawRpgSprite(Canvas canvas, String id, float x, float y, float size) {
@@ -929,6 +1018,32 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         canvas.drawBitmap(sprite, null, new RectF(x - size * 0.5f, y - size * 0.62f,
                 x + size * 0.5f, y + size * 0.38f), paint);
         return true;
+    }
+
+    private void drawAnimatedCharacter(Canvas canvas, String spriteId, float x, float y, float size, int color,
+            int direction, int frame, boolean walking, float attackVisual) {
+        boolean attacking = attackVisual > 0f;
+        int selectedFrame = attacking ? Math.min(2, (int) ((0.28f - attackVisual) / 0.094f)) : (walking ? frame : 0);
+        String state = attacking ? "attack" : "walk";
+        String animatedId = spriteId + "_" + state + "_" + directionName(direction) + "_" + selectedFrame;
+        if (drawRpgSprite(canvas, animatedId, x, y, size)) return;
+        canvas.save();
+        float bob = walking ? (selectedFrame == 1 ? -2f : selectedFrame == 2 ? 1f : 0f) : 0f;
+        float lunge = attacking && selectedFrame == 1 ? 4f : attacking ? 2f : 0f;
+        canvas.translate(directionX(direction) * lunge, directionY(direction) * lunge + bob);
+        if (direction == DIR_LEFT) canvas.scale(-1f, 1f, x, y);
+        if (!drawRpgSprite(canvas, spriteId, x, y, size)) drawCharacter(canvas, x, y, color);
+        if (attacking) drawAttackAccent(canvas, x, y, direction, size);
+        canvas.restore();
+    }
+
+    private void drawAttackAccent(Canvas canvas, float x, float y, int direction, float size) {
+        float dx = directionX(direction);
+        float dy = directionY(direction);
+        paint.setColor(Color.argb(175, 255, 231, 147));
+        paint.setStrokeWidth(3f);
+        canvas.drawLine(x + dx * size * 0.08f - dy * size * 0.18f, y + dy * size * 0.08f + dx * size * 0.18f,
+                x + dx * size * 0.58f + dy * size * 0.15f, y + dy * size * 0.58f - dx * size * 0.15f, paint);
     }
 
     private String weaponSpriteId() {
@@ -1003,6 +1118,80 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             canvas.drawText(message, 576f, 606f, textPaint);
             textPaint.setTextAlign(Paint.Align.LEFT);
         }
+    }
+
+    private void drawOnboarding(Canvas canvas) {
+        if (onboardingStep >= ONBOARDING_COMPLETE || dialogueVisible || inventoryVisible || gameOver) return;
+        float targetX;
+        float targetY;
+        String title;
+        String detail;
+        switch (onboardingStep) {
+            case ONBOARDING_ATTACK:
+                targetX = 1060f;
+                targetY = 570f;
+                title = "2/5  DOMINE A AÇÃO";
+                detail = "Segure AÇÃO e mire para lançar seu disparo.";
+                break;
+            case ONBOARDING_INTERACT:
+                targetX = 1060f;
+                targetY = 570f;
+                title = "3/5  CONVERSE COM AVA";
+                detail = "Aproxime-se de um NPC e toque em AÇÃO.";
+                break;
+            case ONBOARDING_INVENTORY:
+                targetX = 638f;
+                targetY = 52f;
+                title = "4/5  ABRA A BOLSA";
+                detail = "Confira itens, equipe armas e use poções.";
+                break;
+            case ONBOARDING_SAVE:
+                targetX = 299f;
+                targetY = 38f;
+                title = "5/5  PROTEJA A EXPEDIÇÃO";
+                detail = "Toque em SALVAR para guardar seu progresso.";
+                break;
+            default:
+                targetX = 92f;
+                targetY = 570f;
+                title = "1/5  ENCONTRE O CAMINHO";
+                detail = "Arraste o círculo MOVER para caminhar pela clareira.";
+                break;
+        }
+        float pulse = 1f + (float) Math.sin(animationClock * 5f) * 0.08f;
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(3f);
+        paint.setColor(Color.argb(220, 255, 224, 126));
+        canvas.drawCircle(targetX, targetY, 70f * pulse, paint);
+        paint.setStyle(Paint.Style.FILL);
+
+        boolean targetAtTop = targetY < 160f;
+        float left = targetX < 460f ? 380f : targetX > 760f ? 360f : 238f;
+        float top = targetAtTop ? 112f : 430f;
+        float right = left + 530f;
+        float bottom = top + 92f;
+        paint.setColor(Color.argb(239, 12, 21, 37));
+        canvas.drawRoundRect(new RectF(left, top, right, bottom), 14f, 14f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(2f);
+        paint.setColor(Color.rgb(231, 194, 108));
+        canvas.drawRoundRect(new RectF(left, top, right, bottom), 14f, 14f, paint);
+        paint.setStyle(Paint.Style.FILL);
+        float arrowStartX = clamp(targetX, left + 32f, right - 32f);
+        float arrowStartY = targetAtTop ? bottom : top;
+        paint.setColor(Color.rgb(231, 194, 108));
+        paint.setStrokeWidth(3f);
+        canvas.drawLine(arrowStartX, arrowStartY, targetX, targetY - (targetAtTop ? 52f : -52f), paint);
+        textPaint.setTextAlign(Paint.Align.LEFT);
+        textPaint.setTextSize(14f);
+        textPaint.setColor(Color.rgb(255, 222, 137));
+        canvas.drawText(title, left + 20f, top + 29f, textPaint);
+        textPaint.setTextSize(16f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText(detail, left + 20f, top + 60f, textPaint);
+        textPaint.setTextSize(11f);
+        textPaint.setColor(Color.rgb(165, 209, 224));
+        canvas.drawText("O tutorial avança quando a ação é realizada.", left + 20f, top + 80f, textPaint);
     }
 
     private void drawUtilityButton(Canvas canvas, float left, String label, int color) {
@@ -1150,6 +1339,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                 return true;
             }
             if (x > 250f && x < 348f && y < 90f) {
+                advanceOnboarding(ONBOARDING_SAVE);
                 saveProgress(true);
                 return true;
             }
@@ -1160,6 +1350,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             if (x > 550f && x < 730f && y < 110f) {
                 inventoryVisible = true;
                 actionHeld = false;
+                advanceOnboarding(ONBOARDING_INVENTORY);
                 return true;
             }
             int pointerId = event.getPointerId(index);
@@ -1221,6 +1412,52 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float length = (float) Math.sqrt(dx * dx + dy * dy);
         moveAxisX = length > 1f ? dx / length : dx;
         moveAxisY = length > 1f ? dy / length : dy;
+    }
+
+    private void advanceOnboarding(int completedStep) {
+        if (onboardingStep != completedStep) return;
+        onboardingStep++;
+        if (onboardingStep >= ONBOARDING_COMPLETE) {
+            message = "Treinamento concluído: a Clareira agora é sua";
+            messageTimer = 4f;
+        } else {
+            message = "Treinamento atualizado: " + onboardingHint();
+            messageTimer = 2.8f;
+        }
+    }
+
+    private String onboardingHint() {
+        switch (onboardingStep) {
+            case ONBOARDING_ATTACK: return "use AÇÃO para atacar";
+            case ONBOARDING_INTERACT: return "fale com Ava usando AÇÃO";
+            case ONBOARDING_INVENTORY: return "abra a BOLSA";
+            case ONBOARDING_SAVE: return "toque em SALVAR";
+            default: return "mova-se pelo mapa";
+        }
+    }
+
+    private static int directionFromVector(float dx, float dy) {
+        if (Math.abs(dx) >= Math.abs(dy)) return dx < 0f ? DIR_LEFT : DIR_RIGHT;
+        return dy < 0f ? DIR_UP : DIR_DOWN;
+    }
+
+    private static String directionName(int direction) {
+        if (direction == DIR_LEFT) return "left";
+        if (direction == DIR_UP) return "up";
+        if (direction == DIR_DOWN) return "down";
+        return "right";
+    }
+
+    private static float directionX(int direction) {
+        if (direction == DIR_LEFT) return -1f;
+        if (direction == DIR_RIGHT) return 1f;
+        return 0f;
+    }
+
+    private static float directionY(int direction) {
+        if (direction == DIR_UP) return -1f;
+        if (direction == DIR_DOWN) return 1f;
+        return 0f;
     }
 
     private float toWorldX(float screenX) {
@@ -1373,6 +1610,11 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         final float x;
         final float y;
         final int color;
+        float animationTimer;
+        float attackVisualTimer;
+        int direction = DIR_DOWN;
+        int walkFrame;
+        boolean walking;
 
         Npc(String name, String role, String spriteId, float x, float y, int color) {
             this.name = name;
