@@ -438,6 +438,23 @@ public final class ContentStudioProject {
     }
 
     /**
+     * Publica uma cópia de trabalho preparada pelo Asset Coach sem alterar o
+     * arquivo-fonte do artista. A saída usa o mesmo manifesto do runtime RPG.
+     */
+    public static File exportImportedRpgSprite(BufferedImage sprite, String id, RpgSpriteKind kind,
+            RpgSpriteProperties properties, File projectRoot) throws IOException {
+        if (sprite == null) throw new IOException("Sprite normalizado não foi informado.");
+        RpgSpriteKind safeKind = kind == null ? RpgSpriteKind.HERO : kind;
+        RpgSpriteProperties safeProperties = properties == null ? RpgSpriteProperties.defaults(safeKind) : properties;
+        File output = ensureDirectory(projectRoot, "res/assets/generated/rpg_sprites");
+        File png = new File(output, safeName(id, safeKind.name().toLowerCase()) + ".png");
+        ImageIO.write(sprite, "png", png);
+        writeRpgSpriteManifest(png, safeKind, safeProperties);
+        refreshRpgContentCatalog(projectRoot);
+        return png;
+    }
+
+    /**
      * Exporta 24 frames 32×32 para personagens: quatro direções, três passos de
      * caminhada e três poses de ataque. O APK também aceita o sprite-base, de
      * modo que conteúdos antigos continuam jogáveis mesmo sem esses arquivos.

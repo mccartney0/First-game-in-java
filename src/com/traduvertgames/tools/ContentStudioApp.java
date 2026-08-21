@@ -25,6 +25,7 @@ import javax.swing.JCheckBox;
 import javax.swing.ImageIcon;
 import javax.swing.JButton;
 import javax.swing.JComboBox;
+import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
 import javax.swing.JOptionPane;
@@ -78,6 +79,7 @@ public final class ContentStudioApp {
         tabs.addTab("Inimigos", createEnemyPanel());
         tabs.addTab("Itens RPG", createRpgItemsPanel());
         tabs.addTab("Sprites RPG", createRpgVisualsPanel());
+        tabs.addTab("Asset Coach", createAssetCoachPanel());
         tabs.addTab("Referências", createTerrainGalleryPanel());
         tabs.addTab("Manifesto", createManifestPanel());
         tabs.addTab("Validação", createValidationPanel());
@@ -306,6 +308,112 @@ public final class ContentStudioApp {
         addField(panel, 4, "Dano (arma/tiro)", damage); addField(panel, 5, "Cooldown (ticks)", cooldown);
         addField(panel, 6, "", generate); addField(panel, 7, "", animation); addField(panel, 8, "", pack); addPreview(panel, 9);
         return panel;
+    }
+
+    /** Interface operacional para preparar arte de artista sem editar PNG manualmente. */
+    private JPanel createAssetCoachPanel() {
+        JPanel root = new JPanel(new BorderLayout(10, 10));
+        root.setBackground(new Color(31, 39, 51));
+        root.setBorder(BorderFactory.createEmptyBorder(16, 18, 18, 18));
+        JPanel header = new JPanel(new BorderLayout(8, 4));
+        header.setOpaque(false);
+        JLabel title = new JLabel("ASSET COACH — NORMALIZAR CÓPIA PARA O RUNTIME RPG");
+        title.setFont(new Font("Dialog", Font.BOLD, 15));
+        title.setForeground(new Color(245, 218, 146));
+        JLabel explanation = new JLabel("Inspeciona o PNG, preserva o original e exporta uma cópia 32×32 com alfa, margem e manifesto.");
+        explanation.setForeground(new Color(194, 219, 196));
+        header.add(title, BorderLayout.NORTH); header.add(explanation, BorderLayout.SOUTH);
+        root.add(header, BorderLayout.NORTH);
+
+        JPanel controls = formPanel();
+        controls.setBorder(BorderFactory.createEmptyBorder(8, 8, 8, 16));
+        AtomicReference<File> selected = new AtomicReference<File>();
+        JTextField sourcePath = new JTextField("Nenhum PNG selecionado", 24);
+        sourcePath.setEditable(false);
+        JTextField id = new JTextField("hero", 16);
+        JComboBox<ContentStudioProject.RpgSpriteKind> kind =
+                new JComboBox<ContentStudioProject.RpgSpriteKind>(ContentStudioProject.RpgSpriteKind.values());
+        JTextField displayName = new JTextField("Protagonista", 16);
+        JSpinner scale = new JSpinner(new SpinnerNumberModel(1.0, 0.25, 3.0, 0.05));
+        JSpinner damage = new JSpinner(new SpinnerNumberModel(0, 0, 99, 1));
+        JSpinner cooldown = new JSpinner(new SpinnerNumberModel(0, 0, 360, 1));
+        kind.addActionListener(event -> {
+            ContentStudioProject.RpgSpriteKind selectedKind = (ContentStudioProject.RpgSpriteKind) kind.getSelectedItem();
+            ContentStudioProject.RpgSpriteProperties defaults = ContentStudioProject.RpgSpriteProperties.defaults(selectedKind);
+            id.setText(selectedKind.name().toLowerCase()); displayName.setText(defaults.displayName);
+            scale.setValue(defaults.gameplayScale); damage.setValue(defaults.damage); cooldown.setValue(defaults.cooldownTicks);
+        });
+        JLabel coachPreview = new JLabel("Escolha um PNG para ver a prévia", SwingConstants.CENTER);
+        coachPreview.setOpaque(true); coachPreview.setBackground(new Color(13, 17, 24));
+        coachPreview.setForeground(new Color(180, 194, 201));
+        coachPreview.setPreferredSize(new Dimension(278, 278));
+        coachPreview.setBorder(BorderFactory.createTitledBorder("Prévia da fonte"));
+        JTextArea diagnosis = new JTextArea("Selecione um PNG para receber um diagnóstico e um plano de correção.");
+        diagnosis.setEditable(false); diagnosis.setLineWrap(true); diagnosis.setWrapStyleWord(true);
+        diagnosis.setBackground(new Color(13, 17, 24)); diagnosis.setForeground(new Color(194, 219, 196));
+        diagnosis.setBorder(BorderFactory.createEmptyBorder(10, 10, 10, 10));
+        JButton choose = new JButton("Selecionar PNG…");
+        JButton inspect = new JButton("Diagnosticar");
+        JButton normalize = new JButton("Normalizar e exportar para RPG");
+        JButton validate = new JButton("Validar conteúdo");
+        choose.addActionListener(event -> {
+            JFileChooser chooser = new JFileChooser(projectRoot);
+            if (chooser.showOpenDialog(null) != JFileChooser.APPROVE_OPTION) return;
+            File source = chooser.getSelectedFile();
+            selected.set(source); sourcePath.setText(source.getAbsolutePath());
+            refreshCoachInspection(source, coachPreview, diagnosis);
+        });
+        inspect.addActionListener(event -> refreshCoachInspection(selected.get(), coachPreview, diagnosis));
+        normalize.addActionListener(event -> {
+            try {
+                ContentStudioProject.RpgSpriteKind selectedKind = (ContentStudioProject.RpgSpriteKind) kind.getSelectedItem();
+                ContentStudioProject.RpgSpriteProperties properties = new ContentStudioProject.RpgSpriteProperties(
+                        displayName.getText(), ((Number) scale.getValue()).doubleValue(), (Integer) damage.getValue(),
+                        (Integer) cooldown.getValue(), 0.62, 0.34);
+                File output = AssetCoach.normalizeRpgSprite(selected.get(), id.getText(), selectedKind, properties, projectRoot);
+                latestExport.set(output);
+                coachPreview.setIcon(new ImageIcon(output.getAbsolutePath())); coachPreview.setText("");
+                diagnosis.setText(AssetCoach.inspect(output).toReport()
+                        + "\n\nExportado: " + output.getPath() + "\nManifesto: "
+                        + output.getPath().replaceFirst("\\.png$", ".json"));
+                activity.append("\nAsset Coach exportou cópia normalizada: " + output.getAbsolutePath());
+            } catch (Exception failure) {
+                diagnosis.setText("Falha ao normalizar: " + failure.getMessage());
+                activity.append("\nERRO no Asset Coach: " + failure.getMessage());
+                JOptionPane.showMessageDialog(null, failure.getMessage(), "Asset Coach", JOptionPane.WARNING_MESSAGE);
+            }
+        });
+        validate.addActionListener(event -> validateContent(diagnosis));
+        addField(controls, 0, "Arquivo-fonte", sourcePath); addField(controls, 1, "Tipo runtime", kind);
+        addField(controls, 2, "ID de saída", id); addField(controls, 3, "Nome visível", displayName);
+        addField(controls, 4, "Escala no jogo", scale); addField(controls, 5, "Dano", damage);
+        addField(controls, 6, "Cooldown", cooldown); addField(controls, 7, "", choose);
+        addField(controls, 8, "", inspect); addField(controls, 9, "", normalize); addField(controls, 10, "", validate);
+        JPanel center = new JPanel(new BorderLayout(10, 10));
+        center.setOpaque(false); center.add(controls, BorderLayout.CENTER); center.add(coachPreview, BorderLayout.EAST);
+        root.add(center, BorderLayout.CENTER);
+        JScrollPane reportScroll = new JScrollPane(diagnosis);
+        reportScroll.setPreferredSize(new Dimension(780, 156));
+        reportScroll.setBorder(BorderFactory.createTitledBorder("Diagnóstico e plano de correção"));
+        root.add(reportScroll, BorderLayout.SOUTH);
+        return root;
+    }
+
+    private void refreshCoachInspection(File source, JLabel coachPreview, JTextArea diagnosis) {
+        try {
+            AssetCoach.Diagnosis report = AssetCoach.inspect(source);
+            diagnosis.setText(report.toReport());
+            if (report.readable) {
+                BufferedImage image = ImageIO.read(source);
+                coachPreview.setIcon(new ImageIcon(image.getScaledInstance(240, 240, java.awt.Image.SCALE_REPLICATE)));
+                coachPreview.setText("");
+            } else {
+                coachPreview.setIcon(null); coachPreview.setText("Prévia indisponível");
+            }
+        } catch (Exception failure) {
+            diagnosis.setText("Falha ao inspecionar: " + failure.getMessage());
+            coachPreview.setIcon(null); coachPreview.setText("Prévia indisponível");
+        }
     }
 
     private JPanel createManifestPanel() {

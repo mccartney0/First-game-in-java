@@ -140,3 +140,13 @@
 - [x] Integrar o estado de intensidade ao diretor musical, com retorno estável à região após o confronto.
 - [x] Publicar no Códice um guia de melhoria de assets com silhueta, animação, atlas, paleta, metadados e validação.
 - [x] Validar mixagem, ciclo de vida Android, APK, documentação e responsividade antes da publicação.
+
+## Asset Coach e documentação operacional
+
+- [x] Mapear importadores, exportadores, manifestos e validações que o Asset Coach deve reutilizar.
+- [x] Criar uma aba Asset Coach no Content Studio com inspeção de PNG, prévia, diagnóstico e plano de correção.
+- [x] Implementar normalização segura para cópias de trabalho: escala, canvas 32×32, alfa, recorte e nomes de frames.
+- [x] Gerar ou atualizar manifestos RPG com os metadados mínimos, sem sobrescrever assets-fonte.
+- [x] Documentar no Git o fluxo de criar, importar, ajustar, validar, exportar e sincronizar assets e trilhas.
+- [x] Atualizar Wiki Viva e Códice para apontar o novo fluxo de produção.
+- [x] Executar testes, `validateContent`, builds e validação visual antes de publicar.

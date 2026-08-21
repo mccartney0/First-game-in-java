@@ -15,6 +15,10 @@ src/
 
 Os recursos, como sprites e áudio, estão localizados no diretório `res/`, enquanto o wrapper do Gradle está incluído para facilitar a compilação e a execução do projeto.
 
+## Produção de assets RPG
+
+O repositório inclui o **Asset Coach**, uma aba do Content Studio que inspeciona PNGs, cria cópias normalizadas de 32 × 32 pixels e escreve manifestos compatíveis com o APK, sem sobrescrever o arquivo original do artista. O guia operacional completo — criação, upload, ajuste, animação, metadados, trilhas, validação e publicação — está em [docs/ASSET_COACH.md](docs/ASSET_COACH.md). Para importações em lote e overrides com nomes convencionados, consulte também [docs/USER_ASSET_PIPELINE.md](docs/USER_ASSET_PIPELINE.md).
+
 ## Visão geral do gameplay
 
 - **Estados do jogo** – O jogo alterna entre os estados `MENU`, `NORMAL` e `GAMEOVER`. O menu principal permite iniciar ou carregar partidas, o estado normal controla o loop de jogo e, ao zerar a vida do jogador, o estado de game over exibe a tela de reinício.【F:src/com/traduvertgames/main/Game.java†L53-L154】【F:src/com/traduvertgames/main/Menu.java†L21-L103】
