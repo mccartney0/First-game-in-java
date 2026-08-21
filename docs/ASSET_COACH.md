@@ -14,10 +14,11 @@ O ciclo profissional é repetível: desenhe uma silhueta legível, diagnostique,
 | 2. Diagnosticar | Abra **Content Studio → Asset Coach → Selecionar PNG… → Diagnosticar**. | Canvas, alfa, margem e silhueta são reportados. |
 | 3. Declarar | Escolha tipo runtime, ID, nome, escala, dano e cooldown. | Arte e gameplay compartilham o mesmo contrato. |
 | 4. Comparar | Consulte a prévia **Antes/Depois** antes de salvar a cópia. | O tratamento de fundo, recorte e escala ficam visíveis. |
-| 5. Normalizar | Exporte um item ou uma fila pelo Asset Coach. | Uma cópia 32×32 e seu manifesto são gerados. |
-| 6. Cobrir | Abra **Cobertura animações** e atualize o relatório. | Frames ausentes são identificados por ação e direção. |
-| 7. Validar | Rode a validação de conteúdo. | `validateContent` retorna zero erros. |
-| 8. Testar | Monte o APK e revise o asset no mapa. | Leitura, origem de disparo e animações ficam consistentes. |
+| 5. Reproduzir | Abra **Prévia animada** e percorra os três frames da ação e direção. | Cadência, pivô e frames ausentes são revistos sem exportar. |
+| 6. Normalizar | Exporte um item ou uma fila pelo Asset Coach. | Uma cópia 32×32 e seu manifesto são gerados. |
+| 7. Cobrir | Abra **Cobertura animações** e atualize o relatório. | Frames ausentes são identificados por ação e direção. |
+| 8. Validar | Rode a validação de conteúdo. | `validateContent` retorna zero erros. |
+| 9. Testar | Monte o APK e revise o asset no mapa. | Leitura, origem de disparo e animações ficam consistentes. |
 
 ## Especificação de PNG individual
 
@@ -63,7 +64,7 @@ Após uma exportação, o botão **Desfazer última cópia** remove somente o PN
 
 ### Arrastar, soltar e corrigir com regras aprovadas
 
-Também é possível arrastar um ou mais PNGs diretamente sobre a área pontilhada da aba **Lote & comparar**. O Coach adiciona somente arquivos `.png` à fila, preserva a ordem da sessão e mantém a falha de cada arquivo isolada. Depois de selecionar a fila, marque explicitamente as regras que pretende aplicar. Nenhuma regra fica ativa por padrão: isso evita uma correção automática que descaracterize a arte.
+Também é possível arrastar um ou mais PNGs diretamente sobre a área pontilhada da aba **Lote & comparar**. O Coach adiciona somente arquivos `.png` à fila, preserva a ordem da sessão e mantém a falha de cada arquivo isolada. Depois de selecionar a fila, escolha o preset do editor e confirme as regras que pretende aplicar. O preset preenche uma recomendação inicial, mas cada checkbox continua editável antes da exportação: isso evita que uma escolha técnica do editor substitua a revisão artística.
 
 | Regra aprovada | Transformação aplicada à cópia de trabalho | Quando usar |
 |---|---|---|
@@ -74,6 +75,32 @@ Também é possível arrastar um ou mais PNGs diretamente sobre a área pontilha
 
 > A prévia Antes/Depois deve ser conferida antes da exportação. As regras atuam apenas na cópia exportada; o PNG escolhido pelo artista nunca é regravado.
 
+## Presets de Aseprite, Krita e Piskel
+
+Na aba **Lote & comparar**, selecione o editor de origem antes de revisar a fila. O preset informa o canvas de destino, a cadência esperada de três poses por ação e as regras sugeridas para o PNG. Ele não muda o arquivo-fonte e também não exporta sozinho; a pessoa que está criando o asset continua podendo marcar ou desmarcar regras conforme a prévia.
+
+| Editor | Exportação recomendada | Regras sugeridas no Coach | Atenção antes de exportar |
+|---|---|---|---|
+| Aseprite | PNG RGBA; frames separados ou recorte de spritesheet; grade de 32 × 32; três poses. | Remover fundo de borda, recortar, centralizar e nearest-neighbor. | Verifique se a exportação de spritesheet foi separada em frames com o nome canônico. |
+| Krita | PNG RGBA sem camada de fundo; arte em 32 × 32 ou maior para centralizar. | Remover fundo de borda, centralizar e nearest-neighbor. | O recorte não é selecionado por padrão para preservar a composição de camadas do desenho; marque-o somente após conferir Antes/Depois. |
+| Piskel | PNG com transparência; frames separados ou spritesheet de 32 × 32; escala nearest-neighbor. | Remover fundo de borda, recortar, centralizar e nearest-neighbor. | Revise a escala de exportação e qualquer cor sólida que tenha ficado ligada à borda. |
+
+O nome de cada arquivo continua determinístico: `<entidade>_<ação>_<direção>_<frame>.png`. Para o herói, por exemplo, as três poses de ataque para baixo são `hero_attack_down_0.png`, `hero_attack_down_1.png` e `hero_attack_down_2.png`. A escolha de preset não renomeia arquivos já existentes; ela orienta a fila e reduz o risco de um PNG incompatível chegar ao pacote gerado.
+
+## Prévia animada antes e depois da exportação
+
+A aba **Prévia animada** reproduz a sequência contratada de três frames sem escrever PNGs, JSONs ou manifestos. Ela inicia no diretório `res/assets/generated/rpg_sprites/`, que permite conferir o resultado já integrado. Para revisar uma pasta de trabalho antes da exportação, use **Pasta de frames…** e escolha a pasta que contém os PNGs externos.
+
+| Controle | Uso | Resultado esperado |
+|---|---|---|
+| Entidade | Escolha `hero`, `npc_commandant`, `npc_healer` ou `npc_cartographer`. | A prévia busca o prefixo correto da entidade. |
+| Ação e direção | Escolha `walk` ou `attack` e uma das quatro direções. | A prévia procura exatamente os frames `0`, `1` e `2` do ciclo. |
+| FPS | Defina uma velocidade de 1 a 24 quadros por segundo. | A cadência pode ser avaliada sem alterar os arquivos. |
+| Reproduzir, pausar e avançar | Controle o ciclo ou revise uma pose de cada vez. | O frame é ampliado com nearest-neighbor sobre uma grade de transparência. |
+| Status `n/3` | Leia o total de PNGs encontrados para a seleção. | Um frame ausente é exposto como pendência, nunca inventado por fallback. |
+
+> Use primeiro a pasta de trabalho para ajustar poses, pés, cabeça e origem de disparo. Depois de normalizar e exportar, volte ao pacote gerado, rode a mesma seleção e confirme `3/3` antes de atualizar a cobertura de 24 frames.
+
 ## Criar um asset e colocá-lo no jogo
 
 Há dois caminhos equivalentes. No **Content Studio**, abra **Sprites RPG**, escolha a categoria do item e use os comandos de exportação para criar uma base ou gerar os 24 frames direcionais. Em um editor externo — como Aseprite, Piskel, Krita, GIMP ou Photoshop — desenhe o original em uma camada transparente e exporte cada sprite como PNG com alfa. O Content Studio continua sendo a etapa que converte a referência em contrato de runtime.
@@ -83,7 +110,8 @@ Há dois caminhos equivalentes. No **Content Studio**, abra **Sprites RPG**, esc
 | Criar | Gere uma base na aba **Sprites RPG** e refine a cópia. | Desenhe em pixel art, com contraste e fundo transparente. |
 | Preparar | Use **Asset Coach** para diagnóstico e prévia. | Exporte PNG RGBA, sem suavização e sem margem colorida na borda. |
 | Animar | Use **Exportar 24 frames direcionais** como referência. | Exporte três poses de caminhada e três de ataque para cada direção. |
-| Integrar | Normalizar e exportar para RPG. | Arraste os PNGs para **Lote & comparar**, aprove as regras e exporte. |
+| Revisar | Abra **Prévia animada** e escolha pasta, entidade, ação e direção. | Confirme os três frames antes de criar qualquer cópia de runtime. |
+| Integrar | Normalizar e exportar para RPG. | Arraste os PNGs para **Lote & comparar**, selecione o preset, revise as regras e exporte. |
 | Verificar | Atualize **Cobertura animações**. | Confirme os 24 frames e os nomes esperados antes do build. |
 
 Para um frame externo, use o padrão `<entidade>_<ação>_<direção>_<frame>.png`. Um exemplo completo é `hero_attack_down_1.png`. As entidades base são `hero`, `npc_commandant`, `npc_healer` e `npc_cartographer`; as ações são `walk` e `attack`; as direções são `right`, `left`, `up` e `down`; e cada ação usa índices `0`, `1` e `2`.
@@ -172,6 +200,8 @@ O artefato de instalação é `androidApp/app/build/outputs/apk/debug/app-debug.
 | Desfazer não removeu a fonte | Esse é o comportamento seguro esperado. | O botão remove apenas a última cópia de trabalho da sessão. |
 | Cobertura incompleta | Falta frame de ação, direção ou índice. | Use o ID indicado pela grade e gere o frame ausente. |
 | Relatório não abriu | O destino escolhido não possui permissão de escrita. | Escolha uma pasta de relatórios do projeto ou do usuário e exporte novamente. |
+| Prévia mostra `0/3` | Pasta, ID, ação, direção ou índice não seguem o contrato. | Escolha a pasta correta e renomeie como `<entidade>_<ação>_<direção>_<0-2>.png`. |
+| Uma pose some durante a reprodução | O PNG específico do ciclo está ausente ou ilegível. | Corrija o frame indicado e só exporte quando a seleção mostrar `3/3`. |
 | `validateContent` falha | Manifesto, nome, alfa ou referência perdeu o contrato. | Leia o erro, corrija no Coach e valide novamente. |
 | APK não mostra a arte nova | O pacote não foi recompilado após a exportação. | Rode `assembleDebug` e instale o APK recém-gerado. |
 

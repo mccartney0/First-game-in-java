@@ -47,6 +47,38 @@ public final class AssetCoach {
         ApprovedFixRule(String label) { this.label = label; }
     }
 
+    /** Perfis de importação para os editores externos mais usados pelo pipeline RPG. */
+    public enum EditorPreset {
+        ASEPRITE("Aseprite", "PNG RGBA; sprite sheet ou frames separados; grade 32×32; 3 frames por ação.", 32, 3,
+                EnumSet.allOf(ApprovedFixRule.class)),
+        KRITA("Krita", "PNG RGBA sem camada de fundo; canvas 32×32 ou arte maior que será centralizada.", 32, 3,
+                EnumSet.of(ApprovedFixRule.REMOVE_CONNECTED_BORDER_BACKGROUND,
+                        ApprovedFixRule.CENTER_ON_32PX_CANVAS,
+                        ApprovedFixRule.NEAREST_NEIGHBOR_SCALING)),
+        PISKEL("Piskel", "PNG com transparência; frames separados ou sprite sheet 32×32; exportação nearest-neighbor.", 32, 3,
+                EnumSet.allOf(ApprovedFixRule.class));
+
+        public final String label;
+        public final String guidance;
+        public final int targetCanvas;
+        public final int recommendedFramesPerAction;
+        private final EnumSet<ApprovedFixRule> rules;
+
+        EditorPreset(String label, String guidance, int targetCanvas, int recommendedFramesPerAction,
+                EnumSet<ApprovedFixRule> rules) {
+            this.label = label;
+            this.guidance = guidance;
+            this.targetCanvas = targetCanvas;
+            this.recommendedFramesPerAction = recommendedFramesPerAction;
+            this.rules = EnumSet.copyOf(rules);
+        }
+
+        /** Retorna uma cópia para a interface poder marcar ou desmarcar regras sem alterar o preset. */
+        public EnumSet<ApprovedFixRule> approvedRules() { return EnumSet.copyOf(rules); }
+
+        @Override public String toString() { return label; }
+    }
+
     /** Perfil padrão recomendado pelo Content Studio para sprites destinados ao runtime Android. */
     public static EnumSet<ApprovedFixRule> defaultApprovedFixRules() {
         return EnumSet.allOf(ApprovedFixRule.class);

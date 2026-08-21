@@ -81,6 +81,7 @@ public final class ContentStudioApp {
         tabs.addTab("Sprites RPG", createRpgVisualsPanel());
         tabs.addTab("Asset Coach", createAssetCoachPanel());
         tabs.addTab("Lote & comparar", new AssetCoachBatchPanel(projectRoot, latestExport, activity));
+        tabs.addTab("Prévia animada", new AnimatedPreviewPanel(projectRoot));
         tabs.addTab("Cobertura animações", new AnimationCoveragePanel(projectRoot));
         tabs.addTab("Referências", createTerrainGalleryPanel());
         tabs.addTab("Manifesto", createManifestPanel());

@@ -170,3 +170,12 @@
 - [x] Ampliar o guia com criação no Content Studio e em editores externos, exportação, importação e teste no APK.
 - [x] Atualizar a Wiki Viva e o Códice com o fluxo de produção e publicação de assets.
 - [x] Executar testes, `validateContent`, builds e inspeção visual antes da publicação.
+
+## Asset Coach — presets e prévia animada
+
+- [x] Mapear a configuração comum e as diferenças de exportação entre Aseprite, Krita e Piskel.
+- [x] Criar presets aplicáveis que ajustem canvas, alfa, grade, escala e nomeação de frames.
+- [x] Implementar prévia animada com play, pausa, velocidade e seleção de direção/ação antes da exportação.
+- [x] Cobrir os presets e a composição de frames com testes automatizados.
+- [x] Documentar o fluxo por editor no Git e na Wiki Viva.
+- [x] Executar testes, `validateContent`, builds e inspeção visual antes da publicação.

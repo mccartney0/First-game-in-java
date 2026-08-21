@@ -1,6 +1,7 @@
 package com.traduvertgames.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
@@ -80,6 +81,19 @@ class AssetCoachTest {
         AssetCoach.BatchReport batch = AssetCoach.normalizeBatch(new File[] { input }, ContentStudioProject.RpgSpriteKind.HERO,
                 props, rules, root);
         assertEquals(1, batch.successCount()); assertEquals(2, batch.items.get(0).appliedRules.size()); assertTrue(input.isFile());
+    }
+
+    @Test
+    void editorPresetsKeepTheRpgImportContractExplicit() {
+        AssetCoach.EditorPreset aseprite = AssetCoach.EditorPreset.ASEPRITE;
+        AssetCoach.EditorPreset krita = AssetCoach.EditorPreset.KRITA;
+        AssetCoach.EditorPreset piskel = AssetCoach.EditorPreset.PISKEL;
+        assertEquals(32, aseprite.targetCanvas);
+        assertEquals(3, aseprite.recommendedFramesPerAction);
+        assertTrue(aseprite.approvedRules().contains(AssetCoach.ApprovedFixRule.NEAREST_NEIGHBOR_SCALING));
+        assertTrue(krita.guidance.contains("PNG RGBA"));
+        assertFalse(krita.approvedRules().contains(AssetCoach.ApprovedFixRule.TRIM_VISIBLE_SILHOUETTE));
+        assertTrue(piskel.approvedRules().contains(AssetCoach.ApprovedFixRule.CENTER_ON_32PX_CANVAS));
     }
 
     private static void delete(File file) {
