@@ -80,6 +80,8 @@ public final class ContentStudioApp {
         tabs.addTab("Itens RPG", createRpgItemsPanel());
         tabs.addTab("Sprites RPG", createRpgVisualsPanel());
         tabs.addTab("Asset Coach", createAssetCoachPanel());
+        tabs.addTab("Lote & comparar", new AssetCoachBatchPanel(projectRoot, latestExport, activity));
+        tabs.addTab("Cobertura animações", new AnimationCoveragePanel(projectRoot));
         tabs.addTab("Referências", createTerrainGalleryPanel());
         tabs.addTab("Manifesto", createManifestPanel());
         tabs.addTab("Validação", createValidationPanel());

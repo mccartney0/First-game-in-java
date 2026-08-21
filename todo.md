@@ -150,3 +150,13 @@
 - [x] Documentar no Git o fluxo de criar, importar, ajustar, validar, exportar e sincronizar assets e trilhas.
 - [x] Atualizar Wiki Viva e Códice para apontar o novo fluxo de produção.
 - [x] Executar testes, `validateContent`, builds e validação visual antes de publicar.
+
+## Asset Coach — lote, comparação e cobertura
+
+- [x] Mapear a seleção de arquivos, a fila de normalização e os dados de frames já exportados.
+- [x] Implementar importação em lote com progresso, relatório individual e isolamento de falhas por arquivo.
+- [x] Criar comparação visual lado a lado antes/depois, com restauração segura da prévia original.
+- [x] Adicionar botão Desfazer que descarte a cópia de trabalho sem tocar no arquivo-fonte.
+- [x] Construir painel de cobertura de animações com status por entidade, direção, caminhada e ataque.
+- [x] Documentar os comandos e atualizar Wiki Viva e Códice com o novo fluxo.
+- [x] Executar testes, `validateContent`, builds e inspeção visual antes da publicação.

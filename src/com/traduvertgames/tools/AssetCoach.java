@@ -6,6 +6,9 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 
 import javax.imageio.ImageIO;
@@ -79,6 +82,107 @@ public final class AssetCoach {
         }
     }
 
+    /** Item individual de uma normalização em lote; uma falha não interrompe os demais arquivos. */
+    public static final class BatchItem {
+        public final File source;
+        public final File output;
+        public final String error;
+
+        private BatchItem(File source, File output, String error) {
+            this.source = source;
+            this.output = output;
+            this.error = error;
+        }
+
+        public boolean isSuccess() { return output != null && error == null; }
+    }
+
+    /** Resultado agregável e legível da fila de importação do Asset Coach. */
+    public static final class BatchReport {
+        public final List<BatchItem> items;
+
+        private BatchReport(List<BatchItem> items) {
+            this.items = Collections.unmodifiableList(new ArrayList<BatchItem>(items));
+        }
+
+        public int successCount() {
+            int count = 0;
+            for (BatchItem item : items) if (item.isSuccess()) count++;
+            return count;
+        }
+
+        public int failureCount() { return items.size() - successCount(); }
+
+        public String toReport() {
+            StringBuilder out = new StringBuilder("ASSET COACH — importação em lote\n\n");
+            for (BatchItem item : items) {
+                out.append(item.isSuccess() ? "✓ " : "✕ ").append(item.source.getName());
+                out.append(item.isSuccess() ? " → " + item.output.getName() : " — " + item.error).append('\n');
+            }
+            out.append("\nConcluídos: ").append(successCount()).append("  •  Falhas isoladas: ")
+                    .append(failureCount());
+            return out.toString();
+        }
+    }
+
+    /** Cobertura de frames esperada pelo runtime para uma entidade animável. */
+    public static final class AnimationCoverage {
+        public final String id;
+        public final boolean baseSprite;
+        private final boolean[][][] frames = new boolean[2][4][3];
+
+        private AnimationCoverage(String id, boolean baseSprite) {
+            this.id = id;
+            this.baseSprite = baseSprite;
+        }
+
+        private void mark(int state, int direction, int frame) { frames[state][direction][frame] = true; }
+
+        public boolean hasFrame(String state, String direction, int frame) {
+            int stateIndex = "attack".equals(state) ? 1 : 0;
+            int directionIndex = directionIndex(direction);
+            return directionIndex >= 0 && frame >= 0 && frame < 3 && frames[stateIndex][directionIndex][frame];
+        }
+
+        public int frameCount() {
+            int count = 0;
+            for (int state = 0; state < 2; state++) for (int direction = 0; direction < 4; direction++)
+                for (int frame = 0; frame < 3; frame++) if (frames[state][direction][frame]) count++;
+            return count;
+        }
+
+        public boolean isComplete() { return baseSprite && frameCount() == 24; }
+    }
+
+    /** Relatório estruturado da cobertura de caminhada e ataque, reutilizável pela UI e por testes. */
+    public static final class AnimationCoverageReport {
+        public final List<AnimationCoverage> entities;
+
+        private AnimationCoverageReport(List<AnimationCoverage> entities) {
+            this.entities = Collections.unmodifiableList(new ArrayList<AnimationCoverage>(entities));
+        }
+
+        public int totalFrames() {
+            int count = 0;
+            for (AnimationCoverage coverage : entities) count += coverage.frameCount();
+            return count;
+        }
+
+        public int expectedFrames() { return entities.size() * 24; }
+
+        public String toReport() {
+            StringBuilder out = new StringBuilder("COBERTURA DE ANIMAÇÕES RPG\n\n");
+            for (AnimationCoverage coverage : entities) {
+                out.append(coverage.isComplete() ? "✓ " : "• ").append(coverage.id)
+                        .append(" — sprite-base ").append(coverage.baseSprite ? "presente" : "ausente")
+                        .append(", ").append(coverage.frameCount()).append("/24 frames\n");
+            }
+            out.append("\nCobertura total: ").append(totalFrames()).append('/').append(expectedFrames())
+                    .append(" frames direcionais.");
+            return out.toString();
+        }
+    }
+
     /** Inspeciona um PNG sem criar ou alterar arquivos no projeto. */
     public static Diagnosis inspect(File source) throws IOException {
         if (source == null || !source.isFile()) {
@@ -115,6 +219,53 @@ public final class AssetCoach {
         BufferedImage original = ImageIO.read(source);
         BufferedImage normalized = normalize(original);
         return ContentStudioProject.exportImportedRpgSprite(normalized, safeId(id), kind, properties, projectRoot);
+    }
+
+    /** Normaliza muitos PNGs sem impedir a fila quando um arquivo estiver corrompido ou vazio. */
+    public static BatchReport normalizeBatch(File[] sources, ContentStudioProject.RpgSpriteKind kind,
+            ContentStudioProject.RpgSpriteProperties properties, File projectRoot) {
+        List<BatchItem> items = new ArrayList<BatchItem>();
+        if (sources == null) return new BatchReport(items);
+        for (File source : sources) {
+            try {
+                items.add(new BatchItem(source, normalizeRpgSprite(source, baseId(source), kind, properties, projectRoot), null));
+            } catch (Exception failure) {
+                items.add(new BatchItem(source == null ? new File("arquivo_indefinido.png") : source, null,
+                        failure.getMessage() == null ? failure.getClass().getSimpleName() : failure.getMessage()));
+            }
+        }
+        return new BatchReport(items);
+    }
+
+    /** Produz uma prévia não persistida para a comparação antes/depois na interface. */
+    public static BufferedImage normalizedPreview(File source) throws IOException {
+        Diagnosis diagnosis = inspect(source);
+        if (!diagnosis.readable || !diagnosis.visiblePixels) {
+            throw new IOException("Selecione um PNG legível com pixels visíveis para comparar.");
+        }
+        return normalize(ImageIO.read(source));
+    }
+
+    /** Lê a cobertura de quatro protagonistas/NPCs com o padrão de nomes aceito pelo runtime. */
+    public static AnimationCoverageReport inspectAnimationCoverage(File projectRoot) {
+        File directory = new File(projectRoot, "res/assets/generated/rpg_sprites");
+        String[] ids = { "hero", "npc_commandant", "npc_healer", "npc_cartographer" };
+        String[] states = { "walk", "attack" };
+        String[] directions = { "right", "left", "up", "down" };
+        List<AnimationCoverage> entities = new ArrayList<AnimationCoverage>();
+        for (String id : ids) {
+            AnimationCoverage coverage = new AnimationCoverage(id, new File(directory, id + ".png").isFile());
+            for (int state = 0; state < states.length; state++) {
+                for (int direction = 0; direction < directions.length; direction++) {
+                    for (int frame = 0; frame < 3; frame++) {
+                        if (new File(directory, id + "_" + states[state] + "_" + directions[direction]
+                                + "_" + frame + ".png").isFile()) coverage.mark(state, direction, frame);
+                    }
+                }
+            }
+            entities.add(coverage);
+        }
+        return new AnimationCoverageReport(entities);
     }
 
     /** Normaliza uma imagem para 32×32 com margem transparente e pixel art preservado. */
@@ -192,6 +343,21 @@ public final class AssetCoach {
         int green = Math.abs(((first >>> 8) & 0xFF) - ((second >>> 8) & 0xFF));
         int blue = Math.abs((first & 0xFF) - (second & 0xFF));
         return red <= COLOR_TOLERANCE && green <= COLOR_TOLERANCE && blue <= COLOR_TOLERANCE;
+    }
+
+    private static String baseId(File source) {
+        if (source == null) return "hero";
+        String name = source.getName();
+        int dot = name.lastIndexOf('.');
+        return safeId(dot > 0 ? name.substring(0, dot) : name);
+    }
+
+    private static int directionIndex(String direction) {
+        if ("right".equals(direction)) return 0;
+        if ("left".equals(direction)) return 1;
+        if ("up".equals(direction)) return 2;
+        if ("down".equals(direction)) return 3;
+        return -1;
     }
 
     private static int[] visibleBounds(BufferedImage image) {
