@@ -116,3 +116,18 @@
 - [x] Criar um mural interativo de conquistas com progresso, emblemas e transições acessíveis.
 - [x] Vincular o playthrough aos marcos desbloqueáveis e manter o progresso no navegador.
 - [x] Validar as rotas, o estado interativo e a experiência móvel antes da publicação.
+
+## Música adaptativa — regiões e chefes
+
+- [x] Mapear regiões, estados de exploração e transições de chefes no loop Android.
+- [x] Compor e exportar faixas em loop para Clareira, Águas do Norte, Fortaleza e confrontos de chefe.
+- [x] Implementar um diretor musical com troca segura de loops, intensificação em chefes e restauração ao retomar o jogo.
+- [x] Expor controle de música e volume no HUD sem competir com os controles de ação.
+- [x] Validar transições, ciclo de vida, pacote Android e regressões antes da publicação.
+
+## Wiki viva e Códice da Bruma
+
+- [x] Criar um Códice navegável para regiões, criaturas, personagens, armas, relíquias e chefes.
+- [x] Atualizar a wiki com animações, onboarding, áudio, conquistas e futuras notas de versão.
+- [x] Adicionar um índice de atualizações que conecte cada implementação nova aos artigos técnicos relevantes.
+- [x] Validar navegação, busca, responsividade e consistência visual do portal antes da publicação.

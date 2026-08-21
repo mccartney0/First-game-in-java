@@ -2,6 +2,7 @@ package com.traduvertgames.android;
 
 import android.content.Context;
 import android.media.AudioAttributes;
+import android.media.MediaPlayer;
 import android.media.SoundPool;
 
 /**
@@ -9,6 +10,20 @@ import android.media.SoundPool;
  * carregados uma vez e nunca participam do loop de renderização.
  */
 final class RpgAudio {
+    enum MusicTrack {
+        CLEARING(R.raw.rpg_music_clearing),
+        NORTH_WATERS(R.raw.rpg_music_northwaters),
+        FORTRESS(R.raw.rpg_music_fortress),
+        BOSS(R.raw.rpg_music_boss);
+
+        final int resourceId;
+
+        MusicTrack(int resourceId) {
+            this.resourceId = resourceId;
+        }
+    }
+
+    private final Context context;
     private final SoundPool soundPool;
     private final int stepGrass;
     private final int magicCast;
@@ -16,9 +31,16 @@ final class RpgAudio {
     private final int dialogueOpen;
     private final int uiConfirm;
     private final int achievement;
+    private MediaPlayer musicPlayer;
+    private MusicTrack activeTrack;
+    private MusicTrack pendingTrack;
+    private float musicFade = 1f;
+    private boolean musicEnabled = true;
+    private boolean musicPaused;
     private boolean released;
 
     RpgAudio(Context context) {
+        this.context = context.getApplicationContext();
         AudioAttributes attributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_GAME)
                 .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
@@ -59,22 +81,91 @@ final class RpgAudio {
         play(achievement, 0.50f, 0.46f, 1f);
     }
 
+    void updateMusic(MusicTrack requestedTrack, float dt) {
+        if (released || !musicEnabled || requestedTrack == null) return;
+        if (musicPlayer == null) {
+            startMusic(requestedTrack, 0f);
+            activeTrack = requestedTrack;
+            musicFade = 0f;
+        } else if (requestedTrack != activeTrack && requestedTrack != pendingTrack) {
+            pendingTrack = requestedTrack;
+        }
+        if (pendingTrack != null) {
+            musicFade = Math.max(0f, musicFade - dt / 0.28f);
+            applyMusicVolume();
+            if (musicFade <= 0f) {
+                startMusic(pendingTrack, 0f);
+                activeTrack = pendingTrack;
+                pendingTrack = null;
+            }
+        } else if (musicFade < 1f) {
+            musicFade = Math.min(1f, musicFade + dt / 0.38f);
+            applyMusicVolume();
+        }
+    }
+
+    boolean toggleMusic() {
+        if (released) return false;
+        musicEnabled = !musicEnabled;
+        if (musicPlayer != null) {
+            if (musicEnabled && !musicPaused) musicPlayer.start();
+            else if (musicPlayer.isPlaying()) musicPlayer.pause();
+        }
+        return musicEnabled;
+    }
+
+    boolean isMusicEnabled() {
+        return musicEnabled;
+    }
+
     void pause() {
-        if (!released) soundPool.autoPause();
+        if (!released) {
+            soundPool.autoPause();
+            musicPaused = true;
+            if (musicPlayer != null && musicPlayer.isPlaying()) musicPlayer.pause();
+        }
     }
 
     void resume() {
-        if (!released) soundPool.autoResume();
+        if (!released) {
+            soundPool.autoResume();
+            musicPaused = false;
+            if (musicEnabled && musicPlayer != null) musicPlayer.start();
+        }
     }
 
     void release() {
         if (!released) {
             released = true;
             soundPool.release();
+            releaseMusicPlayer();
         }
     }
 
     private void play(int soundId, float left, float right, float rate) {
         if (!released && soundId != 0) soundPool.play(soundId, left, right, 1, 0, rate);
+    }
+
+    private void startMusic(MusicTrack track, float initialVolume) {
+        releaseMusicPlayer();
+        musicPlayer = MediaPlayer.create(context, track.resourceId);
+        if (musicPlayer == null) return;
+        musicPlayer.setLooping(true);
+        musicPlayer.setVolume(initialVolume, initialVolume);
+        if (!musicPaused && musicEnabled) musicPlayer.start();
+    }
+
+    private void applyMusicVolume() {
+        if (musicPlayer != null) {
+            float volume = 0.25f * musicFade;
+            musicPlayer.setVolume(volume, volume);
+        }
+    }
+
+    private void releaseMusicPlayer() {
+        if (musicPlayer != null) {
+            musicPlayer.release();
+            musicPlayer = null;
+        }
     }
 }

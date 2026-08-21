@@ -332,6 +332,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (gameOver) return;
         animationClock += dt;
         messageTimer -= dt;
+        audio.updateMusic(resolveMusicTrack(), dt);
         if (inventoryVisible) return;
         attackTimer -= dt;
         attackVisualTimer = Math.max(0f, attackVisualTimer - dt);
@@ -638,6 +639,25 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             case 4: return "Derrote o Titã da Bruma";
             default: return "Expedição concluída: proteja a Clareira";
         }
+    }
+
+    private RpgAudio.MusicTrack resolveMusicTrack() {
+        for (Enemy enemy : enemies) {
+            if (enemy.type.boss && distance(playerX, playerY, enemy.x, enemy.y) < TILE * 9f) {
+                return RpgAudio.MusicTrack.BOSS;
+            }
+        }
+        if (playerX >= TILE * 17f && playerY <= TILE * 10f) return RpgAudio.MusicTrack.NORTH_WATERS;
+        if (playerX >= TILE * 22f && playerY >= TILE * 10f) return RpgAudio.MusicTrack.FORTRESS;
+        return RpgAudio.MusicTrack.CLEARING;
+    }
+
+    private String currentRegionTitle() {
+        RpgAudio.MusicTrack track = resolveMusicTrack();
+        if (track == RpgAudio.MusicTrack.BOSS) return "CONFRONTO DA BRUMA";
+        if (track == RpgAudio.MusicTrack.NORTH_WATERS) return "ÁGUAS DO NORTE";
+        if (track == RpgAudio.MusicTrack.FORTRESS) return "FORTALEZA DAS CINZAS";
+        return "CLAREIRA DA BRUMA";
     }
 
     private String questDetail() {
@@ -1082,11 +1102,11 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void drawHud(Canvas canvas) {
         paint.setColor(Color.argb(224, 8, 15, 29));
-        canvas.drawRoundRect(new RectF(18f, 14f, 535f, 105f), 12f, 12f, paint);
+        canvas.drawRoundRect(new RectF(18f, 14f, 572f, 105f), 12f, 12f, paint);
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setTextSize(22f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("CLAREIRA DA BRUMA", 34f, 42f, textPaint);
+        canvas.drawText(currentRegionTitle(), 34f, 42f, textPaint);
         textPaint.setTextSize(14f);
         textPaint.setColor(Color.rgb(164, 211, 226));
         canvas.drawText("NÍVEL " + level + "   XP " + xp + "/" + (level * 60) + "   OURO " + gold, 34f, 65f, textPaint);
@@ -1100,6 +1120,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
         drawUtilityButton(canvas, 250f, "SALVAR", Color.rgb(62, 116, 104));
         drawUtilityButton(canvas, 362f, "CARREGAR", Color.rgb(64, 83, 136));
+        drawUtilityButton(canvas, 474f, audio.isMusicEnabled() ? "MÚSICA" : "MÚSICA OFF",
+                audio.isMusicEnabled() ? Color.rgb(130, 95, 48) : Color.rgb(70, 70, 78));
 
         paint.setColor(inventoryVisible ? Color.rgb(80, 105, 176) : Color.argb(220, 8, 15, 29));
         canvas.drawRoundRect(new RectF(570f, 18f, 705f, 86f), 12f, 12f, paint);
@@ -1369,6 +1391,12 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             }
             if (x > 362f && x < 460f && y < 90f) {
                 loadProgress(true);
+                audio.playUiConfirm();
+                return true;
+            }
+            if (x > 474f && x < 572f && y < 90f) {
+                message = audio.toggleMusic() ? "Música adaptativa ativada" : "Música adaptativa desativada";
+                messageTimer = 2.4f;
                 audio.playUiConfirm();
                 return true;
             }
