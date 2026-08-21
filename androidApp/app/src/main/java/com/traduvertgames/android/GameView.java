@@ -20,9 +20,8 @@ import java.util.List;
 import java.util.Random;
 
 /**
- * Primeira camada RPG Android do jogo. A lógica desktop permanece separada
- * porque ela depende de AWT; esta tela reproduz a exploração essencial com
- * Canvas nativo e reutiliza os atlases do Content Studio.
+ * Superfície RPG Android: exploração, combate, monstros, chefes, inventário
+ * e equipamentos. A lógica AWT/Swing da versão desktop permanece separada.
  */
 public final class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
     private static final int COLS = 32;
@@ -46,6 +45,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private final char[][] tiles = new char[ROWS][COLS];
     private final List<Enemy> enemies = new ArrayList<>();
     private final List<MagicBolt> bolts = new ArrayList<>();
+    private final List<Item> inventory = new ArrayList<>();
+    private final List<ItemPickup> pickups = new ArrayList<>();
     private final Bitmap terrainAtlas;
     private final Bitmap baseAtlas;
 
@@ -77,8 +78,13 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private int defeated;
     private boolean chestOpened;
     private boolean dialogueVisible;
+    private boolean inventoryVisible;
     private boolean gameOver;
     private String message = "Explore a Clareira da Bruma";
+
+    private Item equippedWeapon;
+    private Item equippedArmor;
+    private Item equippedAccessory;
 
     public GameView(Context context) {
         super(context);
@@ -104,13 +110,25 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         defeated = 0;
         chestOpened = false;
         dialogueVisible = false;
+        inventoryVisible = false;
         gameOver = false;
         attackTimer = 0f;
-        spawnTimer = 1.4f;
-        messageTimer = 3f;
+        spawnTimer = 4.5f;
+        messageTimer = 4f;
         message = "Explore a Clareira da Bruma";
         enemies.clear();
         bolts.clear();
+        pickups.clear();
+        inventory.clear();
+        equippedWeapon = new Item("Cajado de Cinzas", "ARMA", 8, 0, 4, false);
+        equippedArmor = new Item("Manto da Clareira", "ARMADURA", 0, 5, 0, false);
+        equippedAccessory = new Item("Anel Azul", "ACESSÓRIO", 0, 0, 3, false);
+        inventory.add(equippedWeapon);
+        inventory.add(equippedArmor);
+        inventory.add(equippedAccessory);
+        inventory.add(new Item("Poção Rubra", "CONSUMÍVEL", 0, 0, 0, true));
+        inventory.add(new Item("Lâmina de Ferro", "ARMA", 13, 0, 0, false));
+        inventory.add(new Item("Botas do Vento", "ARMADURA", 0, 3, 2, false));
         spawnInitialEnemies();
     }
 
@@ -165,9 +183,13 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void spawnInitialEnemies() {
-        enemies.add(new Enemy(TILE * 12.5f, TILE * 7.5f, "Lobo da Bruma", 34f, 22f));
-        enemies.add(new Enemy(TILE * 19.5f, TILE * 13.5f, "Sentinela", 42f, 18f));
-        enemies.add(new Enemy(TILE * 25.5f, TILE * 11.5f, "Cultista", 30f, 25f));
+        enemies.add(new Enemy(TILE * 12.5f, TILE * 7.5f, EnemyType.WOLF));
+        enemies.add(new Enemy(TILE * 19.5f, TILE * 13.5f, EnemyType.SENTINEL));
+        enemies.add(new Enemy(TILE * 25.5f, TILE * 11.5f, EnemyType.CULTIST));
+        enemies.add(new Enemy(TILE * 8.5f, TILE * 8.5f, EnemyType.SPIDER));
+        enemies.add(new Enemy(TILE * 21.5f, TILE * 15.5f, EnemyType.TROLL));
+        enemies.add(new Enemy(TILE * 28.5f, TILE * 14.5f, EnemyType.BRUMA_TITAN));
+        enemies.add(new Enemy(TILE * 24.5f, TILE * 17.5f, EnemyType.NECROMANCER));
     }
 
     public void resumeGame() {
@@ -240,26 +262,28 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void update(float dt) {
         if (gameOver) return;
+        messageTimer -= dt;
+        if (inventoryVisible) return;
         attackTimer -= dt;
         spawnTimer -= dt;
-        messageTimer -= dt;
         if (actionHeld && attackTimer <= 0f) {
-            attackTimer = 0.38f;
+            attackTimer = Math.max(0.22f, 0.42f - magicPower() * 0.01f);
             fireBolt();
         }
         float length = (float) Math.sqrt(moveAxisX * moveAxisX + moveAxisY * moveAxisY);
         float vx = length > 1f ? moveAxisX / length : moveAxisX;
         float vy = length > 1f ? moveAxisY / length : moveAxisY;
-        movePlayer(vx * 180f * dt, vy * 180f * dt);
+        movePlayer(vx * (180f + armorPower() * 2f) * dt, vy * (180f + armorPower() * 2f) * dt);
         cameraX = clamp(playerX - 576f, 0f, WORLD_WIDTH - 1152f);
         cameraY = clamp(playerY - 324f, 0f, WORLD_HEIGHT - 648f);
         updateEnemies(dt);
         updateBolts(dt);
-        if (spawnTimer <= 0f && enemies.size() < 7) {
+        collectNearbyItems();
+        if (spawnTimer <= 0f && enemies.size() < 10) {
             spawnWanderingEnemy();
             spawnTimer = 5.5f;
         }
-        if (messageTimer <= 0f && !dialogueVisible) message = "Toque no lado direito para usar magia";
+        if (messageTimer <= 0f && !dialogueVisible) message = "BOLSA abre inventário • AÇÃO conversa e interage";
     }
 
     private void movePlayer(float dx, float dy) {
@@ -281,12 +305,12 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             float dx = playerX - enemy.x;
             float dy = playerY - enemy.y;
             float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
-            if (distance < TILE * 7f) {
-                enemy.x += dx / distance * enemy.speed * dt;
-                enemy.y += dy / distance * enemy.speed * dt;
+            if (distance < TILE * (enemy.type.boss ? 9f : 7f)) {
+                enemy.x += dx / distance * enemy.type.speed * dt;
+                enemy.y += dy / distance * enemy.type.speed * dt;
             }
-            if (distance < PLAYER_RADIUS + enemy.radius) {
-                health -= 12f * dt;
+            if (distance < PLAYER_RADIUS + enemy.type.radius) {
+                health -= Math.max(1f, enemy.type.damage - armorPower() * 0.7f) * dt;
                 if (health <= 0f) {
                     health = 0f;
                     gameOver = true;
@@ -310,21 +334,17 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                     Enemy enemy = enemyIterator.next();
                     float dx = bolt.x - enemy.x;
                     float dy = bolt.y - enemy.y;
-                    float hit = bolt.radius + enemy.radius;
+                    float hit = bolt.radius + enemy.type.radius;
                     if (dx * dx + dy * dy <= hit * hit) {
-                        enemyIterator.remove();
-                        defeated++;
-                        xp += 20;
-                        gold += 3;
-                        message = enemy.name + " derrotado  +20 XP";
-                        messageTimer = 2.5f;
-                        if (xp >= level * 60) {
-                            xp -= level * 60;
-                            level++;
-                            health = 100f;
-                            message = "Nível " + level + " alcançado";
-                        }
+                        enemy.health -= bolt.damage;
                         remove = true;
+                        if (enemy.health <= 0f) {
+                            enemyIterator.remove();
+                            onEnemyDefeated(enemy);
+                        } else {
+                            message = enemy.type.title + "  " + Math.max(0, Math.round(enemy.health)) + " PV";
+                            messageTimer = 1.2f;
+                        }
                         break;
                     }
                 }
@@ -333,38 +353,132 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         }
     }
 
+    private void onEnemyDefeated(Enemy enemy) {
+        defeated++;
+        xp += enemy.type.boss ? 120 : enemy.type.xp;
+        gold += enemy.type.boss ? 30 : enemy.type.gold;
+        Item drop = enemy.type.drop;
+        if (drop != null) pickups.add(new ItemPickup(enemy.x, enemy.y, drop.copy()));
+        if (enemy.type.boss) {
+            message = "CHEFE derrotado: " + enemy.type.title + "  +" + enemy.type.xp + " XP";
+            messageTimer = 4f;
+        } else {
+            message = enemy.type.title + " derrotado  +" + enemy.type.xp + " XP";
+            messageTimer = 2.5f;
+        }
+        while (xp >= level * 60) {
+            xp -= level * 60;
+            level++;
+            health = maxHealth();
+            message = "Nível " + level + " alcançado";
+            messageTimer = 3f;
+        }
+    }
+
+    private void collectNearbyItems() {
+        Iterator<ItemPickup> iterator = pickups.iterator();
+        while (iterator.hasNext()) {
+            ItemPickup pickup = iterator.next();
+            if (distance(playerX, playerY, pickup.x, pickup.y) < TILE * 0.75f) {
+                if (inventory.size() < 12 || pickup.item.consumable) {
+                    addItem(pickup.item.copy());
+                    iterator.remove();
+                    message = pickup.item.name + " adicionada à bolsa";
+                    messageTimer = 3f;
+                } else {
+                    message = "Bolsa cheia (12 espaços)";
+                    messageTimer = 2f;
+                }
+            }
+        }
+    }
+
     private void spawnWanderingEnemy() {
         float x = TILE * (10 + random.nextInt(17));
         float y = TILE * (4 + random.nextInt(13));
-        if (walkable(x, y)) enemies.add(new Enemy(x, y, "Errante", 28f, 20f));
+        if (walkable(x, y)) {
+            EnemyType[] types = {EnemyType.WOLF, EnemyType.SPIDER, EnemyType.CULTIST, EnemyType.TROLL};
+            enemies.add(new Enemy(x, y, types[random.nextInt(types.length)]));
+        }
     }
 
     private void fireBolt() {
         float dx = aimX - playerX;
         float dy = aimY - playerY;
         float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
+        float damage = 8f + level * 2f + attackPower() + magicPower() * 1.6f;
         bolts.add(new MagicBolt(playerX + dx / distance * 20f, playerY + dy / distance * 20f,
-                dx / distance, dy / distance));
+                dx / distance, dy / distance, damage));
     }
 
     private void interact() {
+        if (inventoryVisible) return;
         float npcX = TILE * 15.5f;
         float npcY = TILE * 10.5f;
         float chestX = TILE * 27.5f;
         float chestY = TILE * 8.5f;
         if (distance(playerX, playerY, npcX, npcY) < TILE * 2f) {
             dialogueVisible = !dialogueVisible;
-            message = dialogueVisible ? "Ava: A Bruma cresce ao norte. Derrote 5 inimigos." : "Explore a Clareira da Bruma";
+            message = dialogueVisible ? "Ava: Derrote o Titã da Bruma e equipe o saque." : "Explore a Clareira da Bruma";
             messageTimer = 5f;
         } else if (!chestOpened && distance(playerX, playerY, chestX, chestY) < TILE * 2f) {
             chestOpened = true;
             gold += 50;
-            message = "Baú aberto: +50 ouro";
+            addItem(new Item("Amuleto da Bruma", "ACESSÓRIO", 2, 2, 7, false));
+            message = "Baú aberto: +50 ouro e Amuleto da Bruma";
             messageTimer = 4f;
         } else if (distance(playerX, playerY, TILE * 16f, TILE * 10f) < TILE * 2f) {
             message = "Ponte para a Fortaleza das Cinzas";
             messageTimer = 3f;
         }
+    }
+
+    private void addItem(Item item) {
+        for (Item existing : inventory) {
+            if (existing.name.equals(item.name) && existing.consumable) {
+                existing.quantity += item.quantity;
+                return;
+            }
+        }
+        if (inventory.size() < 12) inventory.add(item);
+    }
+
+    private void equipItem(Item item) {
+        if (item == null) return;
+        if (item.consumable) {
+            if (item.quantity > 0 && health < maxHealth()) {
+                item.quantity--;
+                health = Math.min(maxHealth(), health + 38f);
+                message = "Poção usada: vida restaurada";
+                messageTimer = 2.5f;
+            } else if (health >= maxHealth()) {
+                message = "A vida já está cheia";
+                messageTimer = 2f;
+            }
+            return;
+        }
+        if ("ARMA".equals(item.slot)) equippedWeapon = item;
+        else if ("ARMADURA".equals(item.slot)) equippedArmor = item;
+        else if ("ACESSÓRIO".equals(item.slot)) equippedAccessory = item;
+        message = item.name + " equipado";
+        messageTimer = 2.5f;
+    }
+
+    private int attackPower() {
+        return equippedWeapon == null ? 0 : equippedWeapon.attack;
+    }
+
+    private int armorPower() {
+        return equippedArmor == null ? 0 : equippedArmor.armor;
+    }
+
+    private int magicPower() {
+        return (equippedWeapon == null ? 0 : equippedWeapon.magic)
+                + (equippedAccessory == null ? 0 : equippedAccessory.magic);
+    }
+
+    private float maxHealth() {
+        return 100f + armorPower() * 3f + (equippedAccessory == null ? 0 : equippedAccessory.armor * 2f);
     }
 
     private void drawFrame() {
@@ -393,12 +507,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             for (int col = 0; col < COLS; col++) drawTile(canvas, col, row, tiles[row][col]);
         }
         drawWorldObjects(canvas);
+        drawPickups(canvas);
         drawEnemies(canvas);
         drawBolts(canvas);
         drawPlayer(canvas);
         canvas.restore();
         drawHud(canvas);
         if (dialogueVisible) drawDialogue(canvas);
+        if (inventoryVisible) drawInventory(canvas);
         if (gameOver) drawGameOver(canvas);
     }
 
@@ -433,18 +549,70 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         }
     }
 
+    private void drawPickups(Canvas canvas) {
+        for (ItemPickup pickup : pickups) {
+            paint.setColor(pickup.item.consumable ? Color.rgb(239, 73, 87) : Color.rgb(245, 200, 86));
+            canvas.drawCircle(pickup.x, pickup.y, 12f, paint);
+            paint.setColor(Color.WHITE);
+            canvas.drawCircle(pickup.x, pickup.y, 4f, paint);
+        }
+    }
+
     private void drawEnemies(Canvas canvas) {
         for (Enemy enemy : enemies) {
-            RectF target = new RectF(enemy.x - enemy.radius, enemy.y - enemy.radius,
-                    enemy.x + enemy.radius, enemy.y + enemy.radius);
-            drawAtlas(canvas, baseAtlas, new Rect(0, 0, 96, 96), target);
+            drawEnemy(canvas, enemy);
             paint.setColor(Color.argb(220, 115, 33, 57));
-            canvas.drawRect(enemy.x - enemy.radius, enemy.y - enemy.radius - 8f,
-                    enemy.x + enemy.radius, enemy.y - enemy.radius - 3f, paint);
-            paint.setColor(Color.rgb(247, 91, 106));
-            canvas.drawRect(enemy.x - enemy.radius, enemy.y - enemy.radius - 8f,
-                    enemy.x - enemy.radius + enemy.radius * 2f * Math.min(1f, enemy.health / 42f),
-                    enemy.y - enemy.radius - 3f, paint);
+            canvas.drawRoundRect(new RectF(enemy.x - enemy.type.radius, enemy.y - enemy.type.radius - 10f,
+                    enemy.x + enemy.type.radius, enemy.y - enemy.type.radius - 4f), 3f, 3f, paint);
+            paint.setColor(enemy.type.boss ? Color.rgb(255, 197, 67) : Color.rgb(247, 91, 106));
+            float ratio = Math.max(0f, enemy.health / enemy.type.maxHealth);
+            canvas.drawRoundRect(new RectF(enemy.x - enemy.type.radius, enemy.y - enemy.type.radius - 10f,
+                    enemy.x - enemy.type.radius + enemy.type.radius * 2f * ratio,
+                    enemy.y - enemy.type.radius - 4f), 3f, 3f, paint);
+        }
+    }
+
+    private void drawEnemy(Canvas canvas, Enemy enemy) {
+        float x = enemy.x;
+        float y = enemy.y;
+        float radius = enemy.type.radius;
+        paint.setColor(Color.argb(100, 0, 0, 0));
+        canvas.drawOval(new RectF(x - radius - 5f, y + radius - 3f, x + radius + 5f, y + radius + 8f), paint);
+        paint.setColor(enemy.type.color);
+        if (enemy.type.boss) {
+            canvas.drawCircle(x, y, radius + 11f, paint);
+            paint.setColor(Color.argb(105, 255, 60, 90));
+            canvas.drawCircle(x, y, radius + 19f, paint);
+            paint.setColor(enemy.type.color);
+            canvas.drawCircle(x, y, radius, paint);
+            paint.setColor(Color.rgb(255, 225, 105));
+            canvas.drawCircle(x - radius * 0.35f, y - 4f, 5f, paint);
+            canvas.drawCircle(x + radius * 0.35f, y - 4f, 5f, paint);
+            paint.setColor(Color.rgb(70, 20, 35));
+            canvas.drawRect(x - radius * 0.45f, y + radius * 0.2f, x + radius * 0.45f, y + radius * 0.45f, paint);
+        } else if (enemy.type == EnemyType.SPIDER) {
+            canvas.drawCircle(x, y, radius, paint);
+            paint.setStrokeWidth(4f);
+            for (int i = 0; i < 4; i++) {
+                float legY = y - radius * 0.6f + i * radius * 0.4f;
+                canvas.drawLine(x - radius, legY, x - radius * 1.6f, legY - 10f, paint);
+                canvas.drawLine(x + radius, legY, x + radius * 1.6f, legY - 10f, paint);
+            }
+            paint.setColor(Color.WHITE);
+            canvas.drawCircle(x - 6f, y - 5f, 3f, paint);
+            canvas.drawCircle(x + 6f, y - 5f, 3f, paint);
+        } else if (enemy.type == EnemyType.TROLL) {
+            canvas.drawRoundRect(new RectF(x - radius, y - radius, x + radius, y + radius + 6f), 12f, 12f, paint);
+            paint.setColor(Color.rgb(255, 222, 154));
+            canvas.drawCircle(x - 7f, y - 6f, 4f, paint);
+            canvas.drawCircle(x + 7f, y - 6f, 4f, paint);
+        } else {
+            canvas.drawCircle(x, y, radius, paint);
+            paint.setColor(Color.rgb(255, 227, 162));
+            canvas.drawCircle(x - radius * 0.3f, y - 4f, 4f, paint);
+            canvas.drawCircle(x + radius * 0.3f, y - 4f, 4f, paint);
+            paint.setColor(Color.rgb(35, 24, 46));
+            canvas.drawCircle(x, y + 8f, radius * 0.3f, paint);
         }
     }
 
@@ -458,7 +626,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void drawPlayer(Canvas canvas) {
-        drawCharacter(canvas, playerX, playerY, Color.rgb(105, 196, 255));
+        int playerColor = equippedArmor == null ? Color.rgb(105, 196, 255) : Color.rgb(154, 131, 255);
+        drawCharacter(canvas, playerX, playerY, playerColor);
         float dx = aimX - playerX;
         float dy = aimY - playerY;
         float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
@@ -483,7 +652,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void drawHud(Canvas canvas) {
         paint.setColor(Color.argb(224, 8, 15, 29));
-        canvas.drawRoundRect(new RectF(18f, 14f, 480f, 90f), 12f, 12f, paint);
+        canvas.drawRoundRect(new RectF(18f, 14f, 535f, 105f), 12f, 12f, paint);
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setTextSize(22f);
         textPaint.setColor(Color.WHITE);
@@ -491,10 +660,22 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         textPaint.setTextSize(14f);
         textPaint.setColor(Color.rgb(164, 211, 226));
         canvas.drawText("NÍVEL " + level + "   XP " + xp + "/" + (level * 60) + "   OURO " + gold, 34f, 65f, textPaint);
+        textPaint.setTextSize(12f);
+        textPaint.setColor(Color.rgb(201, 185, 239));
+        canvas.drawText("ATQ " + attackPower() + "   DEF " + armorPower() + "   MAG " + magicPower() + "   DERROTADOS " + defeated, 34f, 86f, textPaint);
         paint.setColor(Color.rgb(42, 54, 69));
-        canvas.drawRoundRect(new RectF(34f, 72f, 234f, 82f), 5f, 5f, paint);
+        canvas.drawRoundRect(new RectF(34f, 93f, 234f, 101f), 5f, 5f, paint);
         paint.setColor(Color.rgb(83, 219, 137));
-        canvas.drawRoundRect(new RectF(34f, 72f, 34f + 200f * health / 100f, 82f), 5f, 5f, paint);
+        canvas.drawRoundRect(new RectF(34f, 93f, 34f + 200f * Math.min(1f, health / maxHealth()), 101f), 5f, 5f, paint);
+
+        paint.setColor(inventoryVisible ? Color.rgb(80, 105, 176) : Color.argb(220, 8, 15, 29));
+        canvas.drawRoundRect(new RectF(570f, 18f, 705f, 86f), 12f, 12f, paint);
+        textPaint.setTextSize(18f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText("BOLSA", 600f, 48f, textPaint);
+        textPaint.setTextSize(12f);
+        textPaint.setColor(Color.rgb(178, 212, 226));
+        canvas.drawText(inventory.size() + "/12 itens", 598f, 69f, textPaint);
 
         paint.setColor(Color.argb(220, 8, 15, 29));
         canvas.drawRoundRect(new RectF(730f, 18f, 1134f, 86f), 12f, 12f, paint);
@@ -503,8 +684,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         canvas.drawText("MISSÃO PRINCIPAL", 750f, 42f, textPaint);
         textPaint.setTextSize(14f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("Fale com Ava e derrote 5 inimigos", 750f, 65f, textPaint);
+        canvas.drawText("Ava: derrote 5 inimigos e equipe o saque", 750f, 65f, textPaint);
 
+        drawBossBar(canvas);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2f);
         paint.setColor(Color.argb(160, 133, 215, 232));
@@ -526,6 +708,28 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         }
     }
 
+    private void drawBossBar(Canvas canvas) {
+        Enemy boss = null;
+        for (Enemy enemy : enemies) {
+            if (enemy.type.boss) {
+                boss = enemy;
+                break;
+            }
+        }
+        if (boss == null) return;
+        paint.setColor(Color.argb(220, 20, 8, 22));
+        canvas.drawRoundRect(new RectF(300f, 105f, 852f, 135f), 8f, 8f, paint);
+        paint.setColor(Color.rgb(103, 25, 50));
+        canvas.drawRoundRect(new RectF(316f, 115f, 836f, 125f), 5f, 5f, paint);
+        paint.setColor(Color.rgb(247, 79, 103));
+        canvas.drawRoundRect(new RectF(316f, 115f, 316f + 520f * Math.max(0f, boss.health / boss.type.maxHealth), 125f), 5f, 5f, paint);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(13f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText(boss.type.title + "  —  CHEFE", 576f, 112f, textPaint);
+        textPaint.setTextAlign(Paint.Align.LEFT);
+    }
+
     private void drawDialogue(Canvas canvas) {
         paint.setColor(Color.argb(235, 19, 24, 38));
         canvas.drawRoundRect(new RectF(130f, 190f, 1022f, 400f), 18f, 18f, paint);
@@ -539,11 +743,67 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         canvas.drawText("AVA, COMANDANTE", 170f, 235f, textPaint);
         textPaint.setTextSize(20f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("A Bruma cresce ao norte. A fortaleza precisa de um", 170f, 285f, textPaint);
-        canvas.drawText("herói. Explore, abra o baú e derrote os inimigos.", 170f, 318f, textPaint);
+        canvas.drawText("A Bruma cresce ao norte. Derrote os novos monstros e", 170f, 285f, textPaint);
+        canvas.drawText("o Titã para conquistar equipamento lendário.", 170f, 318f, textPaint);
         textPaint.setTextSize(15f);
         textPaint.setColor(Color.rgb(170, 209, 222));
-        canvas.drawText("Toque novamente em AÇÃO para fechar", 170f, 365f, textPaint);
+        canvas.drawText("Use BOLSA para equipar armas, armaduras e acessórios", 170f, 365f, textPaint);
+    }
+
+    private void drawInventory(Canvas canvas) {
+        paint.setColor(Color.argb(220, 0, 0, 0));
+        canvas.drawRect(0f, 0f, 1152f, 648f, paint);
+        paint.setColor(Color.rgb(18, 25, 43));
+        canvas.drawRoundRect(new RectF(135f, 105f, 1017f, 550f), 18f, 18f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(3f);
+        paint.setColor(Color.rgb(106, 162, 203));
+        canvas.drawRoundRect(new RectF(135f, 105f, 1017f, 550f), 18f, 18f, paint);
+        paint.setStyle(Paint.Style.FILL);
+        textPaint.setTextSize(27f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText("INVENTÁRIO E EQUIPAMENTOS", 175f, 148f, textPaint);
+        textPaint.setTextSize(14f);
+        textPaint.setColor(Color.rgb(171, 211, 229));
+        canvas.drawText("Toque em um item para equipar ou usar", 175f, 173f, textPaint);
+        drawEquipmentSlot(canvas, 175f, 195f, 390f, 267f, "ARMA", equippedWeapon);
+        drawEquipmentSlot(canvas, 410f, 195f, 625f, 267f, "ARMADURA", equippedArmor);
+        drawEquipmentSlot(canvas, 645f, 195f, 970f, 267f, "ACESSÓRIO", equippedAccessory);
+        for (int index = 0; index < inventory.size(); index++) {
+            int column = index % 3;
+            int row = index / 3;
+            float left = 175f + column * 270f;
+            float top = 292f + row * 60f;
+            drawItemSlot(canvas, left, top, left + 250f, top + 50f, inventory.get(index));
+        }
+        textPaint.setTextSize(13f);
+        textPaint.setColor(Color.rgb(185, 198, 213));
+        canvas.drawText("Atributos: ATQ " + attackPower() + "  DEF " + armorPower() + "  MAG " + magicPower()
+                + "  Vida máxima " + Math.round(maxHealth()), 175f, 530f, textPaint);
+    }
+
+    private void drawEquipmentSlot(Canvas canvas, float left, float top, float right, float bottom, String slot, Item item) {
+        paint.setColor(Color.rgb(35, 45, 70));
+        canvas.drawRoundRect(new RectF(left, top, right, bottom), 10f, 10f, paint);
+        textPaint.setTextSize(11f);
+        textPaint.setColor(Color.rgb(139, 197, 221));
+        canvas.drawText(slot, left + 12f, top + 18f, textPaint);
+        textPaint.setTextSize(15f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText(item == null ? "vazio" : item.name, left + 12f, top + 43f, textPaint);
+    }
+
+    private void drawItemSlot(Canvas canvas, float left, float top, float right, float bottom, Item item) {
+        paint.setColor(item.consumable ? Color.rgb(73, 42, 55) : Color.rgb(43, 57, 79));
+        canvas.drawRoundRect(new RectF(left, top, right, bottom), 8f, 8f, paint);
+        textPaint.setTextSize(14f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText(item.name, left + 12f, top + 21f, textPaint);
+        textPaint.setTextSize(11f);
+        textPaint.setColor(Color.rgb(172, 203, 218));
+        String stats = item.consumable ? "USAR  quantidade " + item.quantity
+                : item.slot + "  ATQ+" + item.attack + " DEF+" + item.armor + " MAG+" + item.magic;
+        canvas.drawText(stats, left + 12f, top + 40f, textPaint);
     }
 
     private void drawGameOver(Canvas canvas) {
@@ -563,14 +823,27 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getActionMasked();
         int index = event.getActionIndex();
+        float x = toWorldX(event.getX(index));
+        float y = toWorldY(event.getY(index));
         if (gameOver && (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)) {
             resetRpg();
             return true;
         }
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            if (inventoryVisible) {
+                if (x > 550f && x < 730f && y < 110f) {
+                    inventoryVisible = false;
+                } else {
+                    handleInventoryTap(x, y);
+                }
+                return true;
+            }
+            if (x > 550f && x < 730f && y < 110f) {
+                inventoryVisible = true;
+                actionHeld = false;
+                return true;
+            }
             int pointerId = event.getPointerId(index);
-            float x = toWorldX(event.getX(index));
-            float y = toWorldY(event.getY(index));
             if (x < 360f && movePointerId == -1) {
                 movePointerId = pointerId;
                 updateMove(x, y);
@@ -579,10 +852,11 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                 aimX = clamp(x + cameraX, 0f, WORLD_WIDTH);
                 aimY = clamp(y + cameraY, 0f, WORLD_HEIGHT);
                 actionHeld = true;
-                if (x > 850f && y > 480f) interact();
+                if (x > 970f && y > 480f) interact();
             }
             return true;
         }
+        if (inventoryVisible) return true;
         if (action == MotionEvent.ACTION_MOVE) {
             if (movePointerId != -1) {
                 int moveIndex = event.findPointerIndex(movePointerId);
@@ -611,6 +885,15 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             return true;
         }
         return true;
+    }
+
+    private void handleInventoryTap(float x, float y) {
+        if (x < 160f || x > 1000f || y < 280f || y > 530f) return;
+        int column = (int) ((x - 175f) / 270f);
+        int row = (int) ((y - 292f) / 60f);
+        if (column < 0 || column > 2 || row < 0) return;
+        int index = row * 3 + column;
+        if (index >= 0 && index < inventory.size()) equipItem(inventory.get(index));
     }
 
     private void updateMove(float x, float y) {
@@ -651,20 +934,59 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         return Math.max(min, Math.min(max, value));
     }
 
+    private enum EnemyType {
+        WOLF("Lobo da Bruma", 34f, 22f, 42f, 20, 8, Color.rgb(177, 95, 118), false,
+                new Item("Presa Sombria", "ACESSÓRIO", 1, 0, 1, false)),
+        SPIDER("Aranha de Cristal", 28f, 25f, 34f, 24, 6, Color.rgb(117, 192, 170), false,
+                new Item("Veneno Cristalino", "ACESSÓRIO", 3, 0, 2, false)),
+        SENTINEL("Sentinela de Pedra", 42f, 18f, 58f, 32, 12, Color.rgb(104, 139, 177), false,
+                new Item("Fragmento de Pedra", "ARMADURA", 0, 4, 0, false)),
+        CULTIST("Cultista da Cinza", 30f, 25f, 46f, 28, 10, Color.rgb(161, 86, 181), false,
+                new Item("Faixa Arcana", "ACESSÓRIO", 0, 1, 4, false)),
+        TROLL("Troll do Pântano", 53f, 16f, 96f, 45, 18, Color.rgb(84, 158, 103), false,
+                new Item("Pele de Troll", "ARMADURA", 0, 7, 0, false)),
+        NECROMANCER("Necromante do Véu", 42f, 20f, 130f, 85, 25, Color.rgb(124, 76, 172), true,
+                new Item("Coroa do Véu", "ACESSÓRIO", 4, 2, 10, false)),
+        BRUMA_TITAN("Titã da Bruma", 68f, 13f, 320f, 150, 70, Color.rgb(176, 55, 83), true,
+                new Item("Núcleo do Titã", "ARMA", 22, 0, 13, false));
+
+        final String title;
+        final float radius;
+        final float speed;
+        final float maxHealth;
+        final int xp;
+        final int gold;
+        final int color;
+        final boolean boss;
+        final Item drop;
+        final float damage;
+
+        EnemyType(String title, float radius, float speed, float maxHealth, int xp, int gold,
+                  int color, boolean boss, Item drop) {
+            this.title = title;
+            this.radius = radius;
+            this.speed = speed;
+            this.maxHealth = maxHealth;
+            this.xp = xp;
+            this.gold = gold;
+            this.color = color;
+            this.boss = boss;
+            this.drop = drop;
+            this.damage = boss ? 22f : 12f;
+        }
+    }
+
     private static final class Enemy {
         float x;
         float y;
-        final String name;
-        final float radius;
-        final float speed;
-        float health = 42f;
+        final EnemyType type;
+        float health;
 
-        Enemy(float x, float y, String name, float radius, float speed) {
+        Enemy(float x, float y, EnemyType type) {
             this.x = x;
             this.y = y;
-            this.name = name;
-            this.radius = radius;
-            this.speed = speed;
+            this.type = type;
+            this.health = type.maxHealth;
         }
     }
 
@@ -673,14 +995,53 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float y;
         final float dx;
         final float dy;
+        final float damage;
         final float radius = 7f;
         float life = 1.4f;
 
-        MagicBolt(float x, float y, float dx, float dy) {
+        MagicBolt(float x, float y, float dx, float dy, float damage) {
             this.x = x;
             this.y = y;
             this.dx = dx;
             this.dy = dy;
+            this.damage = damage;
+        }
+    }
+
+    private static final class Item {
+        final String name;
+        final String slot;
+        final int attack;
+        final int armor;
+        final int magic;
+        final boolean consumable;
+        int quantity = 1;
+
+        Item(String name, String slot, int attack, int armor, int magic, boolean consumable) {
+            this.name = name;
+            this.slot = slot;
+            this.attack = attack;
+            this.armor = armor;
+            this.magic = magic;
+            this.consumable = consumable;
+        }
+
+        Item copy() {
+            Item copy = new Item(name, slot, attack, armor, magic, consumable);
+            copy.quantity = quantity;
+            return copy;
+        }
+    }
+
+    private static final class ItemPickup {
+        final float x;
+        final float y;
+        final Item item;
+
+        ItemPickup(float x, float y, Item item) {
+            this.x = x;
+            this.y = y;
+            this.item = item;
         }
     }
 }
