@@ -6,6 +6,8 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Path;
+import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.view.MotionEvent;
@@ -17,20 +19,35 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 
+/**
+ * Primeira camada RPG Android do jogo. A lógica desktop permanece separada
+ * porque ela depende de AWT; esta tela reproduz a exploração essencial com
+ * Canvas nativo e reutiliza os atlases do Content Studio.
+ */
 public final class GameView extends SurfaceView implements SurfaceHolder.Callback, Runnable {
-    private static final float WORLD_WIDTH = 1152f;
-    private static final float WORLD_HEIGHT = 648f;
-    private static final float PLAYER_RADIUS = 22f;
+    private static final int COLS = 32;
+    private static final int ROWS = 20;
+    private static final float TILE = 48f;
+    private static final float WORLD_WIDTH = COLS * TILE;
+    private static final float WORLD_HEIGHT = ROWS * TILE;
+    private static final float PLAYER_RADIUS = 15f;
     private static final float MAX_DT = 0.04f;
+    private static final char GRASS = 'g';
+    private static final char PATH = 'p';
+    private static final char WATER = 'w';
+    private static final char WALL = 'x';
+    private static final char TREE = 't';
+    private static final char BRIDGE = 'b';
 
     private final SurfaceHolder holder;
     private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
-    private final Random random = new Random(0xF1A5E);
-    private final List<Shot> shots = new ArrayList<>();
+    private final Random random = new Random(0xB7A4F0L);
+    private final char[][] tiles = new char[ROWS][COLS];
     private final List<Enemy> enemies = new ArrayList<>();
-    private final Bitmap scoutBitmap;
-    private final Bitmap blasterBitmap;
+    private final List<MagicBolt> bolts = new ArrayList<>();
+    private final Bitmap terrainAtlas;
+    private final Bitmap baseAtlas;
 
     private Thread gameThread;
     private volatile boolean running;
@@ -38,22 +55,30 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private float scale = 1f;
     private float offsetX;
     private float offsetY;
+    private float cameraX;
+    private float cameraY;
 
-    private float playerX = WORLD_WIDTH / 2f;
-    private float playerY = WORLD_HEIGHT / 2f;
-    private float aimX = WORLD_WIDTH - 120f;
-    private float aimY = WORLD_HEIGHT / 2f;
+    private float playerX;
+    private float playerY;
+    private float aimX;
+    private float aimY;
     private float moveAxisX;
     private float moveAxisY;
-    private boolean firing;
+    private boolean actionHeld;
     private int movePointerId = -1;
-    private int aimPointerId = -1;
-    private float fireTimer;
+    private int actionPointerId = -1;
+    private float attackTimer;
     private float spawnTimer;
-    private float elapsed;
+    private float messageTimer;
     private float health = 100f;
-    private int score;
+    private int level = 1;
+    private int xp;
+    private int gold = 25;
+    private int defeated;
+    private boolean chestOpened;
+    private boolean dialogueVisible;
     private boolean gameOver;
+    private String message = "Explore a Clareira da Bruma";
 
     public GameView(Context context) {
         super(context);
@@ -61,14 +86,92 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         holder.addCallback(this);
         setFocusable(true);
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
-        scoutBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.scout_ref);
-        blasterBitmap = BitmapFactory.decodeResource(getResources(), R.drawable.blaster_clean);
+        terrainAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.terrain_atlas);
+        baseAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.base_out_atlas);
+        resetRpg();
+    }
+
+    private void resetRpg() {
+        buildMap();
+        playerX = TILE * 4.5f;
+        playerY = TILE * 10.5f;
+        aimX = playerX + TILE;
+        aimY = playerY;
+        health = 100f;
+        level = 1;
+        xp = 0;
+        gold = 25;
+        defeated = 0;
+        chestOpened = false;
+        dialogueVisible = false;
+        gameOver = false;
+        attackTimer = 0f;
+        spawnTimer = 1.4f;
+        messageTimer = 3f;
+        message = "Explore a Clareira da Bruma";
+        enemies.clear();
+        bolts.clear();
+        spawnInitialEnemies();
+    }
+
+    private void buildMap() {
+        for (int y = 0; y < ROWS; y++) {
+            for (int x = 0; x < COLS; x++) tiles[y][x] = GRASS;
+        }
+        for (int x = 0; x < COLS; x++) {
+            tiles[0][x] = TREE;
+            tiles[ROWS - 1][x] = TREE;
+        }
+        for (int y = 0; y < ROWS; y++) {
+            tiles[y][0] = TREE;
+            tiles[y][COLS - 1] = TREE;
+        }
+        for (int x = 2; x < COLS - 2; x++) {
+            tiles[10][x] = PATH;
+            if (x > 9 && x < 16) tiles[10][x] = BRIDGE;
+        }
+        for (int y = 3; y < 11; y++) tiles[y][16] = PATH;
+        for (int y = 4; y < 9; y++) {
+            tiles[y][23] = WATER;
+            tiles[y][24] = WATER;
+        }
+        for (int x = 21; x < 28; x++) {
+            tiles[3][x] = WATER;
+            tiles[4][x] = WATER;
+        }
+        for (int y = 13; y < 18; y++) {
+            for (int x = 5; x < 9; x++) tiles[y][x] = WATER;
+        }
+        for (int y = 14; y < 18; y++) tiles[y][7] = BRIDGE;
+        for (int y = 5; y < 9; y++) {
+            for (int x = 26; x < 31; x++) tiles[y][x] = WALL;
+        }
+        for (int x = 26; x < 31; x++) tiles[9][x] = PATH;
+        placeTrees(3, 2, 5, 6);
+        placeTrees(11, 12, 15, 17);
+        placeTrees(18, 13, 21, 18);
+        tiles[10][4] = PATH;
+        tiles[10][5] = PATH;
+        tiles[10][6] = PATH;
+        tiles[10][16] = BRIDGE;
+    }
+
+    private void placeTrees(int left, int top, int right, int bottom) {
+        for (int y = top; y <= bottom; y++) {
+            for (int x = left; x <= right; x++) {
+                if ((x * 7 + y * 11) % 5 == 0 && tiles[y][x] == GRASS) tiles[y][x] = TREE;
+            }
+        }
+    }
+
+    private void spawnInitialEnemies() {
+        enemies.add(new Enemy(TILE * 12.5f, TILE * 7.5f, "Lobo da Bruma", 34f, 22f));
+        enemies.add(new Enemy(TILE * 19.5f, TILE * 13.5f, "Sentinela", 42f, 18f));
+        enemies.add(new Enemy(TILE * 25.5f, TILE * 11.5f, "Cultista", 30f, 25f));
     }
 
     public void resumeGame() {
-        if (holder.getSurface().isValid() && gameThread == null) {
-            startLoop();
-        }
+        if (holder.getSurface().isValid() && gameThread == null) startLoop();
     }
 
     public void pauseGame() {
@@ -79,7 +182,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (running) return;
         running = true;
         previousNanos = System.nanoTime();
-        gameThread = new Thread(this, "first-game-android-loop");
+        gameThread = new Thread(this, "first-game-rpg-android-loop");
         gameThread.start();
     }
 
@@ -112,24 +215,22 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void calculateViewport(int width, int height) {
-        scale = Math.min(width / WORLD_WIDTH, height / WORLD_HEIGHT);
-        offsetX = (width - WORLD_WIDTH * scale) * 0.5f;
-        offsetY = (height - WORLD_HEIGHT * scale) * 0.5f;
+        scale = Math.min(width / 1152f, height / 648f);
+        offsetX = (width - 1152f * scale) * 0.5f;
+        offsetY = (height - 648f * scale) * 0.5f;
     }
 
     @Override
     public void run() {
         while (running) {
             long now = System.nanoTime();
-            float dt = Math.min(MAX_DT, (now - previousNanos) / 1_000_000_000f);
+            float dt = Math.min(MAX_DT, Math.max(0.001f, (now - previousNanos) / 1_000_000_000f));
             previousNanos = now;
-            if (dt <= 0f) dt = 0.016f;
             update(dt);
             drawFrame();
             long frameNanos = System.nanoTime() - now;
-            long sleepMillis = Math.max(1L, 16L - frameNanos / 1_000_000L);
             try {
-                Thread.sleep(sleepMillis);
+                Thread.sleep(Math.max(1L, 16L - frameNanos / 1_000_000L));
             } catch (InterruptedException ignored) {
                 Thread.currentThread().interrupt();
                 running = false;
@@ -139,81 +240,131 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void update(float dt) {
         if (gameOver) return;
-        elapsed += dt;
-        fireTimer -= dt;
+        attackTimer -= dt;
         spawnTimer -= dt;
-
-        float moveLength = (float) Math.sqrt(moveAxisX * moveAxisX + moveAxisY * moveAxisY);
-        float inputX = moveLength > 1f ? moveAxisX / moveLength : moveAxisX;
-        float inputY = moveLength > 1f ? moveAxisY / moveLength : moveAxisY;
-        playerX = clamp(playerX + inputX * 260f * dt, PLAYER_RADIUS, WORLD_WIDTH - PLAYER_RADIUS);
-        playerY = clamp(playerY + inputY * 260f * dt, PLAYER_RADIUS, WORLD_HEIGHT - PLAYER_RADIUS);
-
-        if (firing && fireTimer <= 0f) {
-            spawnShot();
-            fireTimer = 0.16f;
+        messageTimer -= dt;
+        if (actionHeld && attackTimer <= 0f) {
+            attackTimer = 0.38f;
+            fireBolt();
         }
-        if (spawnTimer <= 0f && enemies.size() < 14) {
-            spawnEnemy();
-            spawnTimer = Math.max(0.42f, 1.2f - elapsed * 0.01f);
+        float length = (float) Math.sqrt(moveAxisX * moveAxisX + moveAxisY * moveAxisY);
+        float vx = length > 1f ? moveAxisX / length : moveAxisX;
+        float vy = length > 1f ? moveAxisY / length : moveAxisY;
+        movePlayer(vx * 180f * dt, vy * 180f * dt);
+        cameraX = clamp(playerX - 576f, 0f, WORLD_WIDTH - 1152f);
+        cameraY = clamp(playerY - 324f, 0f, WORLD_HEIGHT - 648f);
+        updateEnemies(dt);
+        updateBolts(dt);
+        if (spawnTimer <= 0f && enemies.size() < 7) {
+            spawnWanderingEnemy();
+            spawnTimer = 5.5f;
         }
+        if (messageTimer <= 0f && !dialogueVisible) message = "Toque no lado direito para usar magia";
+    }
 
+    private void movePlayer(float dx, float dy) {
+        float nextX = clamp(playerX + dx, TILE * 1.5f, WORLD_WIDTH - TILE * 1.5f);
+        float nextY = clamp(playerY + dy, TILE * 1.5f, WORLD_HEIGHT - TILE * 1.5f);
+        if (walkable(nextX, playerY)) playerX = nextX;
+        if (walkable(playerX, nextY)) playerY = nextY;
+    }
+
+    private boolean walkable(float x, float y) {
+        int col = (int) (x / TILE);
+        int row = (int) (y / TILE);
+        if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return false;
+        return tiles[row][col] != WATER && tiles[row][col] != TREE && tiles[row][col] != WALL;
+    }
+
+    private void updateEnemies(float dt) {
         for (Enemy enemy : enemies) {
             float dx = playerX - enemy.x;
             float dy = playerY - enemy.y;
             float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
-            enemy.x += dx / distance * enemy.speed * dt;
-            enemy.y += dy / distance * enemy.speed * dt;
+            if (distance < TILE * 7f) {
+                enemy.x += dx / distance * enemy.speed * dt;
+                enemy.y += dy / distance * enemy.speed * dt;
+            }
             if (distance < PLAYER_RADIUS + enemy.radius) {
-                health -= 18f * dt;
+                health -= 12f * dt;
                 if (health <= 0f) {
                     health = 0f;
                     gameOver = true;
+                    message = "A Clareira venceu você";
                 }
             }
         }
+    }
 
-        Iterator<Shot> shotIterator = shots.iterator();
-        while (shotIterator.hasNext()) {
-            Shot shot = shotIterator.next();
-            shot.x += shot.dx * 620f * dt;
-            shot.y += shot.dy * 620f * dt;
-            shot.life -= dt;
-            boolean removed = shot.life <= 0f || shot.x < -20f || shot.y < -20f
-                    || shot.x > WORLD_WIDTH + 20f || shot.y > WORLD_HEIGHT + 20f;
-            if (!removed) {
+    private void updateBolts(float dt) {
+        Iterator<MagicBolt> boltIterator = bolts.iterator();
+        while (boltIterator.hasNext()) {
+            MagicBolt bolt = boltIterator.next();
+            bolt.x += bolt.dx * 360f * dt;
+            bolt.y += bolt.dy * 360f * dt;
+            bolt.life -= dt;
+            boolean remove = bolt.life <= 0f || !insideWorld(bolt.x, bolt.y);
+            if (!remove) {
                 Iterator<Enemy> enemyIterator = enemies.iterator();
                 while (enemyIterator.hasNext()) {
                     Enemy enemy = enemyIterator.next();
-                    float dx = shot.x - enemy.x;
-                    float dy = shot.y - enemy.y;
-                    float hitDistance = shot.radius + enemy.radius;
-                    if (dx * dx + dy * dy <= hitDistance * hitDistance) {
+                    float dx = bolt.x - enemy.x;
+                    float dy = bolt.y - enemy.y;
+                    float hit = bolt.radius + enemy.radius;
+                    if (dx * dx + dy * dy <= hit * hit) {
                         enemyIterator.remove();
-                        score += 10;
-                        removed = true;
+                        defeated++;
+                        xp += 20;
+                        gold += 3;
+                        message = enemy.name + " derrotado  +20 XP";
+                        messageTimer = 2.5f;
+                        if (xp >= level * 60) {
+                            xp -= level * 60;
+                            level++;
+                            health = 100f;
+                            message = "Nível " + level + " alcançado";
+                        }
+                        remove = true;
                         break;
                     }
                 }
             }
-            if (removed) shotIterator.remove();
+            if (remove) boltIterator.remove();
         }
     }
 
-    private void spawnShot() {
-        float dx = aimX - playerX;
-        float dy = aimY - playerY;
-        float length = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
-        shots.add(new Shot(playerX + dx / length * 26f, playerY + dy / length * 26f,
-                dx / length, dy / length));
+    private void spawnWanderingEnemy() {
+        float x = TILE * (10 + random.nextInt(17));
+        float y = TILE * (4 + random.nextInt(13));
+        if (walkable(x, y)) enemies.add(new Enemy(x, y, "Errante", 28f, 20f));
     }
 
-    private void spawnEnemy() {
-        int edge = random.nextInt(4);
-        float x = edge == 0 ? -32f : edge == 1 ? WORLD_WIDTH + 32f : random.nextFloat() * WORLD_WIDTH;
-        float y = edge == 2 ? -32f : edge == 3 ? WORLD_HEIGHT + 32f : random.nextFloat() * WORLD_HEIGHT;
-        enemies.add(new Enemy(x, y, 38f + random.nextFloat() * 12f,
-                42f + Math.min(30f, elapsed * 0.4f)));
+    private void fireBolt() {
+        float dx = aimX - playerX;
+        float dy = aimY - playerY;
+        float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
+        bolts.add(new MagicBolt(playerX + dx / distance * 20f, playerY + dy / distance * 20f,
+                dx / distance, dy / distance));
+    }
+
+    private void interact() {
+        float npcX = TILE * 15.5f;
+        float npcY = TILE * 10.5f;
+        float chestX = TILE * 27.5f;
+        float chestY = TILE * 8.5f;
+        if (distance(playerX, playerY, npcX, npcY) < TILE * 2f) {
+            dialogueVisible = !dialogueVisible;
+            message = dialogueVisible ? "Ava: A Bruma cresce ao norte. Derrote 5 inimigos." : "Explore a Clareira da Bruma";
+            messageTimer = 5f;
+        } else if (!chestOpened && distance(playerX, playerY, chestX, chestY) < TILE * 2f) {
+            chestOpened = true;
+            gold += 50;
+            message = "Baú aberto: +50 ouro";
+            messageTimer = 4f;
+        } else if (distance(playerX, playerY, TILE * 16f, TILE * 10f) < TILE * 2f) {
+            message = "Ponte para a Fortaleza das Cinzas";
+            messageTimer = 3f;
+        }
     }
 
     private void drawFrame() {
@@ -223,7 +374,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             canvas = holder.lockCanvas();
             if (canvas == null) return;
             calculateViewport(canvas.getWidth(), canvas.getHeight());
-            canvas.drawColor(Color.rgb(5, 8, 18));
+            canvas.drawColor(Color.rgb(8, 12, 22));
             canvas.save();
             canvas.translate(offsetX, offsetY);
             canvas.scale(scale, scale);
@@ -235,250 +386,301 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void drawWorld(Canvas canvas) {
-        paint.setStyle(Paint.Style.FILL);
-        paint.setColor(Color.rgb(8, 17, 32));
-        canvas.drawRect(0f, 0f, WORLD_WIDTH, WORLD_HEIGHT, paint);
-        drawGrid(canvas);
+        canvas.save();
+        canvas.clipRect(0f, 0f, 1152f, 648f);
+        canvas.translate(-cameraX, -cameraY);
+        for (int row = 0; row < ROWS; row++) {
+            for (int col = 0; col < COLS; col++) drawTile(canvas, col, row, tiles[row][col]);
+        }
+        drawWorldObjects(canvas);
         drawEnemies(canvas);
-        drawShots(canvas);
+        drawBolts(canvas);
         drawPlayer(canvas);
+        canvas.restore();
         drawHud(canvas);
+        if (dialogueVisible) drawDialogue(canvas);
         if (gameOver) drawGameOver(canvas);
     }
 
-    private void drawGrid(Canvas canvas) {
-        paint.setStrokeWidth(1f);
-        paint.setColor(Color.rgb(18, 39, 59));
-        for (int x = 0; x <= WORLD_WIDTH; x += 48) canvas.drawLine(x, 0, x, WORLD_HEIGHT, paint);
-        for (int y = 0; y <= WORLD_HEIGHT; y += 48) canvas.drawLine(0, y, WORLD_WIDTH, y, paint);
-        paint.setColor(Color.rgb(30, 70, 86));
-        canvas.drawRect(22, 22, WORLD_WIDTH - 22, WORLD_HEIGHT - 22, paint);
+    private void drawTile(Canvas canvas, int col, int row, char type) {
+        float left = col * TILE;
+        float top = row * TILE;
+        RectF target = new RectF(left, top, left + TILE, top + TILE);
+        if (type == WATER) {
+            drawAtlas(canvas, terrainAtlas, new Rect(320, 288, 384, 352), target);
+        } else if (type == PATH) {
+            drawAtlas(canvas, terrainAtlas, new Rect(256, 640, 320, 704), target);
+        } else if (type == BRIDGE) {
+            drawAtlas(canvas, baseAtlas, new Rect(416, 512, 480, 576), target);
+        } else if (type == WALL) {
+            drawAtlas(canvas, baseAtlas, new Rect(800, 704, 864, 768), target);
+        } else if (type == TREE) {
+            drawAtlas(canvas, terrainAtlas, new Rect(800, 384, 864, 448), target);
+        } else {
+            drawAtlas(canvas, terrainAtlas, new Rect(192, 640, 256, 704), target);
+        }
     }
 
-    private void drawPlayer(Canvas canvas) {
-        paint.setColor(Color.rgb(53, 190, 240));
-        canvas.drawCircle(playerX, playerY, PLAYER_RADIUS + 7f, paint);
-        paint.setColor(Color.rgb(17, 33, 54));
-        canvas.drawCircle(playerX, playerY, PLAYER_RADIUS, paint);
-        paint.setColor(Color.rgb(117, 230, 255));
-        PathUtil.drawShip(canvas, playerX, playerY, aimX, aimY, paint);
-        if (blasterBitmap != null) {
-            RectF icon = new RectF(playerX - 13f, playerY - 13f, playerX + 13f, playerY + 13f);
-            paint.setAlpha(120);
-            canvas.drawBitmap(blasterBitmap, null, icon, paint);
-            paint.setAlpha(255);
+    private void drawWorldObjects(Canvas canvas) {
+        drawAtlas(canvas, baseAtlas, new Rect(704, 704, 832, 832),
+                new RectF(TILE * 26f, TILE * 5f, TILE * 30f, TILE * 9f));
+        drawAtlas(canvas, baseAtlas, new Rect(416, 512, 544, 640),
+                new RectF(TILE * 14f, TILE * 9f, TILE * 18f, TILE * 11f));
+        drawCharacter(canvas, TILE * 15.5f, TILE * 10.5f, Color.rgb(255, 210, 120));
+        if (!chestOpened) {
+            drawAtlas(canvas, baseAtlas, new Rect(640, 576, 704, 640),
+                    new RectF(TILE * 27f, TILE * 8f, TILE * 28f, TILE * 9f));
         }
     }
 
     private void drawEnemies(Canvas canvas) {
         for (Enemy enemy : enemies) {
-            if (scoutBitmap != null) {
-                RectF target = new RectF(enemy.x - enemy.radius, enemy.y - enemy.radius,
-                        enemy.x + enemy.radius, enemy.y + enemy.radius);
-                canvas.drawBitmap(scoutBitmap, null, target, paint);
-            } else {
-                paint.setColor(Color.rgb(190, 61, 92));
-                canvas.drawCircle(enemy.x, enemy.y, enemy.radius, paint);
-                paint.setColor(Color.rgb(255, 130, 150));
-                canvas.drawCircle(enemy.x, enemy.y, enemy.radius * 0.35f, paint);
-            }
+            RectF target = new RectF(enemy.x - enemy.radius, enemy.y - enemy.radius,
+                    enemy.x + enemy.radius, enemy.y + enemy.radius);
+            drawAtlas(canvas, baseAtlas, new Rect(0, 0, 96, 96), target);
+            paint.setColor(Color.argb(220, 115, 33, 57));
+            canvas.drawRect(enemy.x - enemy.radius, enemy.y - enemy.radius - 8f,
+                    enemy.x + enemy.radius, enemy.y - enemy.radius - 3f, paint);
+            paint.setColor(Color.rgb(247, 91, 106));
+            canvas.drawRect(enemy.x - enemy.radius, enemy.y - enemy.radius - 8f,
+                    enemy.x - enemy.radius + enemy.radius * 2f * Math.min(1f, enemy.health / 42f),
+                    enemy.y - enemy.radius - 3f, paint);
         }
     }
 
-    private void drawShots(Canvas canvas) {
-        for (Shot shot : shots) {
-            paint.setColor(Color.rgb(255, 215, 92));
-            canvas.drawCircle(shot.x, shot.y, shot.radius + 5f, paint);
+    private void drawBolts(Canvas canvas) {
+        for (MagicBolt bolt : bolts) {
+            paint.setColor(Color.rgb(116, 225, 255));
+            canvas.drawCircle(bolt.x, bolt.y, bolt.radius + 5f, paint);
             paint.setColor(Color.WHITE);
-            canvas.drawCircle(shot.x, shot.y, shot.radius, paint);
+            canvas.drawCircle(bolt.x, bolt.y, bolt.radius, paint);
         }
+    }
+
+    private void drawPlayer(Canvas canvas) {
+        drawCharacter(canvas, playerX, playerY, Color.rgb(105, 196, 255));
+        float dx = aimX - playerX;
+        float dy = aimY - playerY;
+        float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
+        paint.setColor(Color.argb(170, 211, 246, 255));
+        paint.setStrokeWidth(4f);
+        canvas.drawLine(playerX + dx / distance * 12f, playerY + dy / distance * 12f,
+                playerX + dx / distance * 25f, playerY + dy / distance * 25f, paint);
+    }
+
+    private void drawCharacter(Canvas canvas, float x, float y, int color) {
+        paint.setColor(Color.argb(90, 0, 0, 0));
+        canvas.drawOval(new RectF(x - 21f, y + 13f, x + 21f, y + 24f), paint);
+        paint.setColor(Color.rgb(30, 42, 57));
+        canvas.drawCircle(x, y, 19f, paint);
+        paint.setColor(color);
+        canvas.drawCircle(x, y - 4f, 14f, paint);
+        paint.setColor(Color.rgb(255, 224, 176));
+        canvas.drawCircle(x, y - 10f, 8f, paint);
+        paint.setColor(Color.rgb(33, 49, 77));
+        canvas.drawRect(x - 13f, y - 20f, x + 13f, y - 14f, paint);
     }
 
     private void drawHud(Canvas canvas) {
-        paint.setColor(Color.argb(210, 4, 10, 22));
-        canvas.drawRoundRect(new RectF(18f, 14f, 384f, 76f), 12f, 12f, paint);
-        textPaint.setTextSize(21f);
+        paint.setColor(Color.argb(224, 8, 15, 29));
+        canvas.drawRoundRect(new RectF(18f, 14f, 480f, 90f), 12f, 12f, paint);
+        textPaint.setTextAlign(Paint.Align.LEFT);
+        textPaint.setTextSize(22f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("FIRST GAME", 34f, 40f, textPaint);
+        canvas.drawText("CLAREIRA DA BRUMA", 34f, 42f, textPaint);
         textPaint.setTextSize(14f);
-        textPaint.setColor(Color.rgb(145, 195, 218));
-        canvas.drawText("BLASTER  •  SCORE " + score, 34f, 61f, textPaint);
+        textPaint.setColor(Color.rgb(164, 211, 226));
+        canvas.drawText("NÍVEL " + level + "   XP " + xp + "/" + (level * 60) + "   OURO " + gold, 34f, 65f, textPaint);
+        paint.setColor(Color.rgb(42, 54, 69));
+        canvas.drawRoundRect(new RectF(34f, 72f, 234f, 82f), 5f, 5f, paint);
+        paint.setColor(Color.rgb(83, 219, 137));
+        canvas.drawRoundRect(new RectF(34f, 72f, 34f + 200f * health / 100f, 82f), 5f, 5f, paint);
 
-        paint.setColor(Color.rgb(37, 45, 62));
-        canvas.drawRoundRect(new RectF(WORLD_WIDTH - 238f, 20f, WORLD_WIDTH - 30f, 35f), 7f, 7f, paint);
-        paint.setColor(Color.rgb(77, 220, 135));
-        canvas.drawRoundRect(new RectF(WORLD_WIDTH - 238f, 20f,
-                WORLD_WIDTH - 238f + 208f * health / 100f, 35f), 7f, 7f, paint);
-        textPaint.setTextSize(13f);
+        paint.setColor(Color.argb(220, 8, 15, 29));
+        canvas.drawRoundRect(new RectF(730f, 18f, 1134f, 86f), 12f, 12f, paint);
+        textPaint.setTextSize(15f);
+        textPaint.setColor(Color.rgb(255, 226, 145));
+        canvas.drawText("MISSÃO PRINCIPAL", 750f, 42f, textPaint);
+        textPaint.setTextSize(14f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("HULL " + Math.round(health) + "%", WORLD_WIDTH - 230f, 57f, textPaint);
+        canvas.drawText("Fale com Ava e derrote 5 inimigos", 750f, 65f, textPaint);
 
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2f);
-        paint.setColor(Color.argb(150, 111, 205, 239));
-        canvas.drawCircle(90f, WORLD_HEIGHT - 90f, 56f, paint);
-        canvas.drawCircle(WORLD_WIDTH - 90f, WORLD_HEIGHT - 90f, 56f, paint);
+        paint.setColor(Color.argb(160, 133, 215, 232));
+        canvas.drawCircle(92f, 570f, 58f, paint);
+        canvas.drawCircle(1060f, 570f, 58f, paint);
         paint.setStyle(Paint.Style.FILL);
         textPaint.setTextSize(12f);
-        textPaint.setColor(Color.rgb(147, 204, 223));
-        canvas.drawText("MOVE", 71f, WORLD_HEIGHT - 86f, textPaint);
-        canvas.drawText("AIM / FIRE", WORLD_WIDTH - 123f, WORLD_HEIGHT - 86f, textPaint);
+        textPaint.setColor(Color.rgb(166, 216, 230));
+        canvas.drawText("MOVER", 67f, 574f, textPaint);
+        canvas.drawText("AÇÃO", 1037f, 574f, textPaint);
+        if (messageTimer > 0f || dialogueVisible) {
+            paint.setColor(Color.argb(210, 5, 12, 23));
+            canvas.drawRoundRect(new RectF(250f, 574f, 902f, 626f), 12f, 12f, paint);
+            textPaint.setTextAlign(Paint.Align.CENTER);
+            textPaint.setTextSize(15f);
+            textPaint.setColor(Color.WHITE);
+            canvas.drawText(message, 576f, 606f, textPaint);
+            textPaint.setTextAlign(Paint.Align.LEFT);
+        }
+    }
+
+    private void drawDialogue(Canvas canvas) {
+        paint.setColor(Color.argb(235, 19, 24, 38));
+        canvas.drawRoundRect(new RectF(130f, 190f, 1022f, 400f), 18f, 18f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(3f);
+        paint.setColor(Color.rgb(212, 176, 91));
+        canvas.drawRoundRect(new RectF(130f, 190f, 1022f, 400f), 18f, 18f, paint);
+        paint.setStyle(Paint.Style.FILL);
+        textPaint.setTextSize(24f);
+        textPaint.setColor(Color.rgb(255, 220, 134));
+        canvas.drawText("AVA, COMANDANTE", 170f, 235f, textPaint);
+        textPaint.setTextSize(20f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText("A Bruma cresce ao norte. A fortaleza precisa de um", 170f, 285f, textPaint);
+        canvas.drawText("herói. Explore, abra o baú e derrote os inimigos.", 170f, 318f, textPaint);
+        textPaint.setTextSize(15f);
+        textPaint.setColor(Color.rgb(170, 209, 222));
+        canvas.drawText("Toque novamente em AÇÃO para fechar", 170f, 365f, textPaint);
     }
 
     private void drawGameOver(Canvas canvas) {
-        paint.setColor(Color.argb(190, 0, 0, 0));
-        canvas.drawRect(0f, 0f, WORLD_WIDTH, WORLD_HEIGHT, paint);
+        paint.setColor(Color.argb(205, 0, 0, 0));
+        canvas.drawRect(0f, 0f, 1152f, 648f, paint);
         textPaint.setTextAlign(Paint.Align.CENTER);
-        textPaint.setTextSize(42f);
+        textPaint.setTextSize(44f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("SHIP LOST", WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f - 18f, textPaint);
-        textPaint.setTextSize(18f);
-        textPaint.setColor(Color.rgb(155, 219, 240));
-        canvas.drawText("Tap anywhere to restart", WORLD_WIDTH / 2f, WORLD_HEIGHT / 2f + 24f, textPaint);
+        canvas.drawText("HERÓI DERROTADO", 576f, 292f, textPaint);
+        textPaint.setTextSize(19f);
+        textPaint.setColor(Color.rgb(183, 220, 232));
+        canvas.drawText("Toque para voltar à Clareira", 576f, 340f, textPaint);
         textPaint.setTextAlign(Paint.Align.LEFT);
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         int action = event.getActionMasked();
+        int index = event.getActionIndex();
         if (gameOver && (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)) {
-            restartGame();
+            resetRpg();
             return true;
         }
-        int actionIndex = event.getActionIndex();
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
-            int pointerId = event.getPointerId(actionIndex);
-            float worldX = toWorldX(event.getX(actionIndex));
-            float worldY = toWorldY(event.getY(actionIndex));
-            if (worldX < WORLD_WIDTH * 0.5f && movePointerId == -1) {
+            int pointerId = event.getPointerId(index);
+            float x = toWorldX(event.getX(index));
+            float y = toWorldY(event.getY(index));
+            if (x < 360f && movePointerId == -1) {
                 movePointerId = pointerId;
-                updateMove(worldX, worldY);
-            } else if (aimPointerId == -1) {
-                aimPointerId = pointerId;
-                aimX = clamp(worldX, 0f, WORLD_WIDTH);
-                aimY = clamp(worldY, 0f, WORLD_HEIGHT);
-                firing = true;
+                updateMove(x, y);
+            } else if (actionPointerId == -1) {
+                actionPointerId = pointerId;
+                aimX = clamp(x + cameraX, 0f, WORLD_WIDTH);
+                aimY = clamp(y + cameraY, 0f, WORLD_HEIGHT);
+                actionHeld = true;
+                if (x > 850f && y > 480f) interact();
             }
             return true;
         }
         if (action == MotionEvent.ACTION_MOVE) {
             if (movePointerId != -1) {
-                int index = event.findPointerIndex(movePointerId);
-                if (index >= 0) updateMove(toWorldX(event.getX(index)), toWorldY(event.getY(index)));
+                int moveIndex = event.findPointerIndex(movePointerId);
+                if (moveIndex >= 0) updateMove(toWorldX(event.getX(moveIndex)), toWorldY(event.getY(moveIndex)));
             }
-            if (aimPointerId != -1) {
-                int index = event.findPointerIndex(aimPointerId);
-                if (index >= 0) {
-                    aimX = clamp(toWorldX(event.getX(index)), 0f, WORLD_WIDTH);
-                    aimY = clamp(toWorldY(event.getY(index)), 0f, WORLD_HEIGHT);
+            if (actionPointerId != -1) {
+                int actionIndex = event.findPointerIndex(actionPointerId);
+                if (actionIndex >= 0) {
+                    aimX = clamp(toWorldX(event.getX(actionIndex)) + cameraX, 0f, WORLD_WIDTH);
+                    aimY = clamp(toWorldY(event.getY(actionIndex)) + cameraY, 0f, WORLD_HEIGHT);
                 }
             }
             return true;
         }
-        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP
-                || action == MotionEvent.ACTION_CANCEL) {
-            int pointerId = event.getPointerId(actionIndex);
+        if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_POINTER_UP || action == MotionEvent.ACTION_CANCEL) {
+            int pointerId = event.getPointerId(index);
             if (pointerId == movePointerId) {
                 movePointerId = -1;
                 moveAxisX = 0f;
                 moveAxisY = 0f;
             }
-            if (pointerId == aimPointerId) {
-                aimPointerId = -1;
-                firing = false;
+            if (pointerId == actionPointerId) {
+                actionPointerId = -1;
+                actionHeld = false;
             }
             return true;
         }
         return true;
     }
 
-    private void updateMove(float worldX, float worldY) {
-        float centerX = 90f;
-        float centerY = WORLD_HEIGHT - 90f;
-        moveAxisX = (worldX - centerX) / 56f;
-        moveAxisY = (worldY - centerY) / 56f;
-        float length = (float) Math.sqrt(moveAxisX * moveAxisX + moveAxisY * moveAxisY);
-        if (length > 1f) {
-            moveAxisX /= length;
-            moveAxisY /= length;
-        }
+    private void updateMove(float x, float y) {
+        float dx = (x - 92f) / 58f;
+        float dy = (y - 570f) / 58f;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        moveAxisX = length > 1f ? dx / length : dx;
+        moveAxisY = length > 1f ? dy / length : dy;
     }
 
     private float toWorldX(float screenX) {
-        return (screenX - offsetX) / scale;
+        return screenX / scale;
     }
 
     private float toWorldY(float screenY) {
-        return (screenY - offsetY) / scale;
+        return screenY / scale;
     }
 
-    private void restartGame() {
-        playerX = WORLD_WIDTH / 2f;
-        playerY = WORLD_HEIGHT / 2f;
-        aimX = WORLD_WIDTH - 120f;
-        aimY = WORLD_HEIGHT / 2f;
-        health = 100f;
-        score = 0;
-        elapsed = 0f;
-        fireTimer = 0f;
-        spawnTimer = 0.2f;
-        shots.clear();
-        enemies.clear();
-        gameOver = false;
+    private void drawAtlas(Canvas canvas, Bitmap atlas, Rect source, RectF target) {
+        if (atlas != null) canvas.drawBitmap(atlas, source, target, paint);
+        else {
+            paint.setColor(Color.rgb(62, 107, 76));
+            canvas.drawRect(target, paint);
+        }
+    }
+
+    private static float distance(float ax, float ay, float bx, float by) {
+        float dx = ax - bx;
+        float dy = ay - by;
+        return (float) Math.sqrt(dx * dx + dy * dy);
+    }
+
+    private static boolean insideWorld(float x, float y) {
+        return x >= 0f && y >= 0f && x <= WORLD_WIDTH && y <= WORLD_HEIGHT;
     }
 
     private static float clamp(float value, float min, float max) {
         return Math.max(min, Math.min(max, value));
     }
 
-    private static final class Shot {
-        float x;
-        float y;
-        final float dx;
-        final float dy;
-        final float radius = 7f;
-        float life = 1.5f;
-
-        Shot(float x, float y, float dx, float dy) {
-            this.x = x;
-            this.y = y;
-            this.dx = dx;
-            this.dy = dy;
-        }
-    }
-
     private static final class Enemy {
         float x;
         float y;
+        final String name;
         final float radius;
         final float speed;
+        float health = 42f;
 
-        Enemy(float x, float y, float radius, float speed) {
+        Enemy(float x, float y, String name, float radius, float speed) {
             this.x = x;
             this.y = y;
+            this.name = name;
             this.radius = radius;
             this.speed = speed;
         }
     }
 
-    private static final class PathUtil {
-        static void drawShip(Canvas canvas, float x, float y, float targetX, float targetY, Paint paint) {
-            float angle = (float) Math.atan2(targetY - y, targetX - x);
-            float cos = (float) Math.cos(angle);
-            float sin = (float) Math.sin(angle);
-            float tipX = x + cos * 28f;
-            float tipY = y + sin * 28f;
-            float leftX = x - cos * 17f + sin * 15f;
-            float leftY = y - sin * 17f - cos * 15f;
-            float rightX = x - cos * 17f - sin * 15f;
-            float rightY = y - sin * 17f + cos * 15f;
-            android.graphics.Path path = new android.graphics.Path();
-            path.moveTo(tipX, tipY);
-            path.lineTo(leftX, leftY);
-            path.lineTo(x - cos * 7f, y - sin * 7f);
-            path.lineTo(rightX, rightY);
-            path.close();
-            canvas.drawPath(path, paint);
+    private static final class MagicBolt {
+        float x;
+        float y;
+        final float dx;
+        final float dy;
+        final float radius = 7f;
+        float life = 1.4f;
+
+        MagicBolt(float x, float y, float dx, float dy) {
+            this.x = x;
+            this.y = y;
+            this.dx = dx;
+            this.dy = dy;
         }
     }
 }
