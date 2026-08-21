@@ -27,5 +27,9 @@ androidApp/local.properties
 androidApp/.gradle/
 androidApp/build/
 
+# The Android build copies the authoritative Content Studio RPG package here.
+# Generated source assets remain in res/assets/generated/rpg_sprites/.
+androidApp/app/src/main/assets/rpg/
+
 # Compiled output (local build only)
 bin/*.class
