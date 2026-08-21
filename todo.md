@@ -88,16 +88,31 @@
 
 ## Animações direcionais — caminhada e ataque
 
-- [ ] Auditar os sprites RPG, o loop de atualização e os pontos de direção existentes no runtime Android.
-- [ ] Estender o Content Studio com contratos e exportadores de frames para caminhar e atacar nas quatro direções.
-- [ ] Gerar quadros transparentes e sincronizá-los automaticamente com os assets do APK.
-- [ ] Aplicar seleção temporal de frames, direção e feedback de ataque ao protagonista e aos NPCs.
-- [ ] Executar regressões, `validateContent` e o build Android antes da publicação.
+- [x] Auditar os sprites RPG, o loop de atualização e os pontos de direção existentes no runtime Android.
+- [x] Estender o Content Studio com contratos e exportadores de frames para caminhar e atacar nas quatro direções.
+- [x] Gerar quadros transparentes e sincronizá-los automaticamente com os assets do APK.
+- [x] Aplicar seleção temporal de frames, direção e feedback de ataque ao protagonista e aos NPCs.
+- [x] Executar regressões, `validateContent` e o build Android antes da publicação.
 
 ## Wiki, playthrough e onboarding interativo
 
-- [ ] Mapear os sistemas, missões e regiões que devem receber páginas navegáveis na wiki.
-- [ ] Criar um percurso de playthrough com etapas, objetivos, decisões e marcos de progresso.
-- [ ] Implementar onboarding contextual no APK para movimento, combate, interação, inventário e savegame.
-- [ ] Adicionar wiki e playthrough interativos ao portal com navegação, busca e acompanhamento de etapas.
-- [ ] Validar o APK, a página web e os links de download antes da publicação.
+- [x] Mapear os sistemas, missões e regiões que devem receber páginas navegáveis na wiki.
+- [x] Criar um percurso de playthrough com etapas, objetivos, decisões e marcos de progresso.
+- [x] Implementar onboarding contextual no APK para movimento, combate, interação, inventário e savegame.
+- [x] Adicionar wiki e playthrough interativos ao portal com navegação, busca e acompanhamento de etapas.
+- [x] Validar o APK, a página web e os links de download antes da publicação.
+
+## Imersão sonora — expedição RPG
+
+- [x] Mapear os gatilhos de passos, ataque, disparo, impacto, diálogo e conquista no loop Android.
+- [x] Produzir um pacote leve de efeitos sonoros com variação de passos, magia, aço e conversa.
+- [x] Integrar áudio de baixa latência com volume contextual, controle de repetição e liberação segura no ciclo da Activity.
+- [x] Sincronizar os sons com caminhada, combate e caixas de diálogo sem bloquear a renderização.
+- [x] Executar regressões, build Android e verificação do pacote final antes da publicação.
+
+## Conquistas — cinco marcos da expedição
+
+- [x] Modelar os cinco marcos de missão e o estado de conquista persistente no portal.
+- [x] Criar um mural interativo de conquistas com progresso, emblemas e transições acessíveis.
+- [x] Vincular o playthrough aos marcos desbloqueáveis e manter o progresso no navegador.
+- [x] Validar as rotas, o estado interativo e a experiência móvel antes da publicação.

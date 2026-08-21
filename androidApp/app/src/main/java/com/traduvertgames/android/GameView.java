@@ -63,6 +63,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private final List<ItemPickup> pickups = new ArrayList<>();
     private final List<Npc> npcs = new ArrayList<>();
     private final GameSaveStore saveStore;
+    private final RpgAudio audio;
     private final Bitmap terrainAtlas;
     private final Bitmap baseAtlas;
     private final Map<String, Bitmap> rpgSprites = new HashMap<>();
@@ -89,6 +90,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private float attackVisualTimer;
     private float animationClock;
     private float walkFrameTimer;
+    private float stepSoundTimer;
     private int walkFrame;
     private int playerDirection = DIR_RIGHT;
     private int attackDirection = DIR_RIGHT;
@@ -130,6 +132,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         baseAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.base_out_atlas);
         loadRpgSprites();
         saveStore = new GameSaveStore(context);
+        audio = new RpgAudio(context);
         if (!loadProgress(false)) resetRpg();
     }
 
@@ -157,6 +160,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         attackVisualTimer = 0f;
         animationClock = 0f;
         walkFrameTimer = 0f;
+        stepSoundTimer = 0f;
         walkFrame = 0;
         playerDirection = DIR_RIGHT;
         attackDirection = DIR_RIGHT;
@@ -250,11 +254,18 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     public void resumeGame() {
+        audio.resume();
         if (holder.getSurface().isValid() && gameThread == null) startLoop();
     }
 
     public void pauseGame() {
         stopLoop();
+        audio.pause();
+    }
+
+    public void releaseGame() {
+        stopLoop();
+        audio.release();
     }
 
     private synchronized void startLoop() {
@@ -339,8 +350,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (playerWalking) {
             walkFrameTimer += dt;
             walkFrame = ((int) (walkFrameTimer / 0.12f)) % 3;
+            stepSoundTimer -= dt;
+            if (stepSoundTimer <= 0f) {
+                audio.playStep();
+                stepSoundTimer = 0.31f;
+            }
         } else {
             walkFrame = 0;
+            stepSoundTimer = 0f;
         }
         cameraX = clamp(playerX - 576f, 0f, WORLD_WIDTH - 1152f);
         cameraY = clamp(playerY - 324f, 0f, WORLD_HEIGHT - 648f);
@@ -427,6 +444,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                     float hit = bolt.radius + enemy.type.radius;
                     if (dx * dx + dy * dy <= hit * hit) {
                         enemy.health -= bolt.damage;
+                        audio.playArcaneImpact(enemy.type.boss);
                         remove = true;
                         if (enemy.health <= 0f) {
                             enemyIterator.remove();
@@ -506,6 +524,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         attackDirection = directionFromVector(dx, dy);
         playerDirection = attackDirection;
         attackVisualTimer = 0.28f;
+        audio.playMagicCast();
         float damage = 8f + level * 2f + attackPower() + magicPower() * 1.6f;
         bolts.add(new MagicBolt(playerX + dx / distance * 20f, playerY + dy / distance * 20f,
                 dx / distance, dy / distance, damage, projectileSpriteId()));
@@ -545,6 +564,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private void openNpcDialogue(Npc npc) {
         advanceOnboarding(ONBOARDING_INTERACT);
         npc.attackVisualTimer = 0.28f;
+        audio.playDialogue();
         dialogueVisible = true;
         dialogueTitle = npc.name + ", " + npc.role;
         dialogueHint = "Toque em AÇÃO para encerrar o diálogo";
@@ -731,6 +751,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         moveAxisY = 0f;
         attackVisualTimer = 0f;
         walkFrame = 0;
+        stepSoundTimer = 0f;
         playerWalking = false;
         spawnInitialEnemies();
         message = feedback ? "Progresso carregado" : "Progresso retomado";
@@ -1328,11 +1349,13 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
             if (dialogueVisible) {
                 dialogueVisible = false;
+                audio.playUiConfirm();
                 return true;
             }
             if (inventoryVisible) {
                 if (x > 550f && x < 730f && y < 110f) {
                     inventoryVisible = false;
+                    audio.playUiConfirm();
                 } else {
                     handleInventoryTap(x, y);
                 }
@@ -1341,16 +1364,19 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             if (x > 250f && x < 348f && y < 90f) {
                 advanceOnboarding(ONBOARDING_SAVE);
                 saveProgress(true);
+                audio.playUiConfirm();
                 return true;
             }
             if (x > 362f && x < 460f && y < 90f) {
                 loadProgress(true);
+                audio.playUiConfirm();
                 return true;
             }
             if (x > 550f && x < 730f && y < 110f) {
                 inventoryVisible = true;
                 actionHeld = false;
                 advanceOnboarding(ONBOARDING_INVENTORY);
+                audio.playUiConfirm();
                 return true;
             }
             int pointerId = event.getPointerId(index);
@@ -1420,6 +1446,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (onboardingStep >= ONBOARDING_COMPLETE) {
             message = "Treinamento concluído: a Clareira agora é sua";
             messageTimer = 4f;
+            audio.playAchievement();
         } else {
             message = "Treinamento atualizado: " + onboardingHint();
             messageTimer = 2.8f;

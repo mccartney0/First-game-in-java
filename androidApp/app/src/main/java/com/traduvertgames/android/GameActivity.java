@@ -51,4 +51,10 @@ public final class GameActivity extends Activity {
         }
         super.onPause();
     }
+
+    @Override
+    protected void onDestroy() {
+        if (gameView != null) gameView.releaseGame();
+        super.onDestroy();
+    }
 }
