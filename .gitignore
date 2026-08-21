@@ -22,5 +22,10 @@ bin/AutoValidate.class
 bin/TeleportTest*.class
 bin/
 
+# Android local SDK configuration and generated build output
+androidApp/local.properties
+androidApp/.gradle/
+androidApp/build/
+
 # Compiled output (local build only)
-bin/
+bin/*.class
