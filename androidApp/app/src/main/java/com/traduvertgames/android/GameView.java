@@ -47,6 +47,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private final List<MagicBolt> bolts = new ArrayList<>();
     private final List<Item> inventory = new ArrayList<>();
     private final List<ItemPickup> pickups = new ArrayList<>();
+    private final List<Npc> npcs = new ArrayList<>();
+    private final GameSaveStore saveStore;
     private final Bitmap terrainAtlas;
     private final Bitmap baseAtlas;
 
@@ -80,6 +82,15 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private boolean dialogueVisible;
     private boolean inventoryVisible;
     private boolean gameOver;
+    private int questStage;
+    private int hunterKills;
+    private boolean relicCollected;
+    private boolean necromancerDefeated;
+    private boolean titanDefeated;
+    private String dialogueTitle = "AVA, COMANDANTE";
+    private String dialogueLineOne = "A Bruma cresce ao norte.";
+    private String dialogueLineTwo = "A Clareira precisa de você.";
+    private String dialogueHint = "Toque em AÇÃO para encerrar o diálogo";
     private String message = "Explore a Clareira da Bruma";
 
     private Item equippedWeapon;
@@ -94,7 +105,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         terrainAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.terrain_atlas);
         baseAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.base_out_atlas);
-        resetRpg();
+        saveStore = new GameSaveStore(context);
+        if (!loadProgress(false)) resetRpg();
     }
 
     private void resetRpg() {
@@ -109,6 +121,11 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         gold = 25;
         defeated = 0;
         chestOpened = false;
+        questStage = 0;
+        hunterKills = 0;
+        relicCollected = false;
+        necromancerDefeated = false;
+        titanDefeated = false;
         dialogueVisible = false;
         inventoryVisible = false;
         gameOver = false;
@@ -129,6 +146,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         inventory.add(new Item("Poção Rubra", "CONSUMÍVEL", 0, 0, 0, true));
         inventory.add(new Item("Lâmina de Ferro", "ARMA", 13, 0, 0, false));
         inventory.add(new Item("Botas do Vento", "ARMADURA", 0, 3, 2, false));
+        createNpcs();
         spawnInitialEnemies();
     }
 
@@ -182,14 +200,21 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         }
     }
 
+    private void createNpcs() {
+        npcs.clear();
+        npcs.add(new Npc("AVA", "COMANDANTE", TILE * 15.5f, TILE * 10.5f, Color.rgb(255, 210, 120)));
+        npcs.add(new Npc("ORIN", "CURANDEIRO", TILE * 8.5f, TILE * 11.5f, Color.rgb(132, 220, 188)));
+        npcs.add(new Npc("ILYRA", "CARTÓGRAFA", TILE * 22.5f, TILE * 9.5f, Color.rgb(173, 162, 255)));
+    }
+
     private void spawnInitialEnemies() {
         enemies.add(new Enemy(TILE * 12.5f, TILE * 7.5f, EnemyType.WOLF));
         enemies.add(new Enemy(TILE * 19.5f, TILE * 13.5f, EnemyType.SENTINEL));
         enemies.add(new Enemy(TILE * 25.5f, TILE * 11.5f, EnemyType.CULTIST));
         enemies.add(new Enemy(TILE * 8.5f, TILE * 8.5f, EnemyType.SPIDER));
         enemies.add(new Enemy(TILE * 21.5f, TILE * 15.5f, EnemyType.TROLL));
-        enemies.add(new Enemy(TILE * 28.5f, TILE * 14.5f, EnemyType.BRUMA_TITAN));
-        enemies.add(new Enemy(TILE * 24.5f, TILE * 17.5f, EnemyType.NECROMANCER));
+        if (!titanDefeated) enemies.add(new Enemy(TILE * 28.5f, TILE * 14.5f, EnemyType.BRUMA_TITAN));
+        if (!necromancerDefeated) enemies.add(new Enemy(TILE * 24.5f, TILE * 17.5f, EnemyType.NECROMANCER));
     }
 
     public void resumeGame() {
@@ -355,8 +380,13 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void onEnemyDefeated(Enemy enemy) {
         defeated++;
-        xp += enemy.type.boss ? 120 : enemy.type.xp;
-        gold += enemy.type.boss ? 30 : enemy.type.gold;
+        xp += enemy.type.xp;
+        gold += enemy.type.gold;
+        if (enemy.type == EnemyType.WOLF || enemy.type == EnemyType.SPIDER || enemy.type == EnemyType.CULTIST) {
+            hunterKills++;
+        }
+        if (enemy.type == EnemyType.NECROMANCER) necromancerDefeated = true;
+        if (enemy.type == EnemyType.BRUMA_TITAN) titanDefeated = true;
         Item drop = enemy.type.drop;
         if (drop != null) pickups.add(new ItemPickup(enemy.x, enemy.y, drop.copy()));
         if (enemy.type.boss) {
@@ -373,6 +403,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             message = "Nível " + level + " alcançado";
             messageTimer = 3f;
         }
+        updateQuestAfterCombat();
+        saveProgress(false);
     }
 
     private void collectNearbyItems() {
@@ -413,23 +445,118 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void interact() {
         if (inventoryVisible) return;
-        float npcX = TILE * 15.5f;
-        float npcY = TILE * 10.5f;
         float chestX = TILE * 27.5f;
         float chestY = TILE * 8.5f;
-        if (distance(playerX, playerY, npcX, npcY) < TILE * 2f) {
-            dialogueVisible = !dialogueVisible;
-            message = dialogueVisible ? "Ava: Derrote o Titã da Bruma e equipe o saque." : "Explore a Clareira da Bruma";
-            messageTimer = 5f;
+        for (Npc npc : npcs) {
+            if (distance(playerX, playerY, npc.x, npc.y) < TILE * 2f) {
+                openNpcDialogue(npc);
+                return;
+            }
+        }
+        if (!relicCollected && distance(playerX, playerY, TILE * 20.5f, TILE * 6.5f) < TILE * 2f) {
+            relicCollected = true;
+            addItem(new Item("Fragmento da Aurora", "ACESSÓRIO", 2, 1, 6, false));
+            message = "Relíquia recuperada: Fragmento da Aurora";
+            messageTimer = 4f;
+            updateQuestAfterCombat();
+            saveProgress(false);
         } else if (!chestOpened && distance(playerX, playerY, chestX, chestY) < TILE * 2f) {
             chestOpened = true;
             gold += 50;
             addItem(new Item("Amuleto da Bruma", "ACESSÓRIO", 2, 2, 7, false));
             message = "Baú aberto: +50 ouro e Amuleto da Bruma";
             messageTimer = 4f;
+            saveProgress(false);
         } else if (distance(playerX, playerY, TILE * 16f, TILE * 10f) < TILE * 2f) {
             message = "Ponte para a Fortaleza das Cinzas";
             messageTimer = 3f;
+        }
+    }
+
+    private void openNpcDialogue(Npc npc) {
+        dialogueVisible = true;
+        dialogueTitle = npc.name + ", " + npc.role;
+        dialogueHint = "Toque em AÇÃO para encerrar o diálogo";
+        if ("AVA".equals(npc.name)) {
+            advanceAvaQuest();
+        } else if ("ORIN".equals(npc.name)) {
+            dialogueLineOne = health < maxHealth() * 0.55f
+                    ? "Sua aura está ferida. Use uma Poção Rubra quando" : "A Bruma não perdoa os imprudentes. Mantenha";
+            dialogueLineTwo = health < maxHealth() * 0.55f
+                    ? "precisar; sua bolsa guarda tudo o que coleta." : "poções na bolsa e armadura equipada.";
+        } else {
+            dialogueLineOne = relicCollected
+                    ? "O Fragmento da Aurora reagiu ao seu toque. Agora" : "Siga o reflexo das águas ao norte. Uma relíquia";
+            dialogueLineTwo = relicCollected
+                    ? "leve-o a Ava e descubra onde a Bruma nasceu." : "antiga repousa perto da margem protegida.";
+        }
+    }
+
+    private void advanceAvaQuest() {
+        if (questStage == 0) {
+            questStage = 1;
+            dialogueLineOne = "Primeiro, prove que consegue sobreviver à Clareira.";
+            dialogueLineTwo = "Derrote 3 criaturas da Bruma e volte a mim.";
+        } else if (questStage == 1 && hunterKills >= 3) {
+            questStage = 2;
+            gold += 20;
+            dialogueLineOne = "A clareira reconhece sua coragem. Receba 20 ouro.";
+            dialogueLineTwo = "Agora encontre o Fragmento da Aurora junto à água.";
+        } else if (questStage == 2 && relicCollected) {
+            questStage = 3;
+            dialogueLineOne = "A relíquia aponta para o Necromante do Véu.";
+            dialogueLineTwo = "Derrote-o antes que ele fortaleça o Titã.";
+        } else if (questStage == 3 && necromancerDefeated) {
+            questStage = 4;
+            dialogueLineOne = "O véu caiu. O Titã da Bruma está vulnerável.";
+            dialogueLineTwo = "Atravesse a fortaleza e encerre a expedição.";
+        } else if (questStage == 4 && titanDefeated) {
+            questStage = 5;
+            gold += 100;
+            addItem(new Item("Selo da Clareira", "ACESSÓRIO", 5, 5, 12, false));
+            dialogueLineOne = "A Bruma se dissipou. Você protegeu a Clareira.";
+            dialogueLineTwo = "Receba 100 ouro e o Selo da Clareira.";
+        } else {
+            dialogueLineOne = currentQuest();
+            dialogueLineTwo = questDetail();
+        }
+        message = currentQuest();
+        messageTimer = 4f;
+        saveProgress(false);
+    }
+
+    private void updateQuestAfterCombat() {
+        if (questStage == 1 && hunterKills >= 3) {
+            message = "Objetivo concluído: retorne a Ava";
+            messageTimer = 4f;
+        } else if (questStage == 3 && necromancerDefeated) {
+            message = "O Necromante caiu: retorne a Ava";
+            messageTimer = 4f;
+        } else if (questStage == 4 && titanDefeated) {
+            message = "O Titã caiu: a Clareira está salva";
+            messageTimer = 4f;
+        }
+    }
+
+    private String currentQuest() {
+        switch (questStage) {
+            case 0: return "Fale com Ava no acampamento";
+            case 1: return "Caçada da Bruma: " + Math.min(3, hunterKills) + "/3 criaturas";
+            case 2: return "Recupere o Fragmento da Aurora";
+            case 3: return "Derrote o Necromante do Véu";
+            case 4: return "Derrote o Titã da Bruma";
+            default: return "Expedição concluída: proteja a Clareira";
+        }
+    }
+
+    private String questDetail() {
+        switch (questStage) {
+            case 0: return "A comandante aguarda perto da ponte.";
+            case 1: return "Lobos, aranhas e cultistas contam para a caçada.";
+            case 2: return "Ilyra marcou o local próximo às águas do norte.";
+            case 3: return "O Necromante espreita no sul da fortaleza.";
+            case 4: return "O Titã protege a saída nordeste.";
+            default: return "Converse com os NPCs ou explore livremente.";
         }
     }
 
@@ -441,6 +568,105 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             }
         }
         if (inventory.size() < 12) inventory.add(item);
+    }
+
+    public void persistProgress() {
+        saveProgress(false);
+    }
+
+    private void saveProgress(boolean feedback) {
+        GameSaveStore.SaveData data = new GameSaveStore.SaveData();
+        data.playerX = playerX;
+        data.playerY = playerY;
+        data.health = health;
+        data.level = level;
+        data.xp = xp;
+        data.gold = gold;
+        data.defeated = defeated;
+        data.chestOpened = chestOpened;
+        data.questStage = questStage;
+        data.hunterKills = hunterKills;
+        data.relicCollected = relicCollected;
+        data.necromancerDefeated = necromancerDefeated;
+        data.titanDefeated = titanDefeated;
+        data.weaponName = equippedWeapon == null ? "" : equippedWeapon.name;
+        data.armorName = equippedArmor == null ? "" : equippedArmor.name;
+        data.accessoryName = equippedAccessory == null ? "" : equippedAccessory.name;
+        for (Item item : inventory) {
+            GameSaveStore.ItemData savedItem = new GameSaveStore.ItemData();
+            savedItem.name = item.name;
+            savedItem.slot = item.slot;
+            savedItem.attack = item.attack;
+            savedItem.armor = item.armor;
+            savedItem.magic = item.magic;
+            savedItem.consumable = item.consumable;
+            savedItem.quantity = item.quantity;
+            data.items.add(savedItem);
+        }
+        saveStore.save(data);
+        if (feedback) {
+            message = "Progresso salvo nesta aventura";
+            messageTimer = 2.8f;
+        }
+    }
+
+    private boolean loadProgress(boolean feedback) {
+        GameSaveStore.SaveData data = saveStore.load();
+        if (data == null) {
+            if (feedback) {
+                message = "Nenhum progresso salvo encontrado";
+                messageTimer = 2.8f;
+            }
+            return false;
+        }
+        buildMap();
+        enemies.clear();
+        bolts.clear();
+        pickups.clear();
+        inventory.clear();
+        createNpcs();
+        for (GameSaveStore.ItemData savedItem : data.items) {
+            Item item = new Item(savedItem.name, savedItem.slot, savedItem.attack, savedItem.armor,
+                    savedItem.magic, savedItem.consumable);
+            item.quantity = savedItem.quantity;
+            inventory.add(item);
+        }
+        if (inventory.isEmpty()) return false;
+        playerX = clamp(data.playerX, TILE * 1.5f, WORLD_WIDTH - TILE * 1.5f);
+        playerY = clamp(data.playerY, TILE * 1.5f, WORLD_HEIGHT - TILE * 1.5f);
+        aimX = playerX + TILE;
+        aimY = playerY;
+        level = data.level;
+        xp = data.xp;
+        gold = data.gold;
+        defeated = data.defeated;
+        chestOpened = data.chestOpened;
+        questStage = data.questStage;
+        hunterKills = data.hunterKills;
+        relicCollected = data.relicCollected;
+        necromancerDefeated = data.necromancerDefeated;
+        titanDefeated = data.titanDefeated;
+        equippedWeapon = findItem(data.weaponName);
+        equippedArmor = findItem(data.armorName);
+        equippedAccessory = findItem(data.accessoryName);
+        health = Math.min(maxHealth(), Math.max(1f, data.health));
+        dialogueVisible = false;
+        inventoryVisible = false;
+        gameOver = false;
+        actionHeld = false;
+        moveAxisX = 0f;
+        moveAxisY = 0f;
+        spawnInitialEnemies();
+        message = feedback ? "Progresso carregado" : "Progresso retomado";
+        messageTimer = 3f;
+        return true;
+    }
+
+    private Item findItem(String name) {
+        for (Item item : inventory) {
+            if (item.name.equals(name)) return item;
+        }
+        return null;
     }
 
     private void equipItem(Item item) {
@@ -542,11 +768,30 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                 new RectF(TILE * 26f, TILE * 5f, TILE * 30f, TILE * 9f));
         drawAtlas(canvas, baseAtlas, new Rect(416, 512, 544, 640),
                 new RectF(TILE * 14f, TILE * 9f, TILE * 18f, TILE * 11f));
-        drawCharacter(canvas, TILE * 15.5f, TILE * 10.5f, Color.rgb(255, 210, 120));
+        for (Npc npc : npcs) drawNpc(canvas, npc);
+        if (!relicCollected) {
+            float relicX = TILE * 20.5f;
+            float relicY = TILE * 6.5f;
+            paint.setColor(Color.argb(100, 106, 222, 255));
+            canvas.drawCircle(relicX, relicY, 23f, paint);
+            paint.setColor(Color.rgb(198, 244, 255));
+            canvas.drawCircle(relicX, relicY, 11f, paint);
+            paint.setColor(Color.WHITE);
+            canvas.drawCircle(relicX, relicY - 4f, 4f, paint);
+        }
         if (!chestOpened) {
             drawAtlas(canvas, baseAtlas, new Rect(640, 576, 704, 640),
                     new RectF(TILE * 27f, TILE * 8f, TILE * 28f, TILE * 9f));
         }
+    }
+
+    private void drawNpc(Canvas canvas, Npc npc) {
+        drawCharacter(canvas, npc.x, npc.y, npc.color);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(11f);
+        textPaint.setColor(Color.rgb(255, 231, 154));
+        canvas.drawText(npc.name, npc.x, npc.y - 31f, textPaint);
+        textPaint.setTextAlign(Paint.Align.LEFT);
     }
 
     private void drawPickups(Canvas canvas) {
@@ -668,6 +913,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         paint.setColor(Color.rgb(83, 219, 137));
         canvas.drawRoundRect(new RectF(34f, 93f, 34f + 200f * Math.min(1f, health / maxHealth()), 101f), 5f, 5f, paint);
 
+        drawUtilityButton(canvas, 250f, "SALVAR", Color.rgb(62, 116, 104));
+        drawUtilityButton(canvas, 362f, "CARREGAR", Color.rgb(64, 83, 136));
+
         paint.setColor(inventoryVisible ? Color.rgb(80, 105, 176) : Color.argb(220, 8, 15, 29));
         canvas.drawRoundRect(new RectF(570f, 18f, 705f, 86f), 12f, 12f, paint);
         textPaint.setTextSize(18f);
@@ -684,7 +932,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         canvas.drawText("MISSÃO PRINCIPAL", 750f, 42f, textPaint);
         textPaint.setTextSize(14f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("Ava: derrote 5 inimigos e equipe o saque", 750f, 65f, textPaint);
+        canvas.drawText(currentQuest(), 750f, 65f, textPaint);
 
         drawBossBar(canvas);
         paint.setStyle(Paint.Style.STROKE);
@@ -706,6 +954,16 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             canvas.drawText(message, 576f, 606f, textPaint);
             textPaint.setTextAlign(Paint.Align.LEFT);
         }
+    }
+
+    private void drawUtilityButton(Canvas canvas, float left, String label, int color) {
+        paint.setColor(color);
+        canvas.drawRoundRect(new RectF(left, 18f, left + 98f, 58f), 10f, 10f, paint);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(11f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText(label, left + 49f, 43f, textPaint);
+        textPaint.setTextAlign(Paint.Align.LEFT);
     }
 
     private void drawBossBar(Canvas canvas) {
@@ -740,14 +998,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         paint.setStyle(Paint.Style.FILL);
         textPaint.setTextSize(24f);
         textPaint.setColor(Color.rgb(255, 220, 134));
-        canvas.drawText("AVA, COMANDANTE", 170f, 235f, textPaint);
+        canvas.drawText(dialogueTitle, 170f, 235f, textPaint);
         textPaint.setTextSize(20f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText("A Bruma cresce ao norte. Derrote os novos monstros e", 170f, 285f, textPaint);
-        canvas.drawText("o Titã para conquistar equipamento lendário.", 170f, 318f, textPaint);
+        canvas.drawText(dialogueLineOne, 170f, 285f, textPaint);
+        canvas.drawText(dialogueLineTwo, 170f, 318f, textPaint);
         textPaint.setTextSize(15f);
         textPaint.setColor(Color.rgb(170, 209, 222));
-        canvas.drawText("Use BOLSA para equipar armas, armaduras e acessórios", 170f, 365f, textPaint);
+        canvas.drawText(dialogueHint, 170f, 365f, textPaint);
     }
 
     private void drawInventory(Canvas canvas) {
@@ -826,16 +1084,28 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float x = toWorldX(event.getX(index));
         float y = toWorldY(event.getY(index));
         if (gameOver && (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN)) {
-            resetRpg();
+            if (!loadProgress(true)) resetRpg();
             return true;
         }
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
+            if (dialogueVisible) {
+                dialogueVisible = false;
+                return true;
+            }
             if (inventoryVisible) {
                 if (x > 550f && x < 730f && y < 110f) {
                     inventoryVisible = false;
                 } else {
                     handleInventoryTap(x, y);
                 }
+                return true;
+            }
+            if (x > 250f && x < 348f && y < 90f) {
+                saveProgress(true);
+                return true;
+            }
+            if (x > 362f && x < 460f && y < 90f) {
+                loadProgress(true);
                 return true;
             }
             if (x > 550f && x < 730f && y < 110f) {
@@ -1042,6 +1312,22 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             this.x = x;
             this.y = y;
             this.item = item;
+        }
+    }
+
+    private static final class Npc {
+        final String name;
+        final String role;
+        final float x;
+        final float y;
+        final int color;
+
+        Npc(String name, String role, float x, float y, int color) {
+            this.name = name;
+            this.role = role;
+            this.x = x;
+            this.y = y;
+            this.color = color;
         }
     }
 }

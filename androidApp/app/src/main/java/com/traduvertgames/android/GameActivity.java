@@ -45,7 +45,10 @@ public final class GameActivity extends Activity {
 
     @Override
     protected void onPause() {
-        if (gameView != null) gameView.pauseGame();
+        if (gameView != null) {
+            gameView.persistProgress();
+            gameView.pauseGame();
+        }
         super.onPause();
     }
 }
