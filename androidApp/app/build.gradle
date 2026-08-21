@@ -26,3 +26,13 @@ android {
         targetCompatibility JavaVersion.VERSION_17
     }
 }
+
+tasks.register('syncRpgContent', Copy) {
+    from(rootProject.file('../res/assets/generated/rpg_sprites'))
+    include('**/*.png', '**/*.json')
+    into(layout.projectDirectory.dir('src/main/assets/rpg'))
+}
+
+tasks.named('preBuild').configure {
+    dependsOn(tasks.named('syncRpgContent'))
+}

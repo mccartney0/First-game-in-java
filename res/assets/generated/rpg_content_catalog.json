@@ -2,5 +2,6 @@
   "schema": 1,
   "itemsDirectory": "items",
   "weaponsDirectory": "rpg_weapons",
+  "spritesDirectory": "rpg_sprites",
   "autoDiscovery": true
 }

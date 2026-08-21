@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_projectile",
+  "variant": "PROJECTILE_MIST",
+  "file": "projectile_mist.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Orbe de Bruma",
+  "gameplayScale": 0.72,
+  "damage": 6,
+  "cooldownTicks": 16,
+  "shotOriginX": 0.55,
+  "shotOriginY": 0.33,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}

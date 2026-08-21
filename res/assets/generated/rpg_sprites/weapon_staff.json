@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_weapon",
+  "variant": "WEAPON_STAFF",
+  "file": "weapon_staff.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Cajado de Bruma",
+  "gameplayScale": 1.0,
+  "damage": 3,
+  "cooldownTicks": 20,
+  "shotOriginX": 0.72,
+  "shotOriginY": 0.34,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}

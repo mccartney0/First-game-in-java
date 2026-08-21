@@ -14,9 +14,13 @@ import android.view.MotionEvent;
 import android.view.SurfaceHolder;
 import android.view.SurfaceView;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 /**
@@ -51,6 +55,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private final GameSaveStore saveStore;
     private final Bitmap terrainAtlas;
     private final Bitmap baseAtlas;
+    private final Map<String, Bitmap> rpgSprites = new HashMap<>();
 
     private Thread gameThread;
     private volatile boolean running;
@@ -105,6 +110,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         terrainAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.terrain_atlas);
         baseAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.base_out_atlas);
+        loadRpgSprites();
         saveStore = new GameSaveStore(context);
         if (!loadProgress(false)) resetRpg();
     }
@@ -202,9 +208,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void createNpcs() {
         npcs.clear();
-        npcs.add(new Npc("AVA", "COMANDANTE", TILE * 15.5f, TILE * 10.5f, Color.rgb(255, 210, 120)));
-        npcs.add(new Npc("ORIN", "CURANDEIRO", TILE * 8.5f, TILE * 11.5f, Color.rgb(132, 220, 188)));
-        npcs.add(new Npc("ILYRA", "CARTÓGRAFA", TILE * 22.5f, TILE * 9.5f, Color.rgb(173, 162, 255)));
+        npcs.add(new Npc("AVA", "COMANDANTE", "npc_commandant", TILE * 15.5f, TILE * 10.5f, Color.rgb(255, 210, 120)));
+        npcs.add(new Npc("ORIN", "CURANDEIRO", "npc_healer", TILE * 8.5f, TILE * 11.5f, Color.rgb(132, 220, 188)));
+        npcs.add(new Npc("ILYRA", "CARTÓGRAFA", "npc_cartographer", TILE * 22.5f, TILE * 9.5f, Color.rgb(173, 162, 255)));
     }
 
     private void spawnInitialEnemies() {
@@ -440,7 +446,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
         float damage = 8f + level * 2f + attackPower() + magicPower() * 1.6f;
         bolts.add(new MagicBolt(playerX + dx / distance * 20f, playerY + dy / distance * 20f,
-                dx / distance, dy / distance, damage));
+                dx / distance, dy / distance, damage, projectileSpriteId()));
     }
 
     private void interact() {
@@ -786,7 +792,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void drawNpc(Canvas canvas, Npc npc) {
-        drawCharacter(canvas, npc.x, npc.y, npc.color);
+        if (!drawRpgSprite(canvas, npc.spriteId, npc.x, npc.y, 42f)) {
+            drawCharacter(canvas, npc.x, npc.y, npc.color);
+        }
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(11f);
         textPaint.setColor(Color.rgb(255, 231, 154));
@@ -863,19 +871,26 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void drawBolts(Canvas canvas) {
         for (MagicBolt bolt : bolts) {
-            paint.setColor(Color.rgb(116, 225, 255));
-            canvas.drawCircle(bolt.x, bolt.y, bolt.radius + 5f, paint);
-            paint.setColor(Color.WHITE);
-            canvas.drawCircle(bolt.x, bolt.y, bolt.radius, paint);
+            if (!drawRpgSprite(canvas, bolt.spriteId, bolt.x, bolt.y, 27f)) {
+                paint.setColor(Color.rgb(116, 225, 255));
+                canvas.drawCircle(bolt.x, bolt.y, bolt.radius + 5f, paint);
+                paint.setColor(Color.WHITE);
+                canvas.drawCircle(bolt.x, bolt.y, bolt.radius, paint);
+            }
         }
     }
 
     private void drawPlayer(Canvas canvas) {
         int playerColor = equippedArmor == null ? Color.rgb(105, 196, 255) : Color.rgb(154, 131, 255);
-        drawCharacter(canvas, playerX, playerY, playerColor);
+        if (!drawRpgSprite(canvas, "hero", playerX, playerY, 46f)) {
+            drawCharacter(canvas, playerX, playerY, playerColor);
+        }
         float dx = aimX - playerX;
         float dy = aimY - playerY;
         float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
+        float weaponX = playerX + dx / distance * 20f;
+        float weaponY = playerY + dy / distance * 10f;
+        drawRpgSprite(canvas, weaponSpriteId(), weaponX, weaponY, 28f);
         paint.setColor(Color.argb(170, 211, 246, 255));
         paint.setStrokeWidth(4f);
         canvas.drawLine(playerX + dx / distance * 12f, playerY + dy / distance * 12f,
@@ -893,6 +908,40 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         canvas.drawCircle(x, y - 10f, 8f, paint);
         paint.setColor(Color.rgb(33, 49, 77));
         canvas.drawRect(x - 13f, y - 20f, x + 13f, y - 14f, paint);
+    }
+
+    private void loadRpgSprites() {
+        String[] ids = {"hero", "npc_commandant", "npc_healer", "npc_cartographer", "weapon_staff",
+                "weapon_rune_sword", "weapon_arc_rifle", "projectile_firebolt", "projectile_arcane", "projectile_mist"};
+        for (String id : ids) {
+            try (InputStream stream = getContext().getAssets().open("rpg/" + id + ".png")) {
+                Bitmap bitmap = BitmapFactory.decodeStream(stream);
+                if (bitmap != null) rpgSprites.put(id, bitmap);
+            } catch (IOException ignored) {
+                // O fallback procedural mantém o APK jogável antes da primeira exportação do Content Studio.
+            }
+        }
+    }
+
+    private boolean drawRpgSprite(Canvas canvas, String id, float x, float y, float size) {
+        Bitmap sprite = rpgSprites.get(id);
+        if (sprite == null) return false;
+        canvas.drawBitmap(sprite, null, new RectF(x - size * 0.5f, y - size * 0.62f,
+                x + size * 0.5f, y + size * 0.38f), paint);
+        return true;
+    }
+
+    private String weaponSpriteId() {
+        if (equippedWeapon == null) return "weapon_staff";
+        if (equippedWeapon.magic >= 10 || equippedWeapon.name.contains("Cajado")) return "weapon_staff";
+        if (equippedWeapon.attack >= 18 || equippedWeapon.name.contains("Lâmina")) return "weapon_rune_sword";
+        return "weapon_arc_rifle";
+    }
+
+    private String projectileSpriteId() {
+        if (equippedWeapon != null && equippedWeapon.magic >= 10) return "projectile_mist";
+        if (equippedWeapon != null && equippedWeapon.attack >= 18) return "projectile_firebolt";
+        return "projectile_arcane";
     }
 
     private void drawHud(Canvas canvas) {
@@ -1266,15 +1315,17 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         final float dx;
         final float dy;
         final float damage;
+        final String spriteId;
         final float radius = 7f;
         float life = 1.4f;
 
-        MagicBolt(float x, float y, float dx, float dy, float damage) {
+        MagicBolt(float x, float y, float dx, float dy, float damage, String spriteId) {
             this.x = x;
             this.y = y;
             this.dx = dx;
             this.dy = dy;
             this.damage = damage;
+            this.spriteId = spriteId;
         }
     }
 
@@ -1318,13 +1369,15 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private static final class Npc {
         final String name;
         final String role;
+        final String spriteId;
         final float x;
         final float y;
         final int color;
 
-        Npc(String name, String role, float x, float y, int color) {
+        Npc(String name, String role, String spriteId, float x, float y, int color) {
             this.name = name;
             this.role = role;
+            this.spriteId = spriteId;
             this.x = x;
             this.y = y;
             this.color = color;

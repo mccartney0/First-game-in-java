@@ -57,6 +57,13 @@ tasks.register('generateDefaultRpgContent', JavaExec) {
     mainClass = 'com.traduvertgames.tools.RpgContentBootstrap'
 }
 
+tasks.register('generateDefaultRpgVisualPack', JavaExec) {
+    group = 'application'
+    description = 'Gera sprites e manifestos de protagonista, NPCs, armas e projéteis para o RPG Android.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.traduvertgames.tools.RpgVisualContentBootstrap'
+}
+
 tasks.register('generateOutlandEnemyPack', JavaExec) {
     group = 'application'
     description = 'Gera os novos inimigos configuráveis da Charneca da Bruma, com sprites e manifestos 32×32.'

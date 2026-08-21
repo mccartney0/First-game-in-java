@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_hero",
+  "variant": "HERO",
+  "file": "hero.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Protagonista",
+  "gameplayScale": 1.0,
+  "damage": 0,
+  "cooldownTicks": 0,
+  "shotOriginX": 0.5,
+  "shotOriginY": 0.5,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}

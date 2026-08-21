@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_weapon",
+  "variant": "WEAPON_RUNE_SWORD",
+  "file": "weapon_rune_sword.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Espada Rúnica",
+  "gameplayScale": 1.0,
+  "damage": 3,
+  "cooldownTicks": 20,
+  "shotOriginX": 0.72,
+  "shotOriginY": 0.34,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}

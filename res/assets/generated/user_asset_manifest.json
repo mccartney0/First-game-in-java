@@ -5,7 +5,8 @@
   "notes": [
     "Os arquivos originais permanecem intactos em res/assets/incoming/user_uploads.",
     "Os atlases mantêm a dimensão e a grade; células individuais são geradas apenas para inspeção e reuso futuro.",
-    "Os efeitos de disparo são importados, mas o jogo atual ainda usa desenho procedural em BulletShoot."
+    "Os efeitos de disparo são importados, mas o jogo atual ainda usa desenho procedural em BulletShoot.",
+    "Sprites RPG de override devem usar os nomes rpg_hero.png, rpg_npc_*.png, rpg_weapon_*.png ou rpg_projectile_*.png; o importador normaliza cada arquivo para 32×32 com alfa."
   ],
   "assets": [
     {

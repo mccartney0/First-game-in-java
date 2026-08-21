@@ -146,6 +146,22 @@ def import_single(source: Path | None, destination: str, padding: int = 8,
     return str(output.relative_to(ROOT))
 
 
+def import_rpg_sprite(source: Path | None, sprite_id: str) -> str | None:
+    """Importa um override visual 32×32 para o pacote RPG Android.
+
+    Uploads de artistas podem ter outra dimensão. O Content Studio remove o
+    fundo conectado, recorta o sujeito e usa nearest-neighbor para manter o
+    caráter pixel-art antes de sincronizar o asset com o APK.
+    """
+    if source is None:
+        return None
+    image = trim(flood_remove_background(rgba(source)), padding=2)
+    image = image.resize((32, 32), Image.Resampling.NEAREST)
+    output = GENERATED / "rpg_sprites" / f"{sprite_id}.png"
+    save_png(image, output)
+    return str(output.relative_to(ROOT))
+
+
 def import_atlas(source: Path | None, destination: str) -> str | None:
     if source is None:
         return None
@@ -224,6 +240,32 @@ def main() -> None:
         add_record(records, source, "reference", False, [output] if output else [],
                    "Referência visual de efeito de disparo; reservada para futura integração de muzzle flash/trail")
 
+    # Overrides artísticos do RPG Android. Para substituir a arte exportada pelo
+    # Content Studio, use estes nomes no diretório de uploads. O módulo Android
+    # sincroniza res/assets/generated/rpg_sprites/ em todo preBuild.
+    rpg_sprite_specs = [
+        ("hero", "rpg_hero.png", "rpg_hero_sprite", "GameView protagonista e inventário"),
+        ("npc_commandant", "rpg_npc_commandant.png", "rpg_npc_sprite", "GameView NPC Ava, comandante"),
+        ("npc_healer", "rpg_npc_healer.png", "rpg_npc_sprite", "GameView NPC Orin, curandeiro"),
+        ("npc_cartographer", "rpg_npc_cartographer.png", "rpg_npc_sprite", "GameView NPC Ilyra, cartógrafa"),
+        ("weapon_staff", "rpg_weapon_staff.png", "rpg_weapon_sprite", "GameView arma de magia"),
+        ("weapon_rune_sword", "rpg_weapon_rune_sword.png", "rpg_weapon_sprite", "GameView arma corpo a corpo"),
+        ("weapon_arc_rifle", "rpg_weapon_arc_rifle.png", "rpg_weapon_sprite", "GameView arma de disparo arcano"),
+        ("projectile_firebolt", "rpg_projectile_firebolt.png", "rpg_projectile_sprite", "GameView tiro de fogo"),
+        ("projectile_arcane", "rpg_projectile_arcane.png", "rpg_projectile_sprite", "GameView tiro arcano"),
+        ("projectile_mist", "rpg_projectile_mist.png", "rpg_projectile_sprite", "GameView tiro da bruma"),
+    ]
+    for sprite_id, suffix, category, usage in rpg_sprite_specs:
+        source = find_asset(suffix)
+        output = import_rpg_sprite(source, sprite_id)
+        add_record(records, source, category, True, [output] if output else [], usage)
+
+    rpg_reference = find_asset("pasted_file_gQSynT_image.png")
+    rpg_reference_output = copy_reference(rpg_reference, "rpg_character_weapon_reference.png")
+    add_record(records, rpg_reference, "reference", False,
+               [rpg_reference_output] if rpg_reference_output else [],
+               "Referência de direção de arte para protagonista, NPCs, armas e projéteis RPG")
+
     scout = find_asset("pasted_file_vIjJqn_scout_ref.png")
     scout_output = import_single(scout, "enemies/scout_ref.png", padding=6)
     add_record(records, scout, "enemy_sprite", True, [scout_output] if scout_output else [],
@@ -269,6 +311,7 @@ def main() -> None:
             "Os arquivos originais permanecem intactos em res/assets/incoming/user_uploads.",
             "Os atlases mantêm a dimensão e a grade; células individuais são geradas apenas para inspeção e reuso futuro.",
             "Os efeitos de disparo são importados, mas o jogo atual ainda usa desenho procedural em BulletShoot.",
+            "Sprites RPG de override devem usar os nomes rpg_hero.png, rpg_npc_*.png, rpg_weapon_*.png ou rpg_projectile_*.png; o importador normaliza cada arquivo para 32×32 com alfa.",
         ],
         "assets": records,
     }

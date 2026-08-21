@@ -76,3 +76,12 @@
 - [x] Mapear quais assets gerados já estão ligados ao runtime e quais permanecem apenas como referências visuais.
 - [x] Criar uma habilidade especial exportável para o Soberano da Bruma no Content Studio.
 - [x] Integrar a habilidade ao combate do chefe e cobrir o cooldown, o efeito e o manifesto em regressões.
+
+## Expansão visual — personagens, armas e projéteis
+
+- [x] Consolidar e publicar a atualização de quests, NPCs dialogáveis, savegame e portal web já implementada.
+- [x] Auditar o atlas de referência recebido e os formatos/manifestos aceitos pelo Content Studio.
+- [x] Criar sprites consistentes para protagonista, NPCs, armas e projéteis com fundo transparente e escala de gameplay.
+- [x] Integrar os novos sprites e metadados de ponto de disparo no runtime Android RPG.
+- [x] Estender o importador do Content Studio para recortar, catalogar e validar automaticamente personagens, armas e tiros.
+- [x] Executar `test`, `validateContent` e o build Android; atualizar o portal e publicar os artefatos.

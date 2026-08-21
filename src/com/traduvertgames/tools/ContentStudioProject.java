@@ -30,6 +30,30 @@ public final class ContentStudioProject {
     }
     public enum ConsumableEffect { CURA, MANA, FÔLEGO, TRIAGEM }
     public enum RpgWeaponStyle { ESPADA, MACHADO, CAJADO, ADAGA }
+    public enum RpgSpriteKind {
+        HERO("hero", "Protagonista"),
+        NPC_COMMANDANT("npc", "Ava, Comandante"),
+        NPC_HEALER("npc", "Orin, Curador"),
+        NPC_CARTOGRAPHER("npc", "Neris, Cartógrafa"),
+        WEAPON_STAFF("weapon", "Cajado de Bruma"),
+        WEAPON_RUNE_SWORD("weapon", "Espada Rúnica"),
+        WEAPON_ARC_RIFLE("weapon", "Arc Rifle de Latão"),
+        PROJECTILE_FIREBOLT("projectile", "Dardo de Brasa"),
+        PROJECTILE_ARCANE("projectile", "Dardo Arcano"),
+        PROJECTILE_MIST("projectile", "Orbe de Bruma");
+
+        private final String category;
+        private final String displayName;
+
+        RpgSpriteKind(String category, String displayName) {
+            this.category = category;
+            this.displayName = displayName;
+        }
+
+        public String getCategory() { return category; }
+        public String getDisplayName() { return displayName; }
+        @Override public String toString() { return displayName; }
+    }
 
     public enum EnemyBehavior {
         HUNT("hunt", "Caçador — persegue em alcance médio"),
@@ -188,6 +212,37 @@ public final class ContentStudioProject {
             if (safeStyle == RpgWeaponStyle.CAJADO) return new RpgWeaponProperties("Cajado de Bruma", 2, 8, "uncommon");
             if (safeStyle == RpgWeaponStyle.ADAGA) return new RpgWeaponProperties("Adaga do Vento", 1, 5, "common");
             return new RpgWeaponProperties("Lâmina de Bruma", 2, 9, "uncommon");
+        }
+    }
+
+    /** Metadados comuns aos sprites visuais usados pelo runtime RPG Android. */
+    public static final class RpgSpriteProperties {
+        public final String displayName;
+        public final double gameplayScale;
+        public final int damage;
+        public final int cooldownTicks;
+        public final double shotOriginX;
+        public final double shotOriginY;
+
+        public RpgSpriteProperties(String displayName, double gameplayScale, int damage, int cooldownTicks,
+                double shotOriginX, double shotOriginY) {
+            this.displayName = safeDisplayName(displayName, "Sprite RPG");
+            this.gameplayScale = Math.max(0.25, Math.min(3.0, gameplayScale));
+            this.damage = Math.max(0, damage);
+            this.cooldownTicks = Math.max(0, cooldownTicks);
+            this.shotOriginX = Math.max(0.0, Math.min(1.0, shotOriginX));
+            this.shotOriginY = Math.max(0.0, Math.min(1.0, shotOriginY));
+        }
+
+        public static RpgSpriteProperties defaults(RpgSpriteKind kind) {
+            RpgSpriteKind safeKind = kind == null ? RpgSpriteKind.HERO : kind;
+            if (safeKind.getCategory().equals("projectile")) {
+                return new RpgSpriteProperties(safeKind.getDisplayName(), 0.72, 6, 16, 0.55, 0.33);
+            }
+            if (safeKind.getCategory().equals("weapon")) {
+                return new RpgSpriteProperties(safeKind.getDisplayName(), 1.0, 3, 20, 0.72, 0.34);
+            }
+            return new RpgSpriteProperties(safeKind.getDisplayName(), 1.0, 0, 0, 0.5, 0.5);
         }
     }
 
@@ -361,6 +416,39 @@ public final class ContentStudioProject {
         writeRpgWeaponManifest(png, safeStyle, safeProperties);
         refreshRpgContentCatalog(projectRoot);
         return png;
+    }
+
+    /** Exporta um sprite visual RPG e os metadados que o APK consome em runtime. */
+    public static File generateRpgSprite(String id, RpgSpriteKind kind, RpgSpriteProperties properties,
+            File projectRoot) throws IOException {
+        RpgSpriteKind safeKind = kind == null ? RpgSpriteKind.HERO : kind;
+        RpgSpriteProperties safeProperties = properties == null ? RpgSpriteProperties.defaults(safeKind) : properties;
+        File output = ensureDirectory(projectRoot, "res/assets/generated/rpg_sprites");
+        File png = new File(output, safeName(id, "rpg_" + safeKind.name().toLowerCase()) + ".png");
+        BufferedImage sprite = new BufferedImage(32, 32, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = sprite.createGraphics();
+        drawRpgSprite(graphics, safeKind);
+        graphics.dispose();
+        ImageIO.write(sprite, "png", png);
+        writeRpgSpriteManifest(png, safeKind, safeProperties);
+        refreshRpgContentCatalog(projectRoot);
+        return png;
+    }
+
+    /** Gera o pacote visual mínimo para protagonista, NPCs, armas e tiros. */
+    public static File[] generateDefaultRpgVisualPack(File projectRoot) throws IOException {
+        RpgSpriteKind[] kinds = {
+                RpgSpriteKind.HERO, RpgSpriteKind.NPC_COMMANDANT, RpgSpriteKind.NPC_HEALER,
+                RpgSpriteKind.NPC_CARTOGRAPHER, RpgSpriteKind.WEAPON_STAFF, RpgSpriteKind.WEAPON_RUNE_SWORD,
+                RpgSpriteKind.WEAPON_ARC_RIFLE, RpgSpriteKind.PROJECTILE_FIREBOLT,
+                RpgSpriteKind.PROJECTILE_ARCANE, RpgSpriteKind.PROJECTILE_MIST };
+        File[] generated = new File[kinds.length];
+        for (int index = 0; index < kinds.length; index++) {
+            RpgSpriteKind spriteKind = kinds[index];
+            generated[index] = generateRpgSprite(spriteKind.name().toLowerCase(), spriteKind,
+                    RpgSpriteProperties.defaults(spriteKind), projectRoot);
+        }
+        return generated;
     }
 
     /** Exporta um conjunto inicial que o modo RPG reconhece automaticamente. */
@@ -599,6 +687,47 @@ public final class ContentStudioProject {
         }
     }
 
+    private static void drawRpgSprite(Graphics2D graphics, RpgSpriteKind kind) {
+        graphics.setColor(new Color(10, 14, 20, 90));
+        graphics.fillOval(7, 25, 18, 4);
+        if (kind.getCategory().equals("projectile")) {
+            Color core = kind == RpgSpriteKind.PROJECTILE_FIREBOLT ? new Color(242, 125, 55)
+                    : kind == RpgSpriteKind.PROJECTILE_MIST ? new Color(170, 102, 215) : new Color(75, 205, 235);
+            graphics.setColor(core.darker()); graphics.fillOval(6, 10, 20, 12);
+            graphics.setColor(core); graphics.fillOval(10, 8, 14, 14);
+            graphics.setColor(new Color(255, 244, 190)); graphics.fillOval(14, 11, 6, 6);
+            return;
+        }
+        if (kind.getCategory().equals("weapon")) {
+            if (kind == RpgSpriteKind.WEAPON_ARC_RIFLE) {
+                graphics.setColor(new Color(102, 68, 40)); graphics.fillRoundRect(8, 14, 17, 5, 3, 3);
+                graphics.setColor(new Color(81, 211, 232)); graphics.fillRect(20, 11, 5, 4); graphics.fillRect(12, 19, 3, 6);
+            } else if (kind == RpgSpriteKind.WEAPON_RUNE_SWORD) {
+                graphics.setColor(new Color(203, 214, 221));
+                graphics.fillPolygon(new Polygon(new int[] {16, 21, 18, 13, 11}, new int[] {3, 20, 25, 20, 7}, 5));
+                graphics.setColor(new Color(87, 169, 222)); graphics.fillRect(12, 19, 9, 3);
+            } else {
+                graphics.setColor(new Color(110, 75, 47)); graphics.fillRect(15, 5, 3, 22);
+                graphics.setColor(new Color(218, 177, 77)); graphics.fillOval(11, 3, 11, 10);
+            }
+            return;
+        }
+        Color cloak = kind == RpgSpriteKind.NPC_COMMANDANT ? new Color(58, 91, 144)
+                : kind == RpgSpriteKind.NPC_HEALER ? new Color(74, 123, 89)
+                : kind == RpgSpriteKind.NPC_CARTOGRAPHER ? new Color(118, 83, 150) : new Color(50, 97, 143);
+        Color accent = kind == RpgSpriteKind.NPC_COMMANDANT ? new Color(218, 166, 74)
+                : kind == RpgSpriteKind.NPC_HEALER ? new Color(102, 208, 183)
+                : kind == RpgSpriteKind.NPC_CARTOGRAPHER ? new Color(232, 196, 107) : new Color(224, 188, 104);
+        graphics.setColor(new Color(129, 84, 57)); graphics.fillOval(12, 5, 8, 8);
+        graphics.setColor(cloak.darker()); graphics.fillRoundRect(9, 12, 14, 14, 5, 5);
+        graphics.setColor(cloak); graphics.fillRoundRect(11, 13, 10, 11, 4, 4);
+        graphics.setColor(accent); graphics.fillRect(10, 16, 12, 3); graphics.fillRect(12, 24, 3, 4); graphics.fillRect(18, 24, 3, 4);
+        if (kind == RpgSpriteKind.HERO || kind == RpgSpriteKind.NPC_COMMANDANT) {
+            graphics.setColor(new Color(104, 71, 45)); graphics.fillRect(22, 7, 2, 18);
+            graphics.setColor(accent); graphics.fillOval(19, 4, 7, 7);
+        }
+    }
+
     private static void writeConsumableManifest(File png, ConsumableProperties properties) throws IOException {
         writeAssetManifest(png, "consumable", properties.effect.name(),
                 "  \"displayName\": \"" + properties.displayName + "\",\n"
@@ -616,12 +745,25 @@ public final class ContentStudioProject {
                 + "  \"rarity\": \"" + properties.rarity + "\",\n");
     }
 
+    private static void writeRpgSpriteManifest(File png, RpgSpriteKind kind, RpgSpriteProperties properties)
+            throws IOException {
+        writeAssetManifest(png, "rpg_" + kind.getCategory(), kind.name(),
+                "  \"displayName\": \"" + properties.displayName + "\",\n"
+                + "  \"gameplayScale\": " + properties.gameplayScale + ",\n"
+                + "  \"damage\": " + properties.damage + ",\n"
+                + "  \"cooldownTicks\": " + properties.cooldownTicks + ",\n"
+                + "  \"shotOriginX\": " + properties.shotOriginX + ",\n"
+                + "  \"shotOriginY\": " + properties.shotOriginY + ",\n"
+                + "  \"runtimeLoaded\": true,\n");
+    }
+
     private static void refreshRpgContentCatalog(File projectRoot) throws IOException {
         File output = ensureDirectory(projectRoot, "res/assets/generated");
         File catalog = new File(output, "rpg_content_catalog.json");
         try (FileWriter writer = new FileWriter(catalog, StandardCharsets.UTF_8)) {
             writer.write("{\n  \"schema\": 1,\n  \"itemsDirectory\": \"items\",\n"
-                    + "  \"weaponsDirectory\": \"rpg_weapons\",\n  \"autoDiscovery\": true\n}\n");
+                    + "  \"weaponsDirectory\": \"rpg_weapons\",\n  \"spritesDirectory\": \"rpg_sprites\",\n"
+                    + "  \"autoDiscovery\": true\n}\n");
         }
     }
 

@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_npc",
+  "variant": "NPC_CARTOGRAPHER",
+  "file": "npc_cartographer.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Neris, Cartógrafa",
+  "gameplayScale": 1.0,
+  "damage": 0,
+  "cooldownTicks": 0,
+  "shotOriginX": 0.5,
+  "shotOriginY": 0.5,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}

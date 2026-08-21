@@ -77,6 +77,7 @@ public final class ContentStudioApp {
         tabs.addTab("Tiles", createTilePanel());
         tabs.addTab("Inimigos", createEnemyPanel());
         tabs.addTab("Itens RPG", createRpgItemsPanel());
+        tabs.addTab("Sprites RPG", createRpgVisualsPanel());
         tabs.addTab("Referências", createTerrainGalleryPanel());
         tabs.addTab("Manifesto", createManifestPanel());
         tabs.addTab("Validação", createValidationPanel());
@@ -258,6 +259,42 @@ public final class ContentStudioApp {
         addField(panel, 2, "Estilo", style); addField(panel, 3, "Bônus de dano", damage);
         addField(panel, 4, "Custo de fôlego", stamina); addField(panel, 5, "Raridade", rarity);
         addField(panel, 6, "", generate);
+        return panel;
+    }
+
+    private JPanel createRpgVisualsPanel() {
+        JPanel panel = formPanel();
+        JTextField id = new JTextField("hero", 16);
+        JTextField displayName = new JTextField("Protagonista", 16);
+        JComboBox<ContentStudioProject.RpgSpriteKind> kind =
+                new JComboBox<ContentStudioProject.RpgSpriteKind>(ContentStudioProject.RpgSpriteKind.values());
+        JSpinner scale = new JSpinner(new SpinnerNumberModel(1.0, 0.25, 3.0, 0.05));
+        JSpinner damage = new JSpinner(new SpinnerNumberModel(0, 0, 99, 1));
+        JSpinner cooldown = new JSpinner(new SpinnerNumberModel(0, 0, 360, 1));
+        kind.addActionListener(event -> {
+            ContentStudioProject.RpgSpriteKind selected =
+                    (ContentStudioProject.RpgSpriteKind) kind.getSelectedItem();
+            ContentStudioProject.RpgSpriteProperties defaults = ContentStudioProject.RpgSpriteProperties.defaults(selected);
+            id.setText(selected.name().toLowerCase()); displayName.setText(defaults.displayName);
+            scale.setValue(defaults.gameplayScale); damage.setValue(defaults.damage); cooldown.setValue(defaults.cooldownTicks);
+        });
+        JButton generate = new JButton("Exportar sprite 32×32 + metadados");
+        generate.addActionListener(event -> runExport("Sprite RPG", () -> {
+            ContentStudioProject.RpgSpriteProperties properties = new ContentStudioProject.RpgSpriteProperties(
+                    displayName.getText(), ((Number) scale.getValue()).doubleValue(), (Integer) damage.getValue(),
+                    (Integer) cooldown.getValue(), 0.62, 0.34);
+            return ContentStudioProject.generateRpgSprite(id.getText(),
+                    (ContentStudioProject.RpgSpriteKind) kind.getSelectedItem(), properties, projectRoot);
+        }));
+        JButton pack = new JButton("Gerar pacote visual RPG");
+        pack.addActionListener(event -> runExport("Pacote visual RPG", () -> {
+            File[] exports = ContentStudioProject.generateDefaultRpgVisualPack(projectRoot);
+            return exports[exports.length - 1];
+        }));
+        addField(panel, 0, "Tipo visual", kind); addField(panel, 1, "ID do arquivo", id);
+        addField(panel, 2, "Nome visível", displayName); addField(panel, 3, "Escala no jogo", scale);
+        addField(panel, 4, "Dano (arma/tiro)", damage); addField(panel, 5, "Cooldown (ticks)", cooldown);
+        addField(panel, 6, "", generate); addField(panel, 7, "", pack); addPreview(panel, 8);
         return panel;
     }
 

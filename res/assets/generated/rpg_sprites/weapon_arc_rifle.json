@@ -1,0 +1,16 @@
+{
+  "schema": 1,
+  "kind": "rpg_weapon",
+  "variant": "WEAPON_ARC_RIFLE",
+  "file": "weapon_arc_rifle.png",
+  "width": 32,
+  "height": 32,
+  "displayName": "Arc Rifle de Latão",
+  "gameplayScale": 1.0,
+  "damage": 3,
+  "cooldownTicks": 20,
+  "shotOriginX": 0.72,
+  "shotOriginY": 0.34,
+  "runtimeLoaded": true,
+  "alphaRequired": true
+}
