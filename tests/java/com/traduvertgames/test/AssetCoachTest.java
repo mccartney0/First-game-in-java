@@ -7,6 +7,9 @@ import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.util.EnumSet;
 
 import javax.imageio.ImageIO;
 
@@ -53,6 +56,30 @@ class AssetCoachTest {
         assertTrue(report.entities.get(0).isComplete());
         assertEquals(24, report.entities.get(0).frameCount());
         assertEquals(24, report.totalFrames());
+    }
+
+    @Test
+    void exportsCoverageAndAuditsApprovedRules() throws Exception {
+        ContentStudioProject.RpgSpriteProperties props = ContentStudioProject.RpgSpriteProperties.defaults(
+                ContentStudioProject.RpgSpriteKind.HERO);
+        ContentStudioProject.generateRpgSprite("hero", ContentStudioProject.RpgSpriteKind.HERO, props, root);
+        ContentStudioProject.generateRpgAnimationFrames("hero", ContentStudioProject.RpgSpriteKind.HERO, props, root);
+        AssetCoach.AnimationCoverageReport coverage = AssetCoach.inspectAnimationCoverage(root);
+        File csv = new File(root, "reports/cobertura.csv");
+        File pdf = new File(root, "reports/cobertura.pdf");
+        coverage.exportCsv(csv); coverage.exportPdf(pdf);
+        assertTrue(new String(Files.readAllBytes(csv.toPath()), StandardCharsets.UTF_8).contains("entity,base_sprite,state"));
+        assertTrue(new String(Files.readAllBytes(pdf.toPath()), StandardCharsets.ISO_8859_1).startsWith("%PDF-1.4"));
+
+        File input = new File(root, "input/regras.png"); input.getParentFile().mkdirs();
+        BufferedImage image = new BufferedImage(40, 40, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = image.createGraphics(); graphics.setColor(Color.WHITE); graphics.fillRect(0, 0, 40, 40);
+        graphics.setColor(Color.RED); graphics.fillRect(12, 8, 16, 24); graphics.dispose(); ImageIO.write(image, "png", input);
+        EnumSet<AssetCoach.ApprovedFixRule> rules = EnumSet.of(AssetCoach.ApprovedFixRule.REMOVE_CONNECTED_BORDER_BACKGROUND,
+                AssetCoach.ApprovedFixRule.CENTER_ON_32PX_CANVAS);
+        AssetCoach.BatchReport batch = AssetCoach.normalizeBatch(new File[] { input }, ContentStudioProject.RpgSpriteKind.HERO,
+                props, rules, root);
+        assertEquals(1, batch.successCount()); assertEquals(2, batch.items.get(0).appliedRules.size()); assertTrue(input.isFile());
     }
 
     private static void delete(File file) {

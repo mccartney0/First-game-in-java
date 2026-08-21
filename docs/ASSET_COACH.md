@@ -61,6 +61,35 @@ Após uma exportação, o botão **Desfazer última cópia** remove somente o PN
 | Exportação indevida na sessão atual | Use **Desfazer última cópia**. | Somente a última cópia gerada é apagada; a fonte permanece intacta. |
 | Override legado de artista | Use `res/assets/incoming/user_uploads/` e `importUserAssets`. | O fluxo legado continua disponível para convenções de override. |
 
+### Arrastar, soltar e corrigir com regras aprovadas
+
+Também é possível arrastar um ou mais PNGs diretamente sobre a área pontilhada da aba **Lote & comparar**. O Coach adiciona somente arquivos `.png` à fila, preserva a ordem da sessão e mantém a falha de cada arquivo isolada. Depois de selecionar a fila, marque explicitamente as regras que pretende aplicar. Nenhuma regra fica ativa por padrão: isso evita uma correção automática que descaracterize a arte.
+
+| Regra aprovada | Transformação aplicada à cópia de trabalho | Quando usar |
+|---|---|---|
+| Remover fundo de borda | Remove cor quase uniforme conectada à borda. | Fundo sólido separado da silhueta. |
+| Recortar e centralizar | Recorta a área não transparente com respiro e centraliza. | Personagem ou objeto ocupa pouco espaço útil. |
+| Normalizar para 32 × 32 | Escala com nearest-neighbor para o canvas de runtime. | Entrada criada em resolução maior ou irregular. |
+| Gerar manifesto RPG | Escreve o JSON do asset exportado com campos declarados. | Todo item que será carregado pelo APK. |
+
+> A prévia Antes/Depois deve ser conferida antes da exportação. As regras atuam apenas na cópia exportada; o PNG escolhido pelo artista nunca é regravado.
+
+## Criar um asset e colocá-lo no jogo
+
+Há dois caminhos equivalentes. No **Content Studio**, abra **Sprites RPG**, escolha a categoria do item e use os comandos de exportação para criar uma base ou gerar os 24 frames direcionais. Em um editor externo — como Aseprite, Piskel, Krita, GIMP ou Photoshop — desenhe o original em uma camada transparente e exporte cada sprite como PNG com alfa. O Content Studio continua sendo a etapa que converte a referência em contrato de runtime.
+
+| Momento | No Content Studio | Em programa externo |
+|---|---|---|
+| Criar | Gere uma base na aba **Sprites RPG** e refine a cópia. | Desenhe em pixel art, com contraste e fundo transparente. |
+| Preparar | Use **Asset Coach** para diagnóstico e prévia. | Exporte PNG RGBA, sem suavização e sem margem colorida na borda. |
+| Animar | Use **Exportar 24 frames direcionais** como referência. | Exporte três poses de caminhada e três de ataque para cada direção. |
+| Integrar | Normalizar e exportar para RPG. | Arraste os PNGs para **Lote & comparar**, aprove as regras e exporte. |
+| Verificar | Atualize **Cobertura animações**. | Confirme os 24 frames e os nomes esperados antes do build. |
+
+Para um frame externo, use o padrão `<entidade>_<ação>_<direção>_<frame>.png`. Um exemplo completo é `hero_attack_down_1.png`. As entidades base são `hero`, `npc_commandant`, `npc_healer` e `npc_cartographer`; as ações são `walk` e `attack`; as direções são `right`, `left`, `up` e `down`; e cada ação usa índices `0`, `1` e `2`.
+
+Depois de exportar pelo Coach, o PNG e seu JSON entram em `res/assets/generated/rpg_sprites/`. O `preBuild` Android sincroniza esse diretório para o pacote do aplicativo. Portanto, a sequência para fazer um asset funcionar é: **criar → exportar PNG com alfa → diagnosticar/normalizar → conferir cobertura → validar → montar e instalar o APK**. Não edite `androidApp/app/src/main/assets/rpg/` manualmente: ele é uma cópia gerada no build.
+
 ## Upload legado e overrides de artista
 
 O importador de overrides permanece indicado quando o artista segue as convenções de nome existentes. Copie os originais para `res/assets/incoming/user_uploads/` e rode a tarefa abaixo. O processo preserva os originais, gera cópias em `res/assets/generated/` e cria `user_asset_manifest.json`.
@@ -97,6 +126,15 @@ Abra **Content Studio → Cobertura animações → Atualizar relatório** depoi
 
 Os nomes usam `<entidade>_<ação>_<direção>_<frame>.png`, por exemplo `hero_attack_down_1.png`. Há três poses de caminhada e três de ataque para direita, esquerda, cima e baixo. Mantenha pés, cabeça e origem do disparo previsíveis para evitar tremor visual.
 
+### Exportar relatórios de cobertura
+
+Na aba **Cobertura animações**, clique em **Exportar CSV** para obter uma tabela legível por planilhas ou em **Exportar PDF** para compartilhar um dossiê de revisão. Ambos os formatos incluem o resumo por entidade, o total esperado, o total encontrado e os IDs de frames ausentes. Salve os relatórios fora de `res/assets/generated/`, por exemplo em `reports/animation-coverage/`, para não misturar evidências de revisão com assets do runtime.
+
+| Formato | Melhor uso | Conteúdo |
+|---|---|---|
+| CSV | Acompanhar pendências, filtrar e atribuir tarefas. | Uma linha por entidade e detalhes dos frames ausentes. |
+| PDF | Revisão de arte e aprovação de produção. | Cabeçalho, resumo de cobertura, grade e lista de pendências. |
+
 ## Atlas, metadados e trilhas
 
 O Asset Coach trata sprites individuais. Para atlas, mantenha grade regular, nenhuma célula vazia e o mesmo pivô em cada célula. O manifesto declara categoria, variante, arquivo, dimensão, escala, dano, cooldown, origem do disparo, carregamento em runtime e exigência de alfa.
@@ -130,8 +168,10 @@ O artefato de instalação é `androidApp/app/build/outputs/apk/debug/app-debug.
 | Sprite parece pequeno | A área visível ocupa pouca parte do canvas. | Recorte antes de enviar ou deixe o Coach centralizar na área útil. |
 | Arte fica borrada | Houve interpolação suave antes da importação. | Reexporte pixel art com nearest-neighbor. |
 | Lote terminou parcialmente | Há fonte ilegível ou diagnóstico inválido em parte da fila. | Leia o relatório por arquivo e reenvie somente os itens corrigidos. |
+| Regra deformou a prévia | A regra aprovada não combina com aquela silhueta ou fundo. | Desmarque a regra, revise Antes/Depois e reenvie o original. |
 | Desfazer não removeu a fonte | Esse é o comportamento seguro esperado. | O botão remove apenas a última cópia de trabalho da sessão. |
 | Cobertura incompleta | Falta frame de ação, direção ou índice. | Use o ID indicado pela grade e gere o frame ausente. |
+| Relatório não abriu | O destino escolhido não possui permissão de escrita. | Escolha uma pasta de relatórios do projeto ou do usuário e exporte novamente. |
 | `validateContent` falha | Manifesto, nome, alfa ou referência perdeu o contrato. | Leia o erro, corrija no Coach e valide novamente. |
 | APK não mostra a arte nova | O pacote não foi recompilado após a exportação. | Rode `assembleDebug` e instale o APK recém-gerado. |
 

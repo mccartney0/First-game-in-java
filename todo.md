@@ -160,3 +160,13 @@
 - [x] Construir painel de cobertura de animações com status por entidade, direção, caminhada e ataque.
 - [x] Documentar os comandos e atualizar Wiki Viva e Códice com o novo fluxo.
 - [x] Executar testes, `validateContent`, builds e inspeção visual antes da publicação.
+
+## Asset Coach — exportação, regras e criação de assets
+
+- [x] Mapear o modelo do relatório de cobertura e os pontos seguros de exportação CSV/PDF.
+- [x] Implementar exportação do relatório de animações em CSV e PDF com resumo, grade e itens ausentes.
+- [x] Criar regras aprovadas de correção em lote, com seleção explícita e relatório de cada transformação.
+- [x] Adicionar arrastar e soltar de PNGs à fila, mantendo diagnósticos e falhas isoladas por arquivo.
+- [x] Ampliar o guia com criação no Content Studio e em editores externos, exportação, importação e teste no APK.
+- [x] Atualizar a Wiki Viva e o Códice com o fluxo de produção e publicação de assets.
+- [x] Executar testes, `validateContent`, builds e inspeção visual antes da publicação.
