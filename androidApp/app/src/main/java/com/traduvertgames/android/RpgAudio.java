@@ -14,7 +14,13 @@ final class RpgAudio {
         CLEARING(R.raw.rpg_music_clearing),
         NORTH_WATERS(R.raw.rpg_music_northwaters),
         FORTRESS(R.raw.rpg_music_fortress),
-        BOSS(R.raw.rpg_music_boss);
+        BOSS(R.raw.rpg_music_boss),
+        COMBAT_LOW(R.raw.rpg_music_combat_low),
+        COMBAT_MEDIUM(R.raw.rpg_music_combat_mid),
+        COMBAT_CRITICAL(R.raw.rpg_music_combat_critical),
+        AVA(R.raw.rpg_music_npc_ava),
+        ORIN(R.raw.rpg_music_npc_orin),
+        ILYRA(R.raw.rpg_music_npc_ilyra);
 
         final int resourceId;
 
@@ -32,9 +38,12 @@ final class RpgAudio {
     private final int uiConfirm;
     private final int achievement;
     private MediaPlayer musicPlayer;
+    private MediaPlayer victoryPlayer;
     private MusicTrack activeTrack;
     private MusicTrack pendingTrack;
     private float musicFade = 1f;
+    private float musicDuck = 1f;
+    private float victoryDuckTimer;
     private boolean musicEnabled = true;
     private boolean musicPaused;
     private boolean released;
@@ -81,8 +90,25 @@ final class RpgAudio {
         play(achievement, 0.50f, 0.46f, 1f);
     }
 
+    void playBossVictory() {
+        if (released || !musicEnabled) return;
+        victoryDuckTimer = 2.4f;
+        releaseVictoryPlayer();
+        victoryPlayer = MediaPlayer.create(context, R.raw.rpg_music_boss_victory);
+        if (victoryPlayer == null) return;
+        victoryPlayer.setVolume(0.46f, 0.46f);
+        victoryPlayer.setOnCompletionListener(player -> {
+            if (victoryPlayer == player) victoryPlayer = null;
+            player.release();
+        });
+        if (!musicPaused) victoryPlayer.start();
+    }
+
     void updateMusic(MusicTrack requestedTrack, float dt) {
         if (released || !musicEnabled || requestedTrack == null) return;
+        victoryDuckTimer = Math.max(0f, victoryDuckTimer - dt);
+        float targetDuck = victoryDuckTimer > 0f ? 0.38f : 1f;
+        musicDuck += (targetDuck - musicDuck) * Math.min(1f, dt / 0.16f);
         if (musicPlayer == null) {
             startMusic(requestedTrack, 0f);
             activeTrack = requestedTrack;
@@ -100,8 +126,8 @@ final class RpgAudio {
             }
         } else if (musicFade < 1f) {
             musicFade = Math.min(1f, musicFade + dt / 0.38f);
-            applyMusicVolume();
         }
+        applyMusicVolume();
     }
 
     boolean toggleMusic() {
@@ -110,6 +136,10 @@ final class RpgAudio {
         if (musicPlayer != null) {
             if (musicEnabled && !musicPaused) musicPlayer.start();
             else if (musicPlayer.isPlaying()) musicPlayer.pause();
+        }
+        if (victoryPlayer != null) {
+            if (musicEnabled && !musicPaused) victoryPlayer.start();
+            else if (victoryPlayer.isPlaying()) victoryPlayer.pause();
         }
         return musicEnabled;
     }
@@ -123,6 +153,7 @@ final class RpgAudio {
             soundPool.autoPause();
             musicPaused = true;
             if (musicPlayer != null && musicPlayer.isPlaying()) musicPlayer.pause();
+            if (victoryPlayer != null && victoryPlayer.isPlaying()) victoryPlayer.pause();
         }
     }
 
@@ -131,6 +162,7 @@ final class RpgAudio {
             soundPool.autoResume();
             musicPaused = false;
             if (musicEnabled && musicPlayer != null) musicPlayer.start();
+            if (musicEnabled && victoryPlayer != null) victoryPlayer.start();
         }
     }
 
@@ -139,6 +171,7 @@ final class RpgAudio {
             released = true;
             soundPool.release();
             releaseMusicPlayer();
+            releaseVictoryPlayer();
         }
     }
 
@@ -157,7 +190,7 @@ final class RpgAudio {
 
     private void applyMusicVolume() {
         if (musicPlayer != null) {
-            float volume = 0.25f * musicFade;
+            float volume = 0.25f * musicFade * musicDuck;
             musicPlayer.setVolume(volume, volume);
         }
     }
@@ -166,6 +199,13 @@ final class RpgAudio {
         if (musicPlayer != null) {
             musicPlayer.release();
             musicPlayer = null;
+        }
+    }
+
+    private void releaseVictoryPlayer() {
+        if (victoryPlayer != null) {
+            victoryPlayer.release();
+            victoryPlayer = null;
         }
     }
 }

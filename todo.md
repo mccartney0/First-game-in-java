@@ -131,3 +131,12 @@
 - [x] Atualizar a wiki com animações, onboarding, áudio, conquistas e futuras notas de versão.
 - [x] Adicionar um índice de atualizações que conecte cada implementação nova aos artigos técnicos relevantes.
 - [x] Validar navegação, busca, responsividade e consistência visual do portal antes da publicação.
+
+## Direção musical narrativa e melhoria de assets
+
+- [x] Mapear ameaças próximas, dano recebido, chefes derrotados e conversas de Ava, Orin e Ilyra.
+- [x] Compor camadas de combate leve, médio e crítico, além de uma vinheta de vitória para chefes.
+- [x] Criar leitmotifs curtos e exclusivos para os NPCs principais, com transições sem cortar efeitos de diálogo.
+- [x] Integrar o estado de intensidade ao diretor musical, com retorno estável à região após o confronto.
+- [x] Publicar no Códice um guia de melhoria de assets com silhueta, animação, atlas, paleta, metadados e validação.
+- [x] Validar mixagem, ciclo de vida Android, APK, documentação e responsividade antes da publicação.

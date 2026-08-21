@@ -104,6 +104,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private int defeated;
     private boolean chestOpened;
     private boolean dialogueVisible;
+    private RpgAudio.MusicTrack dialogueMusicTrack;
     private boolean inventoryVisible;
     private boolean gameOver;
     private int questStage;
@@ -154,6 +155,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         necromancerDefeated = false;
         titanDefeated = false;
         dialogueVisible = false;
+        dialogueMusicTrack = null;
         inventoryVisible = false;
         gameOver = false;
         attackTimer = 0f;
@@ -474,6 +476,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         Item drop = enemy.type.drop;
         if (drop != null) pickups.add(new ItemPickup(enemy.x, enemy.y, drop.copy()));
         if (enemy.type.boss) {
+            audio.playBossVictory();
             message = "CHEFE derrotado: " + enemy.type.title + "  +" + enemy.type.xp + " XP";
             messageTimer = 4f;
         } else {
@@ -567,6 +570,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         npc.attackVisualTimer = 0.28f;
         audio.playDialogue();
         dialogueVisible = true;
+        dialogueMusicTrack = resolveNpcMusicTrack(npc);
         dialogueTitle = npc.name + ", " + npc.role;
         dialogueHint = "Toque em AÇÃO para encerrar o diálogo";
         if ("AVA".equals(npc.name)) {
@@ -642,14 +646,30 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private RpgAudio.MusicTrack resolveMusicTrack() {
+        if (dialogueVisible && dialogueMusicTrack != null) return dialogueMusicTrack;
+        float threat = health < maxHealth() * 0.4f ? 0.65f : 0f;
         for (Enemy enemy : enemies) {
-            if (enemy.type.boss && distance(playerX, playerY, enemy.x, enemy.y) < TILE * 9f) {
+            float enemyDistance = distance(playerX, playerY, enemy.x, enemy.y);
+            if (enemy.type.boss && enemyDistance < TILE * 9f) {
                 return RpgAudio.MusicTrack.BOSS;
             }
+            if (enemyDistance < TILE * 7f) {
+                threat += 0.72f;
+                if (enemyDistance < TILE * 4f) threat += 0.58f;
+            }
         }
+        if (threat >= 2.3f) return RpgAudio.MusicTrack.COMBAT_CRITICAL;
+        if (threat >= 1.35f) return RpgAudio.MusicTrack.COMBAT_MEDIUM;
+        if (threat >= 0.55f) return RpgAudio.MusicTrack.COMBAT_LOW;
         if (playerX >= TILE * 17f && playerY <= TILE * 10f) return RpgAudio.MusicTrack.NORTH_WATERS;
         if (playerX >= TILE * 22f && playerY >= TILE * 10f) return RpgAudio.MusicTrack.FORTRESS;
         return RpgAudio.MusicTrack.CLEARING;
+    }
+
+    private RpgAudio.MusicTrack resolveNpcMusicTrack(Npc npc) {
+        if ("AVA".equals(npc.name)) return RpgAudio.MusicTrack.AVA;
+        if ("ORIN".equals(npc.name)) return RpgAudio.MusicTrack.ORIN;
+        return RpgAudio.MusicTrack.ILYRA;
     }
 
     private String currentRegionTitle() {
@@ -1371,6 +1391,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (action == MotionEvent.ACTION_DOWN || action == MotionEvent.ACTION_POINTER_DOWN) {
             if (dialogueVisible) {
                 dialogueVisible = false;
+                dialogueMusicTrack = null;
                 audio.playUiConfirm();
                 return true;
             }
