@@ -35,6 +35,16 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private static final float WORLD_HEIGHT = ROWS * TILE;
     private static final float PLAYER_RADIUS = 15f;
     private static final float MAX_DT = 0.04f;
+    private static final float MOVE_PAD_X = 92f;
+    private static final float MOVE_PAD_Y = 570f;
+    private static final float AIM_PAD_X = 1060f;
+    private static final float AIM_PAD_Y = 570f;
+    private static final float CONTROL_RADIUS = 58f;
+    private static final float CONTROL_KNOB_RADIUS = 22f;
+    private static final float CONTROL_DEAD_ZONE = 0.18f;
+    private static final float PLAYER_MOVE_SPEED = 204f;
+    private static final float AIM_REACH = 118f;
+    private static final float ACTION_HOLD_DELAY = 0.12f;
     private static final int DIR_RIGHT = 0;
     private static final int DIR_LEFT = 1;
     private static final int DIR_UP = 2;
@@ -88,7 +98,12 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private float aimY;
     private float moveAxisX;
     private float moveAxisY;
+    private float aimAxisX = 1f;
+    private float aimAxisY;
     private boolean actionHeld;
+    private boolean actionDragged;
+    private boolean actionFiredDuringHold;
+    private float actionHoldTimer;
     private int movePointerId = -1;
     private int actionPointerId = -1;
     private float attackTimer;
@@ -152,8 +167,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         buildMap();
         playerX = TILE * 4.5f;
         playerY = TILE * 10.5f;
-        aimX = playerX + TILE;
-        aimY = playerY;
+        aimAxisX = 1f;
+        aimAxisY = 0f;
+        refreshAimTarget();
         health = 100f;
         level = 1;
         xp = 0;
@@ -350,16 +366,20 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         attackTimer -= dt;
         attackVisualTimer = Math.max(0f, attackVisualTimer - dt);
         spawnTimer -= dt;
-        if (actionHeld && attackTimer <= 0f) {
-            attackTimer = Math.max(0.22f, 0.42f - magicPower() * 0.01f);
-            fireBolt();
-        }
         float length = (float) Math.sqrt(moveAxisX * moveAxisX + moveAxisY * moveAxisY);
         float vx = length > 1f ? moveAxisX / length : moveAxisX;
         float vy = length > 1f ? moveAxisY / length : moveAxisY;
         float beforeX = playerX;
         float beforeY = playerY;
-        movePlayer(vx * (180f + armorPower() * 2f) * dt, vy * (180f + armorPower() * 2f) * dt);
+        movePlayer(vx * (PLAYER_MOVE_SPEED + armorPower() * 2f) * dt, vy * (PLAYER_MOVE_SPEED + armorPower() * 2f) * dt);
+        refreshAimTarget();
+        if (actionHeld) {
+            actionHoldTimer += dt;
+            if (actionHoldTimer >= ACTION_HOLD_DELAY && attackTimer <= 0f) {
+                triggerAttack();
+                actionFiredDuringHold = true;
+            }
+        }
         playerWalking = distance(beforeX, beforeY, playerX, playerY) > 0.05f;
         if (playerWalking) {
             walkFrameTimer += dt;
@@ -543,13 +563,22 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float dy = aimY - playerY;
         float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
         attackDirection = directionFromVector(dx, dy);
-        playerDirection = attackDirection;
         attackVisualTimer = 0.28f;
         audio.playMagicCast();
         float damage = 8f + level * 2f + attackPower() + magicPower() * 1.6f;
         bolts.add(new MagicBolt(playerX + dx / distance * 20f, playerY + dy / distance * 20f,
                 dx / distance, dy / distance, damage, projectileSpriteId()));
         advanceOnboarding(ONBOARDING_ATTACK);
+    }
+
+    private void triggerAttack() {
+        attackTimer = Math.max(0.18f, 0.34f - magicPower() * 0.01f);
+        fireBolt();
+    }
+
+    private void refreshAimTarget() {
+        aimX = clamp(playerX + aimAxisX * AIM_REACH, 0f, WORLD_WIDTH);
+        aimY = clamp(playerY + aimAxisY * AIM_REACH, 0f, WORLD_HEIGHT);
     }
 
     private void interact() {
@@ -783,8 +812,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (inventory.isEmpty()) return false;
         playerX = clamp(data.playerX, TILE * 1.5f, WORLD_WIDTH - TILE * 1.5f);
         playerY = clamp(data.playerY, TILE * 1.5f, WORLD_HEIGHT - TILE * 1.5f);
-        aimX = playerX + TILE;
-        aimY = playerY;
+        aimAxisX = 1f;
+        aimAxisY = 0f;
+        refreshAimTarget();
         level = data.level;
         xp = data.xp;
         gold = data.gold;
@@ -804,6 +834,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         inventoryVisible = false;
         gameOver = false;
         actionHeld = false;
+        actionDragged = false;
+        actionFiredDuringHold = false;
+        actionHoldTimer = 0f;
         moveAxisX = 0f;
         moveAxisY = 0f;
         attackVisualTimer = 0f;
@@ -1061,7 +1094,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void drawPlayer(Canvas canvas) {
         int playerColor = equippedArmor == null ? Color.rgb(105, 196, 255) : Color.rgb(154, 131, 255);
-        drawAnimatedCharacter(canvas, "hero", playerX, playerY, 46f, playerColor, playerDirection,
+        int displayedDirection = attackVisualTimer > 0f ? attackDirection : playerDirection;
+        drawAnimatedCharacter(canvas, "hero", playerX, playerY, 46f, playerColor, displayedDirection,
                 walkFrame, playerWalking, attackVisualTimer);
         float dx = aimX - playerX;
         float dy = aimY - playerY;
@@ -1074,6 +1108,17 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         paint.setStrokeWidth(4f);
         canvas.drawLine(playerX + dx / distance * 12f, playerY + dy / distance * 12f,
                 playerX + dx / distance * 25f, playerY + dy / distance * 25f, paint);
+        if (actionHeld || attackVisualTimer > 0f) {
+            float markerX = playerX + dx / distance * 74f;
+            float markerY = playerY + dy / distance * 74f;
+            paint.setStyle(Paint.Style.STROKE);
+            paint.setStrokeWidth(2f);
+            paint.setColor(Color.argb(220, 255, 226, 129));
+            canvas.drawCircle(markerX, markerY, 8f, paint);
+            canvas.drawLine(markerX - 12f, markerY, markerX + 12f, markerY, paint);
+            canvas.drawLine(markerX, markerY - 12f, markerX, markerY + 12f, paint);
+            paint.setStyle(Paint.Style.FILL);
+        }
     }
 
     private void drawCharacter(Canvas canvas, float x, float y, int color) {
@@ -1231,16 +1276,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         canvas.drawText(currentQuest(), 750f, 65f, textPaint);
 
         drawBossBar(canvas);
-        paint.setStyle(Paint.Style.STROKE);
-        paint.setStrokeWidth(2f);
-        paint.setColor(Color.argb(160, 133, 215, 232));
-        canvas.drawCircle(92f, 570f, 58f, paint);
-        canvas.drawCircle(1060f, 570f, 58f, paint);
-        paint.setStyle(Paint.Style.FILL);
-        textPaint.setTextSize(12f);
-        textPaint.setColor(Color.rgb(166, 216, 230));
-        canvas.drawText("MOVER", 67f, 574f, textPaint);
-        canvas.drawText("AÇÃO", 1037f, 574f, textPaint);
+        drawControlPad(canvas, MOVE_PAD_X, MOVE_PAD_Y, moveAxisX, moveAxisY, false, "MOVER", "ANALÓGICO");
+        drawControlPad(canvas, AIM_PAD_X, AIM_PAD_Y, aimAxisX, aimAxisY, actionHeld, "MIRA", "TOQUE: AÇÃO");
         if (messageTimer > 0f || dialogueVisible) {
             paint.setColor(Color.argb(210, 5, 12, 23));
             canvas.drawRoundRect(new RectF(250f, 574f, 902f, 626f), 12f, 12f, paint);
@@ -1250,6 +1287,30 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             canvas.drawText(message, 576f, 606f, textPaint);
             textPaint.setTextAlign(Paint.Align.LEFT);
         }
+    }
+
+    private void drawControlPad(Canvas canvas, float centerX, float centerY, float axisX, float axisY,
+            boolean active, String title, String subtitle) {
+        paint.setColor(active ? Color.argb(70, 255, 209, 91) : Color.argb(48, 77, 151, 180));
+        canvas.drawCircle(centerX, centerY, CONTROL_RADIUS, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(active ? 3f : 2f);
+        paint.setColor(active ? Color.rgb(255, 222, 115) : Color.argb(175, 133, 215, 232));
+        canvas.drawCircle(centerX, centerY, CONTROL_RADIUS, paint);
+        float knobDistance = CONTROL_RADIUS - CONTROL_KNOB_RADIUS - 6f;
+        float knobX = centerX + axisX * knobDistance;
+        float knobY = centerY + axisY * knobDistance;
+        paint.setStyle(Paint.Style.FILL);
+        paint.setColor(active ? Color.argb(220, 255, 227, 137) : Color.argb(185, 165, 222, 238));
+        canvas.drawCircle(knobX, knobY, CONTROL_KNOB_RADIUS, paint);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setTextSize(11f);
+        textPaint.setColor(Color.WHITE);
+        canvas.drawText(title, centerX, centerY + 4f, textPaint);
+        textPaint.setTextSize(8f);
+        textPaint.setColor(Color.rgb(182, 220, 234));
+        canvas.drawText(subtitle, centerX, centerY + 20f, textPaint);
+        textPaint.setTextAlign(Paint.Align.LEFT);
     }
 
     private void drawOnboarding(Canvas canvas) {
@@ -1502,15 +1563,16 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                 return true;
             }
             int pointerId = event.getPointerId(index);
-            if (x < 360f && movePointerId == -1) {
+            if (isInsideControl(x, y, MOVE_PAD_X, MOVE_PAD_Y) && movePointerId == -1) {
                 movePointerId = pointerId;
                 updateMove(x, y);
-            } else if (actionPointerId == -1) {
+            } else if (isInsideControl(x, y, AIM_PAD_X, AIM_PAD_Y) && actionPointerId == -1) {
                 actionPointerId = pointerId;
-                aimX = clamp(x + cameraX, 0f, WORLD_WIDTH);
-                aimY = clamp(y + cameraY, 0f, WORLD_HEIGHT);
+                actionDragged = false;
+                actionFiredDuringHold = false;
+                actionHoldTimer = 0f;
+                updateAim(x, y);
                 actionHeld = true;
-                if (x > 970f && y > 480f) interact();
             }
             return true;
         }
@@ -1523,8 +1585,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             if (actionPointerId != -1) {
                 int actionIndex = event.findPointerIndex(actionPointerId);
                 if (actionIndex >= 0) {
-                    aimX = clamp(toWorldX(event.getX(actionIndex)) + cameraX, 0f, WORLD_WIDTH);
-                    aimY = clamp(toWorldY(event.getY(actionIndex)) + cameraY, 0f, WORLD_HEIGHT);
+                    updateAim(toWorldX(event.getX(actionIndex)), toWorldY(event.getY(actionIndex)));
                 }
             }
             return true;
@@ -1538,7 +1599,13 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             }
             if (pointerId == actionPointerId) {
                 actionPointerId = -1;
+                if (!actionFiredDuringHold) {
+                    if (actionDragged || !hasNearbyInteraction()) triggerAttack();
+                    else interact();
+                }
                 actionHeld = false;
+                actionDragged = false;
+                actionHoldTimer = 0f;
             }
             return true;
         }
@@ -1555,11 +1622,43 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void updateMove(float x, float y) {
-        float dx = (x - 92f) / 58f;
-        float dy = (y - 570f) / 58f;
+        float dx = (x - MOVE_PAD_X) / CONTROL_RADIUS;
+        float dy = (y - MOVE_PAD_Y) / CONTROL_RADIUS;
         float length = (float) Math.sqrt(dx * dx + dy * dy);
-        moveAxisX = length > 1f ? dx / length : dx;
-        moveAxisY = length > 1f ? dy / length : dy;
+        if (length <= CONTROL_DEAD_ZONE) {
+            moveAxisX = 0f;
+            moveAxisY = 0f;
+            return;
+        }
+        float cappedLength = Math.min(1f, length);
+        float calibrated = (cappedLength - CONTROL_DEAD_ZONE) / (1f - CONTROL_DEAD_ZONE);
+        moveAxisX = dx / length * calibrated;
+        moveAxisY = dy / length * calibrated;
+    }
+
+    private void updateAim(float x, float y) {
+        float dx = (x - AIM_PAD_X) / CONTROL_RADIUS;
+        float dy = (y - AIM_PAD_Y) / CONTROL_RADIUS;
+        float length = (float) Math.sqrt(dx * dx + dy * dy);
+        if (length <= CONTROL_DEAD_ZONE) return;
+        aimAxisX = dx / length;
+        aimAxisY = dy / length;
+        attackDirection = directionFromVector(aimAxisX, aimAxisY);
+        actionDragged = true;
+        refreshAimTarget();
+    }
+
+    private boolean isInsideControl(float x, float y, float centerX, float centerY) {
+        return distance(x, y, centerX, centerY) <= CONTROL_RADIUS * 1.45f;
+    }
+
+    private boolean hasNearbyInteraction() {
+        for (Npc npc : npcs) {
+            if (distance(playerX, playerY, npc.x, npc.y) < TILE * 2f) return true;
+        }
+        return (!relicCollected && distance(playerX, playerY, TILE * 20.5f, TILE * 6.5f) < TILE * 2f)
+                || (!chestOpened && distance(playerX, playerY, TILE * 27.5f, TILE * 8.5f) < TILE * 2f)
+                || distance(playerX, playerY, TILE * 16f, TILE * 10f) < TILE * 2f;
     }
 
     private void advanceOnboarding(int completedStep) {

@@ -202,3 +202,11 @@
 - [x] Inspecionar o ZIP sem executar arquivos e inventariar formatos, dimensões e nomes.
 - [x] Validar spritesheets, tileset, pivôs e transparência contra `docs/ASSET_ART_DIRECTION.md`.
 - [x] Aprovar, devolver ou ajustar cada asset de forma não destrutiva antes de integrá-lo ao APK.
+
+## Combate móvel — movimento e mira
+
+- [x] Mapear a zona morta, a velocidade, a orientação e o disparo atuais do personagem.
+- [x] Separar direção de movimento e direção de mira para permitir recuo e ataque lateral.
+- [x] Calibrar zona morta, aceleração, velocidade diagonal e cadência de toque no controle móvel.
+- [x] Exibir feedback discreto de direção e ponto de disparo sem encobrir o combate.
+- [x] Executar testes, montar o APK e documentar os controles ajustados.
