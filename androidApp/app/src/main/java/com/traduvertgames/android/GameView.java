@@ -66,6 +66,11 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private final RpgAudio audio;
     private final Bitmap terrainAtlas;
     private final Bitmap baseAtlas;
+    private final Bitmap lote1Tileset;
+    private final Bitmap lote1BridgeStart;
+    private final Bitmap lote1BridgeMiddle;
+    private final Bitmap lote1BridgeEnd;
+    private final Bitmap avaPortrait;
     private final Map<String, Bitmap> rpgSprites = new HashMap<>();
 
     private Thread gameThread;
@@ -128,9 +133,15 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         holder = getHolder();
         holder.addCallback(this);
         setFocusable(true);
+        paint.setFilterBitmap(false);
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         terrainAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.terrain_atlas);
         baseAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.base_out_atlas);
+        lote1Tileset = loadRpgWorldAsset("world/lote1/mist_clearing_tileset.png");
+        lote1BridgeStart = loadRpgWorldAsset("world/lote1/wood_bridge_start.png");
+        lote1BridgeMiddle = loadRpgWorldAsset("world/lote1/wood_bridge_middle.png");
+        lote1BridgeEnd = loadRpgWorldAsset("world/lote1/wood_bridge_end.png");
+        avaPortrait = loadRpgWorldAsset("world/lote1/npc_commandant_ava_portrait.png");
         loadRpgSprites();
         saveStore = new GameSaveStore(context);
         audio = new RpgAudio(context);
@@ -412,13 +423,19 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void updateEnemies(float dt) {
         for (Enemy enemy : enemies) {
+            enemy.animationTimer += dt;
             float dx = playerX - enemy.x;
             float dy = playerY - enemy.y;
             float distance = Math.max(1f, (float) Math.sqrt(dx * dx + dy * dy));
+            float beforeX = enemy.x;
+            float beforeY = enemy.y;
             if (distance < TILE * (enemy.type.boss ? 9f : 7f)) {
                 enemy.x += dx / distance * enemy.type.speed * dt;
                 enemy.y += dy / distance * enemy.type.speed * dt;
             }
+            enemy.walking = distance(beforeX, beforeY, enemy.x, enemy.y) > 0.01f;
+            if (enemy.walking) enemy.direction = directionFromVector(dx, dy);
+            enemy.walkFrame = enemy.walking ? ((int) (enemy.animationTimer / 0.14f)) % 3 : 0;
             if (distance < PLAYER_RADIUS + enemy.type.radius) {
                 health -= Math.max(1f, enemy.type.damage - armorPower() * 0.7f) * dt;
                 if (health <= 0f) {
@@ -851,7 +868,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             canvas = holder.lockCanvas();
             if (canvas == null) return;
             calculateViewport(canvas.getWidth(), canvas.getHeight());
-            canvas.drawColor(Color.rgb(8, 12, 22));
+            canvas.drawColor(Color.rgb(13, 26, 30));
             canvas.save();
             canvas.translate(offsetX, offsetY);
             canvas.scale(scale, scale);
@@ -886,7 +903,15 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float left = col * TILE;
         float top = row * TILE;
         RectF target = new RectF(left, top, left + TILE, top + TILE);
-        if (type == WATER) {
+        if (type == WATER && lote1Tileset != null) {
+            drawLote1Tile(canvas, 0, 3, target);
+        } else if (type == PATH && lote1Tileset != null) {
+            drawLote1Tile(canvas, 0, 1, target);
+        } else if (type == BRIDGE && drawLote1Bridge(canvas, col, row, target)) {
+            return;
+        } else if (type == GRASS && lote1Tileset != null) {
+            drawLote1Tile(canvas, 0, 0, target);
+        } else if (type == WATER) {
             drawAtlas(canvas, terrainAtlas, new Rect(320, 288, 384, 352), target);
         } else if (type == PATH) {
             drawAtlas(canvas, terrainAtlas, new Rect(256, 640, 320, 704), target);
@@ -899,6 +924,25 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         } else {
             drawAtlas(canvas, terrainAtlas, new Rect(192, 640, 256, 704), target);
         }
+    }
+
+    private void drawLote1Tile(Canvas canvas, int column, int row, RectF target) {
+        int left = column * 32;
+        int top = row * 32;
+        canvas.drawBitmap(lote1Tileset, new Rect(left, top, left + 32, top + 32), target, paint);
+    }
+
+    private boolean drawLote1Bridge(Canvas canvas, int col, int row, RectF target) {
+        Bitmap sprite = lote1BridgeMiddle;
+        boolean horizontalBridge = row == 10 && col >= 10 && col <= 16;
+        boolean verticalBridge = col == 7 && row >= 14 && row <= 17;
+        if (horizontalBridge && col == 10) sprite = lote1BridgeStart;
+        else if (horizontalBridge && col == 16) sprite = lote1BridgeEnd;
+        else if (verticalBridge && row == 14) sprite = lote1BridgeStart;
+        else if (verticalBridge && row == 17) sprite = lote1BridgeEnd;
+        if (sprite == null) return false;
+        canvas.drawBitmap(sprite, null, target, paint);
+        return true;
     }
 
     private void drawWorldObjects(Canvas canvas) {
@@ -960,6 +1004,10 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float x = enemy.x;
         float y = enemy.y;
         float radius = enemy.type.radius;
+        if (enemy.type == EnemyType.WOLF) {
+            String id = "enemy_moss_wolf_walk_" + directionName(enemy.direction) + "_" + enemy.walkFrame;
+            if (drawRpgSprite(canvas, id, x, y, 62f)) return;
+        }
         paint.setColor(Color.argb(100, 0, 0, 0));
         canvas.drawOval(new RectF(x - radius - 5f, y + radius - 3f, x + radius + 5f, y + radius + 8f), paint);
         paint.setColor(enemy.type.color);
@@ -1058,6 +1106,19 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                 }
             }
         }
+        loadAnimatedRpgSprite("enemy_moss_wolf");
+    }
+
+    private void loadAnimatedRpgSprite(String id) {
+        String[] states = {"walk", "attack"};
+        String[] directions = {"right", "left", "up", "down"};
+        for (String state : states) {
+            for (String direction : directions) {
+                for (int frame = 0; frame < 3; frame++) {
+                    loadRpgSprite(id + "_" + state + "_" + direction + "_" + frame);
+                }
+            }
+        }
     }
 
     private void loadRpgSprite(String id) {
@@ -1066,6 +1127,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             if (bitmap != null) rpgSprites.put(id, bitmap);
         } catch (IOException ignored) {
             // O fallback procedural mantém o APK jogável antes da primeira exportação do Content Studio.
+        }
+    }
+
+    private Bitmap loadRpgWorldAsset(String path) {
+        try (InputStream stream = getContext().getAssets().open("rpg/" + path)) {
+            return BitmapFactory.decodeStream(stream);
+        } catch (IOException ignored) {
+            return null;
         }
     }
 
@@ -1291,22 +1360,26 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void drawDialogue(Canvas canvas) {
         paint.setColor(Color.argb(235, 19, 24, 38));
-        canvas.drawRoundRect(new RectF(130f, 190f, 1022f, 400f), 18f, 18f, paint);
+        RectF panel = new RectF(170f, 392f, 982f, 506f);
+        canvas.drawRoundRect(panel, 16f, 16f, paint);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(3f);
         paint.setColor(Color.rgb(212, 176, 91));
-        canvas.drawRoundRect(new RectF(130f, 190f, 1022f, 400f), 18f, 18f, paint);
+        canvas.drawRoundRect(panel, 16f, 16f, paint);
         paint.setStyle(Paint.Style.FILL);
-        textPaint.setTextSize(24f);
+        boolean avaSpeaking = "AVA, COMANDANTE".equals(dialogueTitle) && avaPortrait != null;
+        float textLeft = avaSpeaking ? 286f : 202f;
+        if (avaSpeaking) canvas.drawBitmap(avaPortrait, null, new RectF(190f, 404f, 272f, 492f), paint);
+        textPaint.setTextSize(18f);
         textPaint.setColor(Color.rgb(255, 220, 134));
-        canvas.drawText(dialogueTitle, 170f, 235f, textPaint);
-        textPaint.setTextSize(20f);
+        canvas.drawText(dialogueTitle, textLeft, 425f, textPaint);
+        textPaint.setTextSize(16f);
         textPaint.setColor(Color.WHITE);
-        canvas.drawText(dialogueLineOne, 170f, 285f, textPaint);
-        canvas.drawText(dialogueLineTwo, 170f, 318f, textPaint);
-        textPaint.setTextSize(15f);
+        canvas.drawText(dialogueLineOne, textLeft, 456f, textPaint);
+        canvas.drawText(dialogueLineTwo, textLeft, 478f, textPaint);
+        textPaint.setTextSize(12f);
         textPaint.setColor(Color.rgb(170, 209, 222));
-        canvas.drawText(dialogueHint, 170f, 365f, textPaint);
+        canvas.drawText(dialogueHint, textLeft, 496f, textPaint);
     }
 
     private void drawInventory(Canvas canvas) {
@@ -1613,6 +1686,10 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float y;
         final EnemyType type;
         float health;
+        float animationTimer;
+        int direction = DIR_DOWN;
+        int walkFrame;
+        boolean walking;
 
         Enemy(float x, float y, EnemyType type) {
             this.x = x;

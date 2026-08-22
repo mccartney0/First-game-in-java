@@ -188,3 +188,17 @@
 - [x] Cobrir folhas válidas, dimensões inválidas e nomeação determinística com testes automatizados.
 - [x] Documentar o fluxo para Aseprite, Krita e Piskel no Git e na Wiki Viva.
 - [x] Executar testes, `validateContent`, builds e inspeção visual antes da publicação.
+
+## Direção de arte — revisão e troca de assets
+
+- [x] Auditar escala, coerência de estilo, leitura de silhueta, HUD e contraste a partir da captura do APK.
+- [x] Definir a ficha de entrega e os prompts de arte para cenário, herói, NPCs, inimigos, chefe, itens e efeitos.
+- [ ] Acrescentar critérios de validação visual ao Asset Coach para rejeitar escala, grade, alfa e nomenclatura incompatíveis.
+- [x] Receber, catalogar e importar os assets aprovados sem sobrescrever os originais enviados.
+- [x] Corrigir a composição de jogo, testar no APK e atualizar a documentação de produção visual.
+
+### Lote 1 recebido
+
+- [x] Inspecionar o ZIP sem executar arquivos e inventariar formatos, dimensões e nomes.
+- [x] Validar spritesheets, tileset, pivôs e transparência contra `docs/ASSET_ART_DIRECTION.md`.
+- [x] Aprovar, devolver ou ajustar cada asset de forma não destrutiva antes de integrá-lo ao APK.
