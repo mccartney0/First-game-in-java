@@ -43,6 +43,37 @@ Use esta paleta como direção, não como obrigação de usar todos os tons em t
 | Ameaça | `#B84A57` | Olhos, magia hostil e ataques de inimigo. |
 | Magia bruma | `#6E78B8` | Efeitos arcanos; usar pontualmente. |
 
+### Contrato Bruma & Fortaleza — alinhamento com a capa do portal
+
+A capa do portal é a referência de atmosfera do RPG. Ela não pede que cada tile copie uma pintura detalhada; pede que todos os elementos compartilhem a mesma **hierarquia de valor e material**: fundo frio e profundo, pedra azul-acinzentada, vegetação escurecida, névoa desaturada e pequenos focos de ouro-lanterna. O ouro deve conduzir o olhar para porta, relíquia, missão, retrato ou interação; nunca cobrir o mapa inteiro.
+
+| Camada visual | Material e faixa cromática | Regra de uso no APK |
+|---|---|---|
+| Céu, distância e névoa | `#0A1222`, `#17212B`, `#2B6B73` em baixa opacidade | Névoa fria vem depois do terreno e antes dos props; ela reduz saturação sem apagar a silhueta. |
+| Pedra, muralha e ruína | `#27354B`, `#40516B`, `#71819A` | Prefira blocos de pedra, frisos e rachaduras a superfícies lisas ou azul-ciano. |
+| Mata e solo | `#2D493E`, `#3B5D49`, `#5E493A` | Verde e terra ficam abaixo do brilho de personagens, perigos e objetivos. Evite grama neon e marrom laranja. |
+| Ouro-lanterna | `#D7B45F`, `#F5D98B` | Use em contornos finos, fogo, portal, botão ativo, relíquia e textos prioritários; não como preenchimento constante. |
+| Ameaça | `#A94A61`, `#E45F75` | Reserve para barra de vida hostil, olhar de criatura, impacto e feitiço inimigo. |
+| Interface | obsidiana `#0A1222` com borda ouro-lanterna e texto marfim `#F1E9D0` | Painéis precisam revelar o jogo, não competir com sprites e mapa. |
+
+> Todo novo asset deve passar na pergunta: **“parece existir no caminho de pedra e névoa que leva à Fortaleza?”** Se a resposta depender de cor neon, gradiente suave, borda preta pura ou volume cartunesco, o asset deve voltar à revisão.
+
+#### Luz e composição
+
+O mundo usa iluminação fria e difusa, com uma fonte secundária quente local — lanterna, portal, relíquia ou fogo. Não desenhe sombras pretas chapadas nem brilhos com desfoque. A luz quente ocupa poucos pixels e deve servir como ponto de navegação ou de narrativa. Personagens e inimigos precisam ter contorno azul-marinho seletivo e um valor diferente do tile que ocupam, mesmo sob a camada de névoa.
+
+#### Prompt aditivo para os próximos assets
+
+Acrescente o trecho abaixo a cada prompt de sprite, tile ou prop. Ele complementa o Prompt Mestre da seção 5 sem mudar grade, tamanho, pivô ou convenção de nome.
+
+```text
+Art direction: match a moody dark-fantasy fortress archive. Use cold blue-gray stone,
+desaturated forest greens, deep navy shadows, thin lantern-gold focal accents and
+low, misty contrast. The world feels ancient, damp and guarded — never cheerful,
+neon, glossy, cartoon-vector or brightly saturated. Keep hard pixel clusters and a
+single subtle lantern-style light direction; no smooth gradients, bloom or blur.
+```
+
 ## 3. Formato de entrega que o Asset Coach aceita
 
 O formato recomendado é uma spritesheet com **três colunas e uma linha**, sem espaço entre células. O Asset Coach dividirá a folha da esquerda para a direita e nomeará os frames de `0` a `2`.

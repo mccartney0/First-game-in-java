@@ -197,6 +197,14 @@
 - [x] Receber, catalogar e importar os assets aprovados sem sobrescrever os originais enviados.
 - [x] Corrigir a composição de jogo, testar no APK e atualizar a documentação de produção visual.
 
+### Realinhamento com a capa do portal
+
+- [x] Auditar as divergências de paleta, material, iluminação e densidade visual entre capa e APK.
+- [x] Definir o contrato Bruma & Fortaleza para terreno, personagens, criaturas, efeitos e HUD.
+- [x] Aplicar névoa fria, pedra azul-acinzentada, ouro-lanterna e contraste controlado aos assets e ao mapa de runtime.
+- [x] Verificar a legibilidade móvel e a coerência com a capa em APK, documentação e portal.
+- [ ] Publicar o realinhamento visual sem modificar as fontes de arte catalogadas.
+
 ### Lote 1 recebido
 
 - [x] Inspecionar o ZIP sem executar arquivos e inventariar formatos, dimensões e nomes.

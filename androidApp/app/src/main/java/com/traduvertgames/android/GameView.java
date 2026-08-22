@@ -45,6 +45,15 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private static final float PLAYER_MOVE_SPEED = 204f;
     private static final float AIM_REACH = 118f;
     private static final float ACTION_HOLD_DELAY = 0.12f;
+    // Direção Bruma & Fortaleza: obsidiana fria, névoa teal e ouro-lanterna de foco.
+    private static final int INK = Color.rgb(10, 18, 34);
+    private static final int INK_SOFT = Color.rgb(16, 29, 49);
+    private static final int MIST = Color.rgb(121, 216, 214);
+    private static final int MIST_DEEP = Color.rgb(43, 143, 155);
+    private static final int GOLD = Color.rgb(230, 189, 104);
+    private static final int GOLD_PALE = Color.rgb(255, 229, 164);
+    private static final int THREAT = Color.rgb(184, 74, 87);
+    private static final int COLD_STONE = Color.rgb(39, 53, 75);
     private static final int DIR_RIGHT = 0;
     private static final int DIR_LEFT = 1;
     private static final int DIR_UP = 2;
@@ -913,7 +922,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             canvas = holder.lockCanvas();
             if (canvas == null) return;
             calculateViewport(canvas.getWidth(), canvas.getHeight());
-            canvas.drawColor(Color.rgb(13, 26, 30));
+            canvas.drawColor(INK);
             canvas.save();
             canvas.translate(offsetX, offsetY);
             canvas.scale(scale, scale);
@@ -931,6 +940,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         for (int row = 0; row < ROWS; row++) {
             for (int col = 0; col < COLS; col++) drawTile(canvas, col, row, tiles[row][col]);
         }
+        drawColdMist(canvas);
         drawWorldObjects(canvas);
         drawPickups(canvas);
         drawEnemies(canvas);
@@ -942,6 +952,16 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (dialogueVisible) drawDialogue(canvas);
         if (inventoryVisible) drawInventory(canvas);
         if (gameOver) drawGameOver(canvas);
+    }
+
+    private void drawColdMist(Canvas canvas) {
+        paint.setColor(Color.argb(32, 43, 143, 155));
+        canvas.drawRect(cameraX, cameraY, cameraX + 1152f, cameraY + 648f, paint);
+        paint.setColor(Color.argb(22, 121, 216, 214));
+        for (int band = 0; band < 3; band++) {
+            float top = cameraY + 80f + band * 178f;
+            canvas.drawRect(cameraX, top, cameraX + 1152f, top + 42f, paint);
+        }
     }
 
     private void drawTile(Canvas canvas, int col, int row, char type) {
@@ -1007,11 +1027,11 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         if (!relicCollected) {
             float relicX = TILE * 20.5f;
             float relicY = TILE * 6.5f;
-            paint.setColor(Color.argb(100, 106, 222, 255));
+            paint.setColor(Color.argb(100, 43, 143, 155));
             canvas.drawCircle(relicX, relicY, 23f, paint);
-            paint.setColor(Color.rgb(198, 244, 255));
+            paint.setColor(MIST);
             canvas.drawCircle(relicX, relicY, 11f, paint);
-            paint.setColor(Color.WHITE);
+            paint.setColor(GOLD_PALE);
             canvas.drawCircle(relicX, relicY - 4f, 4f, paint);
         }
         if (!chestOpened && !drawWorldBitmap(canvas, completeChest,
@@ -1026,14 +1046,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                 npc.walkFrame, npc.walking, npc.attackVisualTimer);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(11f);
-        textPaint.setColor(Color.rgb(255, 231, 154));
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(npc.name, npc.x, npc.y - 31f, textPaint);
         textPaint.setTextAlign(Paint.Align.LEFT);
     }
 
     private void drawPickups(Canvas canvas) {
         for (ItemPickup pickup : pickups) {
-            paint.setColor(pickup.item.consumable ? Color.rgb(239, 73, 87) : Color.rgb(245, 200, 86));
+            paint.setColor(pickup.item.consumable ? THREAT : GOLD);
             canvas.drawCircle(pickup.x, pickup.y, 12f, paint);
             paint.setColor(Color.WHITE);
             canvas.drawCircle(pickup.x, pickup.y, 4f, paint);
@@ -1043,10 +1063,10 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private void drawEnemies(Canvas canvas) {
         for (Enemy enemy : enemies) {
             drawEnemy(canvas, enemy);
-            paint.setColor(Color.argb(220, 115, 33, 57));
+            paint.setColor(Color.argb(220, 62, 29, 45));
             canvas.drawRoundRect(new RectF(enemy.x - enemy.type.radius, enemy.y - enemy.type.radius - 10f,
                     enemy.x + enemy.type.radius, enemy.y - enemy.type.radius - 4f), 3f, 3f, paint);
-            paint.setColor(enemy.type.boss ? Color.rgb(255, 197, 67) : Color.rgb(247, 91, 106));
+            paint.setColor(enemy.type.boss ? GOLD : THREAT);
             float ratio = Math.max(0f, enemy.health / enemy.type.maxHealth);
             canvas.drawRoundRect(new RectF(enemy.x - enemy.type.radius, enemy.y - enemy.type.radius - 10f,
                     enemy.x - enemy.type.radius + enemy.type.radius * 2f * ratio,
@@ -1069,14 +1089,14 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         paint.setColor(enemy.type.color);
         if (enemy.type.boss) {
             canvas.drawCircle(x, y, radius + 11f, paint);
-            paint.setColor(Color.argb(105, 255, 60, 90));
+            paint.setColor(Color.argb(105, 110, 120, 184));
             canvas.drawCircle(x, y, radius + 19f, paint);
             paint.setColor(enemy.type.color);
             canvas.drawCircle(x, y, radius, paint);
-            paint.setColor(Color.rgb(255, 225, 105));
+            paint.setColor(GOLD_PALE);
             canvas.drawCircle(x - radius * 0.35f, y - 4f, 5f, paint);
             canvas.drawCircle(x + radius * 0.35f, y - 4f, 5f, paint);
-            paint.setColor(Color.rgb(70, 20, 35));
+            paint.setColor(Color.rgb(51, 24, 43));
             canvas.drawRect(x - radius * 0.45f, y + radius * 0.2f, x + radius * 0.45f, y + radius * 0.45f, paint);
         } else if (enemy.type == EnemyType.SPIDER) {
             canvas.drawCircle(x, y, radius, paint);
@@ -1107,7 +1127,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private void drawBolts(Canvas canvas) {
         for (MagicBolt bolt : bolts) {
             if (!drawRpgSprite(canvas, bolt.spriteId, bolt.x, bolt.y, 27f)) {
-                paint.setColor(Color.rgb(116, 225, 255));
+                paint.setColor(MIST);
                 canvas.drawCircle(bolt.x, bolt.y, bolt.radius + 5f, paint);
                 paint.setColor(Color.WHITE);
                 canvas.drawCircle(bolt.x, bolt.y, bolt.radius, paint);
@@ -1116,7 +1136,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void drawPlayer(Canvas canvas) {
-        int playerColor = equippedArmor == null ? Color.rgb(105, 196, 255) : Color.rgb(154, 131, 255);
+        int playerColor = equippedArmor == null ? MIST_DEEP : Color.rgb(110, 120, 184);
         int displayedDirection = attackVisualTimer > 0f ? attackDirection : playerDirection;
         drawAnimatedCharacter(canvas, "hero", playerX, playerY, 46f, playerColor, displayedDirection,
                 walkFrame, playerWalking, attackVisualTimer);
@@ -1127,7 +1147,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float weaponX = playerX + dx / distance * attackReach;
         float weaponY = playerY + dy / distance * (attackVisualTimer > 0f ? 15f : 10f);
         drawRpgSprite(canvas, weaponSpriteId(), weaponX, weaponY, 28f);
-        paint.setColor(Color.argb(170, 211, 246, 255));
+        paint.setColor(Color.argb(170, 121, 216, 214));
         paint.setStrokeWidth(4f);
         canvas.drawLine(playerX + dx / distance * 12f, playerY + dy / distance * 12f,
                 playerX + dx / distance * 25f, playerY + dy / distance * 25f, paint);
@@ -1136,7 +1156,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             float markerY = playerY + dy / distance * 74f;
             paint.setStyle(Paint.Style.STROKE);
             paint.setStrokeWidth(2f);
-            paint.setColor(Color.argb(220, 255, 226, 129));
+            paint.setColor(Color.argb(220, 230, 189, 104));
             canvas.drawCircle(markerX, markerY, 8f, paint);
             canvas.drawLine(markerX - 12f, markerY, markerX + 12f, markerY, paint);
             canvas.drawLine(markerX, markerY - 12f, markerX, markerY + 12f, paint);
@@ -1263,7 +1283,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private void drawAttackAccent(Canvas canvas, float x, float y, int direction, float size) {
         float dx = directionX(direction);
         float dy = directionY(direction);
-        paint.setColor(Color.argb(175, 255, 231, 147));
+        paint.setColor(Color.argb(175, 230, 189, 104));
         paint.setStrokeWidth(3f);
         canvas.drawLine(x + dx * size * 0.08f - dy * size * 0.18f, y + dy * size * 0.08f + dx * size * 0.18f,
                 x + dx * size * 0.58f + dy * size * 0.15f, y + dy * size * 0.58f - dx * size * 0.15f, paint);
@@ -1283,55 +1303,55 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void drawHud(Canvas canvas) {
-        paint.setColor(Color.argb(224, 8, 15, 29));
+        paint.setColor(Color.argb(234, 10, 18, 34));
         canvas.drawRoundRect(new RectF(18f, 14f, 572f, 105f), 12f, 12f, paint);
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setTextSize(22f);
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(currentRegionTitle(), 34f, 42f, textPaint);
         textPaint.setTextSize(14f);
-        textPaint.setColor(Color.rgb(164, 211, 226));
+        textPaint.setColor(MIST);
         canvas.drawText("NÍVEL " + level + "   XP " + xp + "/" + (level * 60) + "   OURO " + gold, 34f, 65f, textPaint);
         textPaint.setTextSize(12f);
-        textPaint.setColor(Color.rgb(201, 185, 239));
+        textPaint.setColor(Color.rgb(185, 193, 214));
         canvas.drawText("ATQ " + attackPower() + "   DEF " + armorPower() + "   MAG " + magicPower() + "   DERROTADOS " + defeated, 34f, 86f, textPaint);
-        paint.setColor(Color.rgb(42, 54, 69));
+        paint.setColor(COLD_STONE);
         canvas.drawRoundRect(new RectF(34f, 93f, 234f, 101f), 5f, 5f, paint);
-        paint.setColor(Color.rgb(83, 219, 137));
+        paint.setColor(MIST_DEEP);
         canvas.drawRoundRect(new RectF(34f, 93f, 34f + 200f * Math.min(1f, health / maxHealth()), 101f), 5f, 5f, paint);
 
-        drawUtilityButton(canvas, 250f, "SALVAR", Color.rgb(62, 116, 104));
-        drawUtilityButton(canvas, 362f, "CARREGAR", Color.rgb(64, 83, 136));
+        drawUtilityButton(canvas, 250f, "SALVAR", Color.rgb(29, 73, 75));
+        drawUtilityButton(canvas, 362f, "CARREGAR", COLD_STONE);
         drawUtilityButton(canvas, 474f, audio.isMusicEnabled() ? "MÚSICA" : "MÚSICA OFF",
-                audio.isMusicEnabled() ? Color.rgb(130, 95, 48) : Color.rgb(70, 70, 78));
+                audio.isMusicEnabled() ? Color.rgb(92, 72, 44) : Color.rgb(51, 57, 70));
 
-        paint.setColor(inventoryVisible ? Color.rgb(80, 105, 176) : Color.argb(220, 8, 15, 29));
+        paint.setColor(inventoryVisible ? COLD_STONE : Color.argb(230, 10, 18, 34));
         canvas.drawRoundRect(new RectF(570f, 18f, 705f, 86f), 12f, 12f, paint);
         textPaint.setTextSize(18f);
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText("BOLSA", 600f, 48f, textPaint);
         textPaint.setTextSize(12f);
-        textPaint.setColor(Color.rgb(178, 212, 226));
+        textPaint.setColor(MIST);
         canvas.drawText(inventory.size() + "/12 itens", 598f, 69f, textPaint);
 
-        paint.setColor(Color.argb(220, 8, 15, 29));
+        paint.setColor(Color.argb(230, 10, 18, 34));
         canvas.drawRoundRect(new RectF(730f, 18f, 1134f, 86f), 12f, 12f, paint);
         textPaint.setTextSize(15f);
-        textPaint.setColor(Color.rgb(255, 226, 145));
+        textPaint.setColor(GOLD);
         canvas.drawText("MISSÃO PRINCIPAL", 750f, 42f, textPaint);
         textPaint.setTextSize(14f);
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(currentQuest(), 750f, 65f, textPaint);
 
         drawBossBar(canvas);
         drawControlPad(canvas, MOVE_PAD_X, MOVE_PAD_Y, moveAxisX, moveAxisY, false, "MOVER", "ANALÓGICO");
         drawControlPad(canvas, AIM_PAD_X, AIM_PAD_Y, aimAxisX, aimAxisY, actionHeld, "MIRA", "TOQUE: AÇÃO");
         if (messageTimer > 0f || dialogueVisible) {
-            paint.setColor(Color.argb(210, 5, 12, 23));
+            paint.setColor(Color.argb(222, 10, 18, 34));
             canvas.drawRoundRect(new RectF(250f, 574f, 902f, 626f), 12f, 12f, paint);
             textPaint.setTextAlign(Paint.Align.CENTER);
             textPaint.setTextSize(15f);
-            textPaint.setColor(Color.WHITE);
+            textPaint.setColor(GOLD_PALE);
             canvas.drawText(message, 576f, 606f, textPaint);
             textPaint.setTextAlign(Paint.Align.LEFT);
         }
@@ -1339,24 +1359,24 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
 
     private void drawControlPad(Canvas canvas, float centerX, float centerY, float axisX, float axisY,
             boolean active, String title, String subtitle) {
-        paint.setColor(active ? Color.argb(70, 255, 209, 91) : Color.argb(48, 77, 151, 180));
+        paint.setColor(active ? Color.argb(74, 230, 189, 104) : Color.argb(48, 43, 143, 155));
         canvas.drawCircle(centerX, centerY, CONTROL_RADIUS, paint);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(active ? 3f : 2f);
-        paint.setColor(active ? Color.rgb(255, 222, 115) : Color.argb(175, 133, 215, 232));
+        paint.setColor(active ? GOLD : Color.argb(175, 121, 216, 214));
         canvas.drawCircle(centerX, centerY, CONTROL_RADIUS, paint);
         float knobDistance = CONTROL_RADIUS - CONTROL_KNOB_RADIUS - 6f;
         float knobX = centerX + axisX * knobDistance;
         float knobY = centerY + axisY * knobDistance;
         paint.setStyle(Paint.Style.FILL);
-        paint.setColor(active ? Color.argb(220, 255, 227, 137) : Color.argb(185, 165, 222, 238));
+        paint.setColor(active ? Color.argb(220, 255, 229, 164) : Color.argb(185, 121, 216, 214));
         canvas.drawCircle(knobX, knobY, CONTROL_KNOB_RADIUS, paint);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(11f);
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(title, centerX, centerY + 4f, textPaint);
         textPaint.setTextSize(8f);
-        textPaint.setColor(Color.rgb(182, 220, 234));
+        textPaint.setColor(MIST);
         canvas.drawText(subtitle, centerX, centerY + 20f, textPaint);
         textPaint.setTextAlign(Paint.Align.LEFT);
     }
@@ -1402,7 +1422,7 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float pulse = 1f + (float) Math.sin(animationClock * 5f) * 0.08f;
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(3f);
-        paint.setColor(Color.argb(220, 255, 224, 126));
+        paint.setColor(Color.argb(220, 230, 189, 104));
         canvas.drawCircle(targetX, targetY, 70f * pulse, paint);
         paint.setStyle(Paint.Style.FILL);
 
@@ -1411,36 +1431,41 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float top = targetAtTop ? 112f : 430f;
         float right = left + 530f;
         float bottom = top + 92f;
-        paint.setColor(Color.argb(239, 12, 21, 37));
+        paint.setColor(Color.argb(239, 10, 18, 34));
         canvas.drawRoundRect(new RectF(left, top, right, bottom), 14f, 14f, paint);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(2f);
-        paint.setColor(Color.rgb(231, 194, 108));
+        paint.setColor(GOLD);
         canvas.drawRoundRect(new RectF(left, top, right, bottom), 14f, 14f, paint);
         paint.setStyle(Paint.Style.FILL);
         float arrowStartX = clamp(targetX, left + 32f, right - 32f);
         float arrowStartY = targetAtTop ? bottom : top;
-        paint.setColor(Color.rgb(231, 194, 108));
+        paint.setColor(GOLD);
         paint.setStrokeWidth(3f);
         canvas.drawLine(arrowStartX, arrowStartY, targetX, targetY - (targetAtTop ? 52f : -52f), paint);
         textPaint.setTextAlign(Paint.Align.LEFT);
         textPaint.setTextSize(14f);
-        textPaint.setColor(Color.rgb(255, 222, 137));
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(title, left + 20f, top + 29f, textPaint);
         textPaint.setTextSize(16f);
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(detail, left + 20f, top + 60f, textPaint);
         textPaint.setTextSize(11f);
-        textPaint.setColor(Color.rgb(165, 209, 224));
+        textPaint.setColor(MIST);
         canvas.drawText("O tutorial avança quando a ação é realizada.", left + 20f, top + 80f, textPaint);
     }
 
     private void drawUtilityButton(Canvas canvas, float left, String label, int color) {
         paint.setColor(color);
         canvas.drawRoundRect(new RectF(left, 18f, left + 98f, 58f), 10f, 10f, paint);
+        paint.setStyle(Paint.Style.STROKE);
+        paint.setStrokeWidth(1.5f);
+        paint.setColor(Color.argb(190, 230, 189, 104));
+        canvas.drawRoundRect(new RectF(left, 18f, left + 98f, 58f), 10f, 10f, paint);
+        paint.setStyle(Paint.Style.FILL);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(11f);
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(label, left + 49f, 43f, textPaint);
         textPaint.setTextAlign(Paint.Align.LEFT);
     }
@@ -1454,40 +1479,40 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             }
         }
         if (boss == null) return;
-        paint.setColor(Color.argb(220, 20, 8, 22));
+        paint.setColor(Color.argb(230, 10, 18, 34));
         canvas.drawRoundRect(new RectF(300f, 105f, 852f, 135f), 8f, 8f, paint);
-        paint.setColor(Color.rgb(103, 25, 50));
+        paint.setColor(Color.rgb(67, 31, 49));
         canvas.drawRoundRect(new RectF(316f, 115f, 836f, 125f), 5f, 5f, paint);
-        paint.setColor(Color.rgb(247, 79, 103));
+        paint.setColor(THREAT);
         canvas.drawRoundRect(new RectF(316f, 115f, 316f + 520f * Math.max(0f, boss.health / boss.type.maxHealth), 125f), 5f, 5f, paint);
         textPaint.setTextAlign(Paint.Align.CENTER);
         textPaint.setTextSize(13f);
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(boss.type.title + "  —  CHEFE", 576f, 112f, textPaint);
         textPaint.setTextAlign(Paint.Align.LEFT);
     }
 
     private void drawDialogue(Canvas canvas) {
-        paint.setColor(Color.argb(235, 19, 24, 38));
+        paint.setColor(Color.argb(238, 10, 18, 34));
         RectF panel = new RectF(170f, 392f, 982f, 506f);
         canvas.drawRoundRect(panel, 16f, 16f, paint);
         paint.setStyle(Paint.Style.STROKE);
         paint.setStrokeWidth(3f);
-        paint.setColor(Color.rgb(212, 176, 91));
+        paint.setColor(GOLD);
         canvas.drawRoundRect(panel, 16f, 16f, paint);
         paint.setStyle(Paint.Style.FILL);
         boolean avaSpeaking = "AVA, COMANDANTE".equals(dialogueTitle) && avaPortrait != null;
         float textLeft = avaSpeaking ? 286f : 202f;
         if (avaSpeaking) canvas.drawBitmap(avaPortrait, null, new RectF(190f, 404f, 272f, 492f), paint);
         textPaint.setTextSize(18f);
-        textPaint.setColor(Color.rgb(255, 220, 134));
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(dialogueTitle, textLeft, 425f, textPaint);
         textPaint.setTextSize(16f);
-        textPaint.setColor(Color.WHITE);
+        textPaint.setColor(GOLD_PALE);
         canvas.drawText(dialogueLineOne, textLeft, 456f, textPaint);
         canvas.drawText(dialogueLineTwo, textLeft, 478f, textPaint);
         textPaint.setTextSize(12f);
-        textPaint.setColor(Color.rgb(170, 209, 222));
+        textPaint.setColor(MIST);
         canvas.drawText(dialogueHint, textLeft, 496f, textPaint);
     }
 
