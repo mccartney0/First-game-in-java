@@ -203,7 +203,7 @@
 - [x] Definir o contrato Bruma & Fortaleza para terreno, personagens, criaturas, efeitos e HUD.
 - [x] Aplicar névoa fria, pedra azul-acinzentada, ouro-lanterna e contraste controlado aos assets e ao mapa de runtime.
 - [x] Verificar a legibilidade móvel e a coerência com a capa em APK, documentação e portal.
-- [ ] Publicar o realinhamento visual sem modificar as fontes de arte catalogadas.
+- [x] Publicar o realinhamento visual sem modificar as fontes de arte catalogadas.
 
 ### Lote 1 recebido
 
