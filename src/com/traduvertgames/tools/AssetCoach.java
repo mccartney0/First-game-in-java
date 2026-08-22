@@ -195,6 +195,58 @@ public final class AssetCoach {
         }
     }
 
+    /** Grade calculada para uma spritesheet antes de qualquer frame ser gravado. */
+    public static final class SpriteSheetLayout {
+        public final int sheetWidth;
+        public final int sheetHeight;
+        public final int frameWidth;
+        public final int frameHeight;
+        public final int columns;
+        public final int rows;
+
+        private SpriteSheetLayout(int sheetWidth, int sheetHeight, int frameWidth, int frameHeight) {
+            this.sheetWidth = sheetWidth;
+            this.sheetHeight = sheetHeight;
+            this.frameWidth = frameWidth;
+            this.frameHeight = frameHeight;
+            this.columns = sheetWidth / frameWidth;
+            this.rows = sheetHeight / frameHeight;
+        }
+
+        public int frameCount() { return columns * rows; }
+
+        public String describe() {
+            return columns + " coluna(s) × " + rows + " linha(s) + " + frameCount()
+                    + " frame(s) de " + frameWidth + "×" + frameHeight + " px";
+        }
+    }
+
+    /** Resultado auditável da divisão não destrutiva de uma spritesheet em arquivos PNG individuais. */
+    public static final class SpriteSheetImport {
+        public final File source;
+        public final File outputDirectory;
+        public final String prefix;
+        public final SpriteSheetLayout layout;
+        public final List<File> frames;
+
+        private SpriteSheetImport(File source, File outputDirectory, String prefix, SpriteSheetLayout layout, List<File> frames) {
+            this.source = source;
+            this.outputDirectory = outputDirectory;
+            this.prefix = prefix;
+            this.layout = layout;
+            this.frames = Collections.unmodifiableList(new ArrayList<File>(frames));
+        }
+
+        public String toReport() {
+            return "Spritesheet importada sem alterar a fonte.\n\nArquivo: " + source.getName()
+                    + "\nGrade: " + layout.describe()
+                    + "\nFrames individuais: " + frames.size()
+                    + "\nPasta de trabalho: " + outputDirectory.getAbsolutePath()
+                    + "\nNomeação: " + prefix + "_0.png até " + prefix + "_" + Math.max(0, frames.size() - 1) + ".png"
+                    + "\n\nOs PNGs extraídos já estão na fila para comparar, normalizar ou reproduzir antes da exportação.";
+        }
+    }
+
     /** Cobertura de frames esperada pelo runtime para uma entidade animável. */
     public static final class AnimationCoverage {
         public final String id;
@@ -366,6 +418,69 @@ public final class AssetCoach {
             }
         }
         return new BatchReport(items);
+    }
+
+    /** Sugere um prefixo seguro a partir do nome da spritesheet, sem assumir entidade, ação ou direção. */
+    public static String suggestedSpritesheetPrefix(File source) {
+        return baseId(source);
+    }
+
+    /**
+     * Inspeciona a grade de uma spritesheet PNG. A leitura usa ordem da esquerda para a direita e,
+     * depois, de cima para baixo. Dimensões que deixam restos são recusadas para não criar frames truncados.
+     */
+    public static SpriteSheetLayout inspectSpritesheet(File source, int frameWidth, int frameHeight) throws IOException {
+        if (source == null || !source.isFile()) throw new IOException("Selecione uma spritesheet PNG existente.");
+        if (frameWidth <= 0 || frameHeight <= 0) throw new IOException("A largura e a altura de cada célula devem ser maiores que zero.");
+        BufferedImage sheet = ImageIO.read(source);
+        if (sheet == null) throw new IOException("A spritesheet não pôde ser lida como PNG.");
+        if (sheet.getWidth() < frameWidth || sheet.getHeight() < frameHeight) {
+            throw new IOException("A célula informada é maior que a spritesheet de " + sheet.getWidth() + "×" + sheet.getHeight() + " px.");
+        }
+        if (sheet.getWidth() % frameWidth != 0 || sheet.getHeight() % frameHeight != 0) {
+            throw new IOException("A spritesheet de " + sheet.getWidth() + "×" + sheet.getHeight()
+                    + " px não fecha uma grade de " + frameWidth + "×" + frameHeight
+                    + " px. Ajuste a célula ou exporte sem margens extras.");
+        }
+        return new SpriteSheetLayout(sheet.getWidth(), sheet.getHeight(), frameWidth, frameHeight);
+    }
+
+    /**
+     * Copia as células de uma spritesheet para PNGs individuais em uma pasta temporária do Coach.
+     * O arquivo de origem nunca é alterado; uma nova importação substitui somente os frames de trabalho
+     * do mesmo prefixo para que uma grade anterior não permaneça na fila.
+     */
+    public static SpriteSheetImport splitSpritesheet(File source, String prefix, int frameWidth, int frameHeight,
+            File projectRoot) throws IOException {
+        if (projectRoot == null) throw new IOException("A raiz do projeto é obrigatória para importar uma spritesheet.");
+        SpriteSheetLayout layout = inspectSpritesheet(source, frameWidth, frameHeight);
+        BufferedImage sheet = ImageIO.read(source);
+        String safePrefix = safeId(prefix);
+        File directory = new File(projectRoot, "build/asset-coach/spritesheets/" + safePrefix).getAbsoluteFile();
+        Files.createDirectories(directory.toPath());
+        File[] oldFrames = directory.listFiles((folder, name) -> name.matches(java.util.regex.Pattern.quote(safePrefix) + "_[0-9]+\\.png"));
+        if (oldFrames != null) for (File oldFrame : oldFrames) Files.deleteIfExists(oldFrame.toPath());
+
+        List<File> frames = new ArrayList<File>();
+        int index = 0;
+        for (int row = 0; row < layout.rows; row++) {
+            for (int column = 0; column < layout.columns; column++) {
+                BufferedImage frame = new BufferedImage(layout.frameWidth, layout.frameHeight, BufferedImage.TYPE_INT_ARGB);
+                Graphics2D graphics = frame.createGraphics();
+                try {
+                    graphics.drawImage(sheet, 0, 0, layout.frameWidth, layout.frameHeight,
+                            column * layout.frameWidth, row * layout.frameHeight,
+                            (column + 1) * layout.frameWidth, (row + 1) * layout.frameHeight, null);
+                } finally {
+                    graphics.dispose();
+                }
+                File output = new File(directory, safePrefix + "_" + index + ".png");
+                if (!ImageIO.write(frame, "png", output)) throw new IOException("Não foi possível gravar " + output.getName() + ".");
+                frames.add(output);
+                index++;
+            }
+        }
+        return new SpriteSheetImport(source.getAbsoluteFile(), directory, safePrefix, layout, frames);
     }
 
     /** Produz uma prévia não persistida para a comparação antes/depois na interface. */

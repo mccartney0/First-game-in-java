@@ -30,11 +30,14 @@ import javax.swing.JButton;
 import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JLabel;
+import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.Timer;
+import javax.swing.filechooser.FileNameExtensionFilter;
 
 /** Operações em lote e comparação reversível que complementam a aba Asset Coach. */
 final class AssetCoachBatchPanel extends JPanel {
@@ -70,20 +73,21 @@ final class AssetCoachBatchPanel extends JPanel {
         JLabel title = new JLabel("ASSET COACH — LOTE, COMPARAÇÃO E DESFAZER");
         title.setFont(new Font("Dialog", Font.BOLD, 15));
         title.setForeground(new Color(245, 218, 146));
-        JLabel note = new JLabel("Arraste PNGs para a fila. A fonte nunca é alterada; regras atuam somente em cópias de trabalho.");
+        JLabel note = new JLabel("Arraste PNGs ou divida uma spritesheet. A fonte nunca é alterada; regras atuam somente em cópias de trabalho.");
         note.setForeground(new Color(194, 219, 196));
         JPanel header = new JPanel(new BorderLayout(4, 4));
         header.setOpaque(false); header.add(title, BorderLayout.NORTH); header.add(note, BorderLayout.SOUTH);
         add(header, BorderLayout.NORTH);
 
         JButton choose = new JButton("Selecionar PNGs…");
+        JButton importSheet = new JButton("Importar spritesheet…");
         JButton process = new JButton("Normalizar lote e exportar");
         JButton undo = new JButton("Desfazer última cópia");
         JButton playPreview = new JButton("Prévia animada ▶");
         JButton pausePreview = new JButton("Pausar ⏸");
         JPanel commands = new JPanel();
         commands.setOpaque(false); commands.add(new JLabel("Preset:")); commands.add(preset);
-        commands.add(new JLabel("Tipo runtime:")); commands.add(kind); commands.add(choose);
+        commands.add(new JLabel("Tipo runtime:")); commands.add(kind); commands.add(choose); commands.add(importSheet);
         commands.add(new JLabel("FPS:")); commands.add(previewFps); commands.add(playPreview); commands.add(pausePreview);
         commands.add(process); commands.add(undo);
 
@@ -125,6 +129,7 @@ final class AssetCoachBatchPanel extends JPanel {
         reportScroll.setBorder(BorderFactory.createTitledBorder("Resultado por arquivo")); add(reportScroll, BorderLayout.SOUTH);
 
         choose.addActionListener(event -> chooseFiles());
+        importSheet.addActionListener(event -> importSpritesheet());
         process.addActionListener(event -> processBatch());
         undo.addActionListener(event -> undoLastCopy());
         playPreview.addActionListener(event -> startAnimatedPreview());
@@ -146,6 +151,36 @@ final class AssetCoachBatchPanel extends JPanel {
         chooser.setMultiSelectionEnabled(true);
         if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
         replaceSources(chooser.getSelectedFiles(), "Seletor de arquivos");
+    }
+
+    private void importSpritesheet() {
+        JFileChooser chooser = new JFileChooser(projectRoot);
+        chooser.setDialogTitle("Escolha uma spritesheet PNG");
+        chooser.setFileFilter(new FileNameExtensionFilter("Spritesheet PNG", "png"));
+        if (chooser.showOpenDialog(this) != JFileChooser.APPROVE_OPTION) return;
+        File sheet = chooser.getSelectedFile();
+        JTextField prefix = new JTextField(AssetCoach.suggestedSpritesheetPrefix(sheet));
+        JTextField width = new JTextField(String.valueOf(AssetCoach.TARGET_SIZE));
+        JTextField height = new JTextField(String.valueOf(AssetCoach.TARGET_SIZE));
+        JPanel form = new JPanel(new GridLayout(0, 2, 7, 7));
+        form.add(new JLabel("Prefixo dos frames:")); form.add(prefix);
+        form.add(new JLabel("Largura da célula (px):")); form.add(width);
+        form.add(new JLabel("Altura da célula (px):")); form.add(height);
+        form.add(new JLabel("Ordem: esquerda → direita, cima → baixo.")); form.add(new JLabel("Ex.: hero_walk_down gera hero_walk_down_0.png"));
+        if (JOptionPane.showConfirmDialog(this, form, "Dividir spritesheet em frames", JOptionPane.OK_CANCEL_OPTION,
+                JOptionPane.PLAIN_MESSAGE) != JOptionPane.OK_OPTION) return;
+        try {
+            int frameWidth = Integer.parseInt(width.getText().trim());
+            int frameHeight = Integer.parseInt(height.getText().trim());
+            AssetCoach.SpriteSheetImport imported = AssetCoach.splitSpritesheet(sheet, prefix.getText(), frameWidth, frameHeight, projectRoot);
+            replaceSources(imported.frames.toArray(new File[0]), "Spritesheet " + sheet.getName());
+            report.setText(imported.toReport());
+            activity.append("\nSpritesheet dividida: " + imported.layout.describe() + " em " + imported.outputDirectory.getAbsolutePath());
+        } catch (NumberFormatException failure) {
+            report.setText("Informe largura e altura inteiras para cada célula da spritesheet.");
+        } catch (Exception failure) {
+            report.setText("Não foi possível dividir a spritesheet: " + failure.getMessage());
+        }
     }
 
     private void receiveDrop(DropTargetDropEvent event) {

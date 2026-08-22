@@ -58,6 +58,7 @@ Após uma exportação, o botão **Desfazer última cópia** remove somente o PN
 |---|---|---|
 | Um PNG isolado | Use a aba **Asset Coach**. | Diagnóstico e exportação com metadados explícitos. |
 | Vários PNGs | Use **Lote & comparar**. | Falhas são isoladas por arquivo e a fila produz um resumo. |
+| Uma spritesheet em grade | Use **Importar spritesheet…** em **Lote & comparar**. | As células viram PNGs de trabalho, em ordem e sem alterar a folha-fonte. |
 | Dúvida sobre tratamento | Consulte **Antes/Depois** antes de exportar. | A prévia normalizada ainda não toca no disco. |
 | Exportação indevida na sessão atual | Use **Desfazer última cópia**. | Somente a última cópia gerada é apagada; a fonte permanece intacta. |
 | Override legado de artista | Use `res/assets/incoming/user_uploads/` e `importUserAssets`. | O fluxo legado continua disponível para convenções de override. |
@@ -87,6 +88,21 @@ Na aba **Lote & comparar**, selecione o editor de origem antes de revisar a fila
 
 O nome de cada arquivo continua determinístico: `<entidade>_<ação>_<direção>_<frame>.png`. Para o herói, por exemplo, as três poses de ataque para baixo são `hero_attack_down_0.png`, `hero_attack_down_1.png` e `hero_attack_down_2.png`. A escolha de preset não renomeia arquivos já existentes; ela orienta a fila e reduz o risco de um PNG incompatível chegar ao pacote gerado.
 
+## Importação automática de spritesheets
+
+Quando a arte chega como uma única folha, abra **Content Studio → Lote & comparar** e use **Importar spritesheet…**. Escolha o PNG, informe o prefixo e o tamanho de uma célula. O padrão é **32 × 32 px**, mas o comando aceita células maiores quando a fonte ainda será normalizada. O Coach calcula automaticamente colunas, linhas e quantidade de frames; a leitura sempre acontece da **esquerda para a direita** e, em seguida, de **cima para baixo**.
+
+| Campo | Uso | Regra de segurança |
+|---|---|---|
+| Prefixo | Define os nomes dos PNGs extraídos. | Use `hero_walk_down` para obter `hero_walk_down_0.png`, `hero_walk_down_1.png` e assim por diante. |
+| Largura e altura da célula | Define o recorte de cada frame da grade. | A folha deve ser divisível exatamente pelas duas medidas; pixels de sobra causam uma mensagem de diagnóstico, não um recorte truncado. |
+| Ordem de leitura | Determina os índices `0`, `1`, `2`… da fila. | Células da primeira linha vêm antes das da segunda linha. |
+| Pasta de trabalho | Recebe os PNGs individuais em `build/asset-coach/spritesheets/<prefix>/`. | A fonte não é sobrescrita e nada entra no APK até a normalização e exportação explícitas. |
+
+Depois de dividir a folha, os PNGs individuais já ocupam a fila de **Lote & comparar**. Use a comparação Antes/Depois, reproduza-os com **Prévia animada ▶** e só então clique em **Normalizar lote e exportar**. Para usar a aba dedicada **Prévia animada**, abra **Pasta de frames…**, selecione a pasta de trabalho e escolha o mesmo prefixo canônico de entidade, ação e direção. Uma reimportação com o mesmo prefixo substitui apenas os frames temporários daquela pasta, evitando que células de uma grade anterior entrem na nova revisão.
+
+> Para uma animação direcional do RPG, use um prefixo já completo, como `hero_attack_down`. A folha com três células de 32 × 32 produz exatamente os arquivos que a prévia e o relatório de cobertura procuram. O fatiador não cria manifestos nem publica assets no runtime por conta própria.
+
 ## Prévia animada antes e depois da exportação
 
 A aba **Prévia animada** reproduz a sequência contratada de três frames sem escrever PNGs, JSONs ou manifestos. Ela inicia no diretório `res/assets/generated/rpg_sprites/`, que permite conferir o resultado já integrado. Para revisar uma pasta de trabalho antes da exportação, use **Pasta de frames…** e escolha a pasta que contém os PNGs externos.
@@ -111,7 +127,7 @@ Há dois caminhos equivalentes. No **Content Studio**, abra **Sprites RPG**, esc
 | Preparar | Use **Asset Coach** para diagnóstico e prévia. | Exporte PNG RGBA, sem suavização e sem margem colorida na borda. |
 | Animar | Use **Exportar 24 frames direcionais** como referência. | Exporte três poses de caminhada e três de ataque para cada direção. |
 | Revisar | Abra **Prévia animada** e escolha pasta, entidade, ação e direção. | Confirme os três frames antes de criar qualquer cópia de runtime. |
-| Integrar | Normalizar e exportar para RPG. | Arraste os PNGs para **Lote & comparar**, selecione o preset, revise as regras e exporte. |
+| Integrar | Normalizar e exportar para RPG. | Arraste os PNGs ou use **Importar spritesheet…** em **Lote & comparar**, selecione o preset, revise as regras e exporte. |
 | Verificar | Atualize **Cobertura animações**. | Confirme os 24 frames e os nomes esperados antes do build. |
 
 Para um frame externo, use o padrão `<entidade>_<ação>_<direção>_<frame>.png`. Um exemplo completo é `hero_attack_down_1.png`. As entidades base são `hero`, `npc_commandant`, `npc_healer` e `npc_cartographer`; as ações são `walk` e `attack`; as direções são `right`, `left`, `up` e `down`; e cada ação usa índices `0`, `1` e `2`.

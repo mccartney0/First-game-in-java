@@ -2,12 +2,14 @@ package com.traduvertgames.test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.awt.Color;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.io.File;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.util.EnumSet;
@@ -94,6 +96,42 @@ class AssetCoachTest {
         assertTrue(krita.guidance.contains("PNG RGBA"));
         assertFalse(krita.approvedRules().contains(AssetCoach.ApprovedFixRule.TRIM_VISIBLE_SILHOUETTE));
         assertTrue(piskel.approvedRules().contains(AssetCoach.ApprovedFixRule.CENTER_ON_32PX_CANVAS));
+    }
+
+    @Test
+    void spritesheetIsSplitInDeterministicRowMajorOrderWithoutChangingSource() throws Exception {
+        File source = new File(root, "input/Hero Walk Down Sheet.png");
+        source.getParentFile().mkdirs();
+        BufferedImage sheet = new BufferedImage(64, 64, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D graphics = sheet.createGraphics();
+        graphics.setColor(Color.RED); graphics.fillRect(0, 0, 32, 32);
+        graphics.setColor(Color.GREEN); graphics.fillRect(32, 0, 32, 32);
+        graphics.setColor(Color.BLUE); graphics.fillRect(0, 32, 32, 32);
+        graphics.setColor(Color.YELLOW); graphics.fillRect(32, 32, 32, 32);
+        graphics.dispose();
+        ImageIO.write(sheet, "png", source);
+
+        AssetCoach.SpriteSheetLayout layout = AssetCoach.inspectSpritesheet(source, 32, 32);
+        assertEquals(2, layout.columns); assertEquals(2, layout.rows); assertEquals(4, layout.frameCount());
+        AssetCoach.SpriteSheetImport imported = AssetCoach.splitSpritesheet(source, "hero_walk_down", 32, 32, root);
+
+        assertEquals(4, imported.frames.size());
+        assertTrue(source.isFile());
+        assertEquals(Color.RED.getRGB(), ImageIO.read(imported.frames.get(0)).getRGB(4, 4));
+        assertEquals(Color.GREEN.getRGB(), ImageIO.read(imported.frames.get(1)).getRGB(4, 4));
+        assertEquals(Color.BLUE.getRGB(), ImageIO.read(imported.frames.get(2)).getRGB(4, 4));
+        assertEquals(Color.YELLOW.getRGB(), ImageIO.read(imported.frames.get(3)).getRGB(4, 4));
+        assertEquals("hero_walk_down_0.png", imported.frames.get(0).getName());
+        assertTrue(imported.toReport().contains("2 coluna(s) × 2 linha(s)"));
+    }
+
+    @Test
+    void spritesheetRejectsAFrameGridWithTrailingPixels() throws Exception {
+        File source = new File(root, "input/grade_invalida.png");
+        source.getParentFile().mkdirs();
+        ImageIO.write(new BufferedImage(65, 32, BufferedImage.TYPE_INT_ARGB), "png", source);
+        IOException failure = assertThrows(IOException.class, () -> AssetCoach.inspectSpritesheet(source, 32, 32));
+        assertTrue(failure.getMessage().contains("não fecha uma grade"));
     }
 
     private static void delete(File file) {

@@ -179,3 +179,12 @@
 - [x] Cobrir os presets e a composição de frames com testes automatizados.
 - [x] Documentar o fluxo por editor no Git e na Wiki Viva.
 - [x] Executar testes, `validateContent`, builds e inspeção visual antes da publicação.
+
+## Asset Coach — importação automática de spritesheets
+
+- [x] Mapear a grade, a ordem de leitura e o contrato de nomeação para converter uma spritesheet em frames RPG.
+- [x] Implementar divisão não destrutiva por largura, altura, colunas e linhas, com prévia dos frames resultantes.
+- [x] Integrar a importação de spritesheet à fila, à prévia animada e ao pacote de saída `rpg_sprites`.
+- [x] Cobrir folhas válidas, dimensões inválidas e nomeação determinística com testes automatizados.
+- [x] Documentar o fluxo para Aseprite, Krita e Piskel no Git e na Wiki Viva.
+- [x] Executar testes, `validateContent`, builds e inspeção visual antes da publicação.
