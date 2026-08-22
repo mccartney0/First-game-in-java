@@ -203,6 +203,14 @@
 - [x] Validar spritesheets, tileset, pivôs e transparência contra `docs/ASSET_ART_DIRECTION.md`.
 - [x] Aprovar, devolver ou ajustar cada asset de forma não destrutiva antes de integrá-lo ao APK.
 
+### Pacotes completos recebidos
+
+- [x] Inventariar `complete_pack` e `assets_complementares` em quarentena sem executar conteúdo recebido.
+- [x] Validar por categoria os tiles, personagens, NPCs, inimigos, chefe, efeitos e UI contra a ficha de arte.
+- [x] Gerar somente derivados de runtime aprovados e atualizar os manifestos de conteúdo necessários.
+- [x] Integrar os aprovados com fallbacks seguros, mantendo bloqueados os assets que não atendam ao contrato.
+- [x] Validar o APK, documentar o parecer por arquivo e publicar o resultado.
+
 ## Combate móvel — movimento e mira
 
 - [x] Mapear a zona morta, a velocidade, a orientação e o disparo atuais do personagem.

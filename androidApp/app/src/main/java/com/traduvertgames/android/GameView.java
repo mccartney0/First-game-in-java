@@ -81,6 +81,12 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     private final Bitmap lote1BridgeMiddle;
     private final Bitmap lote1BridgeEnd;
     private final Bitmap avaPortrait;
+    private final Bitmap completePineTree;
+    private final Bitmap completeRuinArch;
+    private final Bitmap completeRuinPillar;
+    private final Bitmap completeCampWagon;
+    private final Bitmap completeCampfire;
+    private final Bitmap completeChest;
     private final Map<String, Bitmap> rpgSprites = new HashMap<>();
 
     private Thread gameThread;
@@ -152,11 +158,17 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         textPaint.setTypeface(Typeface.create(Typeface.DEFAULT, Typeface.BOLD));
         terrainAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.terrain_atlas);
         baseAtlas = BitmapFactory.decodeResource(getResources(), R.drawable.base_out_atlas);
-        lote1Tileset = loadRpgWorldAsset("world/lote1/mist_clearing_tileset.png");
-        lote1BridgeStart = loadRpgWorldAsset("world/lote1/wood_bridge_start.png");
-        lote1BridgeMiddle = loadRpgWorldAsset("world/lote1/wood_bridge_middle.png");
-        lote1BridgeEnd = loadRpgWorldAsset("world/lote1/wood_bridge_end.png");
-        avaPortrait = loadRpgWorldAsset("world/lote1/npc_commandant_ava_portrait.png");
+        lote1Tileset = loadFirstRpgWorldAsset("world/complete-pack/mist_clearing_tileset.png", "world/lote1/mist_clearing_tileset.png");
+        lote1BridgeStart = loadFirstRpgWorldAsset("world/complete-pack/wood_bridge_start.png", "world/lote1/wood_bridge_start.png");
+        lote1BridgeMiddle = loadFirstRpgWorldAsset("world/complete-pack/wood_bridge_middle.png", "world/lote1/wood_bridge_middle.png");
+        lote1BridgeEnd = loadFirstRpgWorldAsset("world/complete-pack/wood_bridge_end.png", "world/lote1/wood_bridge_end.png");
+        avaPortrait = loadFirstRpgWorldAsset("world/complete-pack/npc_commandant_ava_portrait.png", "world/lote1/npc_commandant_ava_portrait.png");
+        completePineTree = loadRpgWorldAsset("world/complete-pack/pine_tree.png");
+        completeRuinArch = loadRpgWorldAsset("world/complete-pack/ruin_arch.png");
+        completeRuinPillar = loadRpgWorldAsset("world/complete-pack/ruin_pillar.png");
+        completeCampWagon = loadRpgWorldAsset("world/complete-pack/camp_wagon.png");
+        completeCampfire = loadRpgWorldAsset("world/complete-pack/campfire.png");
+        completeChest = loadRpgWorldAsset("world/complete-pack/chest.png");
         loadRpgSprites();
         saveStore = new GameSaveStore(context);
         audio = new RpgAudio(context);
@@ -952,6 +964,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             drawAtlas(canvas, baseAtlas, new Rect(416, 512, 480, 576), target);
         } else if (type == WALL) {
             drawAtlas(canvas, baseAtlas, new Rect(800, 704, 864, 768), target);
+        } else if (type == TREE && completePineTree != null) {
+            canvas.drawBitmap(completePineTree, null, target, paint);
         } else if (type == TREE) {
             drawAtlas(canvas, terrainAtlas, new Rect(800, 384, 864, 448), target);
         } else {
@@ -979,10 +993,16 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
     }
 
     private void drawWorldObjects(Canvas canvas) {
-        drawAtlas(canvas, baseAtlas, new Rect(704, 704, 832, 832),
-                new RectF(TILE * 26f, TILE * 5f, TILE * 30f, TILE * 9f));
-        drawAtlas(canvas, baseAtlas, new Rect(416, 512, 544, 640),
-                new RectF(TILE * 14f, TILE * 9f, TILE * 18f, TILE * 11f));
+        if (!drawWorldBitmap(canvas, completeRuinArch, new RectF(TILE * 26f, TILE * 5f, TILE * 30f, TILE * 9f))) {
+            drawAtlas(canvas, baseAtlas, new Rect(704, 704, 832, 832),
+                    new RectF(TILE * 26f, TILE * 5f, TILE * 30f, TILE * 9f));
+        }
+        if (!drawWorldBitmap(canvas, completeCampWagon, new RectF(TILE * 14f, TILE * 9f, TILE * 18f, TILE * 11f))) {
+            drawAtlas(canvas, baseAtlas, new Rect(416, 512, 544, 640),
+                    new RectF(TILE * 14f, TILE * 9f, TILE * 18f, TILE * 11f));
+        }
+        drawWorldBitmap(canvas, completeRuinPillar, new RectF(TILE * 23f, TILE * 5.5f, TILE * 24.4f, TILE * 8f));
+        drawWorldBitmap(canvas, completeCampfire, new RectF(TILE * 17.1f, TILE * 11.1f, TILE * 18.2f, TILE * 12.2f));
         for (Npc npc : npcs) drawNpc(canvas, npc);
         if (!relicCollected) {
             float relicX = TILE * 20.5f;
@@ -994,7 +1014,8 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
             paint.setColor(Color.WHITE);
             canvas.drawCircle(relicX, relicY - 4f, 4f, paint);
         }
-        if (!chestOpened) {
+        if (!chestOpened && !drawWorldBitmap(canvas, completeChest,
+                new RectF(TILE * 27f, TILE * 8f, TILE * 28f, TILE * 9f))) {
             drawAtlas(canvas, baseAtlas, new Rect(640, 576, 704, 640),
                     new RectF(TILE * 27f, TILE * 8f, TILE * 28f, TILE * 9f));
         }
@@ -1037,9 +1058,11 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         float x = enemy.x;
         float y = enemy.y;
         float radius = enemy.type.radius;
-        if (enemy.type == EnemyType.WOLF) {
-            String id = "enemy_moss_wolf_walk_" + directionName(enemy.direction) + "_" + enemy.walkFrame;
-            if (drawRpgSprite(canvas, id, x, y, 62f)) return;
+        String spritePrefix = enemySpritePrefix(enemy.type);
+        if (spritePrefix != null) {
+            String id = spritePrefix + "_walk_" + directionName(enemy.direction) + "_" + enemy.walkFrame;
+            float spriteSize = enemy.type == EnemyType.BRUMA_TITAN ? 156f : Math.max(58f, radius * 2.1f);
+            if (drawRpgSprite(canvas, id, x, y, spriteSize)) return;
         }
         paint.setColor(Color.argb(100, 0, 0, 0));
         canvas.drawOval(new RectF(x - radius - 5f, y + radius - 3f, x + radius + 5f, y + radius + 8f), paint);
@@ -1151,7 +1174,9 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
                 }
             }
         }
-        loadAnimatedRpgSprite("enemy_moss_wolf");
+        String[] enemyIds = {"enemy_moss_wolf", "enemy_root_crawler", "enemy_bone_raider", "enemy_ruin_wisp",
+                "enemy_bog_slug", "boss_mist_titan"};
+        for (String enemyId : enemyIds) loadAnimatedRpgSprite(enemyId);
     }
 
     private void loadAnimatedRpgSprite(String id) {
@@ -1181,6 +1206,29 @@ public final class GameView extends SurfaceView implements SurfaceHolder.Callbac
         } catch (IOException ignored) {
             return null;
         }
+    }
+
+    private Bitmap loadFirstRpgWorldAsset(String preferredPath, String fallbackPath) {
+        Bitmap preferred = loadRpgWorldAsset(preferredPath);
+        return preferred != null ? preferred : loadRpgWorldAsset(fallbackPath);
+    }
+
+    private boolean drawWorldBitmap(Canvas canvas, Bitmap bitmap, RectF target) {
+        if (bitmap == null) return false;
+        canvas.drawBitmap(bitmap, null, target, paint);
+        return true;
+    }
+
+    private static String enemySpritePrefix(EnemyType type) {
+        return switch (type) {
+            case WOLF -> "enemy_moss_wolf";
+            case SPIDER -> "enemy_root_crawler";
+            case SENTINEL -> "enemy_bone_raider";
+            case CULTIST -> "enemy_ruin_wisp";
+            case TROLL -> "enemy_bog_slug";
+            case BRUMA_TITAN -> "boss_mist_titan";
+            case NECROMANCER -> null;
+        };
     }
 
     private static boolean isCharacterSprite(String id) {

@@ -1,0 +1,779 @@
+{
+  "schema": 2,
+  "source": "Pacotes completo e complementar do titular do projeto",
+  "policy": "Arquivos em res/assets/incoming/complete-pack são cópias catalogadas e nunca são editados; somente derivados podem ser regenerados.",
+  "approval": {
+    "excludedPreviews": [
+      "complete_packs_contact_sheet.png",
+      "preview_contact_sheet.png"
+    ],
+    "actorAndEffectFrames": {
+      "enemy_mist_bat_attack_down": [
+        "enemy_mist_bat_attack_down_0.png",
+        "enemy_mist_bat_attack_down_1.png",
+        "enemy_mist_bat_attack_down_2.png"
+      ],
+      "enemy_mist_bat_attack_left": [
+        "enemy_mist_bat_attack_left_0.png",
+        "enemy_mist_bat_attack_left_1.png",
+        "enemy_mist_bat_attack_left_2.png"
+      ],
+      "enemy_mist_bat_attack_right": [
+        "enemy_mist_bat_attack_right_0.png",
+        "enemy_mist_bat_attack_right_1.png",
+        "enemy_mist_bat_attack_right_2.png"
+      ],
+      "enemy_mist_bat_attack_up": [
+        "enemy_mist_bat_attack_up_0.png",
+        "enemy_mist_bat_attack_up_1.png",
+        "enemy_mist_bat_attack_up_2.png"
+      ],
+      "enemy_mist_bat_walk_down": [
+        "enemy_mist_bat_walk_down_0.png",
+        "enemy_mist_bat_walk_down_1.png",
+        "enemy_mist_bat_walk_down_2.png"
+      ],
+      "enemy_mist_bat_walk_left": [
+        "enemy_mist_bat_walk_left_0.png",
+        "enemy_mist_bat_walk_left_1.png",
+        "enemy_mist_bat_walk_left_2.png"
+      ],
+      "enemy_mist_bat_walk_right": [
+        "enemy_mist_bat_walk_right_0.png",
+        "enemy_mist_bat_walk_right_1.png",
+        "enemy_mist_bat_walk_right_2.png"
+      ],
+      "enemy_mist_bat_walk_up": [
+        "enemy_mist_bat_walk_up_0.png",
+        "enemy_mist_bat_walk_up_1.png",
+        "enemy_mist_bat_walk_up_2.png"
+      ],
+      "enemy_root_crawler_attack_down": [
+        "enemy_root_crawler_attack_down_0.png",
+        "enemy_root_crawler_attack_down_1.png",
+        "enemy_root_crawler_attack_down_2.png"
+      ],
+      "enemy_root_crawler_attack_left": [
+        "enemy_root_crawler_attack_left_0.png",
+        "enemy_root_crawler_attack_left_1.png",
+        "enemy_root_crawler_attack_left_2.png"
+      ],
+      "enemy_root_crawler_attack_right": [
+        "enemy_root_crawler_attack_right_0.png",
+        "enemy_root_crawler_attack_right_1.png",
+        "enemy_root_crawler_attack_right_2.png"
+      ],
+      "enemy_root_crawler_attack_up": [
+        "enemy_root_crawler_attack_up_0.png",
+        "enemy_root_crawler_attack_up_1.png",
+        "enemy_root_crawler_attack_up_2.png"
+      ],
+      "enemy_root_crawler_walk_down": [
+        "enemy_root_crawler_walk_down_0.png",
+        "enemy_root_crawler_walk_down_1.png",
+        "enemy_root_crawler_walk_down_2.png"
+      ],
+      "enemy_root_crawler_walk_left": [
+        "enemy_root_crawler_walk_left_0.png",
+        "enemy_root_crawler_walk_left_1.png",
+        "enemy_root_crawler_walk_left_2.png"
+      ],
+      "enemy_root_crawler_walk_right": [
+        "enemy_root_crawler_walk_right_0.png",
+        "enemy_root_crawler_walk_right_1.png",
+        "enemy_root_crawler_walk_right_2.png"
+      ],
+      "enemy_root_crawler_walk_up": [
+        "enemy_root_crawler_walk_up_0.png",
+        "enemy_root_crawler_walk_up_1.png",
+        "enemy_root_crawler_walk_up_2.png"
+      ],
+      "fx_ground_rune": [
+        "fx_ground_rune_0.png",
+        "fx_ground_rune_1.png",
+        "fx_ground_rune_2.png"
+      ],
+      "fx_heal_pulse": [
+        "fx_heal_pulse_0.png",
+        "fx_heal_pulse_1.png",
+        "fx_heal_pulse_2.png"
+      ],
+      "fx_hostile_bolt": [
+        "fx_hostile_bolt_0.png",
+        "fx_hostile_bolt_1.png",
+        "fx_hostile_bolt_2.png"
+      ],
+      "fx_mist_orb": [
+        "fx_mist_orb_0.png",
+        "fx_mist_orb_1.png",
+        "fx_mist_orb_2.png"
+      ],
+      "npc_cartographer_walk_down": [
+        "npc_cartographer_walk_down_0.png",
+        "npc_cartographer_walk_down_1.png",
+        "npc_cartographer_walk_down_2.png"
+      ],
+      "npc_cartographer_walk_left": [
+        "npc_cartographer_walk_left_0.png",
+        "npc_cartographer_walk_left_1.png",
+        "npc_cartographer_walk_left_2.png"
+      ],
+      "npc_cartographer_walk_right": [
+        "npc_cartographer_walk_right_0.png",
+        "npc_cartographer_walk_right_1.png",
+        "npc_cartographer_walk_right_2.png"
+      ],
+      "npc_cartographer_walk_up": [
+        "npc_cartographer_walk_up_0.png",
+        "npc_cartographer_walk_up_1.png",
+        "npc_cartographer_walk_up_2.png"
+      ],
+      "npc_commandant_walk_down": [
+        "npc_commandant_walk_down_0.png",
+        "npc_commandant_walk_down_1.png",
+        "npc_commandant_walk_down_2.png"
+      ],
+      "npc_commandant_walk_left": [
+        "npc_commandant_walk_left_0.png",
+        "npc_commandant_walk_left_1.png",
+        "npc_commandant_walk_left_2.png"
+      ],
+      "npc_commandant_walk_right": [
+        "npc_commandant_walk_right_0.png",
+        "npc_commandant_walk_right_1.png",
+        "npc_commandant_walk_right_2.png"
+      ],
+      "npc_commandant_walk_up": [
+        "npc_commandant_walk_up_0.png",
+        "npc_commandant_walk_up_1.png",
+        "npc_commandant_walk_up_2.png"
+      ],
+      "npc_healer_walk_down": [
+        "npc_healer_walk_down_0.png",
+        "npc_healer_walk_down_1.png",
+        "npc_healer_walk_down_2.png"
+      ],
+      "npc_healer_walk_left": [
+        "npc_healer_walk_left_0.png",
+        "npc_healer_walk_left_1.png",
+        "npc_healer_walk_left_2.png"
+      ],
+      "npc_healer_walk_right": [
+        "npc_healer_walk_right_0.png",
+        "npc_healer_walk_right_1.png",
+        "npc_healer_walk_right_2.png"
+      ],
+      "npc_healer_walk_up": [
+        "npc_healer_walk_up_0.png",
+        "npc_healer_walk_up_1.png",
+        "npc_healer_walk_up_2.png"
+      ],
+      "boss_mist_titan_attack_down": [
+        "boss_mist_titan_attack_down_0.png",
+        "boss_mist_titan_attack_down_1.png",
+        "boss_mist_titan_attack_down_2.png"
+      ],
+      "boss_mist_titan_attack_left": [
+        "boss_mist_titan_attack_left_0.png",
+        "boss_mist_titan_attack_left_1.png",
+        "boss_mist_titan_attack_left_2.png"
+      ],
+      "boss_mist_titan_attack_right": [
+        "boss_mist_titan_attack_right_0.png",
+        "boss_mist_titan_attack_right_1.png",
+        "boss_mist_titan_attack_right_2.png"
+      ],
+      "boss_mist_titan_attack_up": [
+        "boss_mist_titan_attack_up_0.png",
+        "boss_mist_titan_attack_up_1.png",
+        "boss_mist_titan_attack_up_2.png"
+      ],
+      "boss_mist_titan_walk_down": [
+        "boss_mist_titan_walk_down_0.png",
+        "boss_mist_titan_walk_down_1.png",
+        "boss_mist_titan_walk_down_2.png"
+      ],
+      "boss_mist_titan_walk_left": [
+        "boss_mist_titan_walk_left_0.png",
+        "boss_mist_titan_walk_left_1.png",
+        "boss_mist_titan_walk_left_2.png"
+      ],
+      "boss_mist_titan_walk_right": [
+        "boss_mist_titan_walk_right_0.png",
+        "boss_mist_titan_walk_right_1.png",
+        "boss_mist_titan_walk_right_2.png"
+      ],
+      "boss_mist_titan_walk_up": [
+        "boss_mist_titan_walk_up_0.png",
+        "boss_mist_titan_walk_up_1.png",
+        "boss_mist_titan_walk_up_2.png"
+      ],
+      "enemy_moss_wolf_attack_down": [
+        "enemy_moss_wolf_attack_down_0.png",
+        "enemy_moss_wolf_attack_down_1.png",
+        "enemy_moss_wolf_attack_down_2.png"
+      ],
+      "enemy_moss_wolf_attack_left": [
+        "enemy_moss_wolf_attack_left_0.png",
+        "enemy_moss_wolf_attack_left_1.png",
+        "enemy_moss_wolf_attack_left_2.png"
+      ],
+      "enemy_moss_wolf_attack_right": [
+        "enemy_moss_wolf_attack_right_0.png",
+        "enemy_moss_wolf_attack_right_1.png",
+        "enemy_moss_wolf_attack_right_2.png"
+      ],
+      "enemy_moss_wolf_attack_up": [
+        "enemy_moss_wolf_attack_up_0.png",
+        "enemy_moss_wolf_attack_up_1.png",
+        "enemy_moss_wolf_attack_up_2.png"
+      ],
+      "enemy_moss_wolf_walk_down": [
+        "enemy_moss_wolf_walk_down_0.png",
+        "enemy_moss_wolf_walk_down_1.png",
+        "enemy_moss_wolf_walk_down_2.png"
+      ],
+      "enemy_moss_wolf_walk_left": [
+        "enemy_moss_wolf_walk_left_0.png",
+        "enemy_moss_wolf_walk_left_1.png",
+        "enemy_moss_wolf_walk_left_2.png"
+      ],
+      "enemy_moss_wolf_walk_right": [
+        "enemy_moss_wolf_walk_right_0.png",
+        "enemy_moss_wolf_walk_right_1.png",
+        "enemy_moss_wolf_walk_right_2.png"
+      ],
+      "enemy_moss_wolf_walk_up": [
+        "enemy_moss_wolf_walk_up_0.png",
+        "enemy_moss_wolf_walk_up_1.png",
+        "enemy_moss_wolf_walk_up_2.png"
+      ],
+      "hero_attack_down": [
+        "hero_attack_down_0.png",
+        "hero_attack_down_1.png",
+        "hero_attack_down_2.png"
+      ],
+      "hero_attack_left": [
+        "hero_attack_left_0.png",
+        "hero_attack_left_1.png",
+        "hero_attack_left_2.png"
+      ],
+      "hero_attack_right": [
+        "hero_attack_right_0.png",
+        "hero_attack_right_1.png",
+        "hero_attack_right_2.png"
+      ],
+      "hero_attack_up": [
+        "hero_attack_up_0.png",
+        "hero_attack_up_1.png",
+        "hero_attack_up_2.png"
+      ],
+      "hero_walk_down": [
+        "hero_walk_down_0.png",
+        "hero_walk_down_1.png",
+        "hero_walk_down_2.png"
+      ],
+      "hero_walk_left": [
+        "hero_walk_left_0.png",
+        "hero_walk_left_1.png",
+        "hero_walk_left_2.png"
+      ],
+      "hero_walk_right": [
+        "hero_walk_right_0.png",
+        "hero_walk_right_1.png",
+        "hero_walk_right_2.png"
+      ],
+      "hero_walk_up": [
+        "hero_walk_up_0.png",
+        "hero_walk_up_1.png",
+        "hero_walk_up_2.png"
+      ],
+      "enemy_moss_wolf_death_down": [
+        "enemy_moss_wolf_death_down_0.png",
+        "enemy_moss_wolf_death_down_1.png",
+        "enemy_moss_wolf_death_down_2.png"
+      ],
+      "enemy_moss_wolf_hurt_down": [
+        "enemy_moss_wolf_hurt_down_0.png",
+        "enemy_moss_wolf_hurt_down_1.png",
+        "enemy_moss_wolf_hurt_down_2.png"
+      ],
+      "enemy_root_crawler_death_down": [
+        "enemy_root_crawler_death_down_0.png",
+        "enemy_root_crawler_death_down_1.png",
+        "enemy_root_crawler_death_down_2.png"
+      ],
+      "enemy_root_crawler_hurt_down": [
+        "enemy_root_crawler_hurt_down_0.png",
+        "enemy_root_crawler_hurt_down_1.png",
+        "enemy_root_crawler_hurt_down_2.png"
+      ],
+      "fx_blood": [
+        "fx_blood_0.png",
+        "fx_blood_1.png",
+        "fx_blood_2.png"
+      ],
+      "fx_damage_number": [
+        "fx_damage_number_0.png",
+        "fx_damage_number_1.png",
+        "fx_damage_number_2.png"
+      ],
+      "fx_dash": [
+        "fx_dash_0.png",
+        "fx_dash_1.png",
+        "fx_dash_2.png"
+      ],
+      "fx_dust": [
+        "fx_dust_0.png",
+        "fx_dust_1.png",
+        "fx_dust_2.png"
+      ],
+      "fx_impact": [
+        "fx_impact_0.png",
+        "fx_impact_1.png",
+        "fx_impact_2.png"
+      ],
+      "fx_slash_arc": [
+        "fx_slash_arc_0.png",
+        "fx_slash_arc_1.png",
+        "fx_slash_arc_2.png"
+      ],
+      "fx_boss_death": [
+        "fx_boss_death_0.png",
+        "fx_boss_death_1.png",
+        "fx_boss_death_2.png"
+      ],
+      "fx_fire_loop": [
+        "fx_fire_loop_0.png",
+        "fx_fire_loop_1.png",
+        "fx_fire_loop_2.png"
+      ],
+      "fx_heal_burst": [
+        "fx_heal_burst_0.png",
+        "fx_heal_burst_1.png",
+        "fx_heal_burst_2.png"
+      ],
+      "fx_level_up": [
+        "fx_level_up_0.png",
+        "fx_level_up_1.png",
+        "fx_level_up_2.png"
+      ],
+      "fx_mist_swirl": [
+        "fx_mist_swirl_0.png",
+        "fx_mist_swirl_1.png",
+        "fx_mist_swirl_2.png"
+      ],
+      "fx_poison_cloud": [
+        "fx_poison_cloud_0.png",
+        "fx_poison_cloud_1.png",
+        "fx_poison_cloud_2.png"
+      ],
+      "fx_teleport": [
+        "fx_teleport_0.png",
+        "fx_teleport_1.png",
+        "fx_teleport_2.png"
+      ],
+      "ambient_campfire_loop": [
+        "ambient_campfire_loop_0.png",
+        "ambient_campfire_loop_1.png",
+        "ambient_campfire_loop_2.png",
+        "ambient_campfire_loop_3.png",
+        "ambient_campfire_loop_4.png",
+        "ambient_campfire_loop_5.png",
+        "ambient_campfire_loop_6.png",
+        "ambient_campfire_loop_7.png",
+        "ambient_campfire_loop_8.png"
+      ],
+      "ambient_fireflies": [
+        "ambient_fireflies_0.png",
+        "ambient_fireflies_1.png",
+        "ambient_fireflies_2.png",
+        "ambient_fireflies_3.png",
+        "ambient_fireflies_4.png",
+        "ambient_fireflies_5.png",
+        "ambient_fireflies_6.png",
+        "ambient_fireflies_7.png",
+        "ambient_fireflies_8.png"
+      ],
+      "ambient_grass_wind": [
+        "ambient_grass_wind_0.png",
+        "ambient_grass_wind_1.png",
+        "ambient_grass_wind_2.png",
+        "ambient_grass_wind_3.png",
+        "ambient_grass_wind_4.png",
+        "ambient_grass_wind_5.png",
+        "ambient_grass_wind_6.png",
+        "ambient_grass_wind_7.png",
+        "ambient_grass_wind_8.png"
+      ],
+      "ambient_mist_layer": [
+        "ambient_mist_layer_0.png",
+        "ambient_mist_layer_1.png",
+        "ambient_mist_layer_2.png",
+        "ambient_mist_layer_3.png",
+        "ambient_mist_layer_4.png",
+        "ambient_mist_layer_5.png",
+        "ambient_mist_layer_6.png",
+        "ambient_mist_layer_7.png",
+        "ambient_mist_layer_8.png"
+      ],
+      "ambient_water_loop": [
+        "ambient_water_loop_0.png",
+        "ambient_water_loop_1.png",
+        "ambient_water_loop_2.png",
+        "ambient_water_loop_3.png",
+        "ambient_water_loop_4.png",
+        "ambient_water_loop_5.png",
+        "ambient_water_loop_6.png",
+        "ambient_water_loop_7.png",
+        "ambient_water_loop_8.png"
+      ],
+      "ambient_waterfall": [
+        "ambient_waterfall_0.png",
+        "ambient_waterfall_1.png",
+        "ambient_waterfall_2.png",
+        "ambient_waterfall_3.png",
+        "ambient_waterfall_4.png",
+        "ambient_waterfall_5.png",
+        "ambient_waterfall_6.png",
+        "ambient_waterfall_7.png",
+        "ambient_waterfall_8.png"
+      ],
+      "enemy_bog_slug_attack_down": [
+        "enemy_bog_slug_attack_down_0.png",
+        "enemy_bog_slug_attack_down_1.png",
+        "enemy_bog_slug_attack_down_2.png"
+      ],
+      "enemy_bog_slug_attack_left": [
+        "enemy_bog_slug_attack_left_0.png",
+        "enemy_bog_slug_attack_left_1.png",
+        "enemy_bog_slug_attack_left_2.png"
+      ],
+      "enemy_bog_slug_attack_right": [
+        "enemy_bog_slug_attack_right_0.png",
+        "enemy_bog_slug_attack_right_1.png",
+        "enemy_bog_slug_attack_right_2.png"
+      ],
+      "enemy_bog_slug_attack_up": [
+        "enemy_bog_slug_attack_up_0.png",
+        "enemy_bog_slug_attack_up_1.png",
+        "enemy_bog_slug_attack_up_2.png"
+      ],
+      "enemy_bog_slug_walk_down": [
+        "enemy_bog_slug_walk_down_0.png",
+        "enemy_bog_slug_walk_down_1.png",
+        "enemy_bog_slug_walk_down_2.png"
+      ],
+      "enemy_bog_slug_walk_left": [
+        "enemy_bog_slug_walk_left_0.png",
+        "enemy_bog_slug_walk_left_1.png",
+        "enemy_bog_slug_walk_left_2.png"
+      ],
+      "enemy_bog_slug_walk_right": [
+        "enemy_bog_slug_walk_right_0.png",
+        "enemy_bog_slug_walk_right_1.png",
+        "enemy_bog_slug_walk_right_2.png"
+      ],
+      "enemy_bog_slug_walk_up": [
+        "enemy_bog_slug_walk_up_0.png",
+        "enemy_bog_slug_walk_up_1.png",
+        "enemy_bog_slug_walk_up_2.png"
+      ],
+      "enemy_bone_raider_attack_down": [
+        "enemy_bone_raider_attack_down_0.png",
+        "enemy_bone_raider_attack_down_1.png",
+        "enemy_bone_raider_attack_down_2.png"
+      ],
+      "enemy_bone_raider_attack_left": [
+        "enemy_bone_raider_attack_left_0.png",
+        "enemy_bone_raider_attack_left_1.png",
+        "enemy_bone_raider_attack_left_2.png"
+      ],
+      "enemy_bone_raider_attack_right": [
+        "enemy_bone_raider_attack_right_0.png",
+        "enemy_bone_raider_attack_right_1.png",
+        "enemy_bone_raider_attack_right_2.png"
+      ],
+      "enemy_bone_raider_attack_up": [
+        "enemy_bone_raider_attack_up_0.png",
+        "enemy_bone_raider_attack_up_1.png",
+        "enemy_bone_raider_attack_up_2.png"
+      ],
+      "enemy_bone_raider_walk_down": [
+        "enemy_bone_raider_walk_down_0.png",
+        "enemy_bone_raider_walk_down_1.png",
+        "enemy_bone_raider_walk_down_2.png"
+      ],
+      "enemy_bone_raider_walk_left": [
+        "enemy_bone_raider_walk_left_0.png",
+        "enemy_bone_raider_walk_left_1.png",
+        "enemy_bone_raider_walk_left_2.png"
+      ],
+      "enemy_bone_raider_walk_right": [
+        "enemy_bone_raider_walk_right_0.png",
+        "enemy_bone_raider_walk_right_1.png",
+        "enemy_bone_raider_walk_right_2.png"
+      ],
+      "enemy_bone_raider_walk_up": [
+        "enemy_bone_raider_walk_up_0.png",
+        "enemy_bone_raider_walk_up_1.png",
+        "enemy_bone_raider_walk_up_2.png"
+      ],
+      "enemy_ruin_wisp_attack_down": [
+        "enemy_ruin_wisp_attack_down_0.png",
+        "enemy_ruin_wisp_attack_down_1.png",
+        "enemy_ruin_wisp_attack_down_2.png"
+      ],
+      "enemy_ruin_wisp_attack_left": [
+        "enemy_ruin_wisp_attack_left_0.png",
+        "enemy_ruin_wisp_attack_left_1.png",
+        "enemy_ruin_wisp_attack_left_2.png"
+      ],
+      "enemy_ruin_wisp_attack_right": [
+        "enemy_ruin_wisp_attack_right_0.png",
+        "enemy_ruin_wisp_attack_right_1.png",
+        "enemy_ruin_wisp_attack_right_2.png"
+      ],
+      "enemy_ruin_wisp_attack_up": [
+        "enemy_ruin_wisp_attack_up_0.png",
+        "enemy_ruin_wisp_attack_up_1.png",
+        "enemy_ruin_wisp_attack_up_2.png"
+      ],
+      "enemy_ruin_wisp_walk_down": [
+        "enemy_ruin_wisp_walk_down_0.png",
+        "enemy_ruin_wisp_walk_down_1.png",
+        "enemy_ruin_wisp_walk_down_2.png"
+      ],
+      "enemy_ruin_wisp_walk_left": [
+        "enemy_ruin_wisp_walk_left_0.png",
+        "enemy_ruin_wisp_walk_left_1.png",
+        "enemy_ruin_wisp_walk_left_2.png"
+      ],
+      "enemy_ruin_wisp_walk_right": [
+        "enemy_ruin_wisp_walk_right_0.png",
+        "enemy_ruin_wisp_walk_right_1.png",
+        "enemy_ruin_wisp_walk_right_2.png"
+      ],
+      "enemy_ruin_wisp_walk_up": [
+        "enemy_ruin_wisp_walk_up_0.png",
+        "enemy_ruin_wisp_walk_up_1.png",
+        "enemy_ruin_wisp_walk_up_2.png"
+      ],
+      "mini_boss_briar_guard_walk_down": [
+        "mini_boss_briar_guard_walk_down_0.png",
+        "mini_boss_briar_guard_walk_down_1.png",
+        "mini_boss_briar_guard_walk_down_2.png"
+      ],
+      "mini_boss_crypt_watcher_walk_down": [
+        "mini_boss_crypt_watcher_walk_down_0.png",
+        "mini_boss_crypt_watcher_walk_down_1.png",
+        "mini_boss_crypt_watcher_walk_down_2.png"
+      ]
+    },
+    "worldRuntimeAssets": [
+      "res/assets/generated/rpg_world/complete-pack/campfire.png",
+      "res/assets/generated/rpg_world/complete-pack/chest.png",
+      "res/assets/generated/rpg_world/complete-pack/mist_clearing_tileset.png",
+      "res/assets/generated/rpg_world/complete-pack/wood_bridge_end.png",
+      "res/assets/generated/rpg_world/complete-pack/wood_bridge_middle.png",
+      "res/assets/generated/rpg_world/complete-pack/wood_bridge_start.png",
+      "res/assets/generated/rpg_world/complete-pack/camp_wagon.png",
+      "res/assets/generated/rpg_world/complete-pack/pine_tree.png",
+      "res/assets/generated/rpg_world/complete-pack/ruin_arch.png",
+      "res/assets/generated/rpg_world/complete-pack/ruin_pillar.png"
+    ]
+  },
+  "sourceHashes": {
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_mist_bat_attack_down_sheet.png": "b0e5f155245231600c9b3f3025ec895a17cdada30e5708ce224fb0a4ed6fa498",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_mist_bat_attack_left_sheet.png": "0f284cf7d083f02e1137fb6a6604d28b2a0b2efd62e5311dbad557fb007c5c61",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_mist_bat_attack_right_sheet.png": "2a3d3bb66cd56eabd492fb5db16dedf1a53d7f417a914f4839407c2fbdba6ca3",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_mist_bat_attack_up_sheet.png": "c0a649d7b1680ca1f8415db1d224dff8d74de6ad162c7c645d183dd28a00f676",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_mist_bat_walk_down_sheet.png": "c39504e7cc6f98dcd6419d97efa735f73e975e481b89c2e0c9820f9e625be199",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_mist_bat_walk_left_sheet.png": "c39504e7cc6f98dcd6419d97efa735f73e975e481b89c2e0c9820f9e625be199",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_mist_bat_walk_right_sheet.png": "c39504e7cc6f98dcd6419d97efa735f73e975e481b89c2e0c9820f9e625be199",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_mist_bat_walk_up_sheet.png": "c39504e7cc6f98dcd6419d97efa735f73e975e481b89c2e0c9820f9e625be199",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_root_crawler_attack_down_sheet.png": "2c7c0141467089eb2901e009e31ae05568f4f77829dd68507f4d101e406bc0c9",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_root_crawler_attack_left_sheet.png": "e7fd55c567e2011b7f7d6375b039ee0ad3bf7e8b3658140177ccdfa8b69520cd",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_root_crawler_attack_right_sheet.png": "1af726b192668abe9f3eaee666e21a676bc8ebd24c529c72f6328ba266daa0f6",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_root_crawler_attack_up_sheet.png": "07f5781803bbe675dafd8a660c7c27f8e237e84a7debc049449ff6df7ebbf464",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_root_crawler_walk_down_sheet.png": "0d7f59d325fead5ef08118964c7c50fb7f2728a6fcafa3a8668f9184452c4a09",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_root_crawler_walk_left_sheet.png": "0d7f59d325fead5ef08118964c7c50fb7f2728a6fcafa3a8668f9184452c4a09",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_root_crawler_walk_right_sheet.png": "0d7f59d325fead5ef08118964c7c50fb7f2728a6fcafa3a8668f9184452c4a09",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/enemies/enemy_root_crawler_walk_up_sheet.png": "137cc5261d74470b9b057e836f7492b07875aba31802c7b1644fa4846689a58b",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/items/item_field_shield.png": "3402e640991d2ed227615fb0d98c1bb9bca4a521c3af5c1f71ae4f2c9ba4be7a",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/items/item_gold_relic.png": "6c497a474eaf5dd446732c430ba0b60b79d4302ea6cf4c74831cba0668bc9ab0",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/items/item_health_potion.png": "cdc8e76088a7627e8ad3ef680be5d5c3918e2a7440ec5d8b7a61f230c101ea72",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/items/item_herb.png": "e8b9c3daf88d3e8c713cc2eb2485ce8d8a873aab9c4dea01ccdf20f0f1726fcf",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/items/item_key.png": "721861b6a0a96c32c38105f261cc1a4b8e704cfda73ad746b0b499d99db261c7",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/items/item_map_fragment.png": "70c3aaafe580a16a050b8998cd84eab623159bfc25b99686fc904d7fd61f67f8",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/items/item_mist_potion.png": "78067f724048359ec44398709570dee86fba1a060ec1939defd954fed5150538",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/items/item_short_sword.png": "6a70d04bfd14acb04d76a19ce9e025dfbd5523c2ead105c11a533431d63c36bd",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/magic/fx_ground_rune_sheet.png": "a9fd5444a336524719912848081e7a46431cff5e7dd0f462ae2218e73aca3cad",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/magic/fx_heal_pulse_sheet.png": "d5be2557e2c94d989e103d6c72217af90db6543d8ed4140e6a314131cfdf3561",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/magic/fx_hostile_bolt_sheet.png": "5d4b638ace34c5c923d67f4b053ca0d1f209e7b518032590454a798ded2e3236",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/magic/fx_mist_orb_sheet.png": "963e43ea9390b7cb64c0bcea04e7d51ab1165506e862280c98c86f20d4cab087",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_cartographer_portrait.png": "e25aa625f33a134c6fdfc00bb0bbb90728afd80fe5f2cd34bd1e3cd4c11d255d",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_cartographer_walk_down_sheet.png": "b6e3f7df3ecaccc56fa1610ef1661a1b560513aada437031ca5f3df79cf06bac",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_cartographer_walk_left_sheet.png": "cb1ddb361cfbf998df0c4f508abf49128fe4bd1e5762a0835e39640fe4a2b84f",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_cartographer_walk_right_sheet.png": "ebda0dd523962d563bef924aecc103769967a8218b35e9a9d7e378bdfd0163d9",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_cartographer_walk_up_sheet.png": "79de1e552b357bfa23483f6b8167c1fa34ddee8ba3141d031266be2c89387979",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_commandant_walk_down_sheet.png": "a165a768e192631709979fb17a6fa82831e46939515ebc89c50e185955fdeafe",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_commandant_walk_left_sheet.png": "07de9c08149987ffd8f645c4a40256ba477409f7a8a228041f9bc308ddc69a7a",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_commandant_walk_right_sheet.png": "07de9c08149987ffd8f645c4a40256ba477409f7a8a228041f9bc308ddc69a7a",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_commandant_walk_up_sheet.png": "c8ded41d38b902f222ff80822226d7ddd506ab02473551affe4548a1cd35ed61",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_healer_portrait.png": "3bbffea392916fc0d16eb30f2cab8a153d34bce277235d9a232c85ce14261950",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_healer_walk_down_sheet.png": "a5560eacdd94e71b26b5017e2eb7801805a2e5a61dc2622c31232ab5d5a82253",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_healer_walk_left_sheet.png": "47a663e6a45ce07eede96f0a027e54a85d1f4b191d7d8f453bad25b1ffbe1c5f",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_healer_walk_right_sheet.png": "b7a32852f29e4074aa0b6b3d8d07b2ce22a65825a63574a3e76046ba5ef20b80",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/npcs/npc_healer_walk_up_sheet.png": "4b60ccce0e903c84df4edadb4595e995a6cc28bdcb1dd88e0eeaf2bf99e959fd",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/props/barrel.png": "3975e6ad488988ff8d8e20274eb934115cf8d816844fd6311304cbb97f05cbad",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/props/campfire.png": "0d557cd9e80ef23a10921a3b55b01e376d9c31fc99bbb9106c1c554f67e05fe5",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/props/chest.png": "ee14b1b0d1944decb82ec82a3d88771aec9424f4da8eed571a21d848431d1937",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/props/crate.png": "d62ccdfd4971c87f7d0823971e62a427413492a99872e96234d48c2e3f7cb700",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/props/field_tent.png": "fdafef77addd7f5f830605fe881c703b5c60aa391d76db4030990515dbdc0bf3",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/props/lantern.png": "64b884230b2ac141b4b5f6f54381a1506beb94015949141672ec293745086ddf",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/props/signpost.png": "3e1a338780ff7c15628e0493cee0f46769cb7ec708da0f8eae593b196f479622",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/props/stone_altar.png": "402b92f0717496e2b21e36745ae0a87b22627a97e5cd400801ede5de4665b757",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/ui/inventory_item_detail.png": "2563f9924a90a8aa7eda25e4d28989e7a7cc92fb3ed3b7d32bf5cc6641ea7080",
+    "first_game_rpg_assets_complementares/first_game_rpg_assets_complementares/ui/inventory_screen.png": "0647c9588c66b31355e8b58fcb32de798227bb7d603841889145c289344e5bd3",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/boss_mist_titan_attack_down_sheet.png": "603287a6b8ed3369cf2a26acb4f3b966940d504d399705227ea0127b8c091041",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/boss_mist_titan_attack_left_sheet.png": "f8eb8111b73bfcaa660799f1d0685f18613670e4889dc32efd35d74339680c84",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/boss_mist_titan_attack_right_sheet.png": "4aace30189f9fd623ec1a4ae7d9929993f84a32e264fe83f35f7ba56f423b2bd",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/boss_mist_titan_attack_up_sheet.png": "2fd3eae64022ab4bb0d946022e6465df796e6addc87f17009864af77b5b90b1b",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/boss_mist_titan_walk_down_sheet.png": "81672b54fd0a3d7fe4de4260ccd8a88044d09fbfb698097af6aa38174316a42e",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/boss_mist_titan_walk_left_sheet.png": "603ac35482ce6c262b283db62381abb98dc8f7d44dd5af6fd54247e4d82b2cd0",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/boss_mist_titan_walk_right_sheet.png": "58f009cb292eea1bca2260fdfe3491e0ec1700ec1f1ac62bc7ba1b7429921693",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/boss_mist_titan_walk_up_sheet.png": "147713fbde39a3afde4c68b7539d0419c7cda19992f4d2600f08f11d926345cd",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/enemy_moss_wolf_attack_down_sheet.png": "5e0fece0598f73dc903a62c75fb6113e24c01e3859b5357865c4875e869067c6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/enemy_moss_wolf_attack_left_sheet.png": "78dd410931c0d8683c719337b831faff8ce84c27e31e923434d40f4b3b1dfd41",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/enemy_moss_wolf_attack_right_sheet.png": "c58d84c8e405d24ef6a6c44ef9957ecdaf2eba314f064c02333a3ebdee65b607",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/enemy_moss_wolf_attack_up_sheet.png": "cdcd7d3b6048bd23590aa7a21cb0b854c9540927b797fdd209bfde19a0d08bac",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/enemy_moss_wolf_walk_down_sheet.png": "8514e38a7378d8e83ccc38d0d24f184bdb1bba1eb66eddc88613e46d3686ef4b",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/enemy_moss_wolf_walk_left_sheet.png": "f1eeb3a79e62dbae72d1f47285d0b6cecdba59946fb9710c31972a9b875bb58c",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/enemy_moss_wolf_walk_right_sheet.png": "dfc3a0bc52fc54ab5b26aa4aa71558e46bae30ad54eb4ffc7f3a1684f4645738",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/enemy_moss_wolf_walk_up_sheet.png": "76236da50eed4ed5fe54f59b3d905406811ae1c4fc42041801974783bd7641b0",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/hero_attack_down_sheet.png": "f8c86ae5ab2119b62c46e7158f6d24cd9c73d5c1b7599e48621d06a11f5c4ae4",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/hero_attack_left_sheet.png": "07e9830edb3716862514bd2567783888e5be6768d9e3ae40968b694830a2be6a",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/hero_attack_right_sheet.png": "fc593c9ffdadf7300abde138acba9aac4500c9565c862918c14478f3306e07ff",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/hero_attack_up_sheet.png": "c2333d09e0ac36a7d4ab7208547bd663a40c45b6ce810695049900ac065302ed",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/hero_walk_down_sheet.png": "55a5069f19be7f638cd6d69293234e67a00278472e44bbd6b268357525788449",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/hero_walk_left_sheet.png": "15c026948bec050274361053459c7c455794adafea739c5d7520cc253668240d",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/hero_walk_right_sheet.png": "1d84cf548f2532ac328b79efeba80c0edeceb63733d5e93f5ebab84369031dcf",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/hero_walk_up_sheet.png": "6069b8bff9f28e0444df3c10bae16c557dbe0fe69d5e62afbbd293966e893876",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/mist_clearing_tileset.png": "8367ea95ae82ad601ed6c57d3331c5b9839146272551ea787e88e836beb5a16f",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/npc_commandant_ava_portrait.png": "10ea4a21c3ffc336c539e88de39188ed9ca75891ffc0fa06224c8fb0b67680a5",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/wood_bridge_end.png": "17da63b95a0a584494ec363dcf063d7fc3e2dad1eaf27782d44db30c8e2af1f9",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/wood_bridge_middle.png": "2c75f5b8f04abd25ccfd0931044ea830fe692b238cc40034683d4ca08998bdfd",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot01_core/wood_bridge_start.png": "4bbe331bb86c62444e572a621ce6a6ebc6707af185e5d01c7fb188771af4038d",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/enemy_moss_wolf_death_down_sheet.png": "9ffa9a02bd9e94e372c0f8452cdc2d7953cb247eaaadf9a0b01a7840ce4ce0ac",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/enemy_moss_wolf_hurt_down_sheet.png": "651eddec4cbde309fd80da52289ec385c184bf7923a5986e1cf278378f504e6f",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/enemy_root_crawler_death_down_sheet.png": "0af5d5a4833d35bd2ef5cff846a62f1249812000c3b8c9a1f9f51dc58dbfac13",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/enemy_root_crawler_hurt_down_sheet.png": "61c12f662a05380030a1574bf4d4ac8f47873f8d4ea33b8e084eecd86e730239",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/fx_blood_sheet.png": "23d3a17d8e158f635ca16481651ae7b326fbeb6fedeef9f566453c76c6665a8c",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/fx_damage_number_sheet.png": "059d22eca1a43d309561244164530cafa79b3426c9047c01b2562d2b41722c6a",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/fx_dash_sheet.png": "2e4967600f308a39926cf253f9362562501b4b0855b735a24ceeac7ab2b7f990",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/fx_dust_sheet.png": "2fe470a53698678fef8785a188af055f616990b6ee66f4b06d3e9c4cdf496480",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/fx_impact_sheet.png": "b1f3eb8abcd18104300935992775e5b34b1f8a1224441ff1b77b1015a8e0e73e",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot03_combat/fx_slash_arc_sheet.png": "89a6936b57af7e3d453906c681a6e6272b4712de25a23170c2381fab0c74db96",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/boulder.png": "882863b6e9d11ffd0162659c79956d273da73fa1b03cbcb884ef6667e589c4d5",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/bush.png": "0a046b7c84e3899f1b2dba4483e2e93cfc1c435801afd32cc9c1e2d0241a6b84",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/camp_wagon.png": "ddf988e82cb36e5e1f6514db91f82ae2f90400e9a770072f4f0615de6621a845",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/cave_entrance.png": "2438b1b7ddfeea224720a1f5439bdd5e8c2c2a9263f42639c5dc03d232a9c5dd",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/fence_post.png": "6e14a55003cfa9b4fc66dae20f37ce3f032d7492847f791391eb574ededeecbf",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/flower_patch.png": "9d452d4eb2c3bb042e316feac9ba4d41daf21a07be4378b04126649949ace344",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/large_statue.png": "a15a02a19b16b93a29c8f938f8851c0c7d51a63e9ee296d7b2fb0fc09b7068a6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/mushroom_cluster.png": "6c73524129d1ce7819ce5388a920b183f21ba5b094827070143e0ba8ca476216",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/pine_tree.png": "4627869cfc41d413d8c51d60676d27cae06aea1f6f260603caa5d48f7c5f66c7",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/ruin_arch.png": "79454259b4f3fa5bb43a037ff16b464107e644f368dac215184178ef1bcda1a6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/ruin_pillar.png": "f5eff17ba81ef8ff12d5ec474579004aa94f2395f200496c77e0326b46619b5e",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/torch.png": "d8190e896e90b810e0ee6a5c8affde426211e4320bc1900d59415dd515b429ea",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot04_world/wood_door.png": "49207838f3862d6dec45c72a9a017be2d5790f5653378d1244bbfe625f0c334f",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot05_biomes/boss_arena_tileset.png": "595e49603ddc8ed6afd9d2d7574570c0d0bc2e9be08883192e8a20c1565c8933",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot05_biomes/camp_tileset.png": "8621d6124b62ed36a4a2b7904b6670f4c813dd94c36892abde3b11b267445638",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot05_biomes/cave_tileset.png": "dfb9f1e55c7f8d0df10c2c31236d636050b9a198c8f7671a6ffecf16eb9966b1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot05_biomes/deep_forest_tileset.png": "2f335df6655502e86d020eb1e0f3d5bee290265fcc3f0afe31d9567119e070a1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot05_biomes/ruins_tileset.png": "458837e0d6bbc2bcfa74e64ec3769ef3092d8e25dd66eeb38cef7ded06a67b46",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot05_biomes/swamp_tileset.png": "a38862407f5884c4cff31e0d737605e5911374e1e9af8c335ddfff254a2724af",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot06_ui/boss_bar.png": "6fc86d35c0de189081b4871a9c642314a96c75a36cda4711c4c4bed2e61206ba",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot06_ui/combat_hud.png": "01a8f38f462d100117cfdc360eb350f07ab0f4aca91f811a76153eb86496e182",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot06_ui/minimap_panel.png": "e7dbb83a5aad4fb7b4ce39d7c0f2ca9cb29cd5b1bf08f914e331160301e09e34",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot06_ui/mobile_buttons.png": "a64fe3766035655634ab62e1158743d5c6affe348e0a23e4a0a4fb47e055cbfe",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/dialog_compact_box.png": "d73d8c9a49bf4ec85f1f3f8ff05ddbd85cf74ce45ce707d1114518f3c5448a42",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/icon_alert.png": "01853c5536ef6b9f2b6984c2619c6e130000950e65d5863950b45c7db1840bef",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/icon_available.png": "a62e81477573973d35569bf5a4c23c17bf34e2e09c9b37ebb3c20ee52aebc3ce",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/icon_complete.png": "fb221ded08170436c92361cad222106d6e71cc5c3bbe72406e98619d7b590ecf",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/icon_talk.png": "c8284c526cb0f19bee62b1332febe2c591d9559e2d049c1598f8c9362a0e5035",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_cartographer_portrait_happy.png": "8cd8ae1b9336876718a6b875beb34546260bdf9e63856dae1ce169f596611b0b",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_cartographer_portrait_neutral.png": "b8431773a1752f52547d51372c5b489104696a7fd0ed3338458e3afdf0f516df",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_cartographer_portrait_urgent.png": "20e3b12168515772e45cf5563f377d71d81a1f59ed282b9e8446e6d3f9aad91a",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_cartographer_portrait_worried.png": "31c820953b55e2fe842e7680f9d437551339c24b7c67a6d1d5a9eeddab989220",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_commandant_portrait_happy.png": "a604852049442e2135fffe77d1967e14e6c114d6caad7d73b47ffecd990f8081",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_commandant_portrait_neutral.png": "be3daaf4d72e2354f8ad2817d726e637c8851fbd6c2b5e446d8df6bf900e930e",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_commandant_portrait_urgent.png": "14887334bee746c6216499afad1825360958aa949e72e5ab279ca57c9573a93e",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_commandant_portrait_worried.png": "8e95e7f2488dbc5966587032d6e57832a9c88ee9847a399a2f24738fade2b63e",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_healer_portrait_happy.png": "97f5b40821f3feb96de579a4eb2c27dd4cc7d99b324c534f0a5f5699b1c89052",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_healer_portrait_neutral.png": "4c532107f4fed586ab680c5a678fbb3c625174d9daa45899428baac98c6f087a",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_healer_portrait_urgent.png": "1a26900a53cd48aa26721f22584855187146e28c84ff4b28410deaca13fda093",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot07_narrative/npc_healer_portrait_worried.png": "1857d13e03f9bda9a81347d08cf0122a83f7d133c66ac67afc4fb476c6c30d10",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/equipment_panel.png": "c725bf5e3b52b576057f5e551a062ea8c3b73c684e8a81a06cab7acb9a550f88",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/item_amulet.png": "34a3658b395f3b46cfe8d963f15bad0d889b0c627a193443050f54dcb58cf3dc",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/item_armor.png": "c53a7077263f4508c33278dc8aec8c39a519dc5d91dfc030fd76cbcea28bb971",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/item_boots.png": "5762ca3b216538df4808667a72b77c28d51363ec3a3ed650775b23354057640c",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/item_cloth.png": "026453b09c5a619c2af2ee99463cb401880cb91594b348340d8999e69bc5d845",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/item_gem.png": "b1664e7479e8a3f831f442acf59d401c33fad110962489e74416981562e201ce",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/item_helm.png": "16cf7c61606fb285d2d187cfbebc4eaec0f0a384639b1d1c02c13522b3401448",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/item_ore.png": "cfe87c5adb0859d5fad2dd33b30756ad47bc740c22299c5f02e3668074f9ce1f",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot08_inventory/item_ring.png": "287cfab8e7dfd6047c9b53da68818603b0e936928307235406a9684cf97c8f18",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot09_vfx/fx_boss_death_sheet.png": "9bb1d6b8dcdcbb14732382c495454e1bb7962b4b9072b5e1e6632cd6733e6e68",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot09_vfx/fx_fire_loop_sheet.png": "a417141ca49ee3d29e57b33adede04dbf18a97c90fb2b309f3d0c4c9c92402ca",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot09_vfx/fx_heal_burst_sheet.png": "4c06b667f7e8dd2b51c3bcef4b9247bbce8a57ee239b4fd71edadf3a8226ee1e",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot09_vfx/fx_level_up_sheet.png": "690ec230ee12c112189f43451fdcc90ba3e01e1826d5538cb7c1ef83e1875ae2",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot09_vfx/fx_mist_swirl_sheet.png": "f0bfb63e898a079a8ddc75fc01efa5e5254fbb150e55d0e986889a1f10edb5fb",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot09_vfx/fx_poison_cloud_sheet.png": "a6172d913182a55cbc0e187b797234a719dcbb376608fe9f6336447691a5b496",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot09_vfx/fx_teleport_sheet.png": "734d207bc9a73b9a2b267aedb1888dc85039ce4b4392278caf2790f63547d84c",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot10_screens/screen_game_over.png": "d672f2407048fe870d6524d98e19ce89a09053e11cc33fc8ca7fc79cf87ca525",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot10_screens/screen_loading.png": "bc119ffe64b96f1764062800b7aab74259dde41ba29023ac3665952ce1233f48",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot10_screens/screen_pause.png": "1e2d6456b0ec3b047aea187392693c81915d3a16ab6cac89bce2c924d0fab045",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot10_screens/screen_save_select.png": "39bf836a048ec3f10f2ca7087a551f2f3432dfc415ba4af0e293de91f50c9d40",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot10_screens/screen_settings.png": "1ba1a9df88045f5fb6d85676ae85f444df81acdf5fc1ab3a4a17d498b4240e14",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot10_screens/screen_title.png": "ea071f0672384ff9f9c03b20f53f9e2e364b3195a2d6889b01a2b4d1805e816e",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot10_screens/screen_victory.png": "ccd20617d72a0bb773648f10f28d69c25c8e55d3ce82bed691005e29895e56cb",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot11_ambient/ambient_campfire_loop_sheet.png": "3c432ef4d201e6d4081a676e9e01d3670d1733c62455173bf8cee4eec8002133",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot11_ambient/ambient_fireflies_sheet.png": "8584109dfa5a8f829847f8a319cfcc9ed9b6f41fbc5ad68cab92416ab327d234",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot11_ambient/ambient_grass_wind_sheet.png": "6362302aa5efb3ab5b7dda59f46905edd0fd500a8fc91b7f2a7c248714b97e57",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot11_ambient/ambient_mist_layer_sheet.png": "df26f738dfde0a292ba3aa103b84ff30fa49364e752534783857632ef647cbde",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot11_ambient/ambient_water_loop_sheet.png": "f2314ab32467aa80ac29c2af062fd2c23b7dddf43d6396e1864ad94c8486f0f9",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot11_ambient/ambient_waterfall_sheet.png": "9dc5bf4c0b7588030929bd94288820ccec3f4975e0bda06e00d9253ef3b3a4e8",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bog_slug_attack_down_sheet.png": "2f9ff41f6949ca61701f081aa6a391fdde2a1a070b596ecd8a6061b0c3d19089",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bog_slug_attack_left_sheet.png": "2f9ff41f6949ca61701f081aa6a391fdde2a1a070b596ecd8a6061b0c3d19089",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bog_slug_attack_right_sheet.png": "2f9ff41f6949ca61701f081aa6a391fdde2a1a070b596ecd8a6061b0c3d19089",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bog_slug_attack_up_sheet.png": "2f9ff41f6949ca61701f081aa6a391fdde2a1a070b596ecd8a6061b0c3d19089",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bog_slug_walk_down_sheet.png": "2f9ff41f6949ca61701f081aa6a391fdde2a1a070b596ecd8a6061b0c3d19089",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bog_slug_walk_left_sheet.png": "2f9ff41f6949ca61701f081aa6a391fdde2a1a070b596ecd8a6061b0c3d19089",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bog_slug_walk_right_sheet.png": "2f9ff41f6949ca61701f081aa6a391fdde2a1a070b596ecd8a6061b0c3d19089",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bog_slug_walk_up_sheet.png": "2f9ff41f6949ca61701f081aa6a391fdde2a1a070b596ecd8a6061b0c3d19089",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bone_raider_attack_down_sheet.png": "04939478a7843ab5d55e247af8352ee26698085d313d0b8e0daa8a5fbaeba0f1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bone_raider_attack_left_sheet.png": "04939478a7843ab5d55e247af8352ee26698085d313d0b8e0daa8a5fbaeba0f1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bone_raider_attack_right_sheet.png": "04939478a7843ab5d55e247af8352ee26698085d313d0b8e0daa8a5fbaeba0f1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bone_raider_attack_up_sheet.png": "04939478a7843ab5d55e247af8352ee26698085d313d0b8e0daa8a5fbaeba0f1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bone_raider_walk_down_sheet.png": "04939478a7843ab5d55e247af8352ee26698085d313d0b8e0daa8a5fbaeba0f1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bone_raider_walk_left_sheet.png": "04939478a7843ab5d55e247af8352ee26698085d313d0b8e0daa8a5fbaeba0f1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bone_raider_walk_right_sheet.png": "04939478a7843ab5d55e247af8352ee26698085d313d0b8e0daa8a5fbaeba0f1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_bone_raider_walk_up_sheet.png": "04939478a7843ab5d55e247af8352ee26698085d313d0b8e0daa8a5fbaeba0f1",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_ruin_wisp_attack_down_sheet.png": "4a77452bfa5e71ebfe215ef6e2cd5e640bf9a9c94536b26757249ee393c28cb6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_ruin_wisp_attack_left_sheet.png": "4a77452bfa5e71ebfe215ef6e2cd5e640bf9a9c94536b26757249ee393c28cb6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_ruin_wisp_attack_right_sheet.png": "4a77452bfa5e71ebfe215ef6e2cd5e640bf9a9c94536b26757249ee393c28cb6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_ruin_wisp_attack_up_sheet.png": "4a77452bfa5e71ebfe215ef6e2cd5e640bf9a9c94536b26757249ee393c28cb6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_ruin_wisp_walk_down_sheet.png": "4a77452bfa5e71ebfe215ef6e2cd5e640bf9a9c94536b26757249ee393c28cb6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_ruin_wisp_walk_left_sheet.png": "4a77452bfa5e71ebfe215ef6e2cd5e640bf9a9c94536b26757249ee393c28cb6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_ruin_wisp_walk_right_sheet.png": "4a77452bfa5e71ebfe215ef6e2cd5e640bf9a9c94536b26757249ee393c28cb6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/enemy_ruin_wisp_walk_up_sheet.png": "4a77452bfa5e71ebfe215ef6e2cd5e640bf9a9c94536b26757249ee393c28cb6",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/item_ancient_coin.png": "287cfab8e7dfd6047c9b53da68818603b0e936928307235406a9684cf97c8f18",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/item_mist_relic.png": "b1664e7479e8a3f831f442acf59d401c33fad110962489e74416981562e201ce",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/item_moon_relic.png": "5e641943bf0223415c2ed3db0f402118156a4f7fb857bda613e3c27349f679b7",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/item_sun_relic.png": "5e641943bf0223415c2ed3db0f402118156a4f7fb857bda613e3c27349f679b7",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/mini_boss_briar_guard_walk_down_sheet.png": "bc163f12438526f63c9d6b9bd0f5813728c23644cc2f36709c97040274fd3f0d",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/lot12_extra_content/mini_boss_crypt_watcher_walk_down_sheet.png": "2ec72864f318e1e234af186b72239a94653e91f3f48decafb09ee3b0dddd6d6b",
+    "first_game_rpg_complete_pack/first_game_rpg_complete_pack/preview_complete_pack.png": "758b7fd102992b68dd8c23acbcea95a991a1c9c91b0a45b5264fa1ebbfd2550c"
+  }
+}
